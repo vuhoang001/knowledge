@@ -229,6 +229,8 @@ này đã mang nhãn "đã học" thì con số sai sẽ đi thẳng vào việc
 
 <!-- MỤC LỤC. Mọi note trong ../02-notes/ về dbt phải có mặt ở đây, nếu không nó mồ côi. -->
 
+- [Data quality có 3 tầng](../02-notes/dbt-data-quality-co-bao-nhieu-kieu.md) — test
+  vs contract vs unit test, và 6 chiều chất lượng
 - [Phân trang client hay server](../02-notes/phan-trang-client-vs-server.md) — cùng
   một lớp sai: áp khuôn chung lên dữ liệu có grain khác nhau
 

@@ -7,8 +7,14 @@ updated:
 
 # <Câu khẳng định — kết luận, không phải nhãn chủ đề>
 
+> **Chốt:** <MỘT câu. Nếu sáu tháng sau chỉ đọc được đúng dòng này thì phải đủ dùng.>
+
 <!-- Tên file và tiêu đề đều là KẾT LUẬN. "Test unique sai grain thì pass mà số vẫn
-     sai" chứ không phải "Ghi chú về dbt test". -->
+     sai" chứ không phải "Ghi chú về dbt test".
+
+     Dòng `> **Chốt:**` là BẮT BUỘC. Ở 1000 ghi chú, `kb find` trả về một nắm kết
+     quả và bạn phải phán đoán cái nào đáng mở trong 2 giây — dòng đó là thứ duy
+     nhất làm được việc ấy. Viết nó SAU CÙNG, khi đã biết mình kết luận gì. -->
 
 ## Vấn đề
 

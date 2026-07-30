@@ -22,6 +22,7 @@ duy nhất không tự sinh ra: phải chủ động **nhấc** từ [`../01-dai
 
 | Ghi chú | Thuộc chủ đề |
 |---|---|
+| [Data quality trong dbt có 3 tầng](dbt-data-quality-co-bao-nhieu-kieu.md) | dbt, testing |
 | [Phân trang client hay server](phan-trang-client-vs-server.md) | frontend, api |
 
 <!-- Thêm dòng khi tạo note mới. Bảng này là bảng điều khiển, không phải kho —
