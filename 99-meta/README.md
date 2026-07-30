@@ -10,26 +10,30 @@
 
 Sao chép nội dung khuôn sang file mới. Không cần plugin nào.
 
-## Script
+## Script — `kb.py`
 
-### `on-tap.py` — hôm nay ôn gì
+Learning OS giai đoạn 1. Chỉ thư viện chuẩn, không dịch vụ, không cài gì.
+Kiến trúc đầy đủ: [learning-os.md](learning-os.md).
 
 ```bash
-python3 99-meta/on-tap.py          # cái đã đến hạn
-python3 99-meta/on-tap.py --all    # kèm lịch sắp tới
+python3 99-meta/kb.py index              # quét .md → kb.sqlite
+python3 99-meta/kb.py due                # hôm nay ôn gì
+python3 99-meta/kb.py review <id> <0-3>  # 0 quên · 1 khó · 2 được · 3 dễ
+python3 99-meta/kb.py path <id>          # thứ tự học để tới được <id>
+python3 99-meta/kb.py doctor             # chu trình · mồ côi · seed cũ · stale
+python3 99-meta/kb.py stats
 ```
 
-Quét `next-review: YYYY-MM-DD` trong frontmatter của mọi file `.md` trong kho, so
-với hôm nay. Chỉ dùng thư viện chuẩn của Python — không cài gì.
+**`kb.sqlite` KHÔNG vào git** — nó dẫn xuất. Xoá đi rồi `index` là dựng lại y nguyên.
+Nguồn sự thật chỉ có hai: các file `.md` và `review-log.jsonl`.
 
-Mốc giãn cách **1 → 3 → 7 → 21 → 60 ngày**. Nhớ được thì đẩy sang mốc sau, quên thì
-lùi về mốc đầu.
+**`review-log.jsonl` THÌ VÀO git** — quý, không suy ra được từ Markdown, và vì chỉ
+ghi thêm nên diff luôn sạch. Trạng thái ôn tập là kết quả *phát lại* log này, nên
+đổi thuật toán lúc nào cũng được mà không mất dữ liệu.
 
-**Cách ôn cho đúng:** gấp tài liệu, trả lời mục *Tự kiểm* bằng miệng, rồi mới mở đối
-chiếu. Đọc lại cho cảm giác đã hiểu — cảm giác đó sai.
-
-Gợi ý: thêm vào `~/.zshrc` để mỗi sáng mở terminal là thấy.
+**Cách ôn cho đúng:** gấp tài liệu → trả lời mục *Tự kiểm* bằng miệng → mới mở đối
+chiếu. Đọc lại cho cảm giác đã hiểu; cảm giác đó sai.
 
 ```bash
-alias ontap='python3 ~/Documents/knowledge/99-meta/on-tap.py'
+alias kb='python3 ~/Documents/knowledge/99-meta/kb.py'
 ```

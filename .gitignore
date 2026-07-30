@@ -7,3 +7,6 @@
 # Rác hệ điều hành
 .DS_Store
 Thumbs.db
+
+# Chỉ mục DẪN XUẤT — dựng lại bằng `kb.py index`, không commit (learning-os.md §0.1)
+99-meta/kb.sqlite

@@ -1,10 +1,12 @@
 ---
-type: topic
-level: L0
-started:
-next-review:
+id: dbt
+type: module
+status: seed
+difficulty: 3
+prereqs: [sql, trino]
 tags: [dbt, data-engineering, hdos]
 updated: 2026-07-30
+verified_at:
 ---
 
 # dbt (data build tool)

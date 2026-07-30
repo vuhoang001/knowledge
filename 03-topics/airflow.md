@@ -1,10 +1,12 @@
 ---
-type: topic
-level: L0
-started:
-next-review:
+id: airflow
+type: module
+status: seed
+difficulty: 3
+prereqs: [python]
 tags: [airflow, orchestration, data-engineering, hdos]
 updated: 2026-07-30
+verified_at:
 ---
 
 # Apache Airflow

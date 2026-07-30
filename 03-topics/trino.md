@@ -1,10 +1,12 @@
 ---
-type: topic
-level: L0
-started:
-next-review:
+id: trino
+type: module
+status: seed
+difficulty: 3
+prereqs: [sql, iceberg]
 tags: [trino, sql, data-engineering, hdos]
 updated: 2026-07-30
+verified_at:
 ---
 
 # Trino

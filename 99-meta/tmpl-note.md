@@ -1,5 +1,5 @@
 ---
-type: note
+type: template
 tags: []
 next-review:
 updated:
