@@ -16,7 +16,7 @@ tags: [daily]
 
 -
 
-## Đáng nhấc lên `20-notes/`
+## Đáng nhấc lên `02-notes/`
 
 <!-- Để trống cũng được. Có gì ở đây thì cuối tuần viết lại thành ghi chú tử tế. -->
 
