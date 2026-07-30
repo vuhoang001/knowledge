@@ -4,6 +4,8 @@
 Chỉ mục DẪN XUẤT từ Markdown. Xoá kb.sqlite đi rồi `kb index` là dựng lại y nguyên —
 Markdown + review-log.jsonl là nguồn sự thật duy nhất (xem learning-os.md §0.1).
 
+    python3 99-meta/kb.py jot "..."          ghi 1 dòng vào daily hôm nay  (-i = vào inbox)
+    python3 99-meta/kb.py find "..."         tìm toàn văn cả kho
     python3 99-meta/kb.py index              quét .md → SQLite
     python3 99-meta/kb.py due                hôm nay ôn gì
     python3 99-meta/kb.py review <id> <0-3>  ghi một lượt ôn (0 quên · 3 dễ)
@@ -236,6 +238,57 @@ def lenh_review(item: str, grade: int) -> int:
     return 0
 
 
+# ──────────────────────────── ghi nhanh & tìm nhanh ──────────────────────────
+# Hai lệnh này quyết định kho sống hay chết. Ghi mà mất 30 giây thì sẽ không ghi;
+# ghi rồi mà không tìm lại được thì sẽ thôi tin, và thôi tin là thôi dùng.
+
+def lenh_jot(chu: str, vao_inbox: bool) -> int:
+    """Ghi một dòng, KHÔNG phải quyết định gì. Phân loại để dành cuối tuần."""
+    if vao_inbox:
+        f = KHO / "00-inbox" / f"{date.today():%Y-%m}.md"
+        if not f.exists():
+            f.write_text(f"# Inbox {date.today():%m/%Y}\n\n"
+                         "Quăng thô. Dọn cuối tuần — xem README.\n\n", encoding="utf-8")
+        f.open("a", encoding="utf-8").write(f"- [{date.today():%d/%m}] {chu}\n")
+    else:
+        f = KHO / "01-daily" / f"{date.today():%Y-%m-%d}.md"
+        if not f.exists():
+            f.write_text(f"---\ndate: {date.today():%Y-%m-%d}\ntype: daily\ntags: [daily]\n---\n\n"
+                         f"# {date.today():%d/%m/%Y}\n\n## Làm gì\n\n"
+                         "## Vướng gì / sửa ra sao\n\n"
+                         "## Đáng nhấc lên `02-notes/`\n", encoding="utf-8")
+        # Chèn vào mục "Làm gì" chứ không nối đuôi file — nối đuôi thì mọi thứ
+        # rơi xuống mục cuối và cấu trúc daily mất nghĩa sau vài ngày.
+        t = f.read_text(encoding="utf-8")
+        moc = "## Vướng gì"
+        t = (t[:t.index(moc)].rstrip() + f"\n- {chu}\n\n" + t[t.index(moc):]
+             if moc in t else t.rstrip() + f"\n- {chu}\n")
+        f.write_text(t, encoding="utf-8")
+    print(f"✓ {f.relative_to(KHO)}  ←  {chu[:60]}")
+    return 0
+
+
+def lenh_find(tu_khoa: str) -> int:
+    con = mo_db()
+    # Bọc ngoặc kép để dấu nháy, gạch ngang… không bị hiểu là cú pháp FTS5.
+    q = " ".join(f'"{w}"' for w in tu_khoa.split())
+    try:
+        hang = con.execute(
+            "SELECT node_id, heading, snippet(chunk_fts,1,'»','«','…',14), rank "
+            "FROM chunk_fts WHERE chunk_fts MATCH ? ORDER BY rank LIMIT 12", (q,)).fetchall()
+    except sqlite3.OperationalError as e:
+        print(f"Truy vấn hỏng: {e}. Thử `kb index` trước."); return 1
+    if not hang:
+        print(f"\n  Không thấy `{tu_khoa}`. Chưa `kb index` sau khi sửa file?\n"); return 0
+    print(f"\n🔎 `{tu_khoa}` — {len(hang)} kết quả\n")
+    for nid, heading, doan, _ in hang:
+        r = con.execute("SELECT path FROM node WHERE id=?", (nid,)).fetchone()
+        print(f"  \033[1m{nid}\033[0m › {heading or '(mở đầu)'}   {r[0] if r else ''}")
+        print(f"      {' '.join(doan.split())}\n")
+    con.close()
+    return 0
+
+
 # ─────────────────────────── đồ thị: lộ trình + doctor ───────────────────────
 
 def canh_prereq(con) -> dict[str, list[str]]:
@@ -378,6 +431,14 @@ def main() -> int:
     if lenh == "path":
         if not arg: print("cần <id>"); return 1
         return lenh_path(arg[0])
+    if lenh in ("jot", "j"):
+        vao_inbox = "-i" in arg
+        chu = " ".join(a for a in arg if a != "-i").strip()
+        if not chu: print('cần nội dung: kb jot "..."'); return 1
+        return lenh_jot(chu, vao_inbox)
+    if lenh in ("find", "f"):
+        if not arg: print('cần từ khoá: kb find "..."'); return 1
+        return lenh_find(" ".join(arg))
     if lenh == "review":
         if len(arg) < 2: print("cần <id> <0-3>"); return 1
         return lenh_review(arg[0], int(arg[1]))

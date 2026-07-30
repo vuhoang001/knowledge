@@ -93,10 +93,34 @@ tuần sau đọc lại chẳng thấy giá trị, rồi bỏ luôn cả thói q
 
 ## Dùng hằng ngày
 
+Cài alias một lần, rồi quên đường dẫn đi:
+
 ```bash
-code ~/Documents/knowledge      # mở cả kho
-python3 99-meta/on-tap.py       # hôm nay ôn gì
+echo "alias kb='python3 ~/Documents/knowledge/99-meta/kb.py'" >> ~/.zshrc
 ```
+
+**Hai lệnh chạy 90% thời gian** — chúng là thứ quyết định kho sống hay chết:
+
+```bash
+kb jot "Trino EXPLAIN ANALYZE mới là chỗ đọc, đừng đoán"   # ghi 3 giây, KHÔNG nghĩ
+kb jot -i "xem thử dbt_utils có gì thay thế"                # ý tưởng → inbox
+kb find "grain"                                              # tìm 3 giây, cả kho
+```
+
+`jot` không bắt bạn quyết định gì: không cần chọn thư mục, không cần đặt tên file,
+không cần biết nó có đáng lưu không. Phân loại để dành cuối tuần.
+
+Còn lại:
+
+```bash
+kb due                # hôm nay ôn gì
+kb review <id> <0-3>  # chấm sau khi ôn
+kb path <id>          # thứ tự học để tới được <id>
+kb doctor             # kho có mục ruỗng chỗ nào không
+kb index              # chạy lại sau khi sửa file (find/path đọc từ index)
+```
+
+Mở cả kho trong VS Code khi cần viết dài: `code ~/Documents/knowledge`
 
 - `Ctrl+Shift+V` — xem bản render
 - `Ctrl+P` — nhảy nhanh tới file
