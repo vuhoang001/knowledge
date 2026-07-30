@@ -3,22 +3,33 @@ id: dbt
 type: module
 status: seed
 difficulty: 3
-prereqs: [sql, trino]
-tags: [dbt, data-engineering, hdos]
+prereqs: [sql]
+tags: [dbt, data-engineering]
 updated: 2026-07-30
 verified_at:
+lab: ~/Documents/learn-lab/dbt
 ---
 
 # dbt (data build tool)
 
 ## Mục tiêu
 
-Mang **test dữ liệu** trở lại lakehouse HDOS. dbt từng có trong `kafka-flink` nhưng
-bị gỡ khi thu gọn repo (27/07/2026) — giờ tầng `hdos_silver` → `hdos_gold` không có
-gì canh, sai grain hay trùng khoá chỉ lộ ra khi số trên dashboard đã lệch.
+Học **chính dbt**, tách rời khỏi HDOS. Đích trước mắt: hiểu `ref()`, viết được model,
+và viết được test bắt đúng lỗi grain. Đạt **L3** là đủ.
 
-Đích cụ thể: dbt chạy trên **Trino** đọc Iceberg, test được các mart mà `hdos-serving`
-đang phục vụ. Đạt **L3** là đủ.
+Ứng dụng về sau là mang test trở lại lakehouse HDOS (dbt từng có trong `kafka-flink`,
+bị gỡ khi thu gọn repo 27/07/2026) — nhưng đó là **việc sau**, không phải cách học.
+
+> **Vì sao lab dùng DuckDB chứ không phải Trino `.60`.** Học dbt trên Trino là học ba
+> thứ cùng lúc — dbt, Trino, Iceberg — và lỗi nào cũng có ba nghi phạm, không phân
+> biệt được lỗi hiểu sai dbt với lỗi cấu hình cụm. DuckDB không server, cả kho là
+> một file, xoá đi là về trắng. Lộ trình cũng thông: `trino` và `iceberg` đều còn
+> `seed`, học dbt chồng lên hai module chưa kiểm chứng là chồng nợ lên nợ.
+>
+> Chuyển sang Trino ở bài 6, khi dbt đã không còn là biến số.
+
+**Lab:** `~/Documents/learn-lab/dbt` — venv riêng, `dbt-duckdb`, đã có seed sẵn.
+Chạy dbt bằng `.venv/bin/dbt <lệnh> --profiles-dir .`
 
 ## Nó giải quyết vấn đề gì
 
@@ -63,62 +74,89 @@ như mọi lỗi khó đều sáng ra ở đó.
 ## Lộ trình
 
 - [ ] **L1 Hiểu** — giải thích được vì sao dbt không thay Spark, và `ref()` để làm gì
-- [ ] **L2 Chạy được** — `dbt-trino` nối vào Trino `.60`, chạy `dbt run` + `dbt test` xanh
-- [ ] **L3 Sửa được** — tự gỡ ≥3 lỗi thật (xem "Sai lầm"), đọc được `target/compiled/`
-- [ ] **L4 Thiết kế được** — chọn được materialization + chiến lược incremental cho mart HDOS và bảo vệ được lựa chọn
+- [ ] **L2 Chạy được** — model chạy trên lab DuckDB, `dbt run` + `dbt test` xanh (bài 1–2)
+- [ ] **L3 Sửa được** — tự gỡ ≥3 lỗi thật (xem "Sai lầm"), đọc được `target/compiled/` (bài 3–5)
+- [ ] **L4 Thiết kế được** — chuyển cùng model đó sang Trino, chọn được materialization và bảo vệ được lựa chọn (bài 6)
 
 ## Bài tập
 
-Mỗi bài phải **chạy thật** và dán được output. Đọc hiểu không tính.
+Làm trong `~/Documents/learn-lab/dbt`. Mỗi bài **chạy thật, dán output vào ô Kết quả**.
+Đọc hiểu không tính — đó là quy tắc của chính kho này (learning-os.md §0.2).
 
-### Bài 1 — Nối được vào Trino (L2)
+Dữ liệu seed sẵn: `don_hang_chi_tiet.csv` (15 dòng, đơn hàng nhiều dòng hàng) và
+`hang_hoa.csv` (4 mặt hàng). Nhỏ để soi được bằng mắt — cố ý.
 
-**Làm gì:** `pip install dbt-trino`, viết `profiles.yml` trỏ `192.168.100.60:8080`,
-catalog Iceberg. `dbt debug` phải xanh.
+### Bài 1 — Nối được (L2)
 
-**Xong khi:** `dbt debug` báo `All checks passed!`
+**Làm gì:**
+```bash
+cd ~/Documents/learn-lab/dbt
+.venv/bin/dbt debug --profiles-dir .
+.venv/bin/dbt seed  --profiles-dir .
+```
 
-**Kết quả:**
-
-### Bài 2 — Một model đọc source thật (L2)
-
-**Làm gì:** khai `hdos_silver` làm `source`, viết một model `stg_*` chỉ `SELECT` +
-đổi tên cột. Materialize `view` trước.
-
-**Xong khi:** `dbt run` tạo được view, query nó bằng Trino ra dữ liệu.
-
-**Kết quả:**
-
-### Bài 3 — Test bắt được lỗi thật (L2→L3)
-
-**Làm gì:** thêm `unique` + `not_null` cho khoá của model đó. **Cố ý** đặt `unique`
-lên một cột mà bạn *tưởng* là khoá nhưng không phải, xem nó fail ra sao.
-
-**Xong khi:** đọc được output fail và nói được vì sao — grain của bảng khác với điều
-mình tưởng.
-
-> Đây là bài quan trọng nhất. Bẫy hay gặp nhất ở HDOS là đặt test `unique` sai grain:
-> mart gộp theo lô/theo kỳ thì mã hàng trùng là **đúng**, phải dùng
-> `dbt_utils.unique_combination_of_columns`. Xem [[bay-mart-doanh-thu-partner]].
+**Xong khi:** `All checks passed!` và hai bảng seed vào `lab.duckdb`. Mở file đó bằng
+`duckdb lab.duckdb` rồi `SELECT * FROM don_hang_chi_tiet;` để tự thấy dữ liệu.
 
 **Kết quả:**
 
-### Bài 4 — Nối hai model bằng `ref()` (L3)
+### Bài 2 — Model đầu tiên, và xem dbt SINH RA gì (L2)
 
-**Làm gì:** thêm model thứ hai đọc model đầu qua `ref()`. Chạy `dbt docs generate &&
-dbt docs serve`, nhìn sơ đồ lineage.
+**Làm gì:** tạo `models/stg_don_hang.sql`, chỉ `SELECT` từ seed, đổi tên cột, thêm
+cột tính `thanh_tien = so_luong * don_gia`. Chạy `dbt run`, rồi **mở
+`target/compiled/dbt_lab/models/stg_don_hang.sql`**.
 
-**Xong khi:** xoá model đầu và thấy dbt báo lỗi phụ thuộc chứ không chạy bừa.
+**Xong khi:** so được file mình viết với file dbt sinh ra, và nói được dbt đã thay
+đổi đúng những gì.
+
+> Đây là chỗ mô hình tư duy cốt lõi trở thành thứ nhìn thấy được, không còn là câu
+> chữ. Đừng bỏ bước mở `target/compiled/`.
 
 **Kết quả:**
 
-### Bài 5 — Incremental trên bảng fact (L3→L4)
+### Bài 3 — Test bắt lỗi grain (L2→L3)
 
-**Làm gì:** đổi một model fact sang `materialized='incremental'`, dùng
-`is_incremental()` để lọc theo ngày. Chạy 2 lần, so thời gian và số dòng.
+**Làm gì:** thêm `models/schema.yml`, đặt test `unique` lên `don_hang_id` của
+`stg_don_hang`. Chạy `dbt test`.
 
-**Xong khi:** nói được điều gì xảy ra khi dữ liệu cũ bị sửa lại (gợi ý: `--full-refresh`),
-và vì sao Iceberg khiến chuyện này khác với warehouse thường.
+**Xong khi:** test **FAIL** — và bạn giải thích được vì sao đó là test sai chứ không
+phải dữ liệu sai. Sau đó sửa cho đúng grain (gợi ý: grain thật là *cặp* cột nào?).
+
+> Bài quan trọng nhất của cả module. Đây đúng là lớp lỗi làm lệch số trên dashboard
+> mà không ai thấy — xem [[phan-trang-client-vs-server]] cho cùng lớp sai ở chỗ khác.
+
+**Kết quả:**
+
+### Bài 4 — `ref()` dựng nên DAG (L3)
+
+**Làm gì:** thêm `stg_hang_hoa.sql`, rồi `mart_doanh_thu_theo_nhom.sql` join hai
+model qua `ref()`. Chạy `dbt run`, sau đó `dbt docs generate && dbt docs serve`.
+
+**Xong khi:** đổi tên `stg_don_hang.sql` và thấy dbt **báo lỗi phụ thuộc** chứ không
+chạy bừa. Rồi thử thay `ref()` bằng tên bảng thẳng — xem DAG mất cạnh ra sao.
+
+**Kết quả:**
+
+### Bài 5 — Materialization (L3)
+
+**Làm gì:** đổi mart sang `table`, rồi `incremental` với `is_incremental()`. Chạy
+hai lần, so số dòng và thời gian.
+
+**Xong khi:** nói được điều gì xảy ra khi một đơn hàng **cũ** bị sửa lại, và
+`--full-refresh` giải quyết gì.
+
+**Kết quả:**
+
+### Bài 6 — Chuyển sang Trino (L3→L4)
+
+**Chỉ làm sau khi bài 1–5 xong.** Đổi `profiles.yml` sang `dbt-trino` trỏ `.60:8080`.
+Chạy lại chính các model đó.
+
+**Xong khi:** nói được cái gì phải đổi và cái gì giữ nguyên — đó là câu trả lời thật
+cho "dbt độc lập với warehouse tới mức nào".
+
+> ⚠ Catalog trên `.60` tên là `hdos_silver` / `polaris_silver`, **không có catalog
+> tên `iceberg`**. Xem mục "Sai lầm đã mắc".
 
 **Kết quả:**
 
@@ -166,6 +204,20 @@ tổ hợp. Xác định grain TRƯỚC khi viết test.
 
 <!-- Điền dần khi gặp. Đây là bằng chứng cho L3 — có ≥3 mục thật thì nâng bậc.
      Ghi cả cái SAI lúc đầu, không chỉ cách đúng cuối cùng. -->
+
+### 30/07/2026 — module `seed` này ghi sai tên catalog
+
+Bài 1 bản đầu ghi *"profiles.yml trỏ 192.168.100.60:8080, catalog Iceberg"*. Chạy
+`SHOW CATALOGS` trên Trino `.60` thì catalog thật là `hdos_silver`, `polaris`,
+`polaris_silver`, `system` — **không hề có catalog tên `iceberg`**.
+
+Làm theo y nguyên là `dbt debug` fail, và mất một buổi nghi cấu hình dbt trong khi
+lỗi nằm ở chỗ khác hẳn.
+
+**Bài học không phải về dbt, mà về chính kho này.** Nội dung `seed` do AI sinh đọc
+rất thuyết phục và sai ở đúng chỗ khó kiểm nhất — chi tiết cụ thể của môi trường.
+Đây là lý do `seed` không được tự lên `learning` (learning-os.md §0.2). Nếu module
+này đã mang nhãn "đã học" thì con số sai sẽ đi thẳng vào việc thật.
 
 ## Nguồn
 
