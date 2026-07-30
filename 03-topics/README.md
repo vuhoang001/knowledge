@@ -10,6 +10,45 @@ ghi chú thuộc công nghệ đó. Khuôn: [`../99-meta/tmpl-topic.md`](../99-m
 | Chủ đề | Bậc | Mục tiêu | Ôn lại |
 |---|---|---|---|
 | [dbt](dbt.md) | L0 | Mang test trở lại lakehouse HDOS | chưa bắt đầu |
+| [Kafka](kafka.md) | L0 | Hiểu đường CDC realtime của HDOS | chưa bắt đầu |
+| [Flink](flink.md) | L0 | Dựng lại job CDC → `hdos_bronze` | chưa bắt đầu |
+| [Iceberg](iceberg.md) | L0 | Làm chủ table format đang chạy thật | chưa bắt đầu |
+| [Trino](trino.md) | L0 | Đọc được query chậm và sửa | chưa bắt đầu |
+| [Airflow](airflow.md) | L0 | Điều phối batch HIS → bronze → gold | chưa bắt đầu |
+
+## Khi một file không đủ nữa
+
+**Bắt đầu bằng MỘT file. Chỉ tách khi nó thực sự chật.**
+
+Dựng sẵn thư mục cho thứ chưa viết là cách chắc chắn nhất để bỏ dở — đó là lỗi đã
+giết lần thử trước.
+
+Dấu hiệu tách: file vượt **~300 dòng**, hoặc có từ **3 mảng lý thuyết riêng biệt**
+mà mảng nào cũng cần vài trăm chữ.
+
+Cách tách — file cũ thành `README.md` của thư mục cùng tên:
+
+```
+kafka.md                          →   kafka/
+                                      ├── README.md                    bản đồ + lộ trình + MỤC LỤC
+                                      ├── ly-thuyet-consumer-group.md
+                                      ├── ly-thuyet-partition-offset.md
+                                      ├── cach-dung-cau-hinh-retention.md
+                                      └── bai-tap-01-producer-consumer.md
+```
+
+Bốn tiền tố, đúng bốn thứ cần cho một công nghệ:
+
+| Tiền tố | Trả lời câu | Ví dụ |
+|---|---|---|
+| `ly-thuyet-` | Bên trong nó hoạt động thế nào | `ly-thuyet-watermark.md` |
+| `cach-dung-` | Gõ gì, cấu hình ra sao | `cach-dung-checkpoint.md` |
+| `bai-tap-NN-` | Chạy thật, có output | `bai-tap-02-event-time.md` |
+| `README.md` | Vào từ đâu, học theo thứ tự nào | luôn là trang chủ |
+
+**Phẳng, không lồng thêm thư mục con.** Giữ đúng 2 tầng, tiền tố tự gom nhóm khi
+sắp xếp, và mở thư mục ra là thấy hết. `README.md` giữ vai trò mục lục — mọi file
+con phải được nó trỏ tới.
 
 ## Thang bậc — biết mình đang ở đâu
 

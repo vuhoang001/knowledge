@@ -1,12 +1,18 @@
 ---
-topic: <tên công nghệ>
+type: topic
 level: L0            # L0 chưa bắt đầu · L1 hiểu · L2 chạy được · L3 sửa được · L4 thiết kế được
 started:             # YYYY-MM-DD
 next-review:         # YYYY-MM-DD — để trống cho tới khi đạt L1
-tags: [learning]
+tags: []
+updated:             # YYYY-MM-DD
 ---
 
 # <Tên công nghệ>
+
+<!-- MỘT FILE cho tới khi nó thật sự chật (>~300 dòng, hoặc ≥3 mảng lý thuyết riêng
+     biệt). Lúc đó tách thành thư mục cùng tên: file này thành README.md, các phần
+     con đặt tên ly-thuyet-* / cach-dung-* / bai-tap-NN-*. Xem 03-topics/README.md.
+     ĐỪNG TÁCH SỚM — dựng sẵn thư mục cho thứ chưa viết là cách bỏ dở nhanh nhất. -->
 
 ## Mục tiêu
 
