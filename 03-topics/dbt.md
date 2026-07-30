@@ -1,9 +1,10 @@
 ---
-topic: dbt
+type: topic
 level: L0
 started:
 next-review:
-tags: [learning, data-engineering, hdos]
+tags: [dbt, data-engineering, hdos]
+updated: 2026-07-30
 ---
 
 # dbt (data build tool)
@@ -170,8 +171,15 @@ tổ hợp. Xác định grain TRƯỚC khi viết test.
 - [ ] `dbt-trino` README — phần cấu hình Iceberg
 - [ ] `dbt_utils` — đọc danh sách test có sẵn trước khi tự viết
 
+## Ghi chú thuộc chủ đề này
+
+<!-- MỤC LỤC. Mọi note trong ../02-notes/ về dbt phải có mặt ở đây, nếu không nó mồ côi. -->
+
+- [Phân trang client hay server](../02-notes/phan-trang-client-vs-server.md) — cùng
+  một lớp sai: áp khuôn chung lên dữ liệu có grain khác nhau
+
 ## Liên kết
 
-- [[bay-mart-doanh-thu-partner]] — bẫy grain ở mart HDOS
-- Repo: `kafka-flink` — dbt bị gỡ ở lần thu gọn 27/07/2026, lịch sử git còn giữ
-- [[deploy-fe-len-60]] — Trino chạy ở `.60:8080`
+- [Deploy FE lên .60](../04-runbook/deploy-fe-len-60.md) — Trino chạy ở `.60:8080`
+- Repo `kafka-flink` — dbt bị gỡ ở lần thu gọn 27/07/2026, lịch sử git còn giữ
+- [[bay-mart-doanh-thu-partner]] — bẫy grain ở mart HDOS *(chưa viết)*

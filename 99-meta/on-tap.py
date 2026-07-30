@@ -4,8 +4,8 @@
 Đọc `next-review: YYYY-MM-DD` trong frontmatter của mọi file .md trong kho, so với
 hôm nay. Không cần cài gì — chỉ dùng thư viện chuẩn.
 
-    python3 tools/on-tap.py          # cái đã đến hạn
-    python3 tools/on-tap.py --all    # kèm cả lịch sắp tới
+    python3 99-meta/on-tap.py          # cái đã đến hạn
+    python3 99-meta/on-tap.py --all    # kèm cả lịch sắp tới
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 KHO = Path(__file__).resolve().parent.parent
-BO_QUA = {".git", ".obsidian", "node_modules", "99-templates"}
+BO_QUA = {".git", ".obsidian", "node_modules", "99-meta"}
 
 # Mốc ôn giãn cách. Nhớ được thì đẩy sang mốc sau, quên thì lùi về mốc đầu.
 MOC_NGAY = [1, 3, 7, 21, 60]
@@ -86,7 +86,7 @@ def main() -> int:
         print()
 
     if not tat_ca:
-        print("  (Chưa file nào có `next-review` trong frontmatter — xem 50-learning/README.md)\n")
+        print("  (Chưa file nào có `next-review` trong frontmatter — xem 03-topics/README.md)\n")
 
     return 0
 
