@@ -1,0 +1,9 @@
+# Cấu hình Obsidian — repo này đọc/ghi chính bằng VS Code. Giữ thư mục lại để lỡ
+# muốn mở bằng Obsidian thì vẫn chạy, nhưng không commit: bố cục pane đổi liên tục,
+# commit vào chỉ tạo nhiễu diff.
+.obsidian/
+.trash/
+
+# Rác hệ điều hành
+.DS_Store
+Thumbs.db
