@@ -27,7 +27,29 @@ const config = {
       onBrokenMarkdownLinks: 'throw',
     },
   },
-  themes: ['@docusaurus/theme-mermaid'],
+  themes: [
+    '@docusaurus/theme-mermaid',
+    [
+      // Search chạy client-side: index sinh lúc `npm run build`, không cần server.
+      // Dev server (`npm start`) KHÔNG có search — chỉ xem được ở `npm run build && npm run serve`.
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      {
+        // docs/ phục vụ ở gốc — để mặc định '/docs' là index rỗng
+        docsRouteBasePath: '/',
+        indexBlog: false,
+        hashed: true,
+        // 'vi' bắt buộc: trimmer mặc định của lunr dùng \W kiểu ASCII nên cắt mất
+        // chữ "đ" đầu từ ("điều" → "iều"). Trimmer vi phủ đ/ă/â/ê/ô/ơ/ư.
+        language: ['en', 'vi'],
+        // Nhận MẢNG ngôn ngữ, không phải boolean. Stop word tiếng Anh nuốt mất
+        // các âm tiếng Việt hợp lệ ("do", "no", "to", "so")
+        removeDefaultStopWordFilter: ['en'],
+        highlightSearchTermsOnTargetPage: true,
+        searchResultLimits: 10,
+        searchResultContextMaxLength: 80,
+      },
+    ],
+  ],
 
   presets: [
     [

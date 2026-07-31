@@ -4,6 +4,7 @@
   "private": true,
   "description": "Second Brain — kho tri thức cá nhân về Software / Data Engineering",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "docusaurus start",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
@@ -15,16 +16,22 @@
     "@docusaurus/core": "^3.0.0",
     "@docusaurus/preset-classic": "^3.0.0",
     "@docusaurus/theme-mermaid": "^3.0.0",
+    "@easyops-cn/docusaurus-search-local": "^0.55.3",
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^3.0.0"
+    "@docusaurus/module-type-aliases": "^3.0.0",
+    "patch-package": "^8.0.1"
   },
   "browserslist": {
-    "production": [">0.5%", "not dead", "not op_mini all"],
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
