@@ -6,8 +6,11 @@
 const config = {
   title: 'Second Brain',
   tagline: 'Wikipedia cá nhân — Software / Data Engineering',
-  url: 'https://example.com',
-  baseUrl: '/',
+  // Project page: site nằm dưới /<tên repo>/ — baseUrl sai là vỡ toàn bộ CSS + link
+  url: 'https://vuhoang001.github.io',
+  baseUrl: '/knowledge/',
+  organizationName: 'vuhoang001',
+  projectName: 'knowledge',
 
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'warn',
