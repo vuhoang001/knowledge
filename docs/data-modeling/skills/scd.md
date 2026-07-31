@@ -5,7 +5,7 @@ description: Khi thuộc tính của một thực thể thay đổi, báo cáo v
 tags: [scd, data-modeling, dimension, kimball, slowly-changing-dimension]
 domain: data-engineering
 category: concept
-doc_type: reference
+doc_type: skill
 status: review
 difficulty: intermediate
 verified_at:            # lý thuyết Kimball; phần triển khai dbt chưa chạy tay
@@ -40,7 +40,7 @@ Type 2** — học chắc hai cái đó, biết ba cái còn lại tồn tại l
 
 > **Vì sao gọi là "slowly".** Cột đổi hằng giờ (số dư tài khoản, trạng thái đơn) không
 > phải thuộc tính dimension — đó là **fact**. Nhầm chỗ này thì dựng SCD Type 2 cho thứ
-> đổi liên tục và bảng phình gấp hàng nghìn lần. Xem [Fact và Dimension](../foundations/fact-and-dimension.md).
+> đổi liên tục và bảng phình gấp hàng nghìn lần. Xem [Fact và Dimension](../reference/fact-and-dimension.md).
 
 ## Vì sao cần
 
@@ -157,7 +157,7 @@ khach_sk | khach_hang_id | ho_ten       | khu_vuc  | valid_from | valid_to   | i
 
 **Grain của bảng đã đổi.** Không còn "một khách một dòng" mà là **"một phiên bản của
 một khách một dòng"**. Hệ quả trực tiếp: `unique` trên `khach_hang_id` sẽ FAIL — và
-đó là fail đúng, y hệt ca đã gặp thật ở [dbt: testing](../../etl/dbt/testing.md).
+đó là fail đúng, y hệt ca đã gặp thật ở [dbt: testing](../../etl/dbt/reference/testing.md).
 
 Test đúng cho bảng Type 2:
 
@@ -329,7 +329,7 @@ cần lọc `is_current`). Từ Type 1 lên Type 2 thì **lịch sử đã ghi �
 | Khoảng `valid` chồng lấn | Một đơn khớp 2 dòng → nhân bản | Test không-overlap theo natural key |
 | Nguồn **xoá cứng** một dòng | Dim không biết, khách "sống" mãi trong báo cáo | Cột `is_deleted`, so danh sách khoá mỗi lần chạy |
 | Late-arriving dimension | Fact tới trước dim → không tìm được SK → mất dòng | Dòng "Chưa xác định" `_sk = -1`, vá sau |
-| dbt `snapshot` chạy sai một lần | **Lịch sử sai vĩnh viễn** — không có nguồn nào dựng lại | Chạy thử trên bản sao; xem [sources-seeds-snapshots](../../etl/dbt/sources-seeds-snapshots.md) |
+| dbt `snapshot` chạy sai một lần | **Lịch sử sai vĩnh viễn** — không có nguồn nào dựng lại | Chạy thử trên bản sao; xem [sources-seeds-snapshots](../../etl/dbt/reference/sources-seeds-snapshots.md) |
 
 Bẫy cuối đáng nhấn: `snapshot` là thứ **duy nhất** trong dbt không tái tạo được. Model
 sai thì `dbt run` lại; snapshot sai thì phần lịch sử đã ghi mất luôn.
@@ -512,22 +512,22 @@ Data Vault / bitemporal (nâng cao)
 
 ## Related Topics
 
-- [Grain](../foundations/grain.md) — Type 2 làm đổi grain của dimension; đây là chỗ hay quên nhất
-- [Fact và Dimension](../foundations/fact-and-dimension.md) — cột đổi nhanh là fact, không phải dimension
-- [Surrogate key](../foundations/surrogate-key.md) — vì sao Type 2 **bắt buộc** có SK
-- [Quy trình thiết kế](../layout-and-process/design-process.md) — SCD được quyết ở bước 3
+- [Grain](../reference/grain.md) — Type 2 làm đổi grain của dimension; đây là chỗ hay quên nhất
+- [Fact và Dimension](../reference/fact-and-dimension.md) — cột đổi nhanh là fact, không phải dimension
+- [Surrogate key](../reference/surrogate-key.md) — vì sao Type 2 **bắt buộc** có SK
+- [Quy trình thiết kế](../reference/design-process.md) — SCD được quyết ở bước 3
 - [6 chiều chất lượng dữ liệu](../../data-quality/six-dimensions.md) — accuracy bắt lỗi nhân bản
 
 ## Prerequisites
 
 - [SQL: join và grain](../../databases/sql/index.md)
-- [Grain](../foundations/grain.md)
-- [Fact và Dimension](../foundations/fact-and-dimension.md)
+- [Grain](../reference/grain.md)
+- [Fact và Dimension](../reference/fact-and-dimension.md)
 
 ## Next Topics
 
-- [Quy trình thiết kế 4 bước](../layout-and-process/design-process.md)
-- [dbt: sources, seeds, snapshots](../../etl/dbt/sources-seeds-snapshots.md) — công cụ hiện thực Type 2
+- [Quy trình thiết kế 4 bước](../reference/design-process.md)
+- [dbt: sources, seeds, snapshots](../../etl/dbt/reference/sources-seeds-snapshots.md) — công cụ hiện thực Type 2
 - [Iceberg](../../storage/iceberg/index.md) — time travel khác Type 2 chỗ nào
 
 ## References

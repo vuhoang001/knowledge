@@ -25,42 +25,43 @@ học cách gõ lệnh; biết grain rồi thì đổi sang công cụ nào cũn
 
 ## Nội dung
 
-Ba tầng, đọc từ dưới lên. **Tầng trên đứng trên tầng dưới** — không phải ba nhóm ngang
-hàng để chọn cái nào cũng được.
+Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ này**.
 
-### [1. Nền tảng](foundations/index.md) — không đổi khi đổi công cụ
-
-| # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
-|---|---|---|---|---|
-| 01 | [Grain](foundations/grain.md) | Một dòng của bảng này đại diện cho **cái gì** | beginner | ✅ đã gặp thật |
-| 02 | [Fact và Dimension](foundations/fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
-| 03 | [Surrogate key và Natural key](foundations/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
-
-### [2. Kỹ thuật trên dimension](dimension-techniques/index.md) — áp dụng lên tầng 1
+### [Tài liệu](reference/index.md) — nó là gì, vì sao, đánh đổi ra sao
 
 | # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
 |---|---|---|---|---|
-| 04 | [**SCD**](dimension-techniques/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
-| 05 | [Junk dimension](dimension-techniques/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
+| 1 | [Grain](reference/grain.md) | Một dòng của bảng này đại diện cho **cái gì** | beginner | ✅ đã gặp thật |
+| 2 | [Fact và Dimension](reference/fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
+| 3 | [Surrogate key và Natural key](reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
+| 4 | [Quy trình thiết kế 4 bước](reference/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
+| 5 | [Star, Snowflake, OBT](reference/star-snowflake-obt.md) | Ba cách bố trí, đánh đổi giữa chúng | intermediate | 📝 draft |
 
-### [3. Bố trí và quy trình](layout-and-process/index.md) — mức toàn mô hình
+### [Kỹ năng](skills/index.md) — kỹ thuật áp dụng lên phần trên
 
 | # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
 |---|---|---|---|---|
-| 06 | [Quy trình thiết kế 4 bước](layout-and-process/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
-| 07 | [Star, Snowflake, OBT](layout-and-process/star-snowflake-obt.md) | Ba cách bố trí, đánh đổi giữa chúng | intermediate | 📝 draft |
+| 1 | [**SCD**](skills/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
+| 2 | [Junk dimension](skills/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
+
+### Ba nhóm còn lại
+
+| Nhóm | Nội dung |
+|---|---|
+| [Bài tập](tutorials/index.md) | *(chưa có bài riêng cho data modeling)* |
+| [Cheatsheet](cheatsheets/index.md) | [SCD — tra nhanh](cheatsheets/scd.md) |
+| [Case study](case-studies/index.md) | *(chưa có)* |
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 lý thuyết, `verified_at` còn trống
 
-Cột `#` là **thứ tự học** chạy xuyên cả ba tầng, và cũng là thứ tự sidebar
-(`sidebar_position` trong frontmatter). Hai chỗ này phải khớp nhau — lệch là sidebar dẫn
-người đọc đi sai đường.
+Cột `#` là thứ tự học **trong từng nhóm**, và cũng là `sidebar_position`. Hai chỗ này
+phải khớp — lệch là sidebar dẫn người đọc đi sai đường.
 
-**Cách phân tầng:** một file thuộc tầng 1 nếu bỏ nó đi thì các tầng trên không đọc được;
-thuộc tầng 2 nếu nó xử lý một tình huống *trên* một mô hình đã có; thuộc tầng 3 nếu nó
-quyết định thứ áp cho **nhiều bảng cùng lúc** chứ không phải một bảng.
+**Tài liệu hay Kỹ năng?** Tài liệu trả lời *"nó là gì"*; Kỹ năng trả lời *"gặp tình
+huống X thì xử lý ra sao"*. SCD và junk dimension đều giả định bạn đã biết grain và
+fact/dimension — nên chúng là kỹ năng, không phải nền tảng.
 
-## Vì sao chia đôi "khái niệm" và "cách làm"
+## Vì sao tách "Tài liệu" và "Kỹ năng"
 
 Biết SCD Type 2 là gì (khái niệm) **không** đồng nghĩa với biết khi nào nên dùng nó
 (cách làm). Phần lớn tài liệu chỉ dạy vế đầu — liệt kê Type 1/2/3 kèm ví dụ bảng, rồi
@@ -94,20 +95,6 @@ Triển khai bằng dbt snapshot
 ```
 
 **Đường ngắn nhất tới chỗ dùng được: Grain → Fact/Dimension → SCD → Quy trình.**
-
-## Liên quan trong kho
-
-Tài liệu về data modeling nhưng **không nằm trong thư mục này** — chúng ở theo *dạng tài
-liệu* (`doc_type`), không theo chủ đề:
-
-| Dạng | Tài liệu | Dùng khi |
-|---|---|---|
-| Cheatsheet | [SCD — tra nhanh](cheatsheets/scd.md) | đang làm, cần tra Type nào là gì |
-| Case study | *(chưa có)* | đã debug xong một sự cố mô hình thật |
-| Bài tập | *(chưa có bài riêng cho data modeling)* | muốn chạy thật, có output dán lại |
-
-Xem đầy đủ mọi thứ mang tag này: **[`/tags/data-modeling`](/tags/data-modeling)** — trang
-đó gom tất cả bất kể thư mục.
 
 ## Related Topics
 

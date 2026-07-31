@@ -29,7 +29,7 @@ và mới trả lời được câu hỏi phân tích mà không phải join lun
 |---|---|---|
 | Chứa gì | Số đo (`thanh_tien`, `so_luong`) + các khoá | Thuộc tính mô tả (`ten`, `khu_vuc`, `nhom`) |
 | Hình dạng | **Dài và hẹp** — triệu dòng, ít cột | **Ngắn và rộng** — nghìn dòng, nhiều cột |
-| Nhịp đổi | Thêm dòng liên tục, hiếm khi sửa | Đổi chậm, vài lần/năm → [SCD](../dimension-techniques/scd.md) |
+| Nhịp đổi | Thêm dòng liên tục, hiếm khi sửa | Đổi chậm, vài lần/năm → [SCD](../skills/scd.md) |
 | Vai trò trong query | `SUM` / `COUNT` cái này | `GROUP BY` / `WHERE` theo cái này |
 | Grain | Một sự kiện = một dòng | Một thực thể (hoặc một phiên bản) = một dòng |
 
@@ -71,9 +71,9 @@ nghĩa**. Số đo không cộng được theo mọi chiều gọi là *semi-add
 |---|---|
 | Không lặp dữ liệu; sửa thuộc tính ở một chỗ | Không cần join, query đơn giản |
 | Phải join mọi lúc | Sửa tên khách = viết lại triệu dòng |
-| Hỗ trợ [SCD](../dimension-techniques/scd.md) tự nhiên | Lịch sử lẫn lộn, rất khó làm as-was |
+| Hỗ trợ [SCD](../skills/scd.md) tự nhiên | Lịch sử lẫn lộn, rất khó làm as-was |
 
-Xem [Star, Snowflake, OBT](../layout-and-process/star-snowflake-obt.md).
+Xem [Star, Snowflake, OBT](star-snowflake-obt.md).
 
 ## Common Mistakes
 
@@ -82,7 +82,7 @@ Xem [Star, Snowflake, OBT](../layout-and-process/star-snowflake-obt.md).
 | Để thuộc tính mô tả (`ten_khach`) trong fact | Đổi tên phải viết lại triệu dòng; và tên nào là "đúng"? |
 | Để số đo đổi liên tục trong dimension | Dimension phình vô hạn nếu là Type 2 — **đó là fact** |
 | Cộng periodic snapshot theo thời gian | Ra số vô nghĩa, không lỗi nào báo |
-| Fact giữ natural key thay vì surrogate key | Nhân bản dòng khi dim là Type 2 — xem [SCD](../dimension-techniques/scd.md#common-mistakes) |
+| Fact giữ natural key thay vì surrogate key | Nhân bản dòng khi dim là Type 2 — xem [SCD](../skills/scd.md#common-mistakes) |
 | Không có `dim_thoi_gian`, dùng thẳng cột ngày | Không `GROUP BY` được theo quý/tuần/ngày lễ mà không viết hàm mỗi lần |
 
 ## FAQ
@@ -96,7 +96,7 @@ vòng đời một đơn. Cách đúng: `trang_thai` hiện tại nằm trong ac
 là một dimension nhỏ.
 
 Còn khi trạng thái đã chốt cứng lúc ghi thì câu hỏi đổi thành *tách dimension riêng hay
-để thẳng trong fact* — xem [Junk dimension](../dimension-techniques/junk-dimension.md).
+để thẳng trong fact* — xem [Junk dimension](../skills/junk-dimension.md).
 
 </details>
 
@@ -120,10 +120,10 @@ cùng một grain trước, rồi mới ghép — hoặc join gián tiếp qua d
 ## Related Topics
 
 - [Grain](grain.md) — phải khai grain của fact trước khi chọn cột
-- [SCD](../dimension-techniques/scd.md) — dimension đổi thì xử lý thế nào
-- [Star, Snowflake, OBT](../layout-and-process/star-snowflake-obt.md) — cách bố trí fact quanh dimension
+- [SCD](../skills/scd.md) — dimension đổi thì xử lý thế nào
+- [Star, Snowflake, OBT](star-snowflake-obt.md) — cách bố trí fact quanh dimension
 - [Surrogate key](surrogate-key.md) — thứ nối fact với dimension
-- [Quy trình thiết kế](../layout-and-process/design-process.md) — bước 3 và 4 chính là chọn dim và fact
+- [Quy trình thiết kế](design-process.md) — bước 3 và 4 chính là chọn dim và fact
 
 ## References
 

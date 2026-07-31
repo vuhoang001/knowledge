@@ -48,4 +48,4 @@ biết được sửa model này thì báo cáo nào của ai bị ảnh hưởn
 
 - [Mục lục dbt](index.md)
 - [Model và `ref()`](models-and-ref.md) — DAG đến từ đâu
-- [Bài tập](tutorials/dbt-lab-duckdb.md) bài 4
+- [Bài tập](../tutorials/dbt-lab-duckdb.md) bài 4

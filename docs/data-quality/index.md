@@ -46,11 +46,11 @@ Ba thứ khác nhau, đừng gọi chung là "test". Một model tính **sai cô
 
 | Muốn | Xem |
 |---|---|
-| Làm bằng dbt | [dbt: testing](../etl/dbt/testing.md) |
-| Kiểm độ tươi của nguồn | [dbt: sources, seeds, snapshots](../etl/dbt/sources-seeds-snapshots.md) |
-| Hiểu vì sao test fail dù dữ liệu đúng | [Grain](../data-modeling/foundations/grain.md) |
+| Làm bằng dbt | [dbt: testing](../etl/dbt/reference/testing.md) |
+| Kiểm độ tươi của nguồn | [dbt: sources, seeds, snapshots](../etl/dbt/reference/sources-seeds-snapshots.md) |
+| Hiểu vì sao test fail dù dữ liệu đúng | [Grain](../data-modeling/reference/grain.md) |
 
 ## Related Topics
 
 - [Data Modeling](../data-modeling/index.md) — thiết kế đúng thì cần ít test hơn
-- [Grain](../data-modeling/foundations/grain.md) — bước 0 của mọi test
+- [Grain](../data-modeling/reference/grain.md) — bước 0 của mọi test

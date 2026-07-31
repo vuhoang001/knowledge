@@ -33,9 +33,12 @@ là một nhánh của file cũ, cân nhắc thêm mục vào file cũ và chỉ
    `tutorials/`, không thì là `docs/`. Đây là chỗ hay nhầm nhất. `doc_type` và thư mục
    **phải khớp** — linter R12 chặn nếu lệch, nên không có chuyện dán nhãn cho có.
 2. **Lĩnh vực** → `docs/<domain>/` hoặc `docs/<domain>/<công nghệ>/`.
-3. **Tầng** → chỉ áp dụng nếu thư mục đích là thư mục **khái niệm cấp 1** và các file
-   trong đó không còn ngang hàng. Thư mục công nghệ cấp 2 (`etl/kafka/`) đã hết quota
-   độ sâu R9 — luôn phẳng.
+   Rồi vào **một trong năm nhóm chuẩn**: `reference/` `skills/` `tutorials/`
+   `cheatsheets/` `case-studies/`. Ranh giới hay nhầm nhất là reference ↔ skill:
+   thuộc `skills/` khi nó **giả định** phần reference đã nắm và chỉ xử lý một tình
+   huống cụ thể.
+3. **Thứ tự trong nhóm** → `sidebar_position` đánh lại từ 1 **trong từng nhóm**, khớp
+   cột `#` của `index.md` nhóm đó. Chèn vào giữa thì đánh số lại các file sau nó.
 
 Nói rõ cho người dùng kết luận của từng trục kèm lý do, trước khi tạo file.
 

@@ -22,13 +22,13 @@ Nhờ đó phân loại là thứ kiểm chứng được, không phải nhãn d
 
 | `doc_type` | Bắt buộc nằm ở |
 |---|---|
+| `reference` | `docs/<chủ đề>/reference/` |
+| `skill` | `docs/<chủ đề>/skills/` |
 | `tutorial` | `docs/<chủ đề>/tutorials/` |
-| `case-study` | `docs/<chủ đề>/case-studies/` |
 | `cheatsheet` | `docs/<chủ đề>/cheatsheets/` |
-| `example` | `docs/<chủ đề>/examples/` |
-| `faq` | `docs/faqs/` — toàn cục, cắt ngang nhiều chủ đề |
+| `case-study` | `docs/<chủ đề>/case-studies/` |
+| `faq` | `docs/faqs/` — toàn cục |
 | `glossary` | `docs/glossary/` — toàn cục |
-| `reference` | `docs/<chủ đề>/` — mặc định |
 | `index` | trang chủ của bất kỳ thư mục nào |
 
 ## Trục 1 — Loại tài liệu quyết định thư mục gốc
@@ -68,37 +68,29 @@ thuật cần thêm tầng nghĩa là nó nên **tách thành công nghệ riên
 và case study của dbt, không phải đi tìm ở thư mục toàn cục. Cái mất là cây thư mục sâu
 hơn một tầng.
 
-## Trục 3 — Tầng học, khi các file trong thư mục **không còn ngang hàng**
+## Trục 3 — Năm nhóm chuẩn, giống nhau ở mọi chủ đề
 
-Điều kiện kích hoạt **không phải số lượng file.** `docs/etl/dbt/` có 8 file phẳng và
-hoàn toàn ổn — chúng là 8 component của cùng một công cụ, đọc theo thứ tự 01→08, không
-cái nào là nền của cái nào. Chia tầng chỗ đó chỉ thêm một cú click.
+Mỗi chủ đề — `data-modeling`, `etl/dbt`, `etl/kafka`, `storage/iceberg` — dùng **đúng
+một bộ năm nhóm**. Không có chủ đề nào tự nghĩ ra cách chia riêng.
 
-`docs/data-modeling/` thì khác, và đó là lý do rule này ra đời: `fact-and-dimension` là
-**khái niệm nền**, `junk-dimension` là **một kỹ thuật hẹp áp lên nó**. Đặt ngang hàng là
-nói dối người đọc về quan hệ giữa hai thứ.
-
-**Phép thử ngang hàng:** hai file ngang hàng khi đọc theo thứ tự nào cũng được. Nếu phải
-đọc A xong mới hiểu được B, chúng không ngang hàng — và khi số cặp như thế nhiều lên thì
-chia tầng.
-
-| Có tầng | Phẳng |
-|---|---|
-| File có quan hệ nền ↔ dẫn xuất | File là các component song song của một công cụ |
-| `data-modeling/` — khái niệm | `etl/dbt/` — 8 component, `etl/kafka/` — 9 component |
-
-Khi đã quyết chia, chia theo **quan hệ phụ thuộc**, không theo chủ đề:
-
-| Tầng | Phép thử | Ví dụ ở `data-modeling/` |
+| Nhóm | Trả lời câu hỏi | `doc_type` |
 |---|---|---|
-| 1. Nền tảng | Bỏ nó đi thì các tầng trên **không đọc được** | `foundations/` — grain, fact/dimension, surrogate key |
-| 2. Kỹ thuật | Xử lý một tình huống **trên** một mô hình đã có | `dimension-techniques/` — SCD, junk dimension |
-| 3. Toàn cục | Quyết định thứ áp cho **nhiều bảng cùng lúc** | `layout-and-process/` — star/OBT, quy trình 4 bước |
+| `reference/` | Nó **là gì**, vì sao, đánh đổi ra sao | `reference` |
+| `skills/` | Gặp tình huống X thì **xử lý ra sao** | `skill` |
+| `tutorials/` | Chạy thật, có output dán lại | `tutorial` |
+| `cheatsheets/` | Tra nhanh khi **đang làm** | `cheatsheet` |
+| `case-studies/` | Sự cố thật đã debug, kèm giả thuyết sai lúc đầu | `case-study` |
 
-Tên thư mục tiếng Anh kebab-case; nhãn tiếng Việt đặt trong `_category_.json`.
+**Ranh giới Tài liệu ↔ Kỹ năng.** Một file thuộc `skills/` khi nó **giả định** phần
+`reference/` đã nắm và chỉ xử lý một tình huống cụ thể. Ví dụ ở data-modeling: `grain`
+và `fact-and-dimension` là reference — không biết chúng thì không đọc được gì tiếp;
+`SCD` và `junk dimension` là skill — cả hai đều bắt đầu bằng câu "đã có fact và dimension
+rồi, giờ gặp trường hợp này thì làm gì".
 
-**Phép thử "cùng cấp":** hai file cùng tầng khi có thể đọc theo thứ tự nào cũng được.
-Nếu A phải đọc trước B mới hiểu B, chúng không cùng cấp.
+Thứ tự học nằm ở `sidebar_position` **trong từng nhóm**, đánh lại từ 1.
+
+**Chỉ tạo thư mục khi có nội dung.** Chủ đề chưa có case study thì chưa cần
+`case-studies/` — R11 chặn thư mục có `_category_.json` mà rỗng.
 
 ## Thứ tự học phải khai ở hai chỗ, và phải khớp
 

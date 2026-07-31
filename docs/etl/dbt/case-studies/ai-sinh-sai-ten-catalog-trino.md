@@ -75,4 +75,4 @@ Bài học nằm ở chính kho này, không phải ở dbt hay Trino:
 
 - [dbt](../index.md) — chủ đề chứa case study này
 - [Trino](../../../query-engines/trino/index.md) — hệ thống bị ghi sai tên catalog
-- [dbt là gì](../what-is-dbt.md) — phần cấu hình kết nối
+- [dbt là gì](../reference/what-is-dbt.md) — phần cấu hình kết nối

@@ -1,8 +1,8 @@
 ---
 title: Bài tập — dbt
 sidebar_position: 0
-description: Bài tập chạy thật trên lab dbt-duckdb, có ô dán output.
-tags: [tutorial, dbt, lab]
+description: "Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học."
+tags: [tutorial, dbt]
 domain: data-engineering
 category: index
 doc_type: index
@@ -11,14 +11,12 @@ updated: 2026-07-31
 
 # Bài tập — dbt
 
-Chưa chạy được thì chưa gọi là học. Lab ở `~/Documents/learn-lab/dbt` — **ngoài repo
-này**, venv riêng, `dbt-duckdb`.
+Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học.
 
-| Bài | Nội dung | Trạng thái |
-|---|---|---|
-| [dbt lab — DuckDB](dbt-lab-duckdb.md) | Dựng project, chạy `dbt run`, đọc SQL đã compile | 🔄 đang làm |
+| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+|---|---|---|---|
+| 1 | [Lab dbt trên DuckDB](dbt-lab-duckdb.md) | Bảy bài tập chạy thật từ dbt debug tới chuyển sang Trino — mỗi bài có  | ✅ đã chạy tay |
 
 ## Related Topics
 
 - [dbt](../index.md) — chủ đề chứa thư mục này
-- [dbt là gì](../what-is-dbt.md) — đọc trước khi làm bài

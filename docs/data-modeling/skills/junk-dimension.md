@@ -5,7 +5,7 @@ description: "Cột trạng thái vài giá trị: để thẳng trong fact, tá
 tags: [junk-dimension, degenerate-dimension, dimension, data-modeling, kimball]
 domain: data-engineering
 category: concept
-doc_type: reference
+doc_type: skill
 status: draft
 difficulty: intermediate
 verified_at:
@@ -33,7 +33,7 @@ thuộc về ai* — trả lời sai chỗ này thì mọi lựa chọn phía d�
 |---|---|---|
 | **Thực thể**, đổi theo thời gian | Khách hàng: hoạt động → tạm khoá → đóng | [SCD](scd.md) Type 2 trên dim chủ. Không phải chuyện ở trang này |
 | **Sự kiện**, chốt cứng lúc ghi | Đơn hàng lúc thanh toán: thành công / thất bại | Đọc tiếp trang này |
-| **Quy trình**, đổi liên tục trong vòng đời | Đơn: đặt → đóng gói → giao → nhận | Accumulating snapshot fact, mỗi bước một cột mốc thời gian. Xem [Fact và Dimension](../foundations/fact-and-dimension.md#ba-loại-fact) |
+| **Quy trình**, đổi liên tục trong vòng đời | Đơn: đặt → đóng gói → giao → nhận | Accumulating snapshot fact, mỗi bước một cột mốc thời gian. Xem [Fact và Dimension](../reference/fact-and-dimension.md#ba-loại-fact) |
 
 Bẫy hay gặp nhất là hàng thứ ba bị xử như hàng thứ hai: nhét `trang_thai` hiện tại vào
 một cột trong fact rồi `UPDATE` mỗi lần đơn chuyển bước. Lúc đó fact không còn là bản
@@ -226,7 +226,7 @@ SELECT
 | Sinh full tích Descartes rồi thêm cột cardinality cao | Bảng nổ, phần lớn dòng không khớp fact nào |
 | Nhét trạng thái đang đổi vào dim khách hàng Type 2 | Mỗi lần đổi trạng thái sinh một version khách mới — dim phình, và grain của dim không còn là "một khách" |
 | Coi trạng thái vòng đời là thuộc tính dimension | Báo cáo quá khứ tự đổi số, không lỗi nào báo |
-| Dùng thẳng mã trạng thái nghiệp vụ làm khoá | Nghiệp vụ đánh lại mã là hỏng khoá — xem [Surrogate key](../foundations/surrogate-key.md) |
+| Dùng thẳng mã trạng thái nghiệp vụ làm khoá | Nghiệp vụ đánh lại mã là hỏng khoá — xem [Surrogate key](../reference/surrogate-key.md) |
 
 ## FAQ
 
@@ -237,7 +237,7 @@ Nếu để thẳng trong fact thì không có khoá nào cả — chỉ là m�
 
 Nếu tách thành dimension thì có: giữ `trang_thai_sk` làm khoá, và giữ **cả** mã nghiệp
 vụ lẫn tên hiển thị làm cột thường. Lý do giống mọi dimension khác, xem
-[Surrogate key](../foundations/surrogate-key.md).
+[Surrogate key](../reference/surrogate-key.md).
 
 </details>
 
@@ -264,12 +264,12 @@ join thêm.
 
 ## Related Topics
 
-- [Fact và Dimension](../foundations/fact-and-dimension.md) — quy tắc gốc: cột nào thuộc bảng nào
-- [Grain](../foundations/grain.md) — phải chốt grain trước khi hỏi tách hay gộp
+- [Fact và Dimension](../reference/fact-and-dimension.md) — quy tắc gốc: cột nào thuộc bảng nào
+- [Grain](../reference/grain.md) — phải chốt grain trước khi hỏi tách hay gộp
 - [SCD](scd.md) — khi trạng thái thuộc về thực thể và cần lịch sử
-- [Surrogate key](../foundations/surrogate-key.md) — khoá cho dimension tách ra
-- [Star, Snowflake, OBT](../layout-and-process/star-snowflake-obt.md) — junk dimension vẫn là star, không phải snowflake
-- [Quy trình thiết kế](../layout-and-process/design-process.md) — bước 3 chọn dimension
+- [Surrogate key](../reference/surrogate-key.md) — khoá cho dimension tách ra
+- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — junk dimension vẫn là star, không phải snowflake
+- [Quy trình thiết kế](../reference/design-process.md) — bước 3 chọn dimension
 
 ## References
 

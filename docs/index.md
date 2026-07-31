@@ -24,18 +24,18 @@ lộ trình chi tiết — trang này chỉ trả lời *"thứ tôi cần nằm
 
 ## Data Modeling
 
-Thiết kế bảng. Đọc [`grain`](data-modeling/foundations/grain.md) trước mọi thứ khác.
+Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước mọi thứ khác.
 
 | File | Trả lời câu hỏi | TT |
 |---|---|---|
 | [data-modeling/index](data-modeling/index.md) | Bản đồ khái niệm + thứ tự đọc | 🗂️ |
-| [grain](data-modeling/foundations/grain.md) | Một dòng của bảng này đại diện cho cái gì | ✅ |
-| [fact-and-dimension](data-modeling/foundations/fact-and-dimension.md) | Cái gì đo được vào fact, cái gì mô tả vào dimension | 📝 |
-| [scd](data-modeling/dimension-techniques/scd.md) | Thuộc tính đổi thì báo cáo quá khứ dùng giá trị nào — sáu cách | 📝 |
-| [junk-dimension](data-modeling/dimension-techniques/junk-dimension.md) | Cột cardinality thấp: để thẳng trong fact, tách dimension, hay gộp chung | 🟡 |
-| [design-process](data-modeling/layout-and-process/design-process.md) | Từ yêu cầu nghiệp vụ mơ hồ tới bảng chạy được, bốn bước | 📝 |
-| [star-snowflake-obt](data-modeling/layout-and-process/star-snowflake-obt.md) | Ba cách bố trí fact quanh dimension; lakehouse đảo chiều lời khuyên cũ | 🟡 |
-| [surrogate-key](data-modeling/foundations/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |
+| [grain](data-modeling/reference/grain.md) | Một dòng của bảng này đại diện cho cái gì | ✅ |
+| [fact-and-dimension](data-modeling/reference/fact-and-dimension.md) | Cái gì đo được vào fact, cái gì mô tả vào dimension | 📝 |
+| [scd](data-modeling/skills/scd.md) | Thuộc tính đổi thì báo cáo quá khứ dùng giá trị nào — sáu cách | 📝 |
+| [junk-dimension](data-modeling/skills/junk-dimension.md) | Cột cardinality thấp: để thẳng trong fact, tách dimension, hay gộp chung | 🟡 |
+| [design-process](data-modeling/reference/design-process.md) | Từ yêu cầu nghiệp vụ mơ hồ tới bảng chạy được, bốn bước | 📝 |
+| [star-snowflake-obt](data-modeling/reference/star-snowflake-obt.md) | Ba cách bố trí fact quanh dimension; lakehouse đảo chiều lời khuyên cũ | 🟡 |
+| [surrogate-key](data-modeling/reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |
 
 ## Data Quality
 
@@ -53,14 +53,14 @@ Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, se
 | # | File | Trả lời câu hỏi | TT |
 |---|---|---|---|
 | — | [etl/dbt/index](etl/dbt/index.md) | Bản đồ khái niệm + lộ trình | 🗂️ |
-| 01 | [what-is-dbt](etl/dbt/what-is-dbt.md) | SQL mà dbt sinh ra thật sự trông thế nào | ✅ |
-| 02 | [project-structure](etl/dbt/project-structure.md) | `dbt_project.yml`, `profiles.yml`, `target/` | 🟡 |
-| 03 | [models-and-ref](etl/dbt/models-and-ref.md) | `ref()` là cách duy nhất khai báo phụ thuộc | 🟡 |
-| 04 | [sources-seeds-snapshots](etl/dbt/sources-seeds-snapshots.md) | Đưa dữ liệu vào DAG khi không phải model | 🟡 |
-| 05 | [materializations](etl/dbt/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | 🟡 |
-| 06 | [testing](etl/dbt/testing.md) | Ba tầng: test · contract · unit test | 📝 |
-| 07 | [macros-jinja-packages](etl/dbt/macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy | 🟡 |
-| 08 | [docs-and-lineage](etl/dbt/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 🟡 |
+| 01 | [what-is-dbt](etl/dbt/reference/what-is-dbt.md) | SQL mà dbt sinh ra thật sự trông thế nào | ✅ |
+| 02 | [project-structure](etl/dbt/reference/project-structure.md) | `dbt_project.yml`, `profiles.yml`, `target/` | 🟡 |
+| 03 | [models-and-ref](etl/dbt/reference/models-and-ref.md) | `ref()` là cách duy nhất khai báo phụ thuộc | 🟡 |
+| 04 | [sources-seeds-snapshots](etl/dbt/reference/sources-seeds-snapshots.md) | Đưa dữ liệu vào DAG khi không phải model | 🟡 |
+| 05 | [materializations](etl/dbt/reference/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | 🟡 |
+| 06 | [testing](etl/dbt/reference/testing.md) | Ba tầng: test · contract · unit test | 📝 |
+| 07 | [macros-jinja-packages](etl/dbt/reference/macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy | 🟡 |
+| 08 | [docs-and-lineage](etl/dbt/reference/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 🟡 |
 | CS | [case-studies/ai-sinh-sai-ten-catalog-trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | Vì sao `verified_at` tồn tại — AI bịa tên catalog, mất một buổi | 📝 |
 
 Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md).

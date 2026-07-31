@@ -1,17 +1,17 @@
 ---
-title: Case study — Data Modeling
+title: Bài tập — Data Modeling
 sidebar_position: 0
-description: "Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu."
-tags: [case-study, data-modeling]
+description: "Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học."
+tags: [tutorial, data-modeling]
 domain: data-engineering
 category: index
 doc_type: index
 updated: 2026-07-31
 ---
 
-# Case study — Data Modeling
+# Bài tập — Data Modeling
 
-Sự cố thật đã debug xong, kèm **giả thuyết sai lúc đầu**.
+Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học.
 
 *Chưa có file nào.* Thêm vào đây khi có — xem [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
 

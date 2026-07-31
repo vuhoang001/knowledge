@@ -34,7 +34,7 @@ Trạng thái: **chưa bắt đầu**. Nội dung dưới là mục lục dự k
 
 **Grain là khái niệm quan trọng nhất ở đây**, không phải cú pháp. Sai grain thì
 join nhân bản dòng, `SUM` ra số gấp đôi, và test `unique` fail oan — cả ba đều đã gặp
-thật ở [dbt](../../etl/dbt/testing.md) §5.
+thật ở [dbt](../../etl/dbt/reference/testing.md) §5.
 
 ## Liên kết
 

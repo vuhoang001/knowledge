@@ -45,4 +45,4 @@ nên logic sai hôm nay để lại dấu vết vĩnh viễn cho tới lần `--
 ## Liên kết
 
 - [Mục lục dbt](index.md)
-- [Bài tập](tutorials/dbt-lab-duckdb.md) bài 5
+- [Bài tập](../tutorials/dbt-lab-duckdb.md) bài 5

@@ -252,4 +252,4 @@ packages:
 - [Mục lục dbt](index.md) — bản đồ khái niệm và các component khác
 - [Model và `ref()`](models-and-ref.md) — đào sâu phần §3
 - [Test và data quality](testing.md) — đào sâu phần §4–5
-- [Bài tập](tutorials/dbt-lab-duckdb.md) — chạy lại tất cả những gì ở trên
+- [Bài tập](../tutorials/dbt-lab-duckdb.md) — chạy lại tất cả những gì ở trên

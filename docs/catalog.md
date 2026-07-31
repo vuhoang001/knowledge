@@ -19,28 +19,35 @@ trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
 **19 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (16)
+## Tài liệu tham chiếu (14)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
-| [Junk dimension và cột cardinality thấp](data-modeling/dimension-techniques/junk-dimension.md) | `data-modeling/dimension-techniques` | data-engineering | 🟡 draft |
-| [SCD — Slowly Changing Dimension](data-modeling/dimension-techniques/scd.md) | `data-modeling/dimension-techniques` | data-engineering | 📝 lý thuyết |
-| [Fact và Dimension](data-modeling/foundations/fact-and-dimension.md) | `data-modeling/foundations` | data-engineering | 📝 lý thuyết |
-| [Grain](data-modeling/foundations/grain.md) | `data-modeling/foundations` | data-engineering | ✅ đã chạy tay |
-| [Surrogate key và Natural key](data-modeling/foundations/surrogate-key.md) | `data-modeling/foundations` | data-engineering | 🟡 draft |
-| [Quy trình thiết kế 4 bước](data-modeling/layout-and-process/design-process.md) | `data-modeling/layout-and-process` | data-engineering | 📝 lý thuyết |
-| [Star, Snowflake và One Big Table](data-modeling/layout-and-process/star-snowflake-obt.md) | `data-modeling/layout-and-process` | data-engineering | 🟡 draft |
+| [Quy trình thiết kế 4 bước](data-modeling/reference/design-process.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
+| [Fact và Dimension](data-modeling/reference/fact-and-dimension.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
+| [Grain](data-modeling/reference/grain.md) | `data-modeling/reference` | data-engineering | ✅ đã chạy tay |
+| [Star, Snowflake và One Big Table](data-modeling/reference/star-snowflake-obt.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
+| [Surrogate key và Natural key](data-modeling/reference/surrogate-key.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
 | [Sáu chiều chất lượng dữ liệu](data-quality/six-dimensions.md) | `data-quality` | data-engineering | 📝 lý thuyết |
-| [dbt docs và lineage](etl/dbt/docs-and-lineage.md) | `etl/dbt` | data-engineering | 🟡 draft |
-| [Macro, Jinja và package](etl/dbt/macros-jinja-packages.md) | `etl/dbt` | data-engineering | 🟡 draft |
-| [Materialization](etl/dbt/materializations.md) | `etl/dbt` | data-engineering | 🟡 draft |
-| [Model và ref() — DAG mọc ra từ đâu](etl/dbt/models-and-ref.md) | `etl/dbt` | data-engineering | 🟡 draft |
-| [Cấu trúc một dbt project](etl/dbt/project-structure.md) | `etl/dbt` | data-engineering | 🟡 draft |
-| [Source, seed và snapshot](etl/dbt/sources-seeds-snapshots.md) | `etl/dbt` | data-engineering | 🟡 draft |
-| [Test và data quality trong dbt](etl/dbt/testing.md) | `etl/dbt` | data-engineering | 📝 lý thuyết |
-| [dbt là gì và nó thật sự làm gì](etl/dbt/what-is-dbt.md) | `etl/dbt` | data-engineering | ✅ đã chạy tay |
+| [dbt docs và lineage](etl/dbt/reference/docs-and-lineage.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Macro, Jinja và package](etl/dbt/reference/macros-jinja-packages.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Materialization](etl/dbt/reference/materializations.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Model và ref() — DAG mọc ra từ đâu](etl/dbt/reference/models-and-ref.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Cấu trúc một dbt project](etl/dbt/reference/project-structure.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Source, seed và snapshot](etl/dbt/reference/sources-seeds-snapshots.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Test và data quality trong dbt](etl/dbt/reference/testing.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
+| [dbt là gì và nó thật sự làm gì](etl/dbt/reference/what-is-dbt.md) | `etl/dbt/reference` | data-engineering | ✅ đã chạy tay |
+
+## Kỹ năng (2)
+
+Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.
+
+| Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
+|---|---|---|---|
+| [Junk dimension và cột cardinality thấp](data-modeling/skills/junk-dimension.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
+| [SCD — Slowly Changing Dimension](data-modeling/skills/scd.md) | `data-modeling/skills` | data-engineering | 📝 lý thuyết |
 
 ## Bài tập (1)
 

@@ -11,6 +11,7 @@ const OUT = join(DOCS, 'catalog.md');
 // Thu tu hien thi + nhan. Bo 'index' va placeholder: chung dieu huong, khong mang tri thuc.
 const SECTIONS = [
   ['reference', 'Tài liệu tham chiếu', 'Giải thích *nó là gì, vì sao, đánh đổi ra sao*.'],
+  ['skill', 'Kỹ năng', 'Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.'],
   ['tutorial', 'Bài tập', 'Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.'],
   ['case-study', 'Case study', 'Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.'],
   ['cheatsheet', 'Cheatsheet', 'Tra nhanh khi **đang làm** — không dùng để học lần đầu.'],

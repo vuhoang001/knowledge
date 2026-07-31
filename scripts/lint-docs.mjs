@@ -11,11 +11,14 @@ const DOCS = 'docs';
 // 'index'/'placeholder' la nhan cau truc: file dieu huong, khong mang tri thuc.
 const KIND = ['concept', 'technology', 'pattern', 'tool', 'index', 'placeholder'];
 // Truc TAI LIEU — no la DANG gi. Quyet dinh file nam thu muc nao.
-const DOCTYPE = ['reference', 'tutorial', 'case-study', 'cheatsheet', 'faq', 'glossary', 'example', 'index'];
+const DOCTYPE = ['reference', 'skill', 'tutorial', 'case-study', 'cheatsheet', 'faq', 'glossary', 'example', 'index'];
 // doc_type <-> ten thu muc. Thu muc nay nam TRONG tung chu de
 // (docs/etl/dbt/case-studies/), tru faqs/ va glossary/ von cat ngang moi chu de.
+// Nam nhom chuan cho MOI chu de: reference/ skills/ tutorials/ cheatsheets/ case-studies/
+// faqs/ va glossary/ toan cuc — chung cat ngang nhieu chu de theo dinh nghia.
 const DOCTYPE_DIR = {
-  tutorial: 'tutorials', 'case-study': 'case-studies', cheatsheet: 'cheatsheets',
+  reference: 'reference', skill: 'skills', tutorial: 'tutorials',
+  'case-study': 'case-studies', cheatsheet: 'cheatsheets',
   faq: 'faqs', glossary: 'glossary', example: 'examples',
 };
 const DIR_DOCTYPE = Object.fromEntries(Object.entries(DOCTYPE_DIR).map(([k, v]) => [v, k]));
