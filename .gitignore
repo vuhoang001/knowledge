@@ -20,3 +20,6 @@ logs/
 /.docusaurus
 /.cache-loader
 npm-debug.log*
+
+# cau hinh Claude Code rieng tung may — skill thi commit, settings thi khong
+.claude/settings.local.json
