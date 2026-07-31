@@ -14,6 +14,8 @@ sản phẩm dẫn xuất, đã gitignore — đừng sửa tay, đừng commit.
 | Thứ tôi cần nằm ở file nào | [`docs/index.md`](docs/index.md) — manifest phẳng của mọi file |
 | **Kiến thức mới đi vào đâu, mang metadata gì** | [`ROUTING.md`](ROUTING.md) — ba trục phân loại + rule linter cưỡng chế |
 | Thêm một file mới đúng quy trình | skill [`kb-add`](.claude/skills/kb-add/SKILL.md) — chạy ba trục, sinh frontmatter, cập nhật 4 mục lục, lint |
+| **Quy trình từ "vừa học được" tới "đã thuộc"** | [`WORKFLOW.md`](WORKFLOW.md) — ba tầng, toàn bộ lệnh, vòng lặp thường ngày, khi hỏng thì làm gì |
+| Sinh thẻ Anki từ một file docs | skill [`kb-cards`](.claude/skills/kb-cards/SKILL.md) — sinh vào `anki/_pending.tsv` để duyệt trước khi gộp |
 | Bản đồ tri thức tổng | [`README.md`](README.md) |
 | Bản đồ khái niệm của một công nghệ | `docs/<lĩnh vực>/<công nghệ>/index.md` |
 | Khuôn để viết file mới | `templates/full-topic.md` (chủ đề lớn) · `templates/short-topic.md` (ngắn) |

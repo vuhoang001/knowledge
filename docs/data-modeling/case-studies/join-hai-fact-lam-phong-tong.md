@@ -1,7 +1,7 @@
 ---
 title: Doanh thu phồng 67% vì join hai bảng fact
 sidebar_position: 2
-description: Đối chiếu đơn hàng với thanh toán bằng một câu join — tổng đơn hàng nhảy từ 1,5 triệu lên 2,5 triệu.
+description: Đối chiếu đơn hàng với thanh toán bằng một câu join — tổng nhảy từ 1,5 lên 2,5 triệu. Kèm ba dạng fan trap, header-detail và chasm trap.
 tags: [case-study, fact, grain, fan-trap, data-modeling]
 domain: data-engineering
 category: concept
@@ -142,9 +142,118 @@ Cách thứ hai, khi cần so nhiều chiều: cộng riêng mỗi fact về **c
 theo dimension chung — gọi là *drill-across*, xem
 [Conformed dimension](../skills/conformed-dimension.md).
 
+## Ba dạng, nhận ra để tránh
+
+Ca ở trên là dạng 1. Hai dạng còn lại cùng gốc nhưng triệu chứng khác nhau.
+
+### Dạng 1 — Fan trap: một-nhiều, cộng ở phía "một"
+
+Đã trình bày ở trên. Đặc điểm: **chỉ một trong hai cột sai**, nên dễ bị bỏ qua.
+
+### Dạng 2 — Header ↔ detail: dạng hay gặp nhất thực tế
+
+Đơn hàng có phí ship ở mức **đơn**, và các dòng hàng ở mức **dòng**:
+
+```sql
+CREATE TABLE fct_don  AS SELECT * FROM (VALUES
+ ('DH1',30000),('DH2',50000)) AS t(ma_don, phi_ship);          -- grain: MỘT ĐƠN
+
+CREATE TABLE fct_dong AS SELECT * FROM (VALUES
+ ('DH1','SP-A',300000),('DH1','SP-B',200000),('DH1','SP-C',100000),
+ ('DH2','SP-A',400000)) AS t(ma_don, ma_hang, thanh_tien);     -- grain: MỘT DÒNG
+```
+
+Phí ship thật: **80.000**. Join rồi cộng:
+
+```text
+┌──────────────┬───────────────┐
+│ phi_ship_SAI │ hang_hoa_dung │
+├──────────────┼───────────────┤
+│       140000 │       1000000 │
+└──────────────┴───────────────┘
+```
+
+`DH1` có 3 dòng hàng nên phí ship 30.000 bị cộng **ba lần**. Tiền hàng thì đúng, vì nó
+vốn ở grain dòng.
+
+Đây là dạng nguy hiểm nhất trong thực tế vì **hai bảng trông như phải join với nhau** —
+chúng cùng mô tả một đơn hàng. Nhưng chúng ở hai grain khác nhau.
+
+**Cách sửa:** không nhét phí ship vào cùng báo cáo với chi tiết hàng. Hoặc phân bổ phí
+ship về mức dòng (theo tỷ trọng tiền hàng) — cùng ý tưởng với
+[hệ số của bridge table](../skills/bridge-table.md).
+
+### Dạng 3 — Chasm trap: hai fact **không liên quan**, nối qua dimension chung
+
+Dạng tệ nhất, và cũng khó nhận ra nhất.
+
+```sql
+CREATE TABLE fct_ban    AS SELECT * FROM (VALUES
+ ('KH1',1000000),('KH1',2000000),('KH2',500000)) AS t(ma_khach, doanh_thu);
+
+CREATE TABLE fct_ho_tro AS SELECT * FROM (VALUES
+ ('KH1',1),('KH1',1),('KH1',1),('KH2',1))       AS t(ma_khach, ticket);
+```
+
+Hai fact này **không có quan hệ gì với nhau** — một cái ghi giao dịch bán, một cái ghi
+ticket hỗ trợ. Chúng chỉ tình cờ cùng tham chiếu `dim_khach_hang`.
+
+Giá trị thật: doanh thu **3.500.000**, ticket **4**.
+
+```sql
+SELECT sum(b.doanh_thu), sum(h.ticket), count(*) AS so_dong_sau_join
+FROM dim_kh k JOIN fct_ban b USING (ma_khach) JOIN fct_ho_tro h USING (ma_khach);
+```
+
+```text
+┌───────────────┬────────────┬──────────────────┐
+│ doanh_thu_SAI │ ticket_SAI │ so_dong_sau_join │
+├───────────────┼────────────┼──────────────────┤
+│       9500000 │          7 │                7 │
+└───────────────┴────────────┴──────────────────┘
+```
+
+**Cả hai cột đều sai.** `KH1` có 2 dòng bán × 3 dòng hỗ trợ = **6 dòng tích Descartes**.
+
+Khác biệt then chốt so với fan trap:
+
+| | Fan trap | Chasm trap |
+|---|---|---|
+| Quan hệ hai fact | có (một-nhiều) | **không có** |
+| Số cột bị sai | một | **cả hai** |
+| Số dòng sau join | tổng | **tích** |
+| Dễ nhận ra | vừa | **khó** — vì một cột sai thì còn nghi, hai cột cùng sai thì tưởng dữ liệu bẩn |
+
+**Cách sửa** — cộng riêng từng fact về mức khách, rồi mới ghép:
+
+```sql
+WITH b AS (SELECT ma_khach, sum(doanh_thu) AS doanh_thu FROM fct_ban    GROUP BY 1),
+     h AS (SELECT ma_khach, sum(ticket)    AS ticket    FROM fct_ho_tro GROUP BY 1)
+SELECT sum(b.doanh_thu) AS doanh_thu, sum(h.ticket) AS ticket
+FROM b FULL OUTER JOIN h USING (ma_khach);
+```
+
+```text
+┌───────────┬────────┐
+│ doanh_thu │ ticket │
+├───────────┼────────┤
+│   3500000 │      4 │
+└───────────┴────────┘
+```
+
+`FULL OUTER JOIN` chứ không `JOIN`: khách chỉ mua mà chưa từng gọi hỗ trợ, hoặc ngược
+lại, vẫn phải xuất hiện. Đây chính là **drill-across** — xem
+[Conformed dimension](../skills/conformed-dimension.md).
+
+### Luật chung cho cả ba dạng
+
+> **Không bao giờ đặt hai bảng `fct_` trong cùng một `FROM` mà chưa gộp.**
+> Cộng mỗi fact về cùng một mức trước, rồi mới ghép theo dimension chung.
+
 ## Dấu hiệu nhận ra sớm
 
-1. Câu query có **hai bảng tên bắt đầu bằng `fct_`** trong cùng một `FROM`.
+1. Câu query có **hai bảng tên bắt đầu bằng `fct_`** trong cùng một `FROM` — dấu hiệu
+   mạnh nhất, đúng cho cả ba dạng.
 2. Có `sum()` trên cột của bảng ở phía "một" của quan hệ một-nhiều.
 3. Tổng ra **lớn hơn** kỳ vọng nhưng là bội số kỳ lạ, không tròn.
 

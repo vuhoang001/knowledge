@@ -222,15 +222,59 @@ Và đếm số đơn đang kẹt ở mỗi chặng — báo cáo vận hành ki
 
 ### Additivity — thứ quan trọng hơn cả ba loại
 
-Phân loại theo *cộng được hay không* thực ra hữu ích hơn phân loại theo tên:
+Phân loại theo *cộng được hay không* thực ra hữu ích hơn phân loại theo tên.
 
-| Loại | Nghĩa | Ví dụ | Cách gộp đúng |
+**Điểm hay bị hiểu sai:** additivity **không phải tính chất của riêng số đo** — nó là
+tính chất của **cặp (số đo × chiều)**. Cùng một cột có thể cộng được theo chiều này và
+không cộng được theo chiều kia. Đó chính là lý do có từ *semi*-additive.
+
+| Số đo | Theo khách hàng | Theo sản phẩm | Theo **thời gian** |
 |---|---|---|---|
-| **Additive** | Cộng được theo **mọi** chiều | `thanh_tien`, `so_luong` | `sum()` thoải mái |
-| **Semi-additive** | Cộng được theo một số chiều | số dư, tồn kho, số nhân viên | `sum` theo thực thể, `avg`/cuối kỳ theo thời gian |
-| **Non-additive** | **Không** cộng được theo chiều nào | tỷ lệ, phần trăm, đơn giá | Lưu **tử số và mẫu số**, tính lại lúc gộp |
+| `thanh_tien` | ✅ | ✅ | ✅ → **additive** |
+| `so_du` | ✅ | — | ❌ → **semi-additive** |
+| `so_luong_ton_kho` | — | ✅ | ❌ → **semi-additive** |
+| `ty_le_loi` | ❌ | ❌ | ❌ → **non-additive** |
 
-#### Non-additive: sai nặng nhất và hay gặp nhất
+Đọc bảng theo hàng: `so_du` cộng theo khách thì đúng (tổng tài sản của tất cả khách),
+cộng theo thời gian thì vô nghĩa. `thanh_tien` cộng theo hướng nào cũng đúng.
+
+### Additive — cộng thoải mái
+
+Số đo **đếm được và cộng dồn tự nhiên**: `thanh_tien`, `so_luong`, `chi_phi`, `so_gio`.
+
+Dấu hiệu nhận ra: nếu chia đôi khoảng thời gian rồi cộng hai nửa lại, có ra đúng tổng
+ban đầu không? Có → additive.
+
+Đây là loại duy nhất **không cần suy nghĩ** khi viết báo cáo. Cố gắng thiết kế fact sao
+cho phần lớn số đo thuộc loại này.
+
+### Semi-additive — cộng được, trừ chiều thời gian
+
+Gần như luôn là số đo mô tả **trạng thái tồn tại tại một thời điểm**: số dư, tồn kho, số
+nhân viên, số thuê bao đang hoạt động.
+
+Lý do không cộng theo thời gian: **cùng một thực thể tồn tại qua nhiều kỳ**. Cộng qua các
+kỳ là đếm lại chính nó — như phần [Periodic snapshot](#2-periodic-snapshot--ảnh-chụp-định-kỳ)
+đã chứng minh: 46 triệu trong khi tổng thật nhiều nhất 16 triệu.
+
+Bốn cách gộp đúng theo thời gian, chọn theo **câu hỏi nghiệp vụ**:
+
+| Cách | Trả lời câu hỏi | Ví dụ dùng |
+|---|---|---|
+| Giá trị **cuối kỳ** | "Hiện tại còn bao nhiêu" | Số dư cuối tháng lên báo cáo tài chính |
+| **Trung bình** | "Trung bình duy trì bao nhiêu" | Số dư bình quân để tính lãi |
+| **Lớn nhất / nhỏ nhất** | "Đỉnh / đáy là bao nhiêu" | Tồn kho cao nhất để tính sức chứa kho |
+| Giá trị **đầu kỳ** | "Bắt đầu kỳ có bao nhiêu" | Đối chiếu đầu kỳ ↔ cuối kỳ |
+
+Không có cách nào "đúng nhất" — sai lầm là dùng `sum`, còn chọn cái nào trong bốn cái
+này là câu hỏi nghiệp vụ.
+
+### Non-additive — không cộng được theo chiều nào
+
+Ba họ hay gặp, và cả ba đều hỏng theo cùng một kiểu: **chúng là kết quả của một phép
+chia đã thực hiện quá sớm.**
+
+#### Họ 1 — tỷ lệ và phần trăm
 
 ```text
 ┌──────────┬────────┬────────┬───────────────┐
@@ -241,14 +285,6 @@ Phân loại theo *cộng được hay không* thực ra hữu ích hơn phân l
 └──────────┴────────┴────────┴───────────────┘
 ```
 
-Tỷ lệ lỗi toàn hệ thống là bao nhiêu?
-
-```sql
-SELECT round(avg(100.0*so_loi/so_don), 2) AS trung_binh_cac_ty_le_SAI,
-       round(100.0*sum(so_loi)/sum(so_don), 2) AS ty_le_dung
-FROM fct_ty_le;
-```
-
 ```text
 ┌──────────────────────────┬────────────┐
 │ trung_binh_cac_ty_le_SAI │ ty_le_dung │
@@ -257,11 +293,87 @@ FROM fct_ty_le;
 └──────────────────────────┴────────────┘
 ```
 
-**45,25% so với 8,64% — sai hơn năm lần.** Trung bình của các tỷ lệ không phải tỷ lệ của
-tổng, vì hai khu vực có mẫu số chênh nhau 10 lần.
+**Sai hơn năm lần** — vì hai khu vực có mẫu số chênh 10 lần, mà `avg` coi chúng ngang nhau.
 
-**Luật:** đừng lưu tỷ lệ trong fact. Lưu `so_loi` và `so_don`, để lớp báo cáo chia. Chỉ
-khi đó mọi mức gộp mới đúng.
+#### Họ 2 — trung bình đã tính sẵn
+
+Cùng bản chất nhưng hay bị bỏ qua hơn, và sai nặng hơn nhiều:
+
+```text
+┌──────────┬────────┬───────────┬────────────┐
+│ khu_vuc  │ so_don │ tong_tien │    gtdh    │   ← giá trị đơn hàng trung bình
+├──────────┼────────┼───────────┼────────────┤
+│ Miền Bắc │    100 │   1000000 │    10000.0 │
+│ Miền Nam │      1 │  50000000 │ 50000000.0 │
+└──────────┴────────┴───────────┴────────────┘
+```
+
+```text
+┌───────────────┬──────────┐
+│ tb_cua_tb_SAI │ tb_that  │
+├───────────────┼──────────┤
+│    25005000.0 │ 504950.0 │
+└───────────────┴──────────┘
+```
+
+**Sai 49 lần.** Trung bình của các trung bình không phải trung bình — trừ khi mọi nhóm
+có cùng số phần tử, điều gần như không bao giờ đúng.
+
+#### Họ 3 — đếm phân biệt (`count distinct`)
+
+Họ này ít ai xếp vào non-additive, nhưng nó hỏng y hệt:
+
+```text
+┌────────────┬──────────────┐
+│    ngay    │ dau_moi_ngay │   ← khách truy cập duy nhất mỗi ngày
+├────────────┼──────────────┤
+│ 2026-07-01 │            3 │
+│ 2026-07-02 │            2 │
+│ 2026-07-03 │            2 │
+└────────────┴──────────────┘
+```
+
+Vậy cả kỳ có bao nhiêu khách duy nhất?
+
+```text
+cộng ba ngày   = 7      ← SAI
+đếm cả kỳ      = 4      ← ĐÚNG
+```
+
+**Phồng 75%**, vì `U1` xuất hiện cả ba ngày và bị đếm ba lần. Đây là lý do chỉ số
+*"người dùng hoạt động hàng tháng"* **không** suy ra được từ bảng ngày — phải tính lại
+từ dữ liệu gốc ở đúng mức thời gian cần.
+
+### Luật lưu trữ: đừng chia sớm
+
+Cả ba họ non-additive có **cùng một cách sửa**:
+
+> **Lưu tử số và mẫu số vào fact. Để lớp báo cáo chia.**
+
+| Đừng lưu | Lưu thay bằng | Báo cáo tính |
+|---|---|---|
+| `ty_le_loi` | `so_loi`, `so_don` | `sum(so_loi) / sum(so_don)` |
+| `gia_tri_don_tb` | `tong_tien`, `so_don` | `sum(tong_tien) / sum(so_don)` |
+| `ty_le_chuyen_doi` | `so_mua`, `so_xem` | `sum(so_mua) / sum(so_xem)` |
+
+Nhờ vậy **mọi mức gộp đều đúng** — theo ngày, theo tháng, theo khu vực, theo mọi tổ hợp —
+mà không cần ai nhớ luật gì.
+
+Với `count distinct` thì không có tử/mẫu để lưu. Hai lựa chọn: tính lại từ fact chi tiết
+ở đúng mức cần, hoặc lưu cấu trúc xấp xỉ như HyperLogLog nếu warehouse hỗ trợ.
+
+### Phép thử một câu
+
+Trước khi đưa một cột số vào fact, hỏi:
+
+> **"Cột này cộng qua hai dòng bất kỳ, kết quả có nghĩa không?"**
+
+- Có với mọi chiều → additive, yên tâm.
+- Có với một số chiều → semi-additive, **ghi vào mô tả cột** chiều nào không cộng được.
+- Không với chiều nào → non-additive, **đừng lưu nó** — lưu tử và mẫu.
+
+Bước "ghi vào mô tả cột" quan trọng hơn vẻ ngoài: người viết báo cáo sáu tháng sau không
+đọc file này, họ đọc `schema.yml`. Xem [Docs và lineage](../../etl/dbt/reference/docs-and-lineage.md).
 
 ### Chọn loại nào
 
