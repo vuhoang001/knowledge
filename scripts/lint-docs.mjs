@@ -104,9 +104,11 @@ for (const file of files) {
   if (!/^##\s+Related Topics/m.test(src))
     add(file, 'R8', 'thieu muc "## Related Topics"', 'WARN');
 
-  // R9 — do sau toi da 3 tang duoi docs/
-  if (rel.split('/').length > 4)
-    add(file, 'R9', `sau ${rel.split('/').length - 1} tang — toi da 3`);
+  // R9 — toi da 3 tang: docs/<linh vuc>/<cong nghe>/<component>.md
+  // tuc nhieu nhat 2 thu muc duoi docs/. Can tang thu tu = component do nen
+  // tach thanh cong nghe rieng, ngang hang chu khong phai con.
+  if (rel.split('/').length > 3)
+    add(file, 'R9', `${rel.split('/').length - 1} thu muc duoi docs/ — toi da 2`);
 }
 
 // R10 — sidebar_position trung trong cung thu muc

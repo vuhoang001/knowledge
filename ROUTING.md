@@ -41,17 +41,36 @@ vào** thì là tutorial, không thì là docs.
 `backend`, `devops`, `ai`, …
 
 Gắn với một công nghệ cụ thể thì xuống một tầng: `docs/<domain>/<công nghệ>/`.
-Ví dụ `docs/etl/dbt/`. **Tối đa ba tầng dưới `docs/`** — cần tầng thứ tư nghĩa là
-component đó nên tách thành công nghệ riêng.
+Ví dụ `docs/etl/dbt/`.
 
-## Trục 3 — Tầng học, khi một thư mục vượt ~5 file
+**Tối đa 2 thư mục dưới `docs/`** (R9) — `docs/<lĩnh vực>/<công nghệ>/<component>.md`.
+Hệ quả quan trọng: một thư mục công nghệ như `etl/kafka/` **đã dùng hết quota**, không
+chia tầng con được nữa. Cần tầng thứ tư nghĩa là component đó nên **tách thành công nghệ
+riêng, ngang hàng** — `docs/etl/kafka-connect/` chứ không phải `docs/etl/kafka/connect/`.
 
-Đây là rule sinh ra từ sự cố thật: `docs/data-modeling/` phẳng với 7 file, sidebar sắp
-alphabet, nên "Quy trình thiết kế 4 bước" (bước 6/7) hiện trước "Grain" (bước 1), và
-`junk-dimension` — một kỹ thuật hẹp — đứng ngang hàng với `fact-and-dimension` là khái
-niệm nền.
+Vì thế rule chia tầng ở Trục 3 chỉ áp dụng được cho thư mục **khái niệm** ở cấp 1
+(`docs/data-modeling/`), không áp dụng cho thư mục công nghệ ở cấp 2.
 
-Khi một thư mục vượt khoảng 5 file, chia theo **quan hệ phụ thuộc**, không theo chủ đề:
+## Trục 3 — Tầng học, khi các file trong thư mục **không còn ngang hàng**
+
+Điều kiện kích hoạt **không phải số lượng file.** `docs/etl/dbt/` có 8 file phẳng và
+hoàn toàn ổn — chúng là 8 component của cùng một công cụ, đọc theo thứ tự 01→08, không
+cái nào là nền của cái nào. Chia tầng chỗ đó chỉ thêm một cú click.
+
+`docs/data-modeling/` thì khác, và đó là lý do rule này ra đời: `fact-and-dimension` là
+**khái niệm nền**, `junk-dimension` là **một kỹ thuật hẹp áp lên nó**. Đặt ngang hàng là
+nói dối người đọc về quan hệ giữa hai thứ.
+
+**Phép thử ngang hàng:** hai file ngang hàng khi đọc theo thứ tự nào cũng được. Nếu phải
+đọc A xong mới hiểu được B, chúng không ngang hàng — và khi số cặp như thế nhiều lên thì
+chia tầng.
+
+| Có tầng | Phẳng |
+|---|---|
+| File có quan hệ nền ↔ dẫn xuất | File là các component song song của một công cụ |
+| `data-modeling/` — khái niệm | `etl/dbt/` — 8 component, `etl/kafka/` — 9 component |
+
+Khi đã quyết chia, chia theo **quan hệ phụ thuộc**, không theo chủ đề:
 
 | Tầng | Phép thử | Ví dụ ở `data-modeling/` |
 |---|---|---|
@@ -116,6 +135,53 @@ updated: 2026-07-31
 | R2b | `category` đang gánh cả loại tài liệu lẫn loại tri thức |
 | R7 | File có trong manifest `docs/index.md` |
 | R8 | File có mục `## Related Topics` |
+
+## Ví dụ áp dụng — khi bắt đầu viết Kafka
+
+Kafka đã có mục lục dự kiến 10 mục trong [`docs/etl/kafka/index.md`](docs/etl/kafka/index.md).
+Chạy bộ rule lên nó:
+
+**Bước 1 — Trục 1 tách mục 10 ra khỏi `docs/`.** "Bài tập, chạy thật có output" là
+`tutorials/`, không phải `docs/`. Nên mục 10 thành `docs/tutorials/kafka-lab.md`, còn
+`kafka/index.md` chỉ trỏ tới — đúng như dbt đang làm với `dbt-lab-duckdb.md`.
+
+**Bước 2 — Trục 2 xác định chỗ.** `domain: data-engineering`, gắn với một công nghệ cụ
+thể → `docs/etl/kafka/<component>.md`. Đã là 2 thư mục, hết quota R9.
+
+**Bước 3 — Trục 3 hỏi có cần chia tầng không. Câu trả lời là KHÔNG.** Chín component còn
+lại là các bộ phận song song của cùng một công cụ, đọc 01→09; không cái nào là nền của
+cái nào theo kiểu `fact-and-dimension` ↔ `junk-dimension`. Cộng thêm R9 đã hết quota.
+Kafka giữ **phẳng**, giống dbt.
+
+```text
+docs/etl/kafka/
+  index.md                      # cột # 01–09, trỏ sang tutorials cho bài tập
+  what-is-kafka.md              sidebar_position: 1
+  topic-partition-offset.md     sidebar_position: 2
+  producer.md                   sidebar_position: 3
+  consumer-groups.md            sidebar_position: 4
+  replication-durability.md     sidebar_position: 5
+  retention-compaction.md       sidebar_position: 6
+  schema-registry.md            sidebar_position: 7
+  kafka-connect-cdc.md          sidebar_position: 8
+  operations.md                 sidebar_position: 9
+docs/tutorials/kafka-lab.md     sidebar_position: 2
+```
+
+**Mỗi lần thêm một file, sửa đúng ba chỗ:**
+
+1. `sidebar_position` trong frontmatter của file mới
+2. cột `#` trong `docs/etl/kafka/index.md` — phải khớp số ở bước 1
+3. một dòng trong manifest `docs/index.md`
+
+Quên bước 1 → sidebar sắp alphabet (R5 chặn). Quên bước 2 → mồ côi (R6 chặn). Quên bước
+3 → R7 cảnh báo.
+
+**Khi nào Kafka mới cần tách:** nếu `schema-registry.md` hay `kafka-connect-cdc.md` phình
+tới mức cần nhiều file, chúng **không** thành thư mục con của `kafka/` — R9 chặn, và
+đúng về bản chất: Schema Registry và Kafka Connect là hệ thống triển khai riêng, không
+phải bộ phận bên trong broker. Chúng lên thành `docs/etl/schema-registry/` và
+`docs/etl/kafka-connect/`, **ngang hàng** với `kafka/`.
 
 ## Nợ kỹ thuật đã biết
 
