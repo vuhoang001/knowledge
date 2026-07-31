@@ -28,7 +28,7 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Quy trình thiết kế 4 bước](data-modeling/reference/design-process.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
 | [Fact và Dimension](data-modeling/reference/fact-and-dimension.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
 | [Grain](data-modeling/reference/grain.md) | `data-modeling/reference` | data-engineering | ✅ đã chạy tay |
-| [Star, Snowflake và One Big Table](data-modeling/reference/star-snowflake-obt.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
+| [Star, Snowflake và One Big Table](data-modeling/reference/star-snowflake-obt.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
 | [Surrogate key và Natural key](data-modeling/reference/surrogate-key.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
 | [Sáu chiều chất lượng dữ liệu](data-quality/six-dimensions.md) | `data-quality` | data-engineering | 📝 lý thuyết |
 | [dbt docs và lineage](etl/dbt/reference/docs-and-lineage.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |

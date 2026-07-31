@@ -35,7 +35,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 | 2 | [Fact và Dimension](reference/fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
 | 3 | [Surrogate key và Natural key](reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
 | 4 | [Quy trình thiết kế 4 bước](reference/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
-| 5 | [Star, Snowflake, OBT](reference/star-snowflake-obt.md) | Ba cách bố trí, đánh đổi giữa chúng | intermediate | 📝 draft |
+| 5 | [Star, Snowflake, OBT](reference/star-snowflake-obt.md) | Ba cách bố trí; đo thật chi phí OBT, và chỗ Data Vault đứng | intermediate | 📝 review |
 
 ### [Kỹ năng](skills/index.md) — kỹ thuật áp dụng lên phần trên
 

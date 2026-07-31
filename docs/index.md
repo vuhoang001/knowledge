@@ -39,7 +39,7 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [conformed-dimension](data-modeling/skills/conformed-dimension.md) | Cùng khoá và cùng nghĩa thì mới ghép được số giữa hai fact | 🟡 |
 | [bridge-table](data-modeling/skills/bridge-table.md) | Nhiều-nhiều: hệ số phân bổ để tổng không phồng | 🟡 |
 | [design-process](data-modeling/reference/design-process.md) | Từ yêu cầu nghiệp vụ mơ hồ tới bảng chạy được, bốn bước | 📝 |
-| [star-snowflake-obt](data-modeling/reference/star-snowflake-obt.md) | Ba cách bố trí fact quanh dimension; lakehouse đảo chiều lời khuyên cũ | 🟡 |
+| [star-snowflake-obt](data-modeling/reference/star-snowflake-obt.md) | Ba cách bố trí; đo thật OBT vs star: 0.76x hay 10.23x tuỳ cardinality | 📝 |
 | [surrogate-key](data-modeling/reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |
 
 ## Data Quality
