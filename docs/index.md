@@ -30,7 +30,7 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 |---|---|---|
 | [data-modeling/index](data-modeling/index.md) | Bản đồ khái niệm + thứ tự đọc | 🗂️ |
 | [grain](data-modeling/reference/grain.md) | Một dòng của bảng này đại diện cho cái gì | ✅ |
-| [fact-and-dimension](data-modeling/reference/fact-and-dimension.md) | Cái gì đo được vào fact, cái gì mô tả vào dimension | 📝 |
+| [fact-and-dimension](data-modeling/reference/fact-and-dimension.md) | Cái gì vào fact, cái gì vào dimension; ba loại fact và additivity | 📝 |
 | [scd](data-modeling/skills/scd.md) | Thuộc tính đổi thì báo cáo quá khứ dùng giá trị nào — sáu cách | 📝 |
 | [scd-change-detection](data-modeling/skills/scd-change-detection.md) | Bốn cách biết dòng nào đã đổi, và bốn bẫy của hash | 🟡 |
 | [junk-dimension](data-modeling/skills/junk-dimension.md) | Cột cardinality thấp: để thẳng trong fact, tách dimension, hay gộp chung | 🟡 |
@@ -124,7 +124,7 @@ cục nữa — mở dbt là thấy luôn bài tập và case study của dbt.
 | Thuật ngữ | toàn cục — cắt ngang nhiều chủ đề | [glossary/](glossary/index.md) |
 
 `inbox/`, `templates/` và `anki/` nằm **ngoài** `docs/` nên không lên site — chúng phục
-vụ việc vận hành repo và ôn tập, không phải nội dung tri thức. `anki/` chứa 215 thẻ TSV
+vụ việc vận hành repo và ôn tập, không phải nội dung tri thức. `anki/` chứa 313 thẻ TSV
 sinh từ data-modeling và dbt; xem `anki/README.md`.
 
 ## Đường đi phụ thuộc

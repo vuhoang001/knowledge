@@ -32,7 +32,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 | # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
 |---|---|---|---|---|
 | 1 | [Grain](reference/grain.md) | Một dòng của bảng này đại diện cho **cái gì** | beginner | ✅ đã gặp thật |
-| 2 | [Fact và Dimension](reference/fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
+| 2 | [Fact và Dimension](reference/fact-and-dimension.md) | Hai loại bảng; ba loại fact và additivity | beginner | 📝 review |
 | 3 | [Surrogate key và Natural key](reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
 | 4 | [Quy trình thiết kế 4 bước](reference/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
 | 5 | [Star, Snowflake, OBT](reference/star-snowflake-obt.md) | Ba cách bố trí; đo thật chi phí OBT, và chỗ Data Vault đứng | intermediate | 📝 review |

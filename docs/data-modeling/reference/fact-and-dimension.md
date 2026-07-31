@@ -56,14 +56,242 @@ Fact chỉ có **khoá và số**. Muốn biết khách tên gì thì join sang 
 
 ## Ba loại fact
 
-| Loại | Grain | Ví dụ | Cộng được không |
-|---|---|---|---|
-| **Transaction** | Một sự kiện | Một dòng hàng trong đơn | ✅ cộng theo mọi chiều |
-| **Periodic snapshot** | Một kỳ × một thực thể | Số dư tài khoản cuối mỗi ngày | ⚠️ **không** cộng theo thời gian |
-| **Accumulating snapshot** | Một quy trình, cập nhật dần | Đơn hàng: đặt → đóng gói → giao → nhận | ⚠️ dòng bị `UPDATE` nhiều lần |
+Kimball chia fact thành ba loại theo **grain** và **cách nạp**. Chọn sai loại thì không
+phải chuyện thẩm mỹ — có loại **không cộng được theo thời gian**, và cộng nhầm thì ra số
+vô nghĩa mà không có gì báo.
 
-Loại 2 là chỗ hay sai nhất: cộng số dư cuối ngày của 30 ngày lại được một con số **vô
-nghĩa**. Số đo không cộng được theo mọi chiều gọi là *semi-additive*.
+| Loại | Grain | Nạp thế nào | Cộng theo thời gian |
+|---|---|---|---|
+| **Transaction** | Một sự kiện | Chỉ `INSERT` | ✅ được |
+| **Periodic snapshot** | Một kỳ × một thực thể | `INSERT` mỗi kỳ | ❌ **không** |
+| **Accumulating snapshot** | Một quy trình | `INSERT` rồi `UPDATE` nhiều lần | ⚠️ tuỳ cột |
+
+### 1. Transaction fact — loại phổ biến nhất
+
+Một dòng = **một chuyện đã xảy ra**. Ghi rồi thì không sửa.
+
+```text
+fct_don_hang_chi_tiet
+don_hang_id | dong | ngay       | khach_sk | so_luong | thanh_tien
+DH001       | 1    | 2026-07-01 | 2        | 2        | 300000
+DH001       | 2    | 2026-07-01 | 2        | 1        | 300000
+```
+
+Đây là loại **dễ nhất và an toàn nhất**:
+
+- Cộng được theo **mọi** chiều — theo ngày, theo khách, theo hàng, theo mọi tổ hợp.
+- Chỉ `INSERT`, không bao giờ `UPDATE` → hợp `incremental` tự nhiên.
+- Sai thì dựng lại từ nguồn được.
+
+**Mặc định nên là loại này.** Hai loại dưới chỉ dùng khi transaction fact không trả lời
+được câu hỏi.
+
+### 2. Periodic snapshot — ảnh chụp định kỳ
+
+Một dòng = **trạng thái của một thực thể tại cuối một kỳ**. Dùng khi câu hỏi là *"tại
+thời điểm đó tình hình thế nào"*, mà không có sự kiện nào để đếm.
+
+```text
+fct_so_du_cuoi_ngay
+┌────────────┬───────────┬──────────┐
+│    ngay    │ tai_khoan │  so_du   │
+├────────────┼───────────┼──────────┤
+│ 2026-07-01 │ TK01      │ 10000000 │
+│ 2026-07-02 │ TK01      │ 10000000 │
+│ 2026-07-03 │ TK01      │ 12000000 │
+│ 2026-07-01 │ TK02      │  5000000 │
+│ 2026-07-02 │ TK02      │  5000000 │
+│ 2026-07-03 │ TK02      │  4000000 │
+└────────────┴───────────┴──────────┘
+```
+
+Số dư có tồn tại như một sự kiện không? Không — nó là **trạng thái**. Không có "giao
+dịch số dư" nào để ghi vào transaction fact.
+
+#### Bẫy: cộng theo thời gian ra số vô nghĩa
+
+```sql
+SELECT sum(so_du) AS tong FROM fct_so_du;
+```
+
+```text
+┌───────────────┐
+│ tong_vo_nghia │
+├───────────────┤
+│      46000000 │
+└───────────────┘
+```
+
+**46 triệu không tồn tại.** Tổng tài sản thật nhiều nhất là 16 triệu. Con số 46 triệu ra
+từ việc cộng cùng một khoản tiền nhiều lần — mỗi ngày một lần.
+
+Hai cách cộng **đúng**:
+
+```sql
+-- Cong theo TAI KHOAN, tai MOT thoi diem: hop le
+SELECT ngay, sum(so_du) AS tong_tai_san FROM fct_so_du GROUP BY 1;
+```
+
+```text
+┌────────────┬──────────────┐
+│    ngay    │ tong_tai_san │
+├────────────┼──────────────┤
+│ 2026-07-01 │     15000000 │
+│ 2026-07-02 │     15000000 │
+│ 2026-07-03 │     16000000 │
+└────────────┴──────────────┘
+```
+
+```sql
+-- Theo thoi gian thi dung TRUNG BINH, khong dung tong
+SELECT tai_khoan, round(avg(so_du)) AS so_du_tb FROM fct_so_du GROUP BY 1;
+```
+
+```text
+┌───────────┬────────────┐
+│ tai_khoan │  so_du_tb  │
+├───────────┼────────────┤
+│ TK01      │ 10666667.0 │
+│ TK02      │  4666667.0 │
+└───────────┴────────────┘
+```
+
+**Luật:** số đo cộng được theo *một số* chiều nhưng không phải *mọi* chiều gọi là
+**semi-additive**. Với chiều thời gian, dùng `avg`, `max`, hoặc lấy giá trị cuối kỳ —
+đừng dùng `sum`.
+
+### 3. Accumulating snapshot — theo dõi một quy trình
+
+Một dòng = **một lần chạy của một quy trình nhiều bước**. Khác hai loại trên ở chỗ dòng
+bị **`UPDATE` nhiều lần** khi quy trình tiến triển.
+
+```text
+fct_don_hang_qua_trinh
+┌─────────┬────────────┬───────────────┬────────────┬────────────┐
+│ ma_don  │  ngay_dat  │ ngay_dong_goi │ ngay_giao  │ ngay_nhan  │
+├─────────┼────────────┼───────────────┼────────────┼────────────┤
+│ DH1     │ 2026-07-01 │ 2026-07-01    │ 2026-07-02 │ 2026-07-05 │
+│ DH2     │ 2026-07-02 │ 2026-07-04    │ 2026-07-05 │ NULL       │
+│ DH3     │ 2026-07-03 │ NULL          │ NULL       │ NULL       │
+└─────────┴────────────┴───────────────┴────────────┴────────────┘
+```
+
+Mỗi cột mốc là một `NULL` chờ được điền. `DH3` mới đặt, `DH2` đang giao, `DH1` xong.
+
+#### Giá trị thật: đo độ trễ từng chặng
+
+Đây là thứ transaction fact **không** làm được — nó có các sự kiện rời rạc, nhưng không
+có chỗ nào tính được khoảng cách giữa chúng mà không self-join.
+
+```sql
+SELECT ma_don,
+  date_diff('day', ngay_dat,       ngay_dong_goi) AS cho_dong_goi,
+  date_diff('day', ngay_dong_goi,  ngay_giao)     AS cho_giao,
+  date_diff('day', ngay_giao,      ngay_nhan)     AS cho_nhan,
+  date_diff('day', ngay_dat,       ngay_nhan)     AS tong_thoi_gian
+FROM fct_don_hang_qua_trinh;
+```
+
+```text
+┌─────────┬──────────────┬──────────┬──────────┬────────────────┐
+│ ma_don  │ cho_dong_goi │ cho_giao │ cho_nhan │ tong_thoi_gian │
+├─────────┼──────────────┼──────────┼──────────┼────────────────┤
+│ DH1     │            0 │        1 │        3 │              4 │
+│ DH2     │            2 │        1 │     NULL │           NULL │
+│ DH3     │         NULL │     NULL │     NULL │           NULL │
+└─────────┴──────────────┴──────────┴──────────┴────────────────┘
+```
+
+Và đếm số đơn đang kẹt ở mỗi chặng — báo cáo vận hành kinh điển:
+
+```text
+┌──────────────┬───────────────┬───────────┬──────────┐
+│ cho_dong_goi │ dang_cho_giao │ dang_giao │ hoan_tat │
+├──────────────┼───────────────┼───────────┼──────────┤
+│            1 │             0 │         1 │        1 │
+└──────────────┴───────────────┴───────────┴──────────┘
+```
+
+#### Ba cái giá phải trả
+
+| Cái giá | Chi tiết |
+|---|---|
+| Có `UPDATE` | Không dùng `incremental` kiểu append được; cần `unique_key` |
+| Cột `NULL` khắp nơi | `JOIN` thường **loại sạch** dòng chưa xong — xem [ca thật](../case-studies/don-dang-giao-bien-mat.md) |
+| Không có lịch sử trạng thái | Chỉ biết *khi nào* tới mốc, không biết đã quay lui hay chưa |
+
+### Additivity — thứ quan trọng hơn cả ba loại
+
+Phân loại theo *cộng được hay không* thực ra hữu ích hơn phân loại theo tên:
+
+| Loại | Nghĩa | Ví dụ | Cách gộp đúng |
+|---|---|---|---|
+| **Additive** | Cộng được theo **mọi** chiều | `thanh_tien`, `so_luong` | `sum()` thoải mái |
+| **Semi-additive** | Cộng được theo một số chiều | số dư, tồn kho, số nhân viên | `sum` theo thực thể, `avg`/cuối kỳ theo thời gian |
+| **Non-additive** | **Không** cộng được theo chiều nào | tỷ lệ, phần trăm, đơn giá | Lưu **tử số và mẫu số**, tính lại lúc gộp |
+
+#### Non-additive: sai nặng nhất và hay gặp nhất
+
+```text
+┌──────────┬────────┬────────┬───────────────┐
+│ khu_vuc  │ so_loi │ so_don │ ty_le_loi_pct │
+├──────────┼────────┼────────┼───────────────┤
+│ Miền Bắc │     90 │    100 │          90.0 │
+│ Miền Nam │      5 │   1000 │           0.5 │
+└──────────┴────────┴────────┴───────────────┘
+```
+
+Tỷ lệ lỗi toàn hệ thống là bao nhiêu?
+
+```sql
+SELECT round(avg(100.0*so_loi/so_don), 2) AS trung_binh_cac_ty_le_SAI,
+       round(100.0*sum(so_loi)/sum(so_don), 2) AS ty_le_dung
+FROM fct_ty_le;
+```
+
+```text
+┌──────────────────────────┬────────────┐
+│ trung_binh_cac_ty_le_SAI │ ty_le_dung │
+├──────────────────────────┼────────────┤
+│                    45.25 │       8.64 │
+└──────────────────────────┴────────────┘
+```
+
+**45,25% so với 8,64% — sai hơn năm lần.** Trung bình của các tỷ lệ không phải tỷ lệ của
+tổng, vì hai khu vực có mẫu số chênh nhau 10 lần.
+
+**Luật:** đừng lưu tỷ lệ trong fact. Lưu `so_loi` và `so_don`, để lớp báo cáo chia. Chỉ
+khi đó mọi mức gộp mới đúng.
+
+### Chọn loại nào
+
+```text
+Có sự kiện rời rạc để ghi không?
+├─ Có  → Transaction fact          ← mặc định, chọn cái này
+└─ Không
+   ├─ Cần trạng thái tại từng thời điểm  → Periodic snapshot
+   │                                       (nhớ: semi-additive)
+   └─ Cần đo độ trễ giữa các bước       → Accumulating snapshot
+                                          (nhớ: có UPDATE, có NULL)
+```
+
+Ba loại **không loại trừ nhau**. Một hệ thống chín chắn thường có cả ba cho cùng một
+nghiệp vụ: transaction để phân tích chi tiết, periodic để báo cáo tồn/số dư, accumulating
+để theo dõi vận hành.
+
+### Loại thứ tư ít gặp: factless fact
+
+Fact **không có số đo nào**, chỉ có các khoá. Dùng để ghi lại *"chuyện này đã xảy ra"*
+hoặc *"quan hệ này tồn tại"*:
+
+```text
+fct_sinh_vien_diem_danh
+ngay_sk | sinh_vien_sk | lop_sk        ← khong co cot so nao
+```
+
+Đếm bằng `count(*)`. Giá trị lớn nhất là trả lời câu hỏi **phủ định**: *"sinh viên nào
+KHÔNG đi học buổi nào"* — thứ chỉ trả lời được khi có bảng ghi lại sự kiện đã xảy ra để
+đối chiếu với danh sách đầy đủ.
 
 ## Trade-offs
 

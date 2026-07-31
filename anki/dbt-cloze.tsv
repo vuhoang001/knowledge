@@ -3,22 +3,29 @@
 #notetype:Cloze
 #deck:KB::dbt
 #tags column:3
-dbt {{c1::sinh SQL}}, warehouse {{c2::chạy SQL}}. Nên "dbt chậm" thì phải đi tìm ở {{c3::warehouse}}.		dbt
-Hàm <code>ref()</code> không phải cách viết tắt tên bảng — nó là {{c1::cách duy nhất khai báo phụ thuộc}}. Mỗi lần dbt thấy nó, dbt ghi {{c2::một cạnh trong DAG}}.		dbt ref dag
-Nguyên tắc của mọi test dbt: câu SQL trả về {{c1::CÁC DÒNG SAI}}. Trả {{c2::0 dòng}} = pass.		dbt testing
-Bốn generic test có sẵn của dbt: {{c1::unique}} · {{c2::not_null}} · {{c3::accepted_values}} · {{c4::relationships}}.		dbt testing
-Ba tầng data quality: {{c1::test}} bắt dữ liệu sai <i>sau khi</i> đã tạo; {{c2::contract}} chặn schema sai <i>trước khi</i> tạo; {{c3::unit test}} bắt SQL sai <i>không cần dữ liệu thật</i>.		dbt testing contract
-Chiều chất lượng {{c1::Timeliness}} dùng <code>dbt source freshness</code>, khai trên <b>source</b> chứ không phải model. Chiều {{c2::Accuracy}} <b>không có test dựng sẵn</b> — phải viết singular test đối chiếu nguồn.	Đây là hai chiều bị bỏ nhiều nhất và bắt được lỗi đắt nhất.	dbt testing data-quality
-Bốn materialization: {{c1::view}} (mặc định, rẻ nhất, luôn tươi) · {{c2::table}} (build lại toàn bộ, query rẻ) · {{c3::incremental}} (chỉ nạp phần mới) · {{c4::ephemeral}} (không sinh gì, nhúng thành CTE).		dbt materialization
-<code>incremental</code> là materialization duy nhất đưa {{c1::trạng thái}} vào pipeline, nên là loại duy nhất có thể {{c2::sai âm thầm}}. Chưa trả lời được cả bốn câu hỏi thì dùng {{c3::table}}.		dbt incremental
-Trong <code>incremental</code>, khai <code>unique_key</code> thì dbt sinh {{c1::delete rồi insert}}; không khai thì chỉ {{c2::insert}}, và dòng đã tồn tại bị {{c3::nhân đôi}} thay vì cập nhật.		dbt incremental
-Selector: <code>x+</code> là {{c1::x và mọi thứ phụ thuộc vào nó (xuôi dòng)}} — dùng khi <b>sửa</b>. <code>+x</code> là {{c2::x và mọi thứ nó phụ thuộc (ngược dòng)}} — dùng khi <b>debug</b>.		dbt selector
-Ba tầng model: {{c1::stg_}} (1 nguồn = 1 model, không join) → {{c2::int_}} (bước trung gian) → {{c3::fct_ / dim_}} (bảng cho người dùng cuối).		dbt model naming
-Thứ tự ưu tiên cấu hình dbt: {{c1::config() trong model}} &gt; {{c2::cấu hình thư mục con}} &gt; {{c3::cấu hình project}}. Càng gần model càng thắng.		dbt config
-Thư mục <code>target/compiled/</code> chứa {{c1::SQL sau khi render Jinja}} — nơi đi tìm lỗi; <code>target/run/</code> chứa {{c2::SQL kèm câu bọc create table/view}}.		dbt debug project-structure
-<code>dbt_project.yml</code> {{c1::vào git}} vì nó mô tả dự án; <code>profiles.yml</code> {{c2::KHÔNG vào git}} vì nó chứa thông tin kết nối.		dbt project-structure
-Ngưỡng viết macro: khi cùng một đoạn SQL lặp ở {{c1::≥3 chỗ}} — không phải 2. Trước ngưỡng đó, {{c2::copy-paste rẻ hơn abstraction sai}}.		dbt macro jinja
-Ba cách đưa dữ liệu không do dbt tính vào DAG: {{c1::source()}} trỏ tới bảng người khác tạo · {{c2::seed}} nạp CSV nhỏ trong repo · {{c3::snapshot}} dựng bảng lịch sử SCD2.		dbt source seed snapshot
-Trong dbt, {{c1::snapshot}} là thứ duy nhất <b>không tái tạo được</b>: model sai thì chạy lại, còn nó chạy sai một lần thì {{c2::phần lịch sử đã ghi mất luôn}}.		dbt snapshot scd
-Bảng snapshot có ba cột dbt tự thêm: {{c1::dbt_valid_from}}, {{c2::dbt_valid_to}}, {{c3::dbt_scd_id}}. Lưu ý cột thứ hai là <code>NULL</code> cho dòng hiện tại nên khi join phải {{c4::coalesce về '9999-12-31'}}.		dbt snapshot scd
-Chi tiết <b>môi trường</b> — tên catalog, host, port, schema, phiên bản, đường dẫn — {{c1::cấm bịa trong mọi trường hợp}}, chỉ được lấy từ {{c2::output của lệnh chạy thật}}.	Case study 30/07/2026: AI bịa tên catalog Trino "iceberg", mất một buổi.	verified-at case-study
+dbt {{c1::sinh SQL}}, warehouse {{c2::chạy SQL}}.	Nên "dbt chậm" thì phải đi tìm ở warehouse.	dbt
+Nguyên tắc của mọi test dbt: câu SQL trả về {{c1::các dòng SAI}}; trả {{c2::0 dòng}} là pass.		dbt testing
+Bốn generic test có sẵn: {{c1::unique}} · {{c2::not_null}} · {{c3::accepted_values}} · {{c4::relationships}}.		dbt testing
+Sáu loại test dbt: generic có sẵn · {{c1::từ package}} · {{c2::singular}} · {{c3::generic tự viết}} · {{c4::unit test}} · {{c5::contract}}.	Năm loại đầu chạy bằng `dbt test`; contract chạy lúc `dbt run`.	dbt testing
+Ba tầng chất lượng: {{c1::test}} bắt dữ liệu sai <i>sau khi</i> tạo · {{c2::contract}} chặn schema sai <i>trước khi</i> tạo · {{c3::unit test}} bắt SQL sai <i>không cần dữ liệu thật</i>.		dbt testing contract
+Từ dbt 1.8, khoá đúng trong <code>schema.yml</code> là {{c1::data_tests}}; khoá {{c2::tests}} đã deprecated.		dbt testing
+Sáu chiều chất lượng: uniqueness · completeness · validity · integrity · {{c1::timeliness}} (dùng <code>dbt source freshness</code>) · {{c2::accuracy}} (không có test dựng sẵn).	Hai chiều này bị bỏ nhiều nhất và bắt được lỗi đắt nhất.	dbt testing data-quality
+Bốn materialization: {{c1::view}} · {{c2::table}} · {{c3::incremental}} · {{c4::ephemeral}}.		dbt materialization
+<code>incremental</code> là loại duy nhất đưa {{c1::trạng thái}} vào pipeline, nên là loại duy nhất {{c2::sai âm thầm}} được.	Chưa trả lời được cả bốn câu hỏi thì dùng `table`.	dbt incremental
+Trong <code>incremental</code>, có <code>unique_key</code> thì dbt sinh {{c1::delete rồi insert}}; không có thì chỉ {{c2::insert}}, và dòng cũ bị {{c3::nhân đôi}}.		dbt incremental
+Ba <code>incremental_strategy</code>: {{c1::append}} · {{c2::delete+insert}} · {{c3::merge}}.	merge cần warehouse hỗ trợ MERGE (Snowflake, BigQuery).	dbt incremental
+Selector <code>x+</code> nghĩa là {{c1::x và mọi thứ phụ thuộc vào nó — xuôi dòng}}, dùng khi {{c2::sửa}}.<br>Selector <code>+x</code> nghĩa là {{c3::x và mọi thứ nó phụ thuộc — ngược dòng}}, dùng khi {{c4::debug}}.		dbt selector
+Ba tầng đặt tên model: {{c1::stg_}} (một nguồn một model, không join) → {{c2::int_}} (trung gian) → {{c3::fct_ / dim_}} (mart cho người dùng cuối).		dbt model naming
+Thứ tự ưu tiên config: {{c1::config() trong model}} &gt; {{c2::thư mục con}} &gt; {{c3::project}}.	Càng gần model càng thắng.	dbt config
+<code>target/compiled/</code> chứa {{c1::SQL sau khi Jinja render — chỉ câu SELECT}}; <code>target/run/</code> chứa {{c2::SQL đã bọc DDL — thứ thật sự gửi đi}}.		dbt debug project-structure
+<code>manifest.json</code> là {{c1::ý định}} — dbt biết gì về project. <code>catalog.json</code> là {{c2::hiện thực}} — warehouse thật sự có gì.		dbt lineage
+Ba cách đưa dữ liệu không do dbt tính vào DAG: {{c1::source()}} · {{c2::seed}} · {{c3::snapshot}}.		dbt source seed snapshot
+Trong dbt, {{c1::snapshot}} là thứ duy nhất không tái tạo được — chạy sai một lần thì {{c2::phần lịch sử đã ghi mất luôn}}.		dbt snapshot scd
+Bốn cột dbt tự thêm vào snapshot: {{c1::dbt_valid_from}} · {{c2::dbt_valid_to}} · {{c3::dbt_scd_id}} · {{c4::dbt_updated_at}}.	dbt_valid_to là NULL cho dòng hiện tại → khi join phải coalesce về '9999-12-31'.	dbt snapshot scd
+Ba cú pháp Jinja: {{c1::&#123;&#123; &#125;&#125;}} in ra giá trị · {{c2::&#123;% %&#125;}} là câu lệnh · {{c3::&#123;# #&#125;}} là chú thích.	Cả ba đều biến mất trong target/compiled/.	dbt jinja
+Ngưỡng viết macro: khi cùng đoạn SQL lặp ở {{c1::≥3 chỗ}} — trước ngưỡng đó thì {{c2::copy-paste rẻ hơn abstraction sai}}.		dbt macro
+<code>var()</code> dùng cho thứ {{c1::đổi theo lần chạy}}; <code>env_var()</code> dùng cho thứ {{c2::không được vào git}}.		dbt jinja
+<code>run_query()</code> phải bọc trong {{c1::&#123;% if execute %&#125;}} vì dbt parse project {{c2::hai lượt}}, lượt đầu chưa kết nối warehouse.		dbt jinja macro
+Ba thư mục phải gitignore: {{c1::target/}} · {{c2::dbt_packages/}} · {{c3::logs/}}.	Tái tạo được bằng `dbt deps` + `dbt run`.	dbt project-structure
+Commit {{c1::package-lock.yml}} để cả nhóm cùng version, nhưng gitignore {{c2::dbt_packages/}}.		dbt packages
+Chi tiết môi trường — tên catalog, host, port, schema, phiên bản — {{c1::cấm bịa trong mọi trường hợp}}, chỉ lấy từ {{c2::output của lệnh chạy thật}}.	Case study 30/07/2026: AI bịa tên catalog Trino "iceberg", mất một buổi.	verified-at case-study
