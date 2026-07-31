@@ -1,6 +1,6 @@
 ---
 title: Conformed dimension
-sidebar_position: 5
+sidebar_position: 6
 description: Dimension dùng chung giữa nhiều fact với cùng khoá và cùng nghĩa — điều kiện để cộng số từ hai quy trình nghiệp vụ khác nhau.
 tags: [conformed-dimension, bus-matrix, dimension, data-modeling, kimball]
 domain: data-engineering
@@ -83,7 +83,19 @@ SELECT 'cskh', khu_vuc, count(*) FROM dim_khach_hang_cskh GROUP BY khu_vuc
 ORDER BY khu_vuc;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌──────────┬──────────┬───────┐
+│  nguon   │ khu_vuc  │   n   │
+├──────────┼──────────┼───────┤
+│ ban_hang │ Miền Bắc │     1 │
+│ ban_hang │ Miền Nam │     2 │
+│ cskh     │ HCM      │     1 │
+│ cskh     │ HN       │     1 │
+│ cskh     │ Khác     │     1 │
+└──────────┴──────────┴───────┘
+```
+
+Hai tập giá trị **không giao nhau một phần tử nào**. Bằng chứng cứng: chưa conform.
 
 Tập giá trị khác nhau là bằng chứng cứng: chưa conform. Giống tập giá trị **chưa đủ** —
 vẫn phải hỏi định nghĩa.
@@ -124,7 +136,17 @@ FROM ban b LEFT JOIN tra t USING (khu_vuc)
 ORDER BY ty_le_tra_pct DESC;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌──────────┬───────────┬─────────────┬───────────────┐
+│ khu_vuc  │ doanh_thu │ gia_tri_tra │ ty_le_tra_pct │
+├──────────┼───────────┼─────────────┼───────────────┤
+│ Miền Bắc │   5000000 │      500000 │          10.0 │
+│ Miền Nam │   5000000 │      400000 │           8.0 │
+└──────────┴───────────┴─────────────┴───────────────┘
+```
+
+Đây chính là câu hỏi *"khu vực nào có tỷ lệ trả hàng cao nhất"* ở đầu trang — **không
+trả lời được** khi hai mart dùng hai dimension riêng.
 
 **Không** join thẳng `fct_don_hang` với `fct_tra_hang`. Hai fact khác grain join trực
 tiếp là nhân bản dòng — xem [Fact và Dimension](../reference/fact-and-dimension.md).

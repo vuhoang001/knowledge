@@ -1,6 +1,6 @@
 ---
 title: Role-playing dimension
-sidebar_position: 4
+sidebar_position: 5
 description: Một dimension đóng nhiều vai trong cùng một fact — dùng view có tên rõ nghĩa, đừng nhân bản bảng.
 tags: [role-playing-dimension, dimension, data-modeling, kimball]
 domain: data-engineering
@@ -98,7 +98,18 @@ GROUP BY dd.quy_dat, dg.thang_giao
 ORDER BY dd.quy_dat;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌─────────┬────────────┬────────┐
+│ quy_dat │ thang_giao │ so_don │
+├─────────┼────────────┼────────┤
+│       1 │          1 │      1 │
+│       1 │          3 │      2 │
+│       2 │          4 │      1 │
+└─────────┴────────────┴────────┘
+```
+
+Đọc được ngay: quý 1 đặt nhưng có 2 đơn mãi tháng 3 mới giao. Cùng kết quả với bản dùng
+alias `d1`/`d2`, nhưng câu này **tự giải thích**.
 
 So với bản dùng alias `d1`/`d2`: cùng một kết quả, nhưng câu này **tự giải thích**.
 

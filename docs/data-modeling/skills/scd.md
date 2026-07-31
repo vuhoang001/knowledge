@@ -99,6 +99,7 @@ Một chu kỳ nạp Type 2:
 
 1. **Đọc nguồn** — ảnh chụp bảng khách hàng hôm nay.
 2. **So với dòng `is_current`** trong dimension theo natural key.
+   Bốn cách so — và bẫy của từng cách — ở [Phát hiện thay đổi](scd-change-detection.md).
 3. **Không đổi** → không làm gì.
 4. **Có đổi** → đóng dòng cũ: `valid_to = hôm nay`, `is_current = false`.
 5. **Thêm dòng mới**: SK mới, `valid_from = hôm nay`, `valid_to = '9999-12-31'`.

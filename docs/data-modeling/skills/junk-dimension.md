@@ -1,6 +1,6 @@
 ---
 title: Junk dimension và cột cardinality thấp
-sidebar_position: 2
+sidebar_position: 3
 description: "Cột trạng thái vài giá trị: để thẳng trong fact, tách dimension riêng, hay gộp chung — và cách quyết định."
 tags: [junk-dimension, degenerate-dimension, dimension, data-modeling, kimball]
 domain: data-engineering
@@ -120,7 +120,15 @@ SELECT
 FROM don_hang_raw;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌──────────────┬────────┬──────────────┬─────────┬────────┐
+│ n_trang_thai │ n_kenh │ n_thanh_toan │ n_co_km │ n_dong │
+├──────────────┼────────┼──────────────┼─────────┼────────┤
+│            4 │      3 │            4 │       2 │      5 │
+└──────────────┴────────┴──────────────┴─────────┴────────┘
+```
+
+Bốn cột cardinality thấp → theo bảng dưới là **junk dimension**.
 
 Đọc kết quả theo luật này:
 
@@ -198,7 +206,17 @@ GROUP BY j.kenh_ban
 ORDER BY doanh_thu DESC;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌──────────┬───────────────┐
+│ kenh_ban │   doanh_thu   │
+├──────────┼───────────────┤
+│ Online   │     450000.00 │
+│ App      │     220000.00 │
+└──────────┴───────────────┘
+```
+
+`Cửa hàng` không xuất hiện — đơn duy nhất qua kênh đó là "Đã huỷ", nên `la_don_hop_le`
+loại nó ra. Đúng ý nghiệp vụ, và **không phải hardcode danh sách trạng thái** ở query.
 
 Và một test bắt buộc — số dòng fact phải bằng số dòng nguồn, lệch là join nhân bản:
 
@@ -208,7 +226,15 @@ SELECT
   (SELECT count(*) FROM fct_don_hang)  AS fact;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌───────┬───────┐
+│ nguon │ fact  │
+├───────┼───────┤
+│     5 │     5 │
+└───────┴───────┘
+```
+
+Bằng nhau — join không nhân bản dòng nào.
 
 ## Trade-offs
 

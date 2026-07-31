@@ -36,8 +36,24 @@ grep -rl 'category: placeholder' docs/     # những gì chưa viết
 mắt thấy output"*. Chỉ chủ repo điền, sau khi chạy thật. Trống = chưa tin được — đó là
 cột sống của kho, và nội dung do AI sinh chính là thứ nó tồn tại để phòng.
 
-**2. Không dán output bịa.** Mục *Ví dụ* và ô *Kết quả* phải là output thật copy về.
-Nếu chưa chạy được, để trống và ghi rõ chưa chạy — đừng minh hoạ bằng số tự nghĩ ra.
+**2. Chạy thật trước đã — DuckDB có sẵn, đừng để trống "chưa chạy".**
+
+Ví dụ SQL tự chứa thì **chạy rồi dán output thật**, đừng ghi *chưa chạy*:
+
+```bash
+~/Documents/learn-lab/dbt/.venv/bin/python -c "
+import duckdb; print(duckdb.connect().sql('SELECT 1'))"
+```
+
+Chỉ khi thật sự không chạy được (cần Trino, Kafka, dữ liệu nội bộ) mới được **minh hoạ**
+— và lúc đó phải ghi nhãn rõ ràng ngay cạnh, ví dụ *"số minh hoạ, chưa chạy"*. Người đọc
+phải phân biệt được ngay đâu là output thật.
+
+**Ngoại lệ tuyệt đối không nới:** chi tiết **môi trường** — tên catalog, host, port,
+tên schema, phiên bản, đường dẫn — **cấm bịa trong mọi trường hợp**. Đây đúng là chỗ đã
+mất một buổi ngày 30/07/2026 vì AI bịa tên catalog Trino nghe rất hợp lý; xem
+[case study](docs/etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md). Loại này chỉ
+được lấy từ output của lệnh chạy thật (`SHOW CATALOGS`, `dbt debug`).
 
 **3. Trước khi tạo file mới, tìm xem đã có chưa.** Một kiến thức một chỗ; trùng thì
 cập nhật file cũ.

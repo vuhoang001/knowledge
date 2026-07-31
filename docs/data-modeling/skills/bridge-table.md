@@ -1,6 +1,6 @@
 ---
 title: Bridge table
-sidebar_position: 6
+sidebar_position: 7
 description: Quan hệ nhiều-nhiều giữa fact và dimension — bảng cầu nối kèm hệ số phân bổ để tổng không bị nhân đôi.
 tags: [bridge-table, many-to-many, dimension, data-modeling, kimball]
 domain: data-engineering
@@ -106,7 +106,21 @@ JOIN bridge_tai_khoan_khach b USING (tai_khoan_id)
 GROUP BY b.ma_khach;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+A. Có phân bổ                      B. Không phân bổ
+┌──────────┬─────────────────┐     ┌──────────┬───────────────────┐
+│ ma_khach │ gia_tri_phan_bo │     │ ma_khach │ gia_tri_lien_quan │
+├──────────┼─────────────────┤     ├──────────┼───────────────────┤
+│ KH004    │        500000.0 │     │ KH001    │        1300000.00 │
+│ KH001    │       433333.33 │     │ KH002    │        1300000.00 │
+│ KH002    │       433333.33 │     │ KH003    │        1300000.00 │
+│ KH003    │       433333.33 │     │ KH004    │         500000.00 │
+└──────────┴─────────────────┘     └──────────┴───────────────────┘
+   tổng = 1.800.000 ✅                tổng = 4.400.000 ❌
+```
+
+Tổng thật là **1.800.000**. Cột A cộng lại đúng; cột B cộng lại ra 4.400.000 — phồng
+gấp 2,4 lần. Cả hai đều **đúng cho câu hỏi của nó**, sai là khi cộng nhầm cột.
 
 | Câu hỏi nghiệp vụ | Dùng cách |
 |---|---|
@@ -132,7 +146,16 @@ SELECT
      JOIN bridge_tai_khoan_khach b USING (tai_khoan_id))                 AS sau_phan_bo;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+Test 1 — tong he so <> 1        Test 2 — tong truoc/sau
+┌──────────────┬────────┐       ┌───────────────┬─────────────┐
+│ tai_khoan_id │  tong  │       │      goc      │ sau_phan_bo │
+├──────────────┼────────┤       ├───────────────┼─────────────┤
+└──────────────┴────────┘       │    1800000.00 │   1800000.0 │
+        0 rows                  └───────────────┴─────────────┘
+```
+
+Test 1 không trả về dòng nào, test 2 hai số khớp — bridge lành.
 
 Test 1 trả về dòng nào là bridge hỏng. Test 2 lệch là mất hoặc nhân giao dịch — thường
 do tài khoản không có chủ nào trong bridge.

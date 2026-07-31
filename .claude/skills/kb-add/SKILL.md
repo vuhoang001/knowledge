@@ -54,7 +54,10 @@ Bắt buộc:
 - Mở bằng một dòng **Chốt** — câu duy nhất còn nhớ sau sáu tháng.
 - **`verified_at` để TRỐNG.** Luật cứng #1, không có ngoại lệ. Chỉ chủ repo điền sau
   khi chạy tay và thấy output.
-- **Không dán output bịa.** Luật cứng #2. Ô *Kết quả* để trống và ghi *chưa chạy*.
+- **Chạy thật rồi dán output.** Luật cứng #2 — DuckDB có sẵn ở
+  `~/Documents/learn-lab/dbt/.venv/bin/python`. Đừng để ô *Kết quả* trống.
+  Không chạy được thì minh hoạ nhưng **phải ghi nhãn**. Chi tiết môi trường (tên
+  catalog, host, version) thì cấm bịa tuyệt đối.
 - Note giải thích một **quyết định** (chọn A hay B) phải có **ví dụ xuyên suốt**: dữ
   liệu nguồn → bước đo để quyết → SQL dựng bảng → query kiểm chứng → bảng so sánh
   trước/sau. Luật cứng #6. SQL chạy được trên DuckDB.

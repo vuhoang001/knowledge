@@ -42,11 +42,12 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 | # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
 |---|---|---|---|---|
 | 1 | [**SCD**](skills/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
-| 2 | [Junk dimension](skills/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
-| 3 | [Mini-dimension](skills/mini-dimension.md) | Dim lớn có vài cột đổi nhanh — tách sao cho Type 2 không phình | advanced | 📝 draft |
-| 4 | [Role-playing dimension](skills/role-playing-dimension.md) | Một dim đóng nhiều vai trong cùng fact | intermediate | 📝 draft |
-| 5 | [Conformed dimension](skills/conformed-dimension.md) | Điều kiện để cộng số từ hai fact khác nhau | advanced | 📝 draft |
-| 6 | [Bridge table](skills/bridge-table.md) | Quan hệ nhiều-nhiều — tổng không bị nhân đôi | advanced | 📝 draft |
+| 2 | [Phát hiện thay đổi cho SCD 2](skills/scd-change-detection.md) | Biết dòng nào đã đổi: so cột, hash, `updated_at`, CDC | advanced | 📝 draft |
+| 3 | [Junk dimension](skills/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
+| 4 | [Mini-dimension](skills/mini-dimension.md) | Dim lớn có vài cột đổi nhanh — tách sao cho Type 2 không phình | advanced | 📝 draft |
+| 5 | [Role-playing dimension](skills/role-playing-dimension.md) | Một dim đóng nhiều vai trong cùng fact | intermediate | 📝 draft |
+| 6 | [Conformed dimension](skills/conformed-dimension.md) | Điều kiện để cộng số từ hai fact khác nhau | advanced | 📝 draft |
+| 7 | [Bridge table](skills/bridge-table.md) | Quan hệ nhiều-nhiều — tổng không bị nhân đôi | advanced | 📝 draft |
 
 ### Ba nhóm còn lại
 

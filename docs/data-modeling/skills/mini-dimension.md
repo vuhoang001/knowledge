@@ -1,6 +1,6 @@
 ---
 title: Mini-dimension
-sidebar_position: 3
+sidebar_position: 4
 description: Tách vài cột đổi nhanh khỏi một dimension lớn, để Type 2 không làm cả bảng phình theo nhịp cột nhanh nhất.
 tags: [mini-dimension, scd, dimension, data-modeling, kimball]
 domain: data-engineering
@@ -65,7 +65,18 @@ SELECT
 FROM dim_khach_hang_raw;
 ```
 
-**Kết quả:** _chưa chạy_
+Với 6 khách mẫu:
+
+```text
+┌──────────┬───────────┬────────────┐
+│ so_khach │ so_to_hop │ co_du_lieu │
+├──────────┼───────────┼────────────┤
+│        6 │         5 │          6 │
+└──────────┴───────────┴────────────┘
+```
+
+Ở quy mô thật con số là *vài triệu khách / vài chục tổ hợp* — chênh lệch đó mới là thứ
+làm mini-dimension đáng làm.
 
 | Thấy gì | Làm gì |
 |---|---|
@@ -123,7 +134,18 @@ GROUP BY n.nhom_thu_nhap
 ORDER BY doanh_thu DESC;
 ```
 
-**Kết quả:** _chưa chạy_
+```text
+┌───────────────┬───────────┐
+│ nhom_thu_nhap │ doanh_thu │
+├───────────────┼───────────┤
+│ 50-100tr      │   2000000 │
+│ 20-50tr       │    800000 │
+│ 10-20tr       │    450000 │
+└───────────────┴───────────┘
+```
+
+Mini-dimension đầy đủ là **20 dòng** (5 nhóm thu nhập × 4 nhóm tuổi) dù dữ liệu mẫu chỉ
+dùng 5 tổ hợp — đúng chủ ý sinh toàn bộ tích Descartes.
 
 ### Trước và sau
 
