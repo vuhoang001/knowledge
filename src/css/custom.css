@@ -1,0 +1,23 @@
+/* Tối thiểu — chỉ chỉnh những thứ ảnh hưởng tới việc đọc tài liệu dài. */
+
+:root {
+  --ifm-color-primary: #2a6f97;
+  --ifm-code-font-size: 92%;
+  --ifm-line-height-base: 1.7;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #61a5c2;
+}
+
+/* Bảng trong kho này nhiều và rộng — cho phép cuộn ngang thay vì vỡ layout */
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Khối mermaid canh giữa */
+.docusaurus-mermaid-container {
+  text-align: center;
+}

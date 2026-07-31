@@ -8,5 +8,15 @@
 .DS_Store
 Thumbs.db
 
-# Chỉ mục DẪN XUẤT — dựng lại bằng `kb.py index`, không commit (learning-os.md §0.1)
-99-meta/kb.sqlite
+# Lab dbt/Flink nếu lỡ tạo trong repo — lab sống ở ~/Documents/learn-lab/
+*.duckdb
+target/
+dbt_packages/
+logs/
+
+# Docusaurus
+/node_modules
+/build
+/.docusaurus
+/.cache-loader
+npm-debug.log*

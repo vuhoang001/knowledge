@@ -1,150 +1,137 @@
-# Kho kiến thức — Vũ Hoàng
+# Second Brain — Vũ Hoàng
 
-Markdown thuần trong git. Đọc/ghi bằng **VS Code**, duyệt bằng **GitLab** (GitLab
-tự render `README.md` của mỗi thư mục, nên đi trong repo là đi trong wiki), và
-Claude Code đọc trực tiếp được vì tất cả chỉ là file text.
+Wikipedia cá nhân cho Software Engineering, Data Engineering, Backend, DevOps và AI.
+Markdown thuần trong git, tương thích [Docusaurus](https://docusaurus.io/) — mở bằng
+VS Code, duyệt bằng GitLab, dựng thành site khi cần.
 
-Kho này tồn tại để trả lời **hai** câu hỏi. Mọi thứ bên dưới phục vụ đúng hai câu đó:
+**Ba nguyên tắc, mọi thứ dưới đây phục vụ chúng:**
 
-- **Tìm lại** — sáu tháng sau cần thứ mình từng biết, đi đường nào tới nó?
-- **Ôn lại** — giữ cho khỏi quên, ai nhắc và nhắc lúc nào?
+1. **Một kiến thức một chỗ.** Không có bản sao. Trùng thì merge, không tạo file mới.
+2. **Không ghi chú nào mồ côi.** Mọi file phải được `index.md` của thư mục trỏ tới, và
+   phải có mục *Related Topics*.
+3. **Chưa chạy được thì chưa gọi là học.** `verified_at` trống = chưa kiểm chứng bằng
+   tay = đọc với thái độ nghi ngờ.
 
 ## Cấu trúc
 
-Chia theo **loại ghi chú**, không theo chủ đề. Chủ đề luôn chồng lấn và luôn đổi
-(ghi chú về test dbt trên Iceberg bỏ vào `dbt/` hay `iceberg/`?); loại ghi chú thì
-không. Chủ đề để cho **tag và liên kết** lo.
+| Thư mục | Chứa gì |
+|---|---|
+| [`docs/`](docs/) | **Tài liệu tham chiếu.** Giải thích *nó là gì, vì sao, đánh đổi ra sao* |
+| [`tutorials/`](docs/tutorials/) | **Bài tập chạy thật**, có ô dán output |
+| [`case-studies/`](docs/case-studies/) | Trường hợp thật đã gặp, kèm cái sai lúc đầu |
+| [`examples/`](docs/examples/) | Đoạn code chạy được nguyên trạng, để copy |
+| [`cheatsheets/`](docs/cheatsheets/) | Bảng tra nhanh khi **đang làm**, không dùng để học lần đầu |
+| [`faqs/`](docs/faqs/) | Câu hỏi cắt ngang nhiều chủ đề |
+| [`glossary/`](docs/glossary/) | Thuật ngữ, định nghĩa một câu |
+| [`inbox/`](inbox/) | Quăng thô, chưa phân loại. Dọn hằng tuần |
+| [`templates/`](templates/) | Khuôn cho tài liệu mới |
 
-| Thư mục | Chứa gì | Sửa lại? |
+## Bản đồ tri thức
+
+```mermaid
+graph TD
+  SQL[SQL] --> DM[Data Modeling]
+  SQL --> DBT[dbt]
+  DM --> DBT
+  DM --> DQ[Data Quality]
+  DQ --> DBT
+  DBT --> TRINO[Trino]
+  TRINO --> ICE[Iceberg]
+  KAFKA[Kafka] --> FLINK[Flink]
+  FLINK --> ICE
+  ICE --> TRINO
+  PY[Python] --> AF[Airflow]
+  AF --> DBT
+
+  click DM "docs/data-modeling/"
+  click DQ "docs/data-quality/"
+  click DBT "docs/etl/dbt/"
+```
+
+## Mục lục `docs/`
+
+### Data Engineering
+
+| Nhóm | Nội dung | Trạng thái |
 |---|---|---|
-| [`00-inbox/`](00-inbox/) | Quăng thô, chưa phân loại. Dọn hằng tuần. | — |
-| [`01-daily/`](01-daily/) | Nhật ký `YYYY-MM-DD.md`. Hôm nay làm gì, vướng gì. | Không — chỉ thêm |
-| [`02-notes/`](02-notes/) | **Một ý một file.** Lớp giá trị cao nhất. | Có, thoải mái |
-| [`03-topics/`](03-topics/) | **Một công nghệ một file.** Bản đồ + lộ trình + bài tập + tự kiểm. | Có |
-| [`04-runbook/`](04-runbook/) | Thao tác lặp lại, có lệnh chạy được. | Có |
-| [`09-worklog/`](09-worklog/) | Kê khai tháng. **Sinh từ `01-daily`**, không phải nguồn. | — |
-| [`99-meta/`](99-meta/) | Khuôn mẫu + script. | — |
+| [Data Modeling](docs/data-modeling/) | [Grain](docs/data-modeling/grain.md) · [Fact/Dimension](docs/data-modeling/fact-and-dimension.md) · [**SCD**](docs/data-modeling/scd.md) · [Surrogate key](docs/data-modeling/surrogate-key.md) · [Star/Snowflake/OBT](docs/data-modeling/star-snowflake-obt.md) · [Quy trình thiết kế](docs/data-modeling/design-process.md) | 📝 đang viết |
+| [Data Quality](docs/data-quality/) | [Sáu chiều chất lượng](docs/data-quality/six-dimensions.md) | 📝 đang viết |
+| [ETL & Streaming](docs/etl/) | [**dbt**](docs/etl/dbt/) · [Kafka](docs/etl/kafka/) · [Flink](docs/etl/flink/) | 🔄 dbt đang học |
+| [Query Engines](docs/query-engines/) | [Trino](docs/query-engines/trino/) | ⬜ chưa bắt đầu |
+| [Storage](docs/storage/) | [Iceberg](docs/storage/iceberg/) | ⬜ chưa bắt đầu |
+| [Orchestration](docs/orchestration/) | [Airflow](docs/orchestration/airflow/) | ⬜ chưa bắt đầu |
+| [Databases](docs/databases/) | [SQL](docs/databases/sql/) | ⬜ chưa bắt đầu |
+| [Languages](docs/languages/) | [Python](docs/languages/python/) | ⬜ chưa bắt đầu |
 
-Phân vân bỏ đâu thì hỏi một câu:
+### Chưa có nội dung
 
-| Vừa có | Hỏi | Vào |
-|---|---|---|
-| Đọc được cái hay | Đã hiểu chưa? **Chưa** | `00-inbox` |
-| Debug 3 tiếng | Gắn với một ngày cụ thể? **Có** | `01-daily` |
-| Hiểu ra một điều | Đúng cả ngoài dự án này? **Có** | `02-notes` |
-| Bắt đầu học Kafka | Là cả một công nghệ? **Có** | `03-topics` |
-| Deploy lên .60 | Sẽ làm lại y hệt? **Có** | `04-runbook` |
+`concepts/` · `architecture/` · `patterns/` · `algorithms/` · `protocols/` ·
+`tools/` · `backend/` · `frontend/` · `devops/` · `cloud/` · `ai/` · `security/` ·
+`networking/`
 
-Đắn đo quá 3 giây là dấu hiệu chưa rõ mình đang ghi cái gì — cứ quăng vào `00-inbox`
-rồi cuối tuần tính.
+Thư mục dựng sẵn theo kiến trúc, chưa viết gì. Chủ đề mới không hợp thư mục nào thì
+tạo thư mục mới — `languages/` ra đời như vậy.
 
-## Ba đường tìm lại — phải sống cả ba
+## Quy ước
 
-| Đường | Khi bạn nhớ | Cách đi |
-|---|---|---|
-| **Toàn văn** | Nhớ *từ khoá* | `Ctrl+Shift+F` |
-| **Mục lục** | Nhớ *công nghệ* | Mở [`03-topics/`](03-topics/) |
-| **Thời gian** | Nhớ *hồi đó* | Mở [`01-daily/`](01-daily/) |
+| Thứ | Quy tắc |
+|---|---|
+| Tên thư mục | tiếng Anh, kebab-case (`data-modeling/`) |
+| Tên file | tiếng Anh, kebab-case (`surrogate-key.md`). Trang chủ thư mục là `index.md` |
+| Nội dung | **tiếng Việt**, giữ nguyên thuật ngữ tiếng Anh (`grain`, `incremental`, `rebalance`) |
+| Tài liệu lớn | dùng [`templates/full-topic.md`](templates/full-topic.md) — 20 mục |
+| Tài liệu nhỏ | dùng [`templates/short-topic.md`](templates/short-topic.md) — 8 mục |
+| Nhãn thư mục | `_category_.json` cho Docusaurus sidebar |
 
-Hệ quả cho cách viết: **giữ nguyên thuật ngữ tiếng Anh trong nội dung.** Sáu tháng
-sau bạn sẽ gõ `incremental`, `rebalance`, `grain` — không gõ "gia tăng". Diễn giải
-bằng tiếng Việt, từ khoá để nguyên.
-
-## Quy ước đặt tên
-
-Tên file **không dấu, kebab-case** — gõ trong `Ctrl+P` mà phải bỏ dấu tiếng Việt
-thì rất khổ. Nội dung có dấu thoải mái.
-
-| Loại | Dạng | Ví dụ |
-|---|---|---|
-| Ghi chú | `<chu-de>-<ket-luan>.md` | `phan-trang-client-vs-server.md` |
-| Nhật ký | `YYYY-MM-DD.md` | `2026-07-30.md` |
-| Chủ đề | `<cong-nghe>.md` | `dbt.md` |
-| Runbook | `<viec>-<o-dau>.md` | `deploy-fe-len-60.md` |
-
-**Tên là kết luận, không phải nhãn chủ đề.** `dbt-test-unique-sai-grain.md` tốt hơn
-`dbt-notes.md` — nhìn tên đã biết bên trong nói gì, đó là 80% khả năng tìm lại.
-
-## Frontmatter
-
-Mỗi file mở đầu bằng metadata. Đây là thứ cho phép script đọc được kho:
+### Front matter bắt buộc
 
 ```yaml
 ---
-type: note          # note | topic | runbook | daily
-tags: [dbt, testing]
-level: L2           # chỉ topic — xem 03-topics/README.md
-next-review: 2026-08-06
-updated: 2026-07-30
+title: SCD — Slowly Changing Dimension
+description: <một câu, hiện ở kết quả tìm kiếm>
+tags: [scd, data-modeling]
+domain: data-engineering
+category: concept          # concept | technology | pattern | tool | tutorial
+status: review             # draft | review | stable
+difficulty: intermediate   # beginner | intermediate | advanced
+verified_at:               # TRỐNG = chưa chạy tay, chưa tin được
+updated: 2026-07-31
 ---
 ```
 
-## Vòng đời một ghi chú
+`verified_at` là cột sống của kho. Ngày 30/07/2026 một module do AI sinh ghi sai tên
+catalog Trino — đọc rất thuyết phục, sai ở đúng chỗ khó kiểm nhất là chi tiết môi
+trường. Trống nghĩa là chưa ai chạy thật.
 
-```
-Bắt gặp   →  00-inbox hoặc 01-daily     ghi thô, không dừng lại trau chuốt
-Cuối tuần →  02-notes                    viết lại cho mình-6-tháng-sau
-Ngay đó   →  03-topics/<x>.md trỏ tới    không thì nó mồ côi
-Định kỳ   →  on-tap.py nhắc              ôn bằng cách tự kiểm
-```
+## Kiến thức mới đi vào đâu
 
-Bước hay bị bỏ là **cuối tuần**, và bỏ nó là kho chết. Ghi nhật ký thuần thì ba
-tuần sau đọc lại chẳng thấy giá trị, rồi bỏ luôn cả thói quen ghi.
+| Vừa có | Hỏi | Vào |
+|---|---|---|
+| Đọc được cái hay, chưa hiểu | Đã hiểu chưa? **Chưa** | [`inbox/`](inbox/) |
+| Hiểu một khái niệm không phụ thuộc công cụ | Đúng cả khi đổi công cụ? **Có** | `docs/<nhóm khái niệm>/` |
+| Hiểu một tính năng của công cụ | Gắn với một công nghệ? **Có** | `docs/<nhóm>/<công nghệ>/` |
+| Chạy được một thứ, có output | Người khác làm lại được? **Có** | [`tutorials/`](docs/tutorials/) |
+| Debug xong một sự cố thật | Có bài học rộng hơn ca này? **Có** | [`case-studies/`](docs/case-studies/) |
 
-## Dùng hằng ngày
-
-Cài alias một lần, rồi quên đường dẫn đi:
-
-```bash
-echo "alias kb='python3 ~/Documents/knowledge/99-meta/kb.py'" >> ~/.zshrc
-```
-
-**Hai lệnh chạy 90% thời gian** — chúng là thứ quyết định kho sống hay chết:
+**Trước khi tạo file mới, tìm xem đã có chưa.** Có rồi thì cập nhật, đừng tạo bản thứ hai.
 
 ```bash
-kb jot "Trino EXPLAIN ANALYZE mới là chỗ đọc, đừng đoán"   # ghi 3 giây, KHÔNG nghĩ
-kb jot -i "xem thử dbt_utils có gì thay thế"                # ý tưởng → inbox
-kb find "grain"                                              # tìm 3 giây, cả kho
+grep -ril "slowly changing" docs/
 ```
 
-`jot` không bắt bạn quyết định gì: không cần chọn thư mục, không cần đặt tên file,
-không cần biết nó có đáng lưu không. Phân loại để dành cuối tuần.
+## Dựng site Docusaurus
 
-Còn lại:
+Kho đang là markdown thuần, chưa có `package.json`. Muốn bật site:
 
 ```bash
-kb due                # hôm nay ôn gì
-kb review <id> <0-3>  # chấm sau khi ôn
-kb path <id>          # thứ tự học để tới được <id>
-kb doctor             # kho có mục ruỗng chỗ nào không
-kb index              # chạy lại sau khi sửa file (find/path đọc từ index)
+npx create-docusaurus@latest site classic
+# trỏ docs plugin về ../docs, bật @docusaurus/theme-mermaid
 ```
 
-Mở cả kho trong VS Code khi cần viết dài: `code ~/Documents/knowledge`
-
-- `Ctrl+Shift+V` — xem bản render
-- `Ctrl+P` — nhảy nhanh tới file
-- `Ctrl+Shift+F` — tìm toàn văn cả kho
-
-Muốn có `[[liên kết]]`, backlink và graph ngay trong VS Code thì cài extension
-**Foam** (`foam.foam-vscode`). Không cài cũng chạy bình thường.
+Front matter và `_category_.json` đã theo chuẩn Docusaurus nên không phải sửa nội dung.
 
 ## Đồng bộ
 
 ```bash
-git add -A && git commit -m "notes: ..." && git push
+git add -A && git commit -m "docs: ..." && git push
 ```
-
-## Bắt đầu từ đâu
-
-Đừng dựng hết một lúc — thói quen phải có trước hệ thống.
-
-| Giai đoạn | Làm | **Không** làm |
-|---|---|---|
-| Tuần 1–2 | Chỉ ghi `01-daily`, mỗi ngày 5 phút | Chưa đụng notes/topics/ôn tập |
-| Tuần 3 | Cuối tuần nhấc 2–3 thứ lên `02-notes` | Chưa cần hoàn hảo |
-| Tuần 4 | Nối các note vào `03-topics/dbt.md` | Chưa thêm công nghệ thứ hai |
-| Tháng 2 | Bật `next-review`, chạy `on-tap.py` mỗi sáng | |
-| Tháng 3 | Sinh worklog tháng **từ** daily | |
-
-**Chỉ tiêu duy nhất của tuần 1: 7 file trong `01-daily/`.** Không gì khác quan trọng bằng.
