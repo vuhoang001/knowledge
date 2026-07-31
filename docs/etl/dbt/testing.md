@@ -5,6 +5,7 @@ description: Ba tầng test/contract/unit test, bốn cơ chế test, và ca tes
 tags: [dbt, testing, data-quality, grain, contract]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: review
 difficulty: intermediate
 verified_at:          # phần 3 tầng chưa chạy tay. §5 đã chạy 30/07/2026

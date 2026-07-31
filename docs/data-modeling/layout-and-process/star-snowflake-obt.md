@@ -5,6 +5,7 @@ description: Ba cách bố trí fact quanh dimension — và vì sao lakehouse l
 tags: [star-schema, snowflake-schema, obt, denormalization, data-modeling]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

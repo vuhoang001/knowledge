@@ -5,6 +5,7 @@ description: Quyết định ở mức toàn mô hình — bố trí các bảng
 tags: [data-modeling, star-schema, kimball]
 domain: data-engineering
 category: pattern
+doc_type: index
 status: stable
 difficulty: intermediate
 verified_at:

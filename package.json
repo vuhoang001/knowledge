@@ -5,6 +5,7 @@
   "description": "Second Brain — kho tri thức cá nhân về Software / Data Engineering",
   "scripts": {
     "postinstall": "patch-package",
+    "catalog": "node scripts/gen-catalog.mjs",
     "lint": "node scripts/lint-docs.mjs",
     "check": "npm run lint && npm run build",
     "start": "docusaurus start",

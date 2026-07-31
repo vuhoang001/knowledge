@@ -5,6 +5,7 @@ description: Jinja chạy trước khi SQL rời máy — và ngưỡng nào th�
 tags: [dbt, jinja, macro, dbt-utils]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

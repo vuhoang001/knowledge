@@ -2,7 +2,8 @@
 title: Case Studies
 description: Trường hợp thật đã gặp — ghi cả cái SAI lúc đầu, không chỉ cách đúng cuối cùng.
 tags: [case-study]
-category: case-study
+category: index
+doc_type: case-study
 updated: 2026-07-31
 ---
 

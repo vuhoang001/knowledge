@@ -4,6 +4,7 @@ description: Manifest phẳng — mọi file trong docs/ với một câu chốt
 slug: /
 tags: [index, manifest]
 category: concept
+doc_type: index
 status: stable
 updated: 2026-07-31
 ---
@@ -15,6 +16,11 @@ Trang này liệt kê **mọi file** trong `docs/` ở một chỗ, để không
 lộ trình chi tiết — trang này chỉ trả lời *"thứ tôi cần nằm ở file nào"*.
 
 **Ký hiệu:** ✅ đã chạy tay · 📝 lý thuyết, chưa kiểm chứng · 🟡 mới có khung + bẫy · 🗂️ mục lục
+
+> **Hai đường vào cùng một tập file.** Trang này gom theo **chủ đề**. Muốn gom theo
+> **dạng tài liệu** — tài liệu tham chiếu / bài tập / case study / cheatsheet — thì xem
+> [`catalog.md`](catalog.md). Muốn cắt theo cả hai cùng lúc thì dùng trang tag, ví dụ
+> [`/tags/data-modeling`](/tags/data-modeling).
 
 ## Data Modeling
 
@@ -97,7 +103,7 @@ Docusaurus báo lỗi nếu một category rỗng.
 | [tutorials/](tutorials/) | Bài tập chạy thật, có ô dán output |
 | [case-studies/](case-studies/) | Sự cố thật, kèm giả thuyết sai lúc đầu |
 | [examples/](examples/) | Code chạy được nguyên trạng, để copy |
-| [cheatsheets/](cheatsheets/) | Bảng tra nhanh khi **đang làm** |
+| [cheatsheets/](cheatsheets/) | Bảng tra nhanh khi **đang làm** — [SCD](cheatsheets/scd.md) |
 | [faqs/](faqs/) | Câu hỏi cắt ngang nhiều chủ đề |
 | [glossary/](glossary/) | Thuật ngữ, định nghĩa một câu |
 

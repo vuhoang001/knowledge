@@ -2,7 +2,8 @@
 title: Examples
 description: Đoạn code chạy được, dán vào là dùng.
 tags: [example]
-category: example
+category: index
+doc_type: example
 updated: 2026-07-31
 ---
 

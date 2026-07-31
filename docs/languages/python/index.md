@@ -4,6 +4,7 @@ description: Phần Python mà hạ tầng dữ liệu thật sự dùng — DAG
 tags: [python, airflow, pandas, etl]
 domain: data-engineering
 category: technology
+doc_type: index
 status: draft
 difficulty: beginner
 verified_at:

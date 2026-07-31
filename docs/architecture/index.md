@@ -3,6 +3,7 @@ title: Architecture
 description: Chưa có nội dung — thư mục dựng sẵn theo kiến trúc.
 tags: [placeholder]
 category: placeholder
+doc_type: index
 status: draft
 updated: 2026-07-31
 ---

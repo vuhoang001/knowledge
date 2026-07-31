@@ -1,9 +1,11 @@
 ---
 title: <Tên chủ đề>
+sidebar_position: <so>   # khop cot # trong index.md
 description: <Một câu mô tả, hiện ở kết quả tìm kiếm>
 tags: [<tag1>, <tag2>]
 domain: <data-engineering | backend | devops | ai | ...>
 category: <concept | technology | pattern | tool>
+doc_type: reference     # reference | tutorial | case-study | cheatsheet | faq | glossary | example
 status: draft            # draft | review | stable
 difficulty: beginner     # beginner | intermediate | advanced
 verified_at:             # ngày đã chạy tay và xác nhận. TRỐNG = chưa tin được

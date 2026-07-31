@@ -3,6 +3,7 @@ title: Orchestration
 description: Quyết định cái gì chạy lúc nào và sau cái gì.
 tags: [orchestration, airflow]
 category: index
+doc_type: index
 status: stable
 updated: 2026-07-31
 ---

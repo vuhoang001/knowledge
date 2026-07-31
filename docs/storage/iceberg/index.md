@@ -4,6 +4,7 @@ description: Table format, không phải file format và không phải engine �
 tags: [iceberg, table-format, lakehouse, time-travel, acid]
 domain: data-engineering
 category: technology
+doc_type: index
 status: draft
 difficulty: intermediate
 verified_at:

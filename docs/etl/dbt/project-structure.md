@@ -5,6 +5,7 @@ description: dbt_project.yml, profiles.yml, target/compiled — thư mục nào 
 tags: [dbt, configuration, project-structure]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:

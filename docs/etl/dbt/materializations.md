@@ -5,6 +5,7 @@ description: view, table, incremental, ephemeral — cùng một SELECT, khác t
 tags: [dbt, materialization, incremental]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

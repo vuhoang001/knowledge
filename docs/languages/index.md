@@ -3,6 +3,7 @@ title: Languages
 description: Ngôn ngữ dùng để dán các mảnh hạ tầng lại với nhau.
 tags: [python, languages]
 category: index
+doc_type: index
 status: stable
 updated: 2026-07-31
 ---

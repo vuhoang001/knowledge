@@ -4,6 +4,7 @@ description: Transform SQL có DAG và test — chữ T trong ELT. dbt sinh SQL,
 tags: [dbt, elt, transformation, data-engineering]
 domain: data-engineering
 category: technology
+doc_type: index
 status: review
 difficulty: intermediate
 verified_at: 2026-07-30
@@ -142,6 +143,20 @@ Xem [06-test-va-data-quality.md](testing.md) §5. Grain thật là *cặp*
 - [ ] docs.getdbt.com — phần *Build your DAG* (đọc hết, đừng nhảy cóc)
 - [ ] `dbt_utils` — đọc danh sách test có sẵn trước khi tự viết
 - [ ] `dbt-trino` README — phần cấu hình Iceberg (để dành bài 7)
+
+## Liên quan trong kho
+
+Tài liệu về dbt nhưng **không nằm trong thư mục này** — chúng ở theo *dạng tài liệu*
+(`doc_type`), không theo chủ đề:
+
+| Dạng | Tài liệu | Dùng khi |
+|---|---|---|
+| Bài tập | [dbt lab — DuckDB](../../tutorials/dbt-lab-duckdb.md) | chạy thật, có ô dán output |
+| Case study | *(chưa có)* | đã debug xong một sự cố dbt thật |
+| Cheatsheet | *(chưa có)* | đang làm, cần tra nhanh cú pháp |
+
+Xem đầy đủ mọi thứ mang tag này: **[`/tags/dbt`](/tags/dbt)** — trang đó gom tất cả bất
+kể thư mục.
 
 ## Liên kết
 

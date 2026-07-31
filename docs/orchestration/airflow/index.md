@@ -4,6 +4,7 @@ description: Airflow điều phối, không xử lý — và logical_date không
 tags: [airflow, orchestration, dag, scheduling, idempotency]
 domain: data-engineering
 category: technology
+doc_type: index
 status: draft
 difficulty: intermediate
 verified_at:

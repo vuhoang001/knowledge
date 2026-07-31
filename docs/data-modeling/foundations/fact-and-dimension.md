@@ -5,6 +5,7 @@ description: Hai loại bảng trong mô hình chiều — cái gì đo được
 tags: [fact, dimension, data-modeling, kimball, star-schema]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: review
 difficulty: beginner
 verified_at:

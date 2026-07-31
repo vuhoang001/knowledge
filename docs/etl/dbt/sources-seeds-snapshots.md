@@ -5,6 +5,7 @@ description: Ba cách đưa dữ liệu không do dbt tính ra vào DAG — và 
 tags: [dbt, source, seed, snapshot, scd, freshness]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

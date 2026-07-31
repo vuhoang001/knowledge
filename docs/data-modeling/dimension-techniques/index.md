@@ -5,6 +5,7 @@ description: Các kỹ thuật áp dụng lên nền tảng fact/dimension — x
 tags: [data-modeling, dimension, kimball]
 domain: data-engineering
 category: pattern
+doc_type: index
 status: stable
 difficulty: intermediate
 verified_at:

@@ -5,6 +5,7 @@ description: Từ một yêu cầu nghiệp vụ mơ hồ tới bảng chạy đ
 tags: [data-modeling, kimball, design-process, bus-matrix, requirements]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: review
 difficulty: intermediate
 verified_at:

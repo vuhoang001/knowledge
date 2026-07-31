@@ -4,6 +4,7 @@ description: Ba tầng bảo vệ dữ liệu và sáu chiều chất lượng �
 tags: [data-quality, testing]
 domain: data-engineering
 category: concept
+doc_type: index
 status: stable
 difficulty: beginner
 updated: 2026-07-31

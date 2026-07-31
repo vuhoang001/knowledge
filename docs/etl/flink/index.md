@@ -4,6 +4,7 @@ description: Engine xử lý stream có state — event time và watermark là c
 tags: [flink, streaming, event-time, watermark, checkpoint]
 domain: data-engineering
 category: technology
+doc_type: index
 status: draft
 difficulty: advanced
 verified_at:

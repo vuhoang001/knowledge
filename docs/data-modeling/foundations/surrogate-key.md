@@ -5,6 +5,7 @@ description: Vì sao không dùng thẳng mã nghiệp vụ làm khoá của dim
 tags: [surrogate-key, natural-key, data-modeling, kimball]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

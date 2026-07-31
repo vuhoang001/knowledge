@@ -4,6 +4,7 @@ description: Kafka là một cái log, không phải hàng đợi — message kh
 tags: [kafka, streaming, message-bus, cdc]
 domain: data-engineering
 category: technology
+doc_type: index
 status: draft
 difficulty: intermediate
 verified_at:

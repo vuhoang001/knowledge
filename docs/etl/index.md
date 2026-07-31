@@ -3,6 +3,7 @@ title: ETL & Streaming
 description: Đưa dữ liệu đi và biến đổi nó — batch bằng dbt, stream bằng Kafka và Flink.
 tags: [etl, streaming]
 category: index
+doc_type: index
 status: stable
 updated: 2026-07-31
 ---

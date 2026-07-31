@@ -5,6 +5,7 @@ description: "Cột trạng thái vài giá trị: để thẳng trong fact, tá
 tags: [junk-dimension, degenerate-dimension, dimension, data-modeling, kimball]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

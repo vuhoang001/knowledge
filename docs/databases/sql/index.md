@@ -4,6 +4,7 @@ description: "Học đúng phần mà dbt và Trino bắt phải chắc: grain, 
 tags: [sql, grain, join, window-function]
 domain: data-engineering
 category: concept
+doc_type: index
 status: draft
 difficulty: beginner
 verified_at:

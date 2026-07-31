@@ -5,6 +5,7 @@ description: "Nhìn tận mắt SQL mà dbt sinh ra: ref() biến thành gì, te
 tags: [dbt, ref, jinja, compiled-sql]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: stable
 difficulty: beginner
 verified_at: 2026-07-30

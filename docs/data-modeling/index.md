@@ -4,6 +4,7 @@ description: Thiết kế bảng — grain, fact/dimension, SCD, và quy trình 
 tags: [data-modeling, kimball]
 domain: data-engineering
 category: concept
+doc_type: index
 status: stable
 difficulty: intermediate
 updated: 2026-07-31
@@ -93,6 +94,20 @@ Triển khai bằng dbt snapshot
 ```
 
 **Đường ngắn nhất tới chỗ dùng được: Grain → Fact/Dimension → SCD → Quy trình.**
+
+## Liên quan trong kho
+
+Tài liệu về data modeling nhưng **không nằm trong thư mục này** — chúng ở theo *dạng tài
+liệu* (`doc_type`), không theo chủ đề:
+
+| Dạng | Tài liệu | Dùng khi |
+|---|---|---|
+| Cheatsheet | [SCD — tra nhanh](../cheatsheets/scd.md) | đang làm, cần tra Type nào là gì |
+| Case study | *(chưa có)* | đã debug xong một sự cố mô hình thật |
+| Bài tập | *(chưa có bài riêng cho data modeling)* | muốn chạy thật, có output dán lại |
+
+Xem đầy đủ mọi thứ mang tag này: **[`/tags/data-modeling`](/tags/data-modeling)** — trang
+đó gom tất cả bất kể thư mục.
 
 ## Related Topics
 

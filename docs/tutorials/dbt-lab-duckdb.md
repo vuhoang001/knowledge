@@ -4,7 +4,8 @@ sidebar_position: 1
 description: Bảy bài tập chạy thật từ dbt debug tới chuyển sang Trino — mỗi bài có ô dán output.
 tags: [dbt, duckdb, tutorial, lab, hands-on]
 domain: data-engineering
-category: tutorial
+category: technology
+doc_type: tutorial
 status: review
 difficulty: beginner
 verified_at: 2026-07-30       # bài 1–3 đã chạy

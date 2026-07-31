@@ -77,10 +77,12 @@ câu thì câu đó là đây.
 ```yaml
 ---
 title: Grain
+sidebar_position: 1             # khớp cột # trong index.md — xem luật cứng #5
 description: Một câu — đây là thứ dùng để tìm lại file này
 tags: [grain, data-modeling, kimball]
 domain: data-engineering        # data-engineering | backend | devops | ai | ...
-category: concept               # concept | technology | pattern | tool | tutorial
+category: concept               # TRI THỨC: concept | technology | pattern | tool
+doc_type: reference             # TÀI LIỆU: quyết định thư mục, phải khớp (linter R12)
 status: draft                   # draft | review | stable
 difficulty: beginner            # beginner | intermediate | advanced
 verified_at:                    # TRỐNG — xem luật cứng #1

@@ -4,7 +4,8 @@ sidebar_position: 1
 description: Bảng tra nhanh Slowly Changing Dimension khi đang làm việc.
 tags: [scd, cheatsheet, data-modeling]
 domain: data-engineering
-category: cheatsheet
+category: concept
+doc_type: cheatsheet
 status: stable
 difficulty: intermediate
 verified_at:

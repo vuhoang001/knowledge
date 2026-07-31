@@ -2,7 +2,8 @@
 title: FAQs
 description: Câu hỏi lặp lại nhiều lần, gom về một chỗ.
 tags: [faq]
-category: faq
+category: index
+doc_type: faq
 updated: 2026-07-31
 ---
 

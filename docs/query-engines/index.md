@@ -3,6 +3,7 @@ title: Query Engines
 description: Thứ thật sự chạy SQL — dbt chỉ sinh câu lệnh.
 tags: [query-engine, trino]
 category: index
+doc_type: index
 status: stable
 updated: 2026-07-31
 ---

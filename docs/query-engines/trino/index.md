@@ -4,6 +4,7 @@ description: Query engine phân tán, không lưu dữ liệu — đọc từ nh
 tags: [trino, query-engine, federation, explain-analyze]
 domain: data-engineering
 category: technology
+doc_type: index
 status: draft
 difficulty: intermediate
 verified_at:

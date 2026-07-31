@@ -5,6 +5,7 @@ description: Sơ đồ lineage chính xác đúng bằng mức bạn dùng ref()
 tags: [dbt, docs, lineage, exposures]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

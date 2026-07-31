@@ -5,6 +5,7 @@ description: ref() không phải cách viết tắt tên bảng mà là cách du
 tags: [dbt, model, ref, dag, lineage]
 domain: data-engineering
 category: technology
+doc_type: reference
 status: draft
 difficulty: intermediate
 verified_at:

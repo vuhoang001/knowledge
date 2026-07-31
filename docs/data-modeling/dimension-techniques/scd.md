@@ -5,6 +5,7 @@ description: Khi thuộc tính của một thực thể thay đổi, báo cáo v
 tags: [scd, data-modeling, dimension, kimball, slowly-changing-dimension]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: review
 difficulty: intermediate
 verified_at:            # lý thuyết Kimball; phần triển khai dbt chưa chạy tay

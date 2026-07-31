@@ -13,9 +13,23 @@ Sai lầm dễ nhất là nhét mọi thứ vào một trường rồi tưởng 
 
 | Trục | Trả lời | Quyết định | Trường |
 |---|---|---|---|
-| **Loại tài liệu** | Nó là *dạng* gì? | **Thư mục gốc** | `category` (xem nợ kỹ thuật bên dưới) |
+| **Loại tài liệu** | Nó là *dạng* gì? | **Thư mục gốc** | `doc_type` |
 | **Lĩnh vực** | Nó thuộc mảng nào? | Thư mục con cấp 1 | `domain` |
 | **Loại tri thức** | Nó là *kiểu* hiểu biết nào? | Không quyết định chỗ — dùng để lọc | `category` |
+
+`doc_type` và thư mục **phải khớp** — linter R12 chặn nếu khai một đằng để một nẻo.
+Nhờ đó phân loại là thứ kiểm chứng được, không phải nhãn dán tuỳ hứng.
+
+| `doc_type` | Bắt buộc nằm ở |
+|---|---|
+| `tutorial` | `docs/tutorials/` |
+| `case-study` | `docs/case-studies/` |
+| `cheatsheet` | `docs/cheatsheets/` |
+| `faq` | `docs/faqs/` |
+| `glossary` | `docs/glossary/` |
+| `example` | `docs/examples/` |
+| `reference` | `docs/<domain>/...` — mặc định |
+| `index` | trang chủ của bất kỳ thư mục nào |
 
 ## Trục 1 — Loại tài liệu quyết định thư mục gốc
 
@@ -102,7 +116,8 @@ sidebar_position: 2              # khớp cột # trong index.md
 description: "Một câu — thứ dùng để tìm lại file này"
 tags: [junk-dimension, dimension, kimball]
 domain: data-engineering
-category: concept                # concept | technology | pattern | tool
+category: concept                # TRI THUC: concept | technology | pattern | tool
+doc_type: reference              # TAI LIEU: quyet dinh thu muc, phai khop (R12)
 status: draft                    # draft | review | stable
 difficulty: intermediate         # beginner | intermediate | advanced
 verified_at:                     # TRỐNG cho tới khi chạy tay và thấy output
@@ -119,7 +134,8 @@ updated: 2026-07-31
 | # | Rule |
 |---|---|
 | R1 | Frontmatter đủ trường bắt buộc |
-| R2 | `category`/`status`/`difficulty` thuộc tập giá trị hợp lệ |
+| R2 | `category` thuộc trục tri thức; `status`/`difficulty` hợp lệ |
+| R12 | `doc_type` có, hợp lệ, và **khớp thư mục** |
 | R3 | `description` chứa `:` phải quote |
 | R4 | `verified_at` trống hoặc đúng dạng `YYYY-MM-DD` |
 | R5 | File nội dung phải có `sidebar_position` |
@@ -132,7 +148,6 @@ updated: 2026-07-31
 
 | # | Rule |
 |---|---|
-| R2b | `category` đang gánh cả loại tài liệu lẫn loại tri thức |
 | R7 | File có trong manifest `docs/index.md` |
 | R8 | File có mục `## Related Topics` |
 
@@ -183,12 +198,12 @@ tới mức cần nhiều file, chúng **không** thành thư mục con của `k
 phải bộ phận bên trong broker. Chúng lên thành `docs/etl/schema-registry/` và
 `docs/etl/kafka-connect/`, **ngang hàng** với `kafka/`.
 
-## Nợ kỹ thuật đã biết
+## Kiểm kê kho
 
-**`category` đang gánh hai trục.** Nó chứa lẫn lộn loại tri thức (`concept`,
-`technology`, `pattern`, `tool`) và loại tài liệu (`cheatsheet`, `faq`, `example`,
-`reference`, `tutorial`, `case-study`). Vì thế không lọc được câu hỏi kiểu *"cho tôi mọi
-`concept` về data-engineering"* — các cheatsheet về cùng chủ đề không mang nhãn đó.
+```bash
+npm run lint -- --inventory
+```
 
-Cách sửa: thêm trường `doc_type` cho trục tài liệu, trả `category` về đúng một việc.
-Chạm 8 file. Linter đang báo WARN (R2b) chứ chưa chặn, để việc này làm được lúc rảnh.
+Trả lời "kho đang có gì" theo hai trục — bao nhiêu case study, bao nhiêu reference thuộc
+data-engineering, và **bao nhiêu file đã thật sự kiểm chứng bằng tay**. Con số cuối là
+thứ đáng nhìn nhất: `verified_at` có ngày mới tính.

@@ -5,6 +5,7 @@ description: Khung chung của ngành để biết mình đang bỏ sót chiều
 tags: [data-quality, testing, accuracy, freshness]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: review
 difficulty: beginner
 verified_at:

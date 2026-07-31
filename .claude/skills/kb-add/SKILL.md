@@ -29,8 +29,9 @@ là một nhánh của file cũ, cân nhắc thêm mục vào file cũ và chỉ
 
 Đọc `ROUTING.md` và áp lần lượt:
 
-1. **Loại tài liệu** → thư mục gốc. Có output thật dán vào thì là `tutorials/`, không
-   thì là `docs/`. Đây là chỗ hay nhầm nhất.
+1. **Loại tài liệu** → `doc_type` → thư mục gốc. Có output thật dán vào thì là
+   `tutorials/`, không thì là `docs/`. Đây là chỗ hay nhầm nhất. `doc_type` và thư mục
+   **phải khớp** — linter R12 chặn nếu lệch, nên không có chuyện dán nhãn cho có.
 2. **Lĩnh vực** → `docs/<domain>/` hoặc `docs/<domain>/<công nghệ>/`.
 3. **Tầng** → chỉ áp dụng nếu thư mục đích là thư mục **khái niệm cấp 1** và các file
    trong đó không còn ngang hàng. Thư mục công nghệ cấp 2 (`etl/kafka/`) đã hết quota
@@ -74,7 +75,8 @@ Bỏ sót chỗ nào thì linter bắt chỗ đó, nhưng sửa trước rẻ h�
 ## Bước 5 — Kiểm
 
 ```bash
-npm run check    # lint + build
+npm run check                   # lint + build, phải 0 error
+npm run lint -- --inventory     # kho đang có gì, theo doc_type × domain
 ```
 
 Phải **0 error**. Warning thì đọc xem có phải do file vừa thêm không.

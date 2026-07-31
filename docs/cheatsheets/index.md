@@ -2,7 +2,8 @@
 title: Cheatsheets
 description: Bảng tra nhanh khi đang làm việc — không giải thích, chỉ tra.
 tags: [cheatsheet]
-category: cheatsheet
+category: index
+doc_type: cheatsheet
 updated: 2026-07-31
 ---
 

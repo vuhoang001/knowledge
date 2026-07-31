@@ -3,6 +3,7 @@ title: Storage
 description: Table format và cách dữ liệu nằm trên object storage.
 tags: [storage, lakehouse]
 category: index
+doc_type: index
 status: stable
 updated: 2026-07-31
 ---

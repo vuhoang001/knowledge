@@ -5,6 +5,7 @@ description: Một dòng của bảng này đại diện cho cái gì — câu h
 tags: [grain, data-modeling, kimball]
 domain: data-engineering
 category: concept
+doc_type: reference
 status: review
 difficulty: beginner
 verified_at: 2026-07-30      # đã gặp thật ở lab dbt

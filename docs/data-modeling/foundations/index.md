@@ -5,6 +5,7 @@ description: Ba khái niệm phải nắm trước mọi thứ khác trong data 
 tags: [data-modeling, kimball]
 domain: data-engineering
 category: concept
+doc_type: index
 status: stable
 difficulty: beginner
 verified_at:

@@ -2,7 +2,8 @@
 title: Tutorials
 description: Bài tập chạy thật, có output dán lại. Đọc hiểu không tính.
 tags: [tutorial]
-category: tutorial
+category: index
+doc_type: tutorial
 updated: 2026-07-31
 ---
 

@@ -4,12 +4,19 @@
 // Chay: npm run lint
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, dirname, basename } from 'node:path';
+import { generate as generateCatalog } from './gen-catalog.mjs';
 
 const DOCS = 'docs';
-// Truc 1 — loai TRI THUC. Dung de loc va tim.
-const KIND = ['concept', 'technology', 'pattern', 'tool'];
-// Truc 2 — loai TAI LIEU. Quyet dinh file nam thu muc nao.
-const DOCTYPE = ['reference', 'tutorial', 'case-study', 'cheatsheet', 'faq', 'index', 'example', 'placeholder'];
+// Truc TRI THUC — no la KIEU hieu biet nao. Dung de loc.
+// 'index'/'placeholder' la nhan cau truc: file dieu huong, khong mang tri thuc.
+const KIND = ['concept', 'technology', 'pattern', 'tool', 'index', 'placeholder'];
+// Truc TAI LIEU — no la DANG gi. Quyet dinh file nam thu muc nao.
+const DOCTYPE = ['reference', 'tutorial', 'case-study', 'cheatsheet', 'faq', 'glossary', 'example', 'index'];
+// doc_type <-> thu muc goc. Khai mot dang de mot neo la R12 chan.
+const DOCTYPE_DIR = {
+  tutorial: 'tutorials', 'case-study': 'case-studies', cheatsheet: 'cheatsheets',
+  faq: 'faqs', glossary: 'glossary', example: 'examples',
+};
 const ENUMS = {
   status: ['draft', 'review', 'stable'],
   difficulty: ['beginner', 'intermediate', 'advanced'],
@@ -58,7 +65,8 @@ for (const file of files) {
   const placeholder = fm.category === 'placeholder';
   // File giu cho va trang muc luc khong phai khai domain/difficulty/tags — chung khong
   // mang tri thuc, chi ton tai de category khong rong va de dieu huong.
-  const light = placeholder || isRoot || isIndex;
+  // Mien theo doc_type, khong theo ten file: catalog.md cung la trang dieu huong.
+  const light = placeholder || isRoot || isIndex || fm.doc_type === 'index';
   for (const k of REQUIRED) {
     if (light && ['tags', 'domain', 'difficulty', 'status'].includes(k)) continue;
     if (!(k in fm) || fm[k] === '') add(file, 'R1', `thieu truong bat buoc: ${k}`);
@@ -68,11 +76,23 @@ for (const file of files) {
   for (const [k, allowed] of Object.entries(ENUMS)) {
     if (fm[k] && !allowed.includes(fm[k])) add(file, 'R2', `${k}="${fm[k]}" khong thuoc [${allowed.join('|')}]`);
   }
-  if (fm.category && ![...KIND, ...DOCTYPE].includes(fm.category))
-    add(file, 'R2', `category="${fm.category}" khong thuoc truc nao`);
-  // R2b — category dang gong hai truc: gia tri doc-type nam o cho danh cho loai tri thuc
-  if (fm.category && DOCTYPE.includes(fm.category) && fm.category !== 'placeholder' && fm.category !== 'index')
-    add(file, 'R2b', `category="${fm.category}" la loai TAI LIEU, khong phai loai TRI THUC — nen tach sang truong doc_type`, 'WARN');
+  if (fm.category && !KIND.includes(fm.category))
+    add(file, 'R2', `category="${fm.category}" khong thuoc truc tri thuc [${KIND.join('|')}]`);
+
+  // R12 — doc_type bat buoc, hop le, va PHAI KHOP thu muc goc
+  if (!fm.doc_type) {
+    add(file, 'R12', 'thieu doc_type — khong phan loai duoc theo dang tai lieu');
+  } else if (!DOCTYPE.includes(fm.doc_type)) {
+    add(file, 'R12', `doc_type="${fm.doc_type}" khong hop le [${DOCTYPE.join('|')}]`);
+  } else {
+    const top = rel.split('/')[0];
+    const want = DOCTYPE_DIR[fm.doc_type];
+    if (want && top !== want)
+      add(file, 'R12', `doc_type="${fm.doc_type}" nhung nam o docs/${top}/ — phai o docs/${want}/`);
+    const owner = Object.entries(DOCTYPE_DIR).find(([, d]) => d === top);
+    if (owner && fm.doc_type !== owner[0] && fm.doc_type !== 'index')
+      add(file, 'R12', `nam trong docs/${top}/ nhung doc_type="${fm.doc_type}" — phai la "${owner[0]}"`);
+  }
 
   // R3 — description chua ':' ma khong quote se lam build chet
   if (fm.description && /:/.test(fm.description) && !/^["']/.test(fm.description))
@@ -111,6 +131,36 @@ for (const file of files) {
     add(file, 'R9', `${rel.split('/').length - 1} thu muc duoi docs/ — toi da 2`);
 }
 
+// R13 — chu de phai DAN toi tai lieu cua no nam o thu muc khac.
+// File khong di chuyen; cai phai co la duong dan toi no tu index chu de.
+// Khoa noi = ten thu muc chu de, doi chieu voi `tags` cua tai lieu.
+const CROSS = ['tutorial', 'case-study', 'cheatsheet', 'faq', 'example'];
+const DIRS_OF_DOCTYPE = new Set(Object.values(DOCTYPE_DIR));
+const parseTags = (v) => (v || '').replace(/^\[|\]$/g, '').split(',').map((x) => x.trim()).filter(Boolean);
+
+const allFm = files.map((f) => ({ f, fm: frontmatter(readFileSync(f, 'utf8')) || {} }));
+const crossDocs = allFm.filter((r) => CROSS.includes(r.fm.doc_type));
+
+for (const { f, fm } of allFm) {
+  if (basename(f) !== 'index.md') continue;
+  const rel = relative(DOCS, f);
+  const parts = rel.split('/');
+  if (parts.length < 2) continue;                       // docs/index.md
+  if (DIRS_OF_DOCTYPE.has(parts[0])) continue;          // chinh cac thu muc doc_type
+  if (fm.category === 'placeholder') continue;
+
+  const key = parts[parts.length - 2];                  // ten thu muc chu de
+  const matches = crossDocs.filter((d) => parseTags(d.fm.tags).includes(key));
+  if (!matches.length) continue;
+
+  const src = readFileSync(f, 'utf8');
+  if (!/^##\s+Liên quan trong kho/m.test(src))
+    add(f, 'R13', `co ${matches.length} tai lieu mang tag "${key}" o thu muc khac — thieu muc "## Liên quan trong kho"`);
+  for (const m of matches)
+    if (!src.includes(basename(m.f)))
+      add(f, 'R13', `khong dan toi ${m.f} (doc_type=${m.fm.doc_type}, tag "${key}")`);
+}
+
 // R10 — sidebar_position trung trong cung thu muc
 const byDir = {};
 for (const file of files) {
@@ -139,12 +189,41 @@ for (const d of dirs(DOCS)) {
   if (!readdirSync(d).some((f) => f.endsWith('.md'))) add(d, 'R11', 'co _category_.json nhung khong co .md — build se chet');
 }
 
+// R14 — docs/catalog.md phai khop ket qua sinh. Trang gom ma cu thi te hon khong co.
+{
+  const out = join(DOCS, 'catalog.md');
+  if (!existsSync(out)) add(out, 'R14', 'chua sinh — chay `npm run catalog`');
+  else if (readFileSync(out, 'utf8') !== generateCatalog())
+    add(out, 'R14', 'da cu so voi frontmatter thuc te — chay `npm run catalog`');
+}
+
 const RULES = {
-  R1: 'frontmatter du truong', R2: 'gia tri enum hop le', R2b: 'category gong hai truc', R3: 'description quote dung',
+  R1: 'frontmatter du truong', R2: 'category thuoc truc tri thuc', R3: 'description quote dung',
   R4: 'verified_at dung dang', R5: 'co sidebar_position', R6: 'khong mo coi trong thu muc',
   R7: 'co trong manifest', R8: 'co Related Topics', R9: 'do sau toi da 3 tang',
   R10: 'sidebar_position khong trung', R11: '_category_.json hop le',
+  R12: 'doc_type khop thu muc', R13: 'chu de dan toi tai lieu cua no',
+  R14: 'catalog.md con moi',
 };
+
+// --inventory: kiem ke kho theo hai truc, de tra loi "cho toi moi case study"
+if (process.argv.includes('--inventory')) {
+  const rows = files.map((f) => ({ f, fm: frontmatter(readFileSync(f, 'utf8')) || {} }));
+  const pivot = {};
+  for (const { fm } of rows) {
+    const dt = fm.doc_type || '?', d = fm.domain || '—';
+    ((pivot[dt] ??= {})[d] ??= 0), pivot[dt][d]++;
+  }
+  console.log('KIEM KE — doc_type x domain\n');
+  for (const [dt, byDom] of Object.entries(pivot).sort()) {
+    const tot = Object.values(byDom).reduce((a, b) => a + b, 0);
+    console.log(`${dt.padEnd(12)} ${String(tot).padStart(3)}   ${Object.entries(byDom).map(([d, n]) => `${d}:${n}`).join('  ')}`);
+  }
+  const kb = rows.filter((r) => !['index'].includes(r.fm.doc_type) && r.fm.category !== 'placeholder');
+  console.log(`\nFile mang tri thuc: ${kb.length}/${files.length}`);
+  console.log(`Da kiem chung tay (verified_at co ngay): ${kb.filter((r) => /^\d{4}/.test(r.fm.verified_at || '')).length}`);
+  process.exit(0);
+}
 
 const errs = problems.filter((p) => p.sev === 'ERR');
 const warns = problems.filter((p) => p.sev === 'WARN');
