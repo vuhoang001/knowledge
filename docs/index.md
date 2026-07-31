@@ -40,6 +40,10 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [bridge-table](data-modeling/skills/bridge-table.md) | Nhiều-nhiều: hệ số phân bổ để tổng không phồng | 🟡 |
 | [design-process](data-modeling/reference/design-process.md) | Từ yêu cầu nghiệp vụ mơ hồ tới bảng chạy được, bốn bước | 📝 |
 | [star-snowflake-obt](data-modeling/reference/star-snowflake-obt.md) | Ba cách bố trí; đo thật OBT vs star: 0.76x hay 10.23x tuỳ cardinality | 📝 |
+| [CS: báo cáo quá khứ tự đổi số](data-modeling/case-studies/bao-cao-qua-khu-tu-doi-so.md) | Type 1 làm báo cáo đã đóng sổ đổi số khi chạy lại | 📝 |
+| [CS: join hai fact phồng tổng](data-modeling/case-studies/join-hai-fact-lam-phong-tong.md) | Hai fact khác grain join thẳng — doanh thu phồng 67% | 📝 |
+| [CS: dimension phồng 365 lần](data-modeling/case-studies/dimension-phinh-365-lan.md) | Type 2 cho cột đổi hằng ngày: 100k khách thành 36,5tr dòng | 📝 |
+| [CS: hai mart không ghép được](data-modeling/case-studies/hai-mart-khong-ghep-duoc.md) | Thiếu conformed dimension — câu hỏi cắt ngang bất khả thi | 📝 |
 | [surrogate-key](data-modeling/reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |
 
 ## Data Quality

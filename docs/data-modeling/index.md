@@ -55,7 +55,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 |---|---|
 | [Bài tập](tutorials/index.md) | *(chưa có bài riêng cho data modeling)* |
 | [Cheatsheet](cheatsheets/index.md) | [SCD — tra nhanh](cheatsheets/scd.md) |
-| [Case study](case-studies/index.md) | *(chưa có)* |
+| [Case study](case-studies/index.md) | 4 ca: [quá khứ tự đổi số](case-studies/bao-cao-qua-khu-tu-doi-so.md) · [join hai fact](case-studies/join-hai-fact-lam-phong-tong.md) · [dim phồng 365 lần](case-studies/dimension-phinh-365-lan.md) · [hai mart không ghép](case-studies/hai-mart-khong-ghep-duoc.md) |
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 lý thuyết, `verified_at` còn trống
 
