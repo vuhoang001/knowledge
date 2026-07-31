@@ -33,8 +33,8 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Sáu chiều chất lượng dữ liệu](data-quality/six-dimensions.md) | `data-quality` | data-engineering | 📝 lý thuyết |
 | [dbt docs và lineage](etl/dbt/reference/docs-and-lineage.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
 | [Macro, Jinja và package](etl/dbt/reference/macros-jinja-packages.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
-| [Materialization](etl/dbt/reference/materializations.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
-| [Model và ref() — DAG mọc ra từ đâu](etl/dbt/reference/models-and-ref.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Materialization](etl/dbt/reference/materializations.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
+| [Model và ref() — DAG mọc ra từ đâu](etl/dbt/reference/models-and-ref.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Cấu trúc một dbt project](etl/dbt/reference/project-structure.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
 | [Source, seed và snapshot](etl/dbt/reference/sources-seeds-snapshots.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
 | [Test và data quality trong dbt](etl/dbt/reference/testing.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |

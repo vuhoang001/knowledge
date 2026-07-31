@@ -60,9 +60,9 @@ Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, se
 | — | [etl/dbt/index](etl/dbt/index.md) | Bản đồ khái niệm + lộ trình | 🗂️ |
 | 01 | [what-is-dbt](etl/dbt/reference/what-is-dbt.md) | SQL mà dbt sinh ra thật sự trông thế nào | ✅ |
 | 02 | [project-structure](etl/dbt/reference/project-structure.md) | `dbt_project.yml`, `profiles.yml`, `target/` | 🟡 |
-| 03 | [models-and-ref](etl/dbt/reference/models-and-ref.md) | `ref()` là cách duy nhất khai báo phụ thuộc | 🟡 |
+| 03 | [models-and-ref](etl/dbt/reference/models-and-ref.md) | `ref()` là cách duy nhất khai báo phụ thuộc; DAG selector, ephemeral, vòng | 📝 |
 | 04 | [sources-seeds-snapshots](etl/dbt/reference/sources-seeds-snapshots.md) | Đưa dữ liệu vào DAG khi không phải model | 🟡 |
-| 05 | [materializations](etl/dbt/reference/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | 🟡 |
+| 05 | [materializations](etl/dbt/reference/materializations.md) | Cùng SELECT khác DDL; `is_incremental()` trước/sau, bốn câu hỏi | 📝 |
 | 06 | [testing](etl/dbt/reference/testing.md) | Ba tầng: test · contract · unit test | 📝 |
 | 07 | [macros-jinja-packages](etl/dbt/reference/macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy | 🟡 |
 | 08 | [docs-and-lineage](etl/dbt/reference/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 🟡 |

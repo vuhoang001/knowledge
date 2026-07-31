@@ -28,9 +28,9 @@ Chạy: `.venv/bin/dbt <lệnh> --profiles-dir .`
 |---|---|---|---|
 | 01 | [dbt là gì](reference/what-is-dbt.md) | Nó thật sự làm gì, `ref()` và test là gì | ✅ đã chạy |
 | 02 | [Cấu trúc project](reference/project-structure.md) | `dbt_project.yml`, `profiles.yml`, `target/` | ⬜ chưa viết |
-| 03 | [Model và `ref()`](reference/models-and-ref.md) | Đơn vị cơ bản, DAG mọc ra từ đâu | ⬜ chưa viết |
+| 03 | [Model và `ref()`](reference/models-and-ref.md) | Đơn vị cơ bản, DAG mọc ra từ đâu | 📝 có output thật |
 | 04 | [Source, seed, snapshot](reference/sources-seeds-snapshots.md) | Dữ liệu vào từ đâu khi không phải model | ⬜ chưa viết |
-| 05 | [Materialization](reference/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | ⬜ chưa viết |
+| 05 | [Materialization](reference/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | 📝 có output thật |
 | 06 | [Test và data quality](reference/testing.md) | 3 tầng: test · contract · unit test | 📝 lý thuyết, chưa chạy |
 | 07 | [Macro, Jinja, package](reference/macros-jinja-packages.md) | Khi SQL bắt đầu bị copy-paste | ⬜ chưa viết |
 | 08 | [Docs và lineage](reference/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | ⬜ chưa viết |
