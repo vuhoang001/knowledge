@@ -22,13 +22,13 @@ Nhờ đó phân loại là thứ kiểm chứng được, không phải nhãn d
 
 | `doc_type` | Bắt buộc nằm ở |
 |---|---|
-| `tutorial` | `docs/tutorials/` |
-| `case-study` | `docs/case-studies/` |
-| `cheatsheet` | `docs/cheatsheets/` |
-| `faq` | `docs/faqs/` |
-| `glossary` | `docs/glossary/` |
-| `example` | `docs/examples/` |
-| `reference` | `docs/<domain>/...` — mặc định |
+| `tutorial` | `docs/<chủ đề>/tutorials/` |
+| `case-study` | `docs/<chủ đề>/case-studies/` |
+| `cheatsheet` | `docs/<chủ đề>/cheatsheets/` |
+| `example` | `docs/<chủ đề>/examples/` |
+| `faq` | `docs/faqs/` — toàn cục, cắt ngang nhiều chủ đề |
+| `glossary` | `docs/glossary/` — toàn cục |
+| `reference` | `docs/<chủ đề>/` — mặc định |
 | `index` | trang chủ của bất kỳ thư mục nào |
 
 ## Trục 1 — Loại tài liệu quyết định thư mục gốc
@@ -38,13 +38,13 @@ Nhờ đó phân loại là thứ kiểm chứng được, không phải nhãn d
 | Hỏi | Đúng thì vào |
 |---|---|
 | Chưa hiểu, mới quăng về? | `inbox/` |
-| Chạy được, có output dán lại được? | `docs/tutorials/` |
-| Một sự cố thật đã debug xong? | `docs/case-studies/` |
-| Bảng tra khi **đang làm**, không dùng để học lần đầu? | `docs/cheatsheets/` |
+| Chạy được, có output dán lại được? | `docs/<chủ đề>/tutorials/` |
+| Một sự cố thật đã debug xong? | `docs/<chủ đề>/case-studies/` |
+| Bảng tra khi **đang làm**? | `docs/<chủ đề>/cheatsheets/` |
+| Đoạn code chạy nguyên trạng, để copy? | `docs/<chủ đề>/examples/` |
 | Định nghĩa một câu cho một thuật ngữ? | `docs/glossary/` |
-| Câu hỏi cắt ngang nhiều chủ đề? | `docs/faqs/` |
-| Đoạn code chạy nguyên trạng, để copy? | `docs/examples/` |
-| Giải thích *nó là gì, vì sao, đánh đổi ra sao*? | `docs/<domain>/` |
+| Câu hỏi cắt ngang **nhiều** chủ đề? | `docs/faqs/` |
+| Giải thích *nó là gì, vì sao, đánh đổi ra sao*? | `docs/<chủ đề>/` |
 
 Dòng cuối là mặc định. Nếu phân vân giữa `docs/` và `tutorials/`: có **output thật dán
 vào** thì là tutorial, không thì là docs.
@@ -57,13 +57,16 @@ vào** thì là tutorial, không thì là docs.
 Gắn với một công nghệ cụ thể thì xuống một tầng: `docs/<domain>/<công nghệ>/`.
 Ví dụ `docs/etl/dbt/`.
 
-**Tối đa 2 thư mục dưới `docs/`** (R9) — `docs/<lĩnh vực>/<công nghệ>/<component>.md`.
-Hệ quả quan trọng: một thư mục công nghệ như `etl/kafka/` **đã dùng hết quota**, không
-chia tầng con được nữa. Cần tầng thứ tư nghĩa là component đó nên **tách thành công nghệ
-riêng, ngang hàng** — `docs/etl/kafka-connect/` chứ không phải `docs/etl/kafka/connect/`.
+**Tối đa 3 thư mục dưới `docs/`** (R9) — `docs/<lĩnh vực>/<công nghệ>/<component>.md`.
+Tầng thứ ba **chỉ dành cho nhóm `doc_type`** (`tutorials/`, `case-studies/`,
+`cheatsheets/`) hoặc tầng học — không dành cho component kỹ thuật. Một component kỹ
+thuật cần thêm tầng nghĩa là nó nên **tách thành công nghệ riêng, ngang hàng**:
+`docs/etl/kafka-connect/` chứ không phải `docs/etl/kafka/connect/`.
 
-Vì thế rule chia tầng ở Trục 3 chỉ áp dụng được cho thư mục **khái niệm** ở cấp 1
-(`docs/data-modeling/`), không áp dụng cho thư mục công nghệ ở cấp 2.
+**Đánh đổi đã chấp nhận:** trước đây trần là 2 thư mục. Nới lên 3 để mỗi công nghệ có
+`tutorials/`, `case-studies/`, `cheatsheets/` của riêng nó — mở dbt là thấy luôn bài tập
+và case study của dbt, không phải đi tìm ở thư mục toàn cục. Cái mất là cây thư mục sâu
+hơn một tầng.
 
 ## Trục 3 — Tầng học, khi các file trong thư mục **không còn ngang hàng**
 
@@ -140,7 +143,7 @@ updated: 2026-07-31
 | R4 | `verified_at` trống hoặc đúng dạng `YYYY-MM-DD` |
 | R5 | File nội dung phải có `sidebar_position` |
 | R6 | Không mồ côi — `index.md` cùng thư mục phải trỏ tới |
-| R9 | Tối đa ba tầng dưới `docs/` |
+| R9 | Tối đa 3 thư mục dưới `docs/` |
 | R10 | `sidebar_position` không trùng trong cùng thư mục |
 | R11 | Thư mục có `_category_.json` phải có ít nhất một `.md` |
 

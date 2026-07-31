@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**24 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**18 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (16)
 
@@ -42,55 +42,45 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Test và data quality trong dbt](etl/dbt/testing.md) | `etl/dbt` | data-engineering | 📝 lý thuyết |
 | [dbt là gì và nó thật sự làm gì](etl/dbt/what-is-dbt.md) | `etl/dbt` | data-engineering | ✅ đã chạy tay |
 
-## Bài tập (2)
+## Bài tập (1)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
-| [Lab dbt trên DuckDB](tutorials/dbt-lab-duckdb.md) | `tutorials` | data-engineering | ✅ đã chạy tay |
-| [Tutorials](tutorials/index.md) | `tutorials` | — | 🟡 draft |
+| [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
 
-## Case study (1)
+## Case study (0)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
-| Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
-|---|---|---|---|
-| [Case Studies](case-studies/index.md) | `case-studies` | — | 🟡 draft |
+*Chưa có file nào.*
 
-## Cheatsheet (2)
+## Cheatsheet (1)
 
 Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
-| [Cheatsheets](cheatsheets/index.md) | `cheatsheets` | — | 🟡 draft |
-| [SCD — Cheatsheet](cheatsheets/scd.md) | `cheatsheets` | data-engineering | 📘 ổn định, chưa chạy tay |
+| [SCD — Cheatsheet](data-modeling/cheatsheets/scd.md) | `data-modeling/cheatsheets` | data-engineering | 📘 ổn định, chưa chạy tay |
 
-## FAQ (1)
+## FAQ (0)
 
 Câu hỏi cắt ngang nhiều chủ đề.
 
-| Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
-|---|---|---|---|
-| [FAQs](faqs/index.md) | `faqs` | — | 🟡 draft |
+*Chưa có file nào.*
 
-## Ví dụ code (1)
+## Ví dụ code (0)
 
 Đoạn chạy được nguyên trạng, để copy.
 
-| Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
-|---|---|---|---|
-| [Examples](examples/index.md) | `examples` | — | 🟡 draft |
+*Chưa có file nào.*
 
-## Thuật ngữ (1)
+## Thuật ngữ (0)
 
 Định nghĩa một câu.
 
-| Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
-|---|---|---|---|
-| [Glossary](glossary/index.md) | `glossary` | — | 🟡 draft |
+*Chưa có file nào.*
 
 ## Related Topics
 

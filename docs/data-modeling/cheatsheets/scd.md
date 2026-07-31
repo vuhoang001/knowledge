@@ -14,7 +14,7 @@ updated: 2026-07-31
 
 # SCD — Cheatsheet
 
-Tài liệu đầy đủ: [docs/data-modeling/dimension-techniques/scd.md](../data-modeling/dimension-techniques/scd.md)
+Tài liệu đầy đủ: [docs/data-modeling/dimension-techniques/scd.md](../dimension-techniques/scd.md)
 
 ## Chọn Type nào
 

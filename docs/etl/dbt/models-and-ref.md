@@ -51,4 +51,4 @@ lineage **nói dối bạn**.
 
 - [Mục lục dbt](index.md)
 - [Source, seed, snapshot](sources-seeds-snapshots.md) — `source()` khác `ref()` chỗ nào
-- [Bài tập](../../tutorials/dbt-lab-duckdb.md) bài 4
+- [Bài tập](tutorials/dbt-lab-duckdb.md) bài 4

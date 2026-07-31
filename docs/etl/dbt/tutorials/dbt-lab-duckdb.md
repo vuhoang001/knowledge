@@ -57,7 +57,7 @@ cột tính `thanh_tien = so_luong * don_gia`. Chạy `dbt run`, rồi **mở
 > chữ. Đừng bỏ bước mở `target/compiled/`.
 
 **Kết quả:** ✅ 30/07/2026 — khác đúng một chỗ: `{{ ref(...) }}` → `"lab"."main"."don_hang_chi_tiet"`.
-Chi tiết ở [01-dbt-la-gi.md](../etl/dbt/what-is-dbt.md) §2.
+Chi tiết ở [01-dbt-la-gi.md](../what-is-dbt.md) §2.
 
 ---
 
@@ -73,7 +73,7 @@ phải dữ liệu sai. Sau đó sửa cho đúng grain (gợi ý: grain thật 
 > không ai thấy.
 
 **Kết quả:** ✅ 30/07/2026 — `FAIL 4`, grain thật là `(don_hang_id, dong)`.
-Output đầy đủ ở [06-test-va-data-quality.md](../etl/dbt/testing.md) §5.
+Output đầy đủ ở [06-test-va-data-quality.md](../testing.md) §5.
 
 ---
 
@@ -123,11 +123,11 @@ Chạy lại chính các model đó.
 cho "dbt độc lập với warehouse tới mức nào".
 
 > ⚠ Catalog trên `.60` tên là `hdos_silver` / `polaris_silver`, **không có catalog
-> tên `iceberg`**. Xem mục "Sai lầm đã mắc" ở [README](../etl/dbt/index.md).
+> tên `iceberg`**. Xem mục "Sai lầm đã mắc" ở [README](../index.md).
 
 **Kết quả:**
 
 ## Liên kết
 
-- [Mục lục dbt](../etl/dbt/index.md)
-- [Trino](../query-engines/trino/index.md) — cần cho bài 7
+- [Mục lục dbt](../index.md)
+- [Trino](../../../query-engines/trino/index.md) — cần cho bài 7

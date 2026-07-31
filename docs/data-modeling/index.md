@@ -102,7 +102,7 @@ liệu* (`doc_type`), không theo chủ đề:
 
 | Dạng | Tài liệu | Dùng khi |
 |---|---|---|
-| Cheatsheet | [SCD — tra nhanh](../cheatsheets/scd.md) | đang làm, cần tra Type nào là gì |
+| Cheatsheet | [SCD — tra nhanh](cheatsheets/scd.md) | đang làm, cần tra Type nào là gì |
 | Case study | *(chưa có)* | đã debug xong một sự cố mô hình thật |
 | Bài tập | *(chưa có bài riêng cho data modeling)* | muốn chạy thật, có output dán lại |
 
@@ -114,5 +114,5 @@ Xem đầy đủ mọi thứ mang tag này: **[`/tags/data-modeling`](/tags/data
 - [Data Quality](../data-quality/index.md) — kiểm chứng mô hình sau khi dựng
 - [dbt](../etl/dbt/index.md) — công cụ hiện thực hoá
 - [SQL](../databases/sql/index.md) — nền của mọi thứ ở đây
-- [Cheatsheet SCD](../cheatsheets/scd.md)
+- [Cheatsheet SCD](cheatsheets/scd.md)
 - [Glossary](../glossary/index.md)

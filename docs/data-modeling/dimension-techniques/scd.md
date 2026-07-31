@@ -484,7 +484,7 @@ hệ nguồn — tức chiều *accuracy*, chiều duy nhất không có test d�
 cụ thể cho luận điểm ở [6 chiều chất lượng](../../data-quality/six-dimensions.md): năm
 chiều kia xanh hết mà accuracy sai thì số vẫn sai.
 
-**Chưa chạy tay.** Cần kiểm chứng trong [lab dbt](../../tutorials/dbt-lab-duckdb.md)
+**Chưa chạy tay.** Cần kiểm chứng trong [lab dbt](../../etl/dbt/tutorials/dbt-lab-duckdb.md)
 rồi cập nhật `verified_at`. Đây là nội dung lý thuyết — đọc với thái độ nghi ngờ cho
 tới khi có output thật dán vào.
 
@@ -538,4 +538,4 @@ Data Vault / bitemporal (nâng cao)
 - Data Vault 2.0 — cách tiếp cận khác cho lịch sử: satellite thay vì SCD Type 2
 - Bitemporal modeling — hai trục thời gian (*khi sự việc xảy ra* vs *khi hệ thống biết*),
   cần cho tài chính và bảo hiểm
-- [Cheatsheet SCD](../../cheatsheets/scd.md) — bảng tra nhanh khi đang làm
+- [Cheatsheet SCD](../cheatsheets/scd.md) — bảng tra nhanh khi đang làm

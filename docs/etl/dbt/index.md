@@ -34,7 +34,7 @@ Chạy: `.venv/bin/dbt <lệnh> --profiles-dir .`
 | 06 | [Test và data quality](testing.md) | 3 tầng: test · contract · unit test | 📝 lý thuyết, chưa chạy |
 | 07 | [Macro, Jinja, package](macros-jinja-packages.md) | Khi SQL bắt đầu bị copy-paste | ⬜ chưa viết |
 | 08 | [Docs và lineage](docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | ⬜ chưa viết |
-| 09 | [Bài tập](../../tutorials/dbt-lab-duckdb.md) | Chạy thật, có output dán lại | 🔄 đang làm |
+| 09 | [Bài tập](tutorials/dbt-lab-duckdb.md) | Chạy thật, có output dán lại | 🔄 đang làm |
 
 Ký hiệu: ✅ đã chạy tay · 📝 lý thuyết chưa kiểm chứng · 🔄 đang làm · ⬜ chưa viết
 
@@ -151,7 +151,7 @@ Tài liệu về dbt nhưng **không nằm trong thư mục này** — chúng �
 
 | Dạng | Tài liệu | Dùng khi |
 |---|---|---|
-| Bài tập | [dbt lab — DuckDB](../../tutorials/dbt-lab-duckdb.md) | chạy thật, có ô dán output |
+| Bài tập | [dbt lab — DuckDB](tutorials/dbt-lab-duckdb.md) | chạy thật, có ô dán output |
 | Case study | *(chưa có)* | đã debug xong một sự cố dbt thật |
 | Cheatsheet | *(chưa có)* | đang làm, cần tra nhanh cú pháp |
 

@@ -194,5 +194,5 @@ nó thì chỉ biết "37 dòng sai", không biết sai cái gì, và sẽ khôn
 ## Liên kết
 
 - [dbt là gì](what-is-dbt.md) §4 — test biên dịch ra SQL gì
-- [Bài tập](../../tutorials/dbt-lab-duckdb.md) bài 3 — chạy lại đúng ca ở §5
+- [Bài tập](tutorials/dbt-lab-duckdb.md) bài 3 — chạy lại đúng ca ở §5
 - [Mục lục dbt](index.md)

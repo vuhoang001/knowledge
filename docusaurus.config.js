@@ -80,8 +80,8 @@ const config = {
           { type: 'docSidebar', sidebarId: 'main', position: 'left', label: 'Docs' },
           { to: '/data-modeling/', label: 'Data Modeling', position: 'left' },
           { to: '/etl/dbt/', label: 'dbt', position: 'left' },
+          { to: '/catalog', label: 'Thư viện', position: 'right' },
           { to: '/glossary/', label: 'Glossary', position: 'right' },
-          { to: '/cheatsheets/', label: 'Cheatsheets', position: 'right' },
         ],
       },
       footer: {

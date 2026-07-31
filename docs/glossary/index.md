@@ -3,7 +3,7 @@ title: Glossary
 description: Thuật ngữ dùng xuyên suốt kho — định nghĩa một câu, kèm link tới tài liệu đầy đủ.
 tags: [glossary]
 category: index
-doc_type: glossary
+doc_type: index
 updated: 2026-07-31
 ---
 

@@ -12,11 +12,19 @@ const DOCS = 'docs';
 const KIND = ['concept', 'technology', 'pattern', 'tool', 'index', 'placeholder'];
 // Truc TAI LIEU — no la DANG gi. Quyet dinh file nam thu muc nao.
 const DOCTYPE = ['reference', 'tutorial', 'case-study', 'cheatsheet', 'faq', 'glossary', 'example', 'index'];
-// doc_type <-> thu muc goc. Khai mot dang de mot neo la R12 chan.
+// doc_type <-> ten thu muc. Thu muc nay nam TRONG tung chu de
+// (docs/etl/dbt/case-studies/), tru faqs/ va glossary/ von cat ngang moi chu de.
 const DOCTYPE_DIR = {
   tutorial: 'tutorials', 'case-study': 'case-studies', cheatsheet: 'cheatsheets',
   faq: 'faqs', glossary: 'glossary', example: 'examples',
 };
+const DIR_DOCTYPE = Object.fromEntries(Object.entries(DOCTYPE_DIR).map(([k, v]) => [v, k]));
+// doc_type dung ra phai la gi, suy tu duong dan
+function expectedDocType(rel) {
+  if (basename(rel) === 'index.md') return 'index';
+  for (const seg of rel.split('/').slice(0, -1)) if (DIR_DOCTYPE[seg]) return DIR_DOCTYPE[seg];
+  return 'reference';
+}
 const ENUMS = {
   status: ['draft', 'review', 'stable'],
   difficulty: ['beginner', 'intermediate', 'advanced'],
@@ -84,14 +92,11 @@ for (const file of files) {
     add(file, 'R12', 'thieu doc_type — khong phan loai duoc theo dang tai lieu');
   } else if (!DOCTYPE.includes(fm.doc_type)) {
     add(file, 'R12', `doc_type="${fm.doc_type}" khong hop le [${DOCTYPE.join('|')}]`);
-  } else {
-    const top = rel.split('/')[0];
-    const want = DOCTYPE_DIR[fm.doc_type];
-    if (want && top !== want)
-      add(file, 'R12', `doc_type="${fm.doc_type}" nhung nam o docs/${top}/ — phai o docs/${want}/`);
-    const owner = Object.entries(DOCTYPE_DIR).find(([, d]) => d === top);
-    if (owner && fm.doc_type !== owner[0] && fm.doc_type !== 'index')
-      add(file, 'R12', `nam trong docs/${top}/ nhung doc_type="${fm.doc_type}" — phai la "${owner[0]}"`);
+  } else if (fm.doc_type !== 'index') {
+    // trang dieu huong nam dau cung duoc; cac loai con lai phai khop duong dan
+    const want = expectedDocType(rel);
+    if (fm.doc_type !== want)
+      add(file, 'R12', `doc_type="${fm.doc_type}" nhung duong dan noi day la "${want}" — sua mot trong hai`);
   }
 
   // R3 — description chua ':' ma khong quote se lam build chet
@@ -124,17 +129,18 @@ for (const file of files) {
   if (!/^##\s+Related Topics/m.test(src))
     add(file, 'R8', 'thieu muc "## Related Topics"', 'WARN');
 
-  // R9 — toi da 3 tang: docs/<linh vuc>/<cong nghe>/<component>.md
-  // tuc nhieu nhat 2 thu muc duoi docs/. Can tang thu tu = component do nen
-  // tach thanh cong nghe rieng, ngang hang chu khong phai con.
-  if (rel.split('/').length > 3)
-    add(file, 'R9', `${rel.split('/').length - 1} thu muc duoi docs/ — toi da 2`);
+  // R9 — toi da 3 thu muc duoi docs/:
+  //   docs/<linh vuc>/<cong nghe>/<nhom>/<file>.md
+  // Tang thu 3 CHI danh cho nhom doc_type (case-studies/, cheatsheets/, tutorials/)
+  // hoac tang hoc. Component ky thuat can them tang = nen tach thanh cong nghe rieng.
+  if (rel.split('/').length > 4)
+    add(file, 'R9', `${rel.split('/').length - 1} thu muc duoi docs/ — toi da 3`);
 }
 
 // R13 — chu de phai DAN toi tai lieu cua no nam o thu muc khac.
 // File khong di chuyen; cai phai co la duong dan toi no tu index chu de.
 // Khoa noi = ten thu muc chu de, doi chieu voi `tags` cua tai lieu.
-const CROSS = ['tutorial', 'case-study', 'cheatsheet', 'faq', 'example'];
+const CROSS = ['faq', 'glossary'];   // chi con hai loai cat ngang nam ngoai chu de
 const DIRS_OF_DOCTYPE = new Set(Object.values(DOCTYPE_DIR));
 const parseTags = (v) => (v || '').replace(/^\[|\]$/g, '').split(',').map((x) => x.trim()).filter(Boolean);
 

@@ -64,7 +64,7 @@ dựng lại được. Ô *Kết quả* để trống ghi *chưa chạy* — xem
 | Ngôn ngữ | Nội dung tiếng Việt; **giữ nguyên thuật ngữ tiếng Anh** (`grain`, `incremental`, `rebalance`, `watermark`) — đừng dịch |
 | Tên file/thư mục | Tiếng Anh, kebab-case, không dấu: `surrogate-key.md` |
 | Số thứ tự học | Nằm ở **cột `#` của bảng mục lục**, không nhét vào tên file |
-| Độ sâu | Tối đa ba tầng: `docs/<lĩnh vực>/<công nghệ>/<component>.md`. Cần tầng thứ tư = component đó nên tách thành công nghệ riêng |
+| Độ sâu | Tối đa 3 thư mục: `docs/<lĩnh vực>/<công nghệ>/<nhóm>/<file>.md`. Tầng thứ ba **chỉ** cho nhóm `doc_type` (`tutorials/`, `case-studies/`, `cheatsheets/`) hoặc tầng học. Component kỹ thuật cần thêm tầng = nên tách thành công nghệ riêng |
 | Trang chủ thư mục | `index.md` |
 | Nhãn sidebar | `_category_.json` — `label` + `position`. Thư mục mới **phải** có file này |
 | Giọng văn | Trực tiếp, có ý kiến. Nói rõ đánh đổi và cái bẫy, không liệt kê tính năng |

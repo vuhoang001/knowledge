@@ -62,7 +62,7 @@ Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, se
 | 07 | [macros-jinja-packages](etl/dbt/macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy | 🟡 |
 | 08 | [docs-and-lineage](etl/dbt/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 🟡 |
 
-Bài tập chạy thật: [`tutorials/dbt-lab-duckdb.md`](tutorials/dbt-lab-duckdb.md).
+Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md).
 
 ### Streaming
 
@@ -98,14 +98,16 @@ Docusaurus báo lỗi nếu một category rỗng.
 
 ## Loại tài liệu khác
 
-| Thư mục | Chứa gì |
-|---|---|
-| [tutorials/](tutorials/) | Bài tập chạy thật, có ô dán output |
-| [case-studies/](case-studies/) | Sự cố thật, kèm giả thuyết sai lúc đầu |
-| [examples/](examples/) | Code chạy được nguyên trạng, để copy |
-| [cheatsheets/](cheatsheets/) | Bảng tra nhanh khi **đang làm** — [SCD](cheatsheets/scd.md) |
-| [faqs/](faqs/) | Câu hỏi cắt ngang nhiều chủ đề |
-| [glossary/](glossary/) | Thuật ngữ, định nghĩa một câu |
+**Bài tập, case study, cheatsheet nằm *trong* từng chủ đề**, không gom ở thư mục toàn
+cục nữa — mở dbt là thấy luôn bài tập và case study của dbt.
+
+| Dạng | Ở đâu | Ví dụ |
+|---|---|---|
+| Bài tập | `docs/<chủ đề>/tutorials/` | [etl/dbt/tutorials/](etl/dbt/tutorials/index.md) |
+| Case study | `docs/<chủ đề>/case-studies/` | [etl/dbt/case-studies/](etl/dbt/case-studies/index.md) |
+| Cheatsheet | `docs/<chủ đề>/cheatsheets/` | [data-modeling/cheatsheets/](data-modeling/cheatsheets/index.md) |
+| FAQ | toàn cục — cắt ngang nhiều chủ đề | [faqs/](faqs/index.md) |
+| Thuật ngữ | toàn cục — cắt ngang nhiều chủ đề | [glossary/](glossary/index.md) |
 
 `inbox/` và `templates/` nằm **ngoài** `docs/` nên không lên site — chúng phục vụ việc
 vận hành repo, không phải nội dung tri thức.
