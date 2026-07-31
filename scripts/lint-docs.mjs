@@ -102,6 +102,13 @@ for (const file of files) {
       add(file, 'R12', `doc_type="${fm.doc_type}" nhung duong dan noi day la "${want}" — sua mot trong hai`);
   }
 
+  // R16 — tag trung tu khoa YAML se bi doc thanh null/boolean, Docusaurus tu choi.
+  // Build chet voi thong bao '"tags[N]" does not look like a valid tag' — rat kho lan ra.
+  const YAML_NUOT = ['null', 'true', 'false', 'yes', 'no', 'on', 'off', '~'];
+  for (const t of (fm.tags || '').replace(/^\[|\]$/g, '').split(',').map((x) => x.trim()))
+    if (YAML_NUOT.includes(t.toLowerCase()))
+      add(file, 'R16', `tag "${t}" trung tu khoa YAML — se bi doc thanh null/boolean, build chet`);
+
   // R3 — description chua ':' ma khong quote se lam build chet
   if (fm.description && /:/.test(fm.description) && !/^["']/.test(fm.description))
     add(file, 'R3', 'description chua ":" nhung khong quote — build se chet');
@@ -235,7 +242,7 @@ const RULES = {
   R7: 'co trong manifest', R8: 'co Related Topics', R9: 'do sau toi da 3 tang',
   R10: 'sidebar_position khong trung', R11: '_category_.json hop le',
   R12: 'doc_type khop thu muc', R13: 'chu de dan toi tai lieu cua no',
-  R15: 'ky thuat co case study minh hoa',
+  R15: 'ky thuat co case study minh hoa', R16: 'tag khong trung tu khoa YAML',
   R14: 'catalog.md con moi',
 };
 

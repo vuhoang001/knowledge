@@ -2,7 +2,7 @@
 title: Một nửa số đơn biến mất khỏi báo cáo
 sidebar_position: 6
 description: Fact có ba cột ngày, join cả ba vào dim_thoi_gian — mọi đơn chưa giao xong bị loại sạch, không lỗi nào báo.
-tags: [case-study, role-playing-dimension, join, null, data-modeling]
+tags: [case-study, role-playing-dimension, join, null-handling, data-modeling]
 domain: data-engineering
 category: concept
 doc_type: case-study
