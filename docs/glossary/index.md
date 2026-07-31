@@ -23,7 +23,7 @@ sáu tháng sau bạn sẽ gõ `grain`, `incremental`, `rebalance`, không gõ "
 | **as-was / as-is** | Báo cáo dùng giá trị *lúc đó* / giá trị *bây giờ* | [→](../data-modeling/skills/scd.md) |
 | **Natural key** | Mã do hệ nguồn sinh ra (`KH001`) | [→](../data-modeling/reference/surrogate-key.md) |
 | **Surrogate key** | Mã do warehouse sinh ra, không mang nghĩa nghiệp vụ | [→](../data-modeling/reference/surrogate-key.md) |
-| **Conformed dimension** | Dimension dùng chung cho nhiều quy trình nghiệp vụ | [→](../data-modeling/reference/design-process.md) |
+| **Conformed dimension** | Dimension dùng chung cho nhiều quy trình nghiệp vụ | [→](../data-modeling/skills/conformed-dimension.md) |
 | **Bus matrix** | Ma trận quy trình × dimension, để thấy cái gì dùng chung | [→](../data-modeling/reference/design-process.md) |
 | **Star schema** | Fact ở giữa, dimension dẹt bao quanh | [→](../data-modeling/reference/star-snowflake-obt.md) |
 | **OBT** | One Big Table — nhúng hết thuộc tính vào fact, không join | [→](../data-modeling/reference/star-snowflake-obt.md) |

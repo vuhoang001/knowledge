@@ -211,15 +211,17 @@ Vẫn **một dòng một khách**, nên mọi join cũ chạy nguyên. Đổi l
 
 ### Type 4 — mini-dimension
 
-Dimension 5 triệu khách; `khu_vuc` đổi vài năm một lần nhưng `nhom_thu_nhap` và
-`nhom_tuoi` đổi hằng quý. Type 2 cho cả bảng thì mỗi lần đổi nhóm thu nhập là sinh
-thêm 5 triệu dòng. Tách cột hay đổi ra bảng nhỏ riêng:
+Tách vài cột đổi nhanh khỏi dimension lớn, để Type 2 không làm cả bảng phình theo nhịp
+cột nhanh nhất:
 
 ```text
 dim_khach_hang       (ổn định: tên, ngày sinh, ngày mở tài khoản)
-dim_khach_hang_nhom  (hay đổi: nhóm thu nhập × nhóm tuổi — chỉ vài trăm tổ hợp)
+dim_khach_hang_nhom  (hay đổi: nhóm thu nhập × nhóm tuổi — chỉ vài chục tổ hợp)
 fct_don_hang         (khach_sk, khach_nhom_sk, ...)
 ```
+
+Điểm đảo chiều: lịch sử chuyển từ dimension sang **fact**. Cách dựng, ví dụ chạy được và
+các bẫy nằm ở [Mini-dimension](mini-dimension.md).
 
 ### Type 6 — kết hợp 1+2+3
 

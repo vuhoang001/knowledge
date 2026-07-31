@@ -33,6 +33,10 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [fact-and-dimension](data-modeling/reference/fact-and-dimension.md) | Cái gì đo được vào fact, cái gì mô tả vào dimension | 📝 |
 | [scd](data-modeling/skills/scd.md) | Thuộc tính đổi thì báo cáo quá khứ dùng giá trị nào — sáu cách | 📝 |
 | [junk-dimension](data-modeling/skills/junk-dimension.md) | Cột cardinality thấp: để thẳng trong fact, tách dimension, hay gộp chung | 🟡 |
+| [mini-dimension](data-modeling/skills/mini-dimension.md) | Tách cột đổi nhanh khỏi dim lớn — lịch sử chuyển sang fact | 🟡 |
+| [role-playing-dimension](data-modeling/skills/role-playing-dimension.md) | Một dim nhiều vai — dùng view có tên rõ nghĩa, không copy bảng | 🟡 |
+| [conformed-dimension](data-modeling/skills/conformed-dimension.md) | Cùng khoá và cùng nghĩa thì mới ghép được số giữa hai fact | 🟡 |
+| [bridge-table](data-modeling/skills/bridge-table.md) | Nhiều-nhiều: hệ số phân bổ để tổng không phồng | 🟡 |
 | [design-process](data-modeling/reference/design-process.md) | Từ yêu cầu nghiệp vụ mơ hồ tới bảng chạy được, bốn bước | 📝 |
 | [star-snowflake-obt](data-modeling/reference/star-snowflake-obt.md) | Ba cách bố trí fact quanh dimension; lakehouse đảo chiều lời khuyên cũ | 🟡 |
 | [surrogate-key](data-modeling/reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |

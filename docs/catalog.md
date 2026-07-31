@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**19 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**23 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (14)
 
@@ -40,13 +40,17 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Test và data quality trong dbt](etl/dbt/reference/testing.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [dbt là gì và nó thật sự làm gì](etl/dbt/reference/what-is-dbt.md) | `etl/dbt/reference` | data-engineering | ✅ đã chạy tay |
 
-## Kỹ năng (2)
+## Kỹ năng (6)
 
 Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Bridge table](data-modeling/skills/bridge-table.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
+| [Conformed dimension](data-modeling/skills/conformed-dimension.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
 | [Junk dimension và cột cardinality thấp](data-modeling/skills/junk-dimension.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
+| [Mini-dimension](data-modeling/skills/mini-dimension.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
+| [Role-playing dimension](data-modeling/skills/role-playing-dimension.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
 | [SCD — Slowly Changing Dimension](data-modeling/skills/scd.md) | `data-modeling/skills` | data-engineering | 📝 lý thuyết |
 
 ## Bài tập (1)
