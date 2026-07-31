@@ -1,0 +1,36 @@
+#separator:tab
+#html:true
+#notetype:Cloze
+#deck:KB::Data Modeling
+#tags column:3
+Bốn bước thiết kế Kimball: {{c1::chọn quy trình nghiệp vụ}} → {{c2::khai grain}} → {{c3::chọn dimension}} → {{c4::chọn fact}}.	Thứ tự không đổi được. Kiểm không đạt thì quay về bước 2, không phải bước 1.	design-process kimball
+Grain mịn hơn thì {{c1::cộng lên lúc nào cũng được}}; grain thô hơn thì {{c2::mất chi tiết vĩnh viễn, không tách nhỏ lại được}}. Vì thế Kimball bảo luôn chọn grain {{c3::mịn nhất}} có thể.	Cùng dạng bất đối xứng với SCD Type 1 vs Type 2.	grain kimball
+Phép thử một câu: cột này bạn sẽ {{c1::SUM}} thì nó là fact; sẽ {{c2::GROUP BY}} thì nó là dimension.		fact dimension
+Fact có hình dạng {{c1::dài và hẹp}}; dimension có hình dạng {{c2::ngắn và rộng}}.		fact dimension
+Ba loại fact: {{c1::transaction}} (một sự kiện một dòng), {{c2::periodic snapshot}} (một kỳ × một thực thể, semi-additive), {{c3::accumulating snapshot}} (một quy trình, cập nhật dần).		fact kimball
+Số đo không cộng được theo mọi chiều gọi là {{c1::semi-additive}}; ví dụ điển hình là {{c2::số dư tài khoản cuối ngày}}.	Cộng số dư 30 ngày lại ra một con số vô nghĩa, không lỗi nào báo.	fact
+Tỉ lệ và phần trăm {{c1::không bao giờ}} được lưu thẳng vào fact — lưu {{c2::tử số và mẫu số}}, chia lúc query.		fact design-process
+Natural key do {{c1::hệ nguồn}} sinh ra và {{c2::có}} mang nghĩa nghiệp vụ. Surrogate key do {{c3::warehouse}} sinh ra và {{c4::không}} mang nghĩa — đó chính là ưu điểm của nó.		surrogate-key
+Trên dimension SCD Type 2, natural key {{c1::lặp lại}} qua các phiên bản, còn surrogate key thì {{c2::duy nhất mỗi phiên bản}}. Fact phải trỏ vào {{c3::surrogate key}}.		surrogate-key scd
+Không tìm thấy dimension khi nạp fact thì đặt SK = {{c1::-1}} ("Chưa xác định"), không đặt {{c2::NULL}} — vì NULL làm {{c3::inner join mất dòng fact}}.		surrogate-key null
+SCD là quyết định: báo cáo về quá khứ dùng giá trị {{c1::lúc đó (as-was)}} hay giá trị {{c2::bây giờ (as-is)}}.		scd
+Type {{c1::0}}: cấm cập nhật, đổi là dữ liệu hỏng.<br>Type {{c2::1}}: ghi đè, mất lịch sử vĩnh viễn.<br>Type {{c3::2}}: đóng dòng cũ + thêm dòng mới với SK mới.<br>Type {{c4::3}}: thêm cột, giữ đúng một đời.	Thực tế 95% là Type 1 và Type 2.	scd
+Type {{c1::4}} là mini-dimension: tách cột đổi nhanh ra bảng nhỏ, lịch sử chuyển sang {{c2::fact}}.<br>Type {{c3::6}} là kết hợp 1+2+3: một bảng trả lời cả as-was lẫn as-is, giá phải trả là {{c4::UPDATE lan toả toàn bộ dòng lịch sử của khách đó}}.		scd
+Grain của dimension SCD Type 2 là {{c1::một phiên bản của một thực thể}} = một dòng. Vì thế test <code>unique</code> phải đặt lên {{c2::surrogate key}}.		scd grain
+Bộ cột Type 2: <code>khach_sk</code> ({{c1::surrogate key, khoá thật}}), <code>khach_hang_id</code> ({{c2::natural key, lặp lại qua các phiên bản}}), <code>valid_from</code>, <code>valid_to</code>, <code>is_current</code>, <code>is_deleted</code> ({{c3::nguồn xoá cứng thì đánh dấu, đừng xoá dòng}}).		scd
+<code>valid_to</code> của dòng hiện tại dùng {{c1::'9999-12-31'}}, không dùng {{c2::NULL}} — vì <code>ngay &lt; NULL</code> trả về {{c3::NULL chứ không phải true}}, làm dữ liệu mới nhất biến mất khỏi báo cáo.		scd null
+Dimension lookup lúc nạp fact: <code>on f.khach_hang_id = d.khach_hang_id and f.ngay {{c1::&gt;=}} d.valid_from and f.ngay {{c2::&lt;}} d.valid_to</code>	Dấu &gt;= ở valid_from và &lt; ở valid_to: khoảng nửa mở, không chồng lấn.	scd sql
+Phân vân Type 1 hay Type 2 thì chọn {{c1::Type 2}}, vì hạ từ 2 xuống 1 {{c2::lúc nào cũng được}} nhưng lên từ 1 lên 2 thì {{c3::lịch sử đã ghi đè không lấy lại được}}.		scd tradeoff
+Để phát hiện thay đổi, so cột phải dùng {{c1::IS DISTINCT FROM}} chứ không dùng {{c2::&lt;&gt;}} — vì phép so sánh thường với NULL trả về {{c3::NULL}}, và <code>WHERE NULL</code> bị coi như false.		scd change-detection null
+Bốn bẫy của hash trong SCD2: {{c1::NULL bị concat_ws bỏ qua}} · {{c2::thiếu separator giữa các cột}} · {{c3::format số và ngày không chuẩn hoá}} · {{c4::đổi thứ tự cột}}.	Bẫy 1 và 2 làm bỏ sót thay đổi thật; bẫy 3 và 4 làm sinh version giả.	scd hash
+Cách dùng <code>updated_at</code> an toàn: dùng nó để {{c1::giảm dữ liệu phải quét}}, và dùng {{c2::hash}} để xác nhận thật sự có đổi.		scd change-detection
+Áp dụng thay đổi SCD2 theo thứ tự {{c1::đóng dòng cũ trước, chèn dòng mới sau}} — ngược lại thì {{c2::dòng vừa chèn bị đóng luôn, không còn dòng is_current nào}}.		scd
+Hai strategy của dbt snapshot: {{c1::check}} + <code>check_cols</code> tương ứng so từng cột/hash; {{c2::timestamp}} + <code>updated_at</code> tương ứng dùng cột thời gian.	check_cols='all' nguy hiểm: thêm một cột kỹ thuật là mọi dòng sinh version mới.	scd dbt snapshot
+Chi phí lưu trữ của OBT tỷ lệ với {{c1::cardinality × độ rộng của cột được nhúng}}, <b>không</b> tỷ lệ với {{c2::số dòng fact}}.	Đo thật: nhúng cột 3 giá trị → OBT/STAR = 0.76×; nhúng địa chỉ/ghi chú 50k giá trị → 10.23×.	obt parquet
+Mô hình lai lakehouse: tầng {{c1::silver}} là star schema + SCD2 đầy đủ, nguồn sự thật; tầng {{c2::gold}} là OBT dẹt, sản phẩm dẫn xuất tái tạo được bằng <code>dbt run</code>.	OBT chỉ nguy hiểm khi nó là nơi lưu trữ duy nhất.	obt lakehouse
+Junk dimension gộp {{c1::từ ba cột trở lên}}, mỗi cột {{c2::cardinality thấp (dưới ~20 giá trị)}}, thành một bảng tổ hợp và một khoá trong fact.		junk-dimension
+Junk dimension sinh tổ hợp bằng {{c1::SELECT DISTINCT trên dữ liệu thật}}; mini-dimension sinh {{c2::toàn bộ tích Descartes}}, vì tập giá trị nhỏ và cố định.		junk-dimension mini-dimension
+Bridge table phải có cột {{c1::he_so (hệ số phân bổ)}}, và bất biến cần test là {{c2::tổng hệ số của mỗi khoá bằng 1}}.		bridge-table
+Ba điều kiện conformed dimension: cùng {{c1::surrogate key}}, cùng {{c2::tập thuộc tính và tên cột}}, cùng {{c3::định nghĩa nghiệp vụ}} — điều kiện cuối không kiểm được bằng SQL.		conformed-dimension
+Ghép hai fact khác grain thì dùng {{c1::drill-across}}: cộng riêng từng fact về {{c2::cùng một mức}} trước, rồi mới ghép theo thuộc tính của conformed dimension.		conformed-dimension drill-across
+Role-playing dimension giải bằng {{c1::view có tên cột đổi rõ nghĩa}} trên cùng một bảng — không {{c2::copy thành nhiều bảng vật lý}}, cũng không {{c3::để mỗi query tự đặt alias}}.		role-playing-dimension
