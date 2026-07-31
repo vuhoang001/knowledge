@@ -31,12 +31,12 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Star, Snowflake và One Big Table](data-modeling/reference/star-snowflake-obt.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
 | [Surrogate key và Natural key](data-modeling/reference/surrogate-key.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
 | [Sáu chiều chất lượng dữ liệu](data-quality/six-dimensions.md) | `data-quality` | data-engineering | 📝 lý thuyết |
-| [dbt docs và lineage](etl/dbt/reference/docs-and-lineage.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
-| [Macro, Jinja và package](etl/dbt/reference/macros-jinja-packages.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [dbt docs và lineage](etl/dbt/reference/docs-and-lineage.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
+| [Macro, Jinja và package](etl/dbt/reference/macros-jinja-packages.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Materialization](etl/dbt/reference/materializations.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Model và ref() — DAG mọc ra từ đâu](etl/dbt/reference/models-and-ref.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
-| [Cấu trúc một dbt project](etl/dbt/reference/project-structure.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
-| [Source, seed và snapshot](etl/dbt/reference/sources-seeds-snapshots.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
+| [Cấu trúc một dbt project](etl/dbt/reference/project-structure.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
+| [Source, seed và snapshot](etl/dbt/reference/sources-seeds-snapshots.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Test và data quality trong dbt](etl/dbt/reference/testing.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [dbt là gì và nó thật sự làm gì](etl/dbt/reference/what-is-dbt.md) | `etl/dbt/reference` | data-engineering | ✅ đã chạy tay |
 
