@@ -61,6 +61,7 @@ Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, se
 | 06 | [testing](etl/dbt/testing.md) | Ba tầng: test · contract · unit test | 📝 |
 | 07 | [macros-jinja-packages](etl/dbt/macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy | 🟡 |
 | 08 | [docs-and-lineage](etl/dbt/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 🟡 |
+| CS | [case-studies/ai-sinh-sai-ten-catalog-trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | Vì sao `verified_at` tồn tại — AI bịa tên catalog, mất một buổi | 📝 |
 
 Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md).
 

@@ -464,11 +464,15 @@ Q: Type 3 giữ được bao nhiêu đời lịch sử?
 A: Đúng một. Dùng khi cần hai cách phân loại song song, không phải khi cần lịch sử theo thời gian.
 ```
 
-## Case Study
+## Tình huống minh hoạ — chưa phải case study
+
+Đây là tình huống **dựng lại để giải thích**, không phải sự cố đã gặp và debug. Case
+study thật nằm ở [`case-studies/`](../case-studies/index.md) và bắt buộc có output thật;
+mục này chưa đạt chuẩn đó, nên không gọi là case study.
 
 **Bối cảnh** — bài toán mart doanh thu theo vùng, lấy từ chính lab đang học.
 
-Tình huống dựng lại: nếu `dim_khach_hang` chuyển sang Type 2 mà bảng fact vẫn join
+Nếu `dim_khach_hang` chuyển sang Type 2 mà bảng fact vẫn join
 bằng `khach_hang_id` như cũ, `DH500` sẽ khớp với **cả hai** dòng của `KH001` — kết quả
 tổng doanh thu 5.000.000 thành 10.000.000.
 

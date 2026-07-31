@@ -118,25 +118,12 @@ tổ hợp. Xác định grain TRƯỚC khi viết test.
 
 ## Sai lầm đã mắc
 
-<!-- Ghi cả cái SAI lúc đầu, không chỉ cách đúng cuối cùng. -->
+Chi tiết nằm ở [`case-studies/`](case-studies/index.md) — trang này chỉ liệt kê.
 
-### 30/07/2026 — nội dung AI sinh ghi sai tên catalog Trino
-
-Bản đầu của module ghi *"profiles.yml trỏ 192.168.100.60:8080, catalog Iceberg"*.
-Chạy `SHOW CATALOGS` trên Trino `.60` thì catalog thật là `hdos_silver`, `polaris`,
-`polaris_silver`, `system` — **không hề có catalog tên `iceberg`**.
-
-Làm theo y nguyên là `dbt debug` fail, và mất một buổi nghi cấu hình dbt trong khi
-lỗi nằm ở chỗ khác hẳn.
-
-**Bài học không phải về dbt, mà về chính kho này.** Nội dung AI sinh đọc rất thuyết
-phục và sai ở đúng chỗ khó kiểm nhất — chi tiết cụ thể của môi trường. Đây là lý do
-mỗi file có `verified_at`, và trống nghĩa là chưa tin được.
-
-### 30/07/2026 — `unique` trên `don_hang_id`, và đổ tại dữ liệu
-
-Xem [06-test-va-data-quality.md](testing.md) §5. Grain thật là *cặp*
-`(don_hang_id, dong)`; test sai chứ dữ liệu không sai.
+| Ngày | Sự cố | Bài học |
+|---|---|---|
+| 30/07/2026 | [AI sinh sai tên catalog Trino](case-studies/ai-sinh-sai-ten-catalog-trino.md) | Chi tiết môi trường phải kiểm bằng lệnh, không bằng cách đọc |
+| 30/07/2026 | [`unique` trên `don_hang_id`](testing.md#5-trường-hợp-thật--test-fail-vì-test-sai-không-phải-dữ-liệu-sai) | Xác định grain trước khi viết test — test sai chứ dữ liệu không sai |
 
 ## Nguồn
 

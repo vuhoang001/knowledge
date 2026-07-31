@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**18 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**19 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (16)
 
@@ -50,11 +50,13 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 |---|---|---|---|
 | [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
 
-## Case study (0)
+## Case study (1)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
-*Chưa có file nào.*
+| Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
+|---|---|---|---|
+| [Nội dung AI sinh ghi sai tên catalog Trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | `etl/dbt/case-studies` | data-engineering | 📘 ổn định, chưa chạy tay |
 
 ## Cheatsheet (1)
 
