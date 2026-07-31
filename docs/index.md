@@ -116,8 +116,9 @@ cục nữa — mở dbt là thấy luôn bài tập và case study của dbt.
 | FAQ | toàn cục — cắt ngang nhiều chủ đề | [faqs/](faqs/index.md) |
 | Thuật ngữ | toàn cục — cắt ngang nhiều chủ đề | [glossary/](glossary/index.md) |
 
-`inbox/` và `templates/` nằm **ngoài** `docs/` nên không lên site — chúng phục vụ việc
-vận hành repo, không phải nội dung tri thức.
+`inbox/`, `templates/` và `anki/` nằm **ngoài** `docs/` nên không lên site — chúng phục
+vụ việc vận hành repo và ôn tập, không phải nội dung tri thức. `anki/` chứa 215 thẻ TSV
+sinh từ data-modeling và dbt; xem `anki/README.md`.
 
 ## Đường đi phụ thuộc
 
