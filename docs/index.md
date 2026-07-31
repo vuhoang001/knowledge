@@ -26,6 +26,7 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/grain.md) trước mọi th�
 | [grain](data-modeling/grain.md) | Một dòng của bảng này đại diện cho cái gì | ✅ |
 | [fact-and-dimension](data-modeling/fact-and-dimension.md) | Cái gì đo được vào fact, cái gì mô tả vào dimension | 📝 |
 | [scd](data-modeling/scd.md) | Thuộc tính đổi thì báo cáo quá khứ dùng giá trị nào — sáu cách | 📝 |
+| [junk-dimension](data-modeling/junk-dimension.md) | Cột cardinality thấp: để thẳng trong fact, tách dimension, hay gộp chung | 🟡 |
 | [design-process](data-modeling/design-process.md) | Từ yêu cầu nghiệp vụ mơ hồ tới bảng chạy được, bốn bước | 📝 |
 | [star-snowflake-obt](data-modeling/star-snowflake-obt.md) | Ba cách bố trí fact quanh dimension; lakehouse đảo chiều lời khuyên cũ | 🟡 |
 | [surrogate-key](data-modeling/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |

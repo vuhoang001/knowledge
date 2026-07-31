@@ -93,6 +93,9 @@ vòng đời một đơn. Cách đúng: `trang_thai` hiện tại nằm trong ac
 (cột mốc thời gian cho từng bước), còn *danh mục* trạng thái ("Đã giao", "Đã huỷ")
 là một dimension nhỏ.
 
+Còn khi trạng thái đã chốt cứng lúc ghi thì câu hỏi đổi thành *tách dimension riêng hay
+để thẳng trong fact* — xem [Junk dimension](junk-dimension.md).
+
 </details>
 
 <details>

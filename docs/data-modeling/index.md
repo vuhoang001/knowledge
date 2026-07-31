@@ -32,6 +32,7 @@ học cách gõ lệnh; biết grain rồi thì đổi sang công cụ nào cũn
 | [Fact và Dimension](fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
 | [Surrogate key và Natural key](surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
 | [**SCD**](scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
+| [Junk dimension](junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
 | [Star, Snowflake, OBT](star-snowflake-obt.md) | Ba cách bố trí, đánh đổi giữa chúng | intermediate | 📝 draft |
 
 ### Cách làm — làm sao ra được thiết kế đó
