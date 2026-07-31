@@ -1,5 +1,6 @@
 ---
 title: Model và ref() — DAG mọc ra từ đâu
+sidebar_position: 3
 description: ref() không phải cách viết tắt tên bảng mà là cách duy nhất khai báo phụ thuộc.
 tags: [dbt, model, ref, dag, lineage]
 domain: data-engineering

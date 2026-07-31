@@ -1,5 +1,6 @@
 ---
 title: Macro, Jinja và package
+sidebar_position: 7
 description: Jinja chạy trước khi SQL rời máy — và ngưỡng nào thì nên viết macro.
 tags: [dbt, jinja, macro, dbt-utils]
 domain: data-engineering

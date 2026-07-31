@@ -1,5 +1,6 @@
 ---
 title: Source, seed và snapshot
+sidebar_position: 4
 description: Ba cách đưa dữ liệu không do dbt tính ra vào DAG — và vì sao snapshot không build lại được.
 tags: [dbt, source, seed, snapshot, scd, freshness]
 domain: data-engineering

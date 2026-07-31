@@ -1,5 +1,6 @@
 ---
 title: Quy trình thiết kế 4 bước
+sidebar_position: 1
 description: Từ một yêu cầu nghiệp vụ mơ hồ tới bảng chạy được — làm theo thứ tự nào, hỏi ai câu gì, và vì sao đảo thứ tự là hỏng.
 tags: [data-modeling, kimball, design-process, bus-matrix, requirements]
 domain: data-engineering
@@ -83,7 +84,7 @@ Viết **một câu**, cụ thể tới mức không cãi được:
 
 > "Một dòng của `fct_don_hang_chi_tiet` là **một dòng hàng trong một đơn hàng**."
 
-Không phải "bảng đơn hàng". Xem [Grain](grain.md).
+Không phải "bảng đơn hàng". Xem [Grain](../foundations/grain.md).
 
 **Ba quy tắc ở bước này:**
 
@@ -98,7 +99,7 @@ Không phải "bảng đơn hàng". Xem [Grain](grain.md).
 Với grain đã có, hỏi: **"mô tả sự kiện này bằng những chiều nào?"** — ai, cái gì, ở đâu,
 lúc nào, thế nào.
 
-Rồi với **từng cột một**, chạy [cây quyết định SCD](scd.md#khi-nào-nên-dùng). Đây là chỗ
+Rồi với **từng cột một**, chạy [cây quyết định SCD](../dimension-techniques/scd.md#khi-nào-nên-dùng). Đây là chỗ
 duy nhất trong cả quy trình bắt buộc phải **hỏi người dùng nghiệp vụ**, không tự quyết:
 
 | Hỏi thế này | Đừng hỏi thế này |
@@ -210,11 +211,11 @@ thấy các dimension dùng chung** trước khi lỡ dựng ba bản sao của 
 
 ## Related Topics
 
-- [Grain](grain.md) — bước 2, bước quan trọng nhất
-- [Fact và Dimension](fact-and-dimension.md) — bước 3 và 4
-- [SCD](scd.md) — quyết định nằm trong bước 3
+- [Grain](../foundations/grain.md) — bước 2, bước quan trọng nhất
+- [Fact và Dimension](../foundations/fact-and-dimension.md) — bước 3 và 4
+- [SCD](../dimension-techniques/scd.md) — quyết định nằm trong bước 3
 - [Star, Snowflake, OBT](star-snowflake-obt.md) — bố trí kết quả của 4 bước
-- [6 chiều chất lượng](../data-quality/six-dimensions.md) — kiểm sau khi đã có bảng
+- [6 chiều chất lượng](../../data-quality/six-dimensions.md) — kiểm sau khi đã có bảng
 
 ## References
 

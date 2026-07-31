@@ -1,5 +1,6 @@
 ---
 title: Cấu trúc một dbt project
+sidebar_position: 2
 description: dbt_project.yml, profiles.yml, target/compiled — thư mục nào chứa gì.
 tags: [dbt, configuration, project-structure]
 domain: data-engineering

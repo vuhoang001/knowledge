@@ -1,5 +1,6 @@
 ---
 title: Materialization
+sidebar_position: 5
 description: view, table, incremental, ephemeral — cùng một SELECT, khác thứ dbt bọc quanh nó.
 tags: [dbt, materialization, incremental]
 domain: data-engineering

@@ -1,5 +1,6 @@
 ---
 title: Test và data quality trong dbt
+sidebar_position: 6
 description: Ba tầng test/contract/unit test, bốn cơ chế test, và ca test fail vì test sai chứ không phải dữ liệu sai.
 tags: [dbt, testing, data-quality, grain, contract]
 domain: data-engineering

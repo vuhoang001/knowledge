@@ -1,5 +1,6 @@
 ---
 title: Surrogate key và Natural key
+sidebar_position: 3
 description: Vì sao không dùng thẳng mã nghiệp vụ làm khoá của dimension — và vì sao SCD Type 2 bắt buộc phải có surrogate key.
 tags: [surrogate-key, natural-key, data-modeling, kimball]
 domain: data-engineering
@@ -14,7 +15,7 @@ updated: 2026-07-31
 
 > **Chốt:** Natural key là mã của **hệ nguồn** (`KH001`). Surrogate key là mã của
 > **warehouse** — không mang nghĩa nghiệp vụ nào, và chính vì thế nó không bị hệ nguồn
-> làm hỏng. [SCD Type 2](scd.md) không tồn tại được nếu thiếu nó.
+> làm hỏng. [SCD Type 2](../dimension-techniques/scd.md) không tồn tại được nếu thiếu nó.
 
 ## Mục tiêu
 
@@ -52,13 +53,13 @@ Trả lời câu hỏi hay bị coi là thừa: *"đã có `khach_hang_id` rồi
 
 | Lỗi | Hậu quả |
 |---|---|
-| Fact join bằng natural key trên dim Type 2 | Doanh thu nhân đôi — xem [SCD](scd.md#common-mistakes) |
+| Fact join bằng natural key trên dim Type 2 | Doanh thu nhân đôi — xem [SCD](../dimension-techniques/scd.md#common-mistakes) |
 | Để SK là `NULL` khi chưa tìm thấy dimension | Inner join làm **mất dòng** fact; dùng `-1` thay vì `NULL` |
 | Gán ý nghĩa vào SK ("SK bắt đầu bằng 9 là khách VIP") | Mất đúng thứ làm SK có giá trị: sự vô nghĩa |
 
 ## Related Topics
 
-- [SCD](scd.md) — nơi SK trở thành bắt buộc
+- [SCD](../dimension-techniques/scd.md) — nơi SK trở thành bắt buộc
 - [Fact và Dimension](fact-and-dimension.md) — SK là thứ nối hai loại bảng
 - [Grain](grain.md)
 

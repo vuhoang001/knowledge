@@ -1,5 +1,6 @@
 ---
 title: Star, Snowflake và One Big Table
+sidebar_position: 2
 description: Ba cách bố trí fact quanh dimension — và vì sao lakehouse làm đảo chiều lời khuyên cũ.
 tags: [star-schema, snowflake-schema, obt, denormalization, data-modeling]
 domain: data-engineering
@@ -12,7 +13,7 @@ updated: 2026-07-31
 
 # Star, Snowflake và One Big Table
 
-> **Chốt:** Cùng một mô hình logic ([grain](grain.md), [fact/dim](fact-and-dimension.md))
+> **Chốt:** Cùng một mô hình logic ([grain](../foundations/grain.md), [fact/dim](../foundations/fact-and-dimension.md))
 > bố trí được theo ba cách. Chọn cách nào là **quyết định hiệu năng và chi phí**, không
 > phải quyết định mô hình hoá.
 
@@ -45,7 +46,7 @@ graph LR
 
 - [ ] Vì sao Kimball khuyên **star**, chống snowflake — dù snowflake "chuẩn hơn"
 - [ ] Vì sao lưu trữ dạng cột (Parquet/Iceberg) + nén làm OBT bớt tốn kém hơn xưa
-- [ ] OBT xử lý [SCD Type 2](scd.md) thế nào — và vì sao đó là điểm yếu chí mạng của nó
+- [ ] OBT xử lý [SCD Type 2](../dimension-techniques/scd.md) thế nào — và vì sao đó là điểm yếu chí mạng của nó
 - [ ] Mô hình lai: star ở tầng silver, OBT ở tầng gold cho BI
 - [ ] Data Vault đứng ở đâu trong bức tranh này
 
@@ -65,10 +66,10 @@ graph LR
 
 ## Related Topics
 
-- [Fact và Dimension](fact-and-dimension.md)
+- [Fact và Dimension](../foundations/fact-and-dimension.md)
 - [Quy trình thiết kế](design-process.md)
-- [SCD](scd.md)
-- [Iceberg](../storage/iceberg/index.md) — lưu trữ dạng cột đổi phép tính chi phí
+- [SCD](../dimension-techniques/scd.md)
+- [Iceberg](../../storage/iceberg/index.md) — lưu trữ dạng cột đổi phép tính chi phí
 
 ## References
 

@@ -12,7 +12,8 @@ sản phẩm dẫn xuất, đã gitignore — đừng sửa tay, đừng commit.
 | Cần | Đọc |
 |---|---|
 | Thứ tôi cần nằm ở file nào | [`docs/index.md`](docs/index.md) — manifest phẳng của mọi file |
-| Kiến thức mới nên đi vào thư mục nào | [`README.md`](README.md) — bảng định tuyến + bản đồ tri thức |
+| **Kiến thức mới đi vào đâu, mang metadata gì** | [`ROUTING.md`](ROUTING.md) — ba trục phân loại + rule linter cưỡng chế |
+| Bản đồ tri thức tổng | [`README.md`](README.md) |
 | Bản đồ khái niệm của một công nghệ | `docs/<lĩnh vực>/<công nghệ>/index.md` |
 | Khuôn để viết file mới | `templates/full-topic.md` (chủ đề lớn) · `templates/short-topic.md` (ngắn) |
 
@@ -46,6 +47,14 @@ grep -ril "slowly changing" docs/
 
 **4. Tạo file mới thì phải cập nhật mục lục.** Ít nhất `index.md` của thư mục chứa nó,
 và `docs/index.md`. Không có ghi chú mồ côi.
+
+**5. File mới phải có `sidebar_position`, khớp cột `#` của mục lục.** Thiếu nó là
+Docusaurus sắp sidebar theo alphabet — im lặng, không lỗi nào báo. Xem [`ROUTING.md`](ROUTING.md).
+
+**6. Note giải thích một quyết định thì phải có ví dụ xuyên suốt.** Một bài toán cụ thể
+đi hết từ dữ liệu nguồn → bước quyết định → SQL dựng bảng → query kiểm chứng → bảng so
+sánh trước/sau. Bảng đánh đổi không kèm ví dụ chạy được thì sáu tháng sau đọc lại không
+dựng lại được. Ô *Kết quả* để trống ghi *chưa chạy* — xem luật #2.
 
 ## Quy ước viết
 
@@ -94,9 +103,17 @@ nghi phạm.
 
 ```bash
 npm start          # dev server localhost:3000, hot reload khi sửa .md
-npm run build      # build tĩnh — ĐÂY LÀ BƯỚC KIỂM, xem bên dưới
+npm run lint       # bộ rule định tuyến — bắt cái build không thấy
+npm run check      # lint + build, chạy cái này trước khi commit
+npm run build      # build tĩnh
 npm run serve      # xem thử bản build
 ```
+
+`npm run lint` bắt **file mồ côi, thiếu `sidebar_position`, `sidebar_position` trùng,
+frontmatter thiếu trường, sai độ sâu** — build không thấy những thứ này. Rule và lý do
+từng rule ở [`ROUTING.md`](ROUTING.md).
+
+Search chỉ có ở bản build (`npm run build && npm run serve`), **không có ở `npm start`**.
 
 `npm run build` là thứ duy nhất kiểm chứng tự động trong repo. Nó **chặn** bốn lỗi:
 

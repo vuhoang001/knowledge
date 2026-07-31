@@ -1,14 +1,19 @@
 ---
 title: SCD — Cheatsheet
+sidebar_position: 1
 description: Bảng tra nhanh Slowly Changing Dimension khi đang làm việc.
 tags: [scd, cheatsheet, data-modeling]
+domain: data-engineering
 category: cheatsheet
+status: stable
+difficulty: intermediate
+verified_at:
 updated: 2026-07-31
 ---
 
 # SCD — Cheatsheet
 
-Tài liệu đầy đủ: [docs/data-modeling/scd.md](../data-modeling/scd.md)
+Tài liệu đầy đủ: [docs/data-modeling/dimension-techniques/scd.md](../data-modeling/dimension-techniques/scd.md)
 
 ## Chọn Type nào
 

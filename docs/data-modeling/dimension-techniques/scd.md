@@ -1,5 +1,6 @@
 ---
 title: SCD — Slowly Changing Dimension
+sidebar_position: 1
 description: Khi thuộc tính của một thực thể thay đổi, báo cáo về quá khứ nên dùng giá trị lúc đó hay giá trị bây giờ — và sáu cách hiện thực hoá lựa chọn đó.
 tags: [scd, data-modeling, dimension, kimball, slowly-changing-dimension]
 domain: data-engineering
@@ -38,7 +39,7 @@ Type 2** — học chắc hai cái đó, biết ba cái còn lại tồn tại l
 
 > **Vì sao gọi là "slowly".** Cột đổi hằng giờ (số dư tài khoản, trạng thái đơn) không
 > phải thuộc tính dimension — đó là **fact**. Nhầm chỗ này thì dựng SCD Type 2 cho thứ
-> đổi liên tục và bảng phình gấp hàng nghìn lần. Xem [Fact và Dimension](fact-and-dimension.md).
+> đổi liên tục và bảng phình gấp hàng nghìn lần. Xem [Fact và Dimension](../foundations/fact-and-dimension.md).
 
 ## Vì sao cần
 
@@ -155,7 +156,7 @@ khach_sk | khach_hang_id | ho_ten       | khu_vuc  | valid_from | valid_to   | i
 
 **Grain của bảng đã đổi.** Không còn "một khách một dòng" mà là **"một phiên bản của
 một khách một dòng"**. Hệ quả trực tiếp: `unique` trên `khach_hang_id` sẽ FAIL — và
-đó là fail đúng, y hệt ca đã gặp thật ở [dbt: testing](../etl/dbt/testing.md).
+đó là fail đúng, y hệt ca đã gặp thật ở [dbt: testing](../../etl/dbt/testing.md).
 
 Test đúng cho bảng Type 2:
 
@@ -312,7 +313,7 @@ cần lọc `is_current`). Từ Type 1 lên Type 2 thì **lịch sử đã ghi �
 5. **Test khoảng thời gian**: `valid_from < valid_to`, và không có hai dòng cùng natural
    key mà khoảng chồng lấn.
 6. **Test tổng đối chiếu nguồn** sau khi chuyển sang Type 2. Đây là chiều *accuracy*
-   trong [6 chiều chất lượng](../data-quality/six-dimensions.md) — chiều duy nhất bắt
+   trong [6 chiều chất lượng](../../data-quality/six-dimensions.md) — chiều duy nhất bắt
    được lỗi nhân bản do join sai.
 7. **Chạy thử snapshot trên bản sao trước.** Xem Common Mistakes, dòng cuối.
 
@@ -327,7 +328,7 @@ cần lọc `is_current`). Từ Type 1 lên Type 2 thì **lịch sử đã ghi �
 | Khoảng `valid` chồng lấn | Một đơn khớp 2 dòng → nhân bản | Test không-overlap theo natural key |
 | Nguồn **xoá cứng** một dòng | Dim không biết, khách "sống" mãi trong báo cáo | Cột `is_deleted`, so danh sách khoá mỗi lần chạy |
 | Late-arriving dimension | Fact tới trước dim → không tìm được SK → mất dòng | Dòng "Chưa xác định" `_sk = -1`, vá sau |
-| dbt `snapshot` chạy sai một lần | **Lịch sử sai vĩnh viễn** — không có nguồn nào dựng lại | Chạy thử trên bản sao; xem [sources-seeds-snapshots](../etl/dbt/sources-seeds-snapshots.md) |
+| dbt `snapshot` chạy sai một lần | **Lịch sử sai vĩnh viễn** — không có nguồn nào dựng lại | Chạy thử trên bản sao; xem [sources-seeds-snapshots](../../etl/dbt/sources-seeds-snapshots.md) |
 
 Bẫy cuối đáng nhấn: `snapshot` là thứ **duy nhất** trong dbt không tái tạo được. Model
 sai thì `dbt run` lại; snapshot sai thì phần lịch sử đã ghi mất luôn.
@@ -479,10 +480,10 @@ tổng doanh thu 5.000.000 thành 10.000.000.
 
 Chỉ có **tổng tiền** sai, và chỉ phát hiện được bằng một singular test đối chiếu với
 hệ nguồn — tức chiều *accuracy*, chiều duy nhất không có test dựng sẵn. Đây là ví dụ
-cụ thể cho luận điểm ở [6 chiều chất lượng](../data-quality/six-dimensions.md): năm
+cụ thể cho luận điểm ở [6 chiều chất lượng](../../data-quality/six-dimensions.md): năm
 chiều kia xanh hết mà accuracy sai thì số vẫn sai.
 
-**Chưa chạy tay.** Cần kiểm chứng trong [lab dbt](../tutorials/dbt-lab-duckdb.md)
+**Chưa chạy tay.** Cần kiểm chứng trong [lab dbt](../../tutorials/dbt-lab-duckdb.md)
 rồi cập nhật `verified_at`. Đây là nội dung lý thuyết — đọc với thái độ nghi ngờ cho
 tới khi có output thật dán vào.
 
@@ -506,23 +507,23 @@ Data Vault / bitemporal (nâng cao)
 
 ## Related Topics
 
-- [Grain](grain.md) — Type 2 làm đổi grain của dimension; đây là chỗ hay quên nhất
-- [Fact và Dimension](fact-and-dimension.md) — cột đổi nhanh là fact, không phải dimension
-- [Surrogate key](surrogate-key.md) — vì sao Type 2 **bắt buộc** có SK
-- [Quy trình thiết kế](design-process.md) — SCD được quyết ở bước 3
-- [6 chiều chất lượng dữ liệu](../data-quality/six-dimensions.md) — accuracy bắt lỗi nhân bản
+- [Grain](../foundations/grain.md) — Type 2 làm đổi grain của dimension; đây là chỗ hay quên nhất
+- [Fact và Dimension](../foundations/fact-and-dimension.md) — cột đổi nhanh là fact, không phải dimension
+- [Surrogate key](../foundations/surrogate-key.md) — vì sao Type 2 **bắt buộc** có SK
+- [Quy trình thiết kế](../layout-and-process/design-process.md) — SCD được quyết ở bước 3
+- [6 chiều chất lượng dữ liệu](../../data-quality/six-dimensions.md) — accuracy bắt lỗi nhân bản
 
 ## Prerequisites
 
-- [SQL: join và grain](../databases/sql/index.md)
-- [Grain](grain.md)
-- [Fact và Dimension](fact-and-dimension.md)
+- [SQL: join và grain](../../databases/sql/index.md)
+- [Grain](../foundations/grain.md)
+- [Fact và Dimension](../foundations/fact-and-dimension.md)
 
 ## Next Topics
 
-- [Quy trình thiết kế 4 bước](design-process.md)
-- [dbt: sources, seeds, snapshots](../etl/dbt/sources-seeds-snapshots.md) — công cụ hiện thực Type 2
-- [Iceberg](../storage/iceberg/index.md) — time travel khác Type 2 chỗ nào
+- [Quy trình thiết kế 4 bước](../layout-and-process/design-process.md)
+- [dbt: sources, seeds, snapshots](../../etl/dbt/sources-seeds-snapshots.md) — công cụ hiện thực Type 2
+- [Iceberg](../../storage/iceberg/index.md) — time travel khác Type 2 chỗ nào
 
 ## References
 
@@ -536,4 +537,4 @@ Data Vault / bitemporal (nâng cao)
 - Data Vault 2.0 — cách tiếp cận khác cho lịch sử: satellite thay vì SCD Type 2
 - Bitemporal modeling — hai trục thời gian (*khi sự việc xảy ra* vs *khi hệ thống biết*),
   cần cho tài chính và bảo hiểm
-- [Cheatsheet SCD](../cheatsheets/scd.md) — bảng tra nhanh khi đang làm
+- [Cheatsheet SCD](../../cheatsheets/scd.md) — bảng tra nhanh khi đang làm

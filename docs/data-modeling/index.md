@@ -24,24 +24,40 @@ học cách gõ lệnh; biết grain rồi thì đổi sang công cụ nào cũn
 
 ## Nội dung
 
-### Khái niệm — bảng trông ra sao
+Ba tầng, đọc từ dưới lên. **Tầng trên đứng trên tầng dưới** — không phải ba nhóm ngang
+hàng để chọn cái nào cũng được.
 
-| Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
-|---|---|---|---|
-| [Grain](grain.md) | Một dòng của bảng này đại diện cho **cái gì** | beginner | ✅ đã gặp thật |
-| [Fact và Dimension](fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
-| [Surrogate key và Natural key](surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
-| [**SCD**](scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
-| [Junk dimension](junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
-| [Star, Snowflake, OBT](star-snowflake-obt.md) | Ba cách bố trí, đánh đổi giữa chúng | intermediate | 📝 draft |
+### [1. Nền tảng](foundations/index.md) — không đổi khi đổi công cụ
 
-### Cách làm — làm sao ra được thiết kế đó
+| # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
+|---|---|---|---|---|
+| 01 | [Grain](foundations/grain.md) | Một dòng của bảng này đại diện cho **cái gì** | beginner | ✅ đã gặp thật |
+| 02 | [Fact và Dimension](foundations/fact-and-dimension.md) | Hai loại bảng, 3 loại fact, vì sao tách | beginner | 📝 review |
+| 03 | [Surrogate key và Natural key](foundations/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
 
-| Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
-|---|---|---|---|
-| [Quy trình thiết kế 4 bước](design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
+### [2. Kỹ thuật trên dimension](dimension-techniques/index.md) — áp dụng lên tầng 1
+
+| # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
+|---|---|---|---|---|
+| 04 | [**SCD**](dimension-techniques/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
+| 05 | [Junk dimension](dimension-techniques/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
+
+### [3. Bố trí và quy trình](layout-and-process/index.md) — mức toàn mô hình
+
+| # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
+|---|---|---|---|---|
+| 06 | [Quy trình thiết kế 4 bước](layout-and-process/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
+| 07 | [Star, Snowflake, OBT](layout-and-process/star-snowflake-obt.md) | Ba cách bố trí, đánh đổi giữa chúng | intermediate | 📝 draft |
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 lý thuyết, `verified_at` còn trống
+
+Cột `#` là **thứ tự học** chạy xuyên cả ba tầng, và cũng là thứ tự sidebar
+(`sidebar_position` trong frontmatter). Hai chỗ này phải khớp nhau — lệch là sidebar dẫn
+người đọc đi sai đường.
+
+**Cách phân tầng:** một file thuộc tầng 1 nếu bỏ nó đi thì các tầng trên không đọc được;
+thuộc tầng 2 nếu nó xử lý một tình huống *trên* một mô hình đã có; thuộc tầng 3 nếu nó
+quyết định thứ áp cho **nhiều bảng cùng lúc** chứ không phải một bảng.
 
 ## Vì sao chia đôi "khái niệm" và "cách làm"
 

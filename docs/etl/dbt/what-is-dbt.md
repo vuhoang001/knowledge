@@ -1,5 +1,6 @@
 ---
 title: dbt là gì và nó thật sự làm gì
+sidebar_position: 1
 description: "Nhìn tận mắt SQL mà dbt sinh ra: ref() biến thành gì, test biên dịch thành gì."
 tags: [dbt, ref, jinja, compiled-sql]
 domain: data-engineering

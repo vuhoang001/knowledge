@@ -54,7 +54,7 @@ graph TD
 
 | Nhóm | Nội dung | Trạng thái |
 |---|---|---|
-| [Data Modeling](docs/data-modeling/) | [Grain](docs/data-modeling/grain.md) · [Fact/Dimension](docs/data-modeling/fact-and-dimension.md) · [**SCD**](docs/data-modeling/scd.md) · [Junk dimension](docs/data-modeling/junk-dimension.md) · [Surrogate key](docs/data-modeling/surrogate-key.md) · [Star/Snowflake/OBT](docs/data-modeling/star-snowflake-obt.md) · [Quy trình thiết kế](docs/data-modeling/design-process.md) | 📝 đang viết |
+| [Data Modeling](docs/data-modeling/) | [Grain](docs/data-modeling/foundations/grain.md) · [Fact/Dimension](docs/data-modeling/foundations/fact-and-dimension.md) · [**SCD**](docs/data-modeling/dimension-techniques/scd.md) · [Junk dimension](docs/data-modeling/dimension-techniques/junk-dimension.md) · [Surrogate key](docs/data-modeling/foundations/surrogate-key.md) · [Star/Snowflake/OBT](docs/data-modeling/layout-and-process/star-snowflake-obt.md) · [Quy trình thiết kế](docs/data-modeling/layout-and-process/design-process.md) | 📝 đang viết |
 | [Data Quality](docs/data-quality/) | [Sáu chiều chất lượng](docs/data-quality/six-dimensions.md) | 📝 đang viết |
 | [ETL & Streaming](docs/etl/) | [**dbt**](docs/etl/dbt/) · [Kafka](docs/etl/kafka/) · [Flink](docs/etl/flink/) | 🔄 dbt đang học |
 | [Query Engines](docs/query-engines/) | [Trino](docs/query-engines/trino/) | ⬜ chưa bắt đầu |

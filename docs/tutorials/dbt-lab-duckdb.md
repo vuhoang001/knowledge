@@ -1,5 +1,6 @@
 ---
 title: Lab dbt trên DuckDB
+sidebar_position: 1
 description: Bảy bài tập chạy thật từ dbt debug tới chuyển sang Trino — mỗi bài có ô dán output.
 tags: [dbt, duckdb, tutorial, lab, hands-on]
 domain: data-engineering

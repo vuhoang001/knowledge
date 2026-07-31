@@ -1,5 +1,6 @@
 ---
 title: Sáu chiều chất lượng dữ liệu
+sidebar_position: 1
 description: Khung chung của ngành để biết mình đang bỏ sót chiều nào — uniqueness, completeness, validity, integrity, timeliness, accuracy.
 tags: [data-quality, testing, accuracy, freshness]
 domain: data-engineering
@@ -56,7 +57,7 @@ where abs(m.tong_mart - s.tong_nguon) > 1
 ```
 
 **Đây là test duy nhất bắt được lỗi nhân bản do join sai** — ví dụ khi fact join vào
-[dimension SCD Type 2](../data-modeling/scd.md#common-mistakes) bằng natural key. Lúc đó
+[dimension SCD Type 2](../data-modeling/dimension-techniques/scd.md#common-mistakes) bằng natural key. Lúc đó
 `unique` xanh, `not_null` xanh, `relationships` xanh, số dòng fact đúng — chỉ có tổng tiền
 gấp đôi.
 
@@ -82,7 +83,7 @@ sources:
 
 Đừng viết test theo cảm hứng — theo thứ tự này:
 
-1. **Xác định [grain](../data-modeling/grain.md) trước tiên.** Sai bước này thì mọi test
+1. **Xác định [grain](../data-modeling/foundations/grain.md) trước tiên.** Sai bước này thì mọi test
    sau đều sai.
 2. `not_null` + `unique` lên **đúng grain đó**. Grain tổ hợp thì dùng test tổ hợp,
    **không** dùng `unique` một cột.
@@ -107,7 +108,7 @@ Bước 5 và 6 là hai bước bị bỏ nhiều nhất, và cũng là hai bư�
 <details>
 <summary>Test xanh hết mà số trên dashboard vẫn sai — nghi gì?</summary>
 
-Theo thứ tự: (1) sai [grain](../data-modeling/grain.md) → nhân bản do join;
+Theo thứ tự: (1) sai [grain](../data-modeling/foundations/grain.md) → nhân bản do join;
 (2) thiếu accuracy → không có gì đối chiếu với nguồn; (3) thiếu timeliness → dữ liệu cũ.
 Ba nguyên nhân này chiếm gần hết các ca "xanh mà sai".
 
@@ -125,8 +126,8 @@ sách để soi**, không nằm ở con số sáu.
 ## Related Topics
 
 - [dbt: testing](../etl/dbt/testing.md) — công cụ hiện thực hoá các chiều này
-- [Grain](../data-modeling/grain.md) — bước 0 của mọi test
-- [SCD](../data-modeling/scd.md) — nơi accuracy bắt được lỗi năm chiều kia bỏ qua
+- [Grain](../data-modeling/foundations/grain.md) — bước 0 của mọi test
+- [SCD](../data-modeling/dimension-techniques/scd.md) — nơi accuracy bắt được lỗi năm chiều kia bỏ qua
 
 ## References
 

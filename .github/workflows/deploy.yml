@@ -25,6 +25,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Bo rule dinh tuyen — bat cai `build` khong thay: file mo coi, thieu
+      # sidebar_position, frontmatter thieu truong. Chi ERROR moi chan.
+      - run: npm run lint
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

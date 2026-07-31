@@ -12,4 +12,4 @@ Dùng khi **đang làm và cần tra**, không dùng để học lần đầu. H
 
 | Cheatsheet | Chủ đề đầy đủ |
 |---|---|
-| [SCD](scd.md) | [docs/data-modeling/scd.md](../data-modeling/scd.md) |
+| [SCD](scd.md) | [docs/data-modeling/dimension-techniques/scd.md](../data-modeling/dimension-techniques/scd.md) |

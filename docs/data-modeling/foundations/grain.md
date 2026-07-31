@@ -1,5 +1,6 @@
 ---
 title: Grain
+sidebar_position: 1
 description: Một dòng của bảng này đại diện cho cái gì — câu hỏi phải trả lời trước khi viết dòng SQL đầu tiên.
 tags: [grain, data-modeling, kimball]
 domain: data-engineering
@@ -78,7 +79,7 @@ Done. PASS=3 WARN=0 ERROR=0 SKIP=0 TOTAL=3
 | Bảng lớn, query chậm hơn | **Mất chi tiết vĩnh viễn** — không tách nhỏ lại được |
 
 **Quy tắc Kimball: luôn chọn grain mịn nhất có thể.** Cộng lên thì lúc nào cũng được;
-tách nhỏ ra thì không. Cùng một bất đối xứng như [SCD Type 1 vs Type 2](scd.md#trade-offs).
+tách nhỏ ra thì không. Cùng một bất đối xứng như [SCD Type 1 vs Type 2](../dimension-techniques/scd.md#trade-offs).
 
 ## Common Mistakes
 
@@ -119,11 +120,11 @@ khi viết test, đừng viết test rồi suy ra grain.
 
 ## Related Topics
 
-- [SCD](scd.md) — Type 2 làm **đổi grain** của dimension
+- [SCD](../dimension-techniques/scd.md) — Type 2 làm **đổi grain** của dimension
 - [Fact và Dimension](fact-and-dimension.md) — mỗi loại bảng có kiểu grain riêng
-- [Quy trình thiết kế](design-process.md) — grain là **bước 2**, trước cả việc chọn cột
-- [dbt: testing](../etl/dbt/testing.md) — nơi grain sai lộ ra
-- [SQL](../databases/sql/index.md) — join nhân bản dòng là hệ quả của grain sai
+- [Quy trình thiết kế](../layout-and-process/design-process.md) — grain là **bước 2**, trước cả việc chọn cột
+- [dbt: testing](../../etl/dbt/testing.md) — nơi grain sai lộ ra
+- [SQL](../../databases/sql/index.md) — join nhân bản dòng là hệ quả của grain sai
 
 ## References
 

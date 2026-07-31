@@ -1,5 +1,6 @@
 ---
 title: dbt docs và lineage
+sidebar_position: 8
 description: Sơ đồ lineage chính xác đúng bằng mức bạn dùng ref() kỷ luật.
 tags: [dbt, docs, lineage, exposures]
 domain: data-engineering
