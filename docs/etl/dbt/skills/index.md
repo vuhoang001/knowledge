@@ -13,7 +13,9 @@ updated: 2026-07-31
 
 Kỹ thuật áp dụng vào một tình huống cụ thể — đứng **trên** phần Tài liệu, không thay thế nó.
 
-*Chưa có file nào.* Thêm vào đây khi có — xem [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
+| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+|---|---|---|---|
+| 1 | [Triển khai test](implementing-tests.md) | Sáu loại test: khai ở đâu, cú pháp gì, chạy ra output nào | 📝 có output thật |
 
 ## Related Topics
 

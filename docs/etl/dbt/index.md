@@ -141,6 +141,7 @@ Tài liệu về dbt nhưng **không nằm trong thư mục này** — chúng �
 | Bài tập | [dbt lab — DuckDB](tutorials/dbt-lab-duckdb.md) | chạy thật, có ô dán output |
 | Case study | *(chưa có)* | đã debug xong một sự cố dbt thật |
 | Cheatsheet | *(chưa có)* | đang làm, cần tra nhanh cú pháp |
+| Kỹ năng | [Triển khai test](skills/implementing-tests.md) | cần viết test thật, không phải hiểu khái niệm |
 
 Xem đầy đủ mọi thứ mang tag này: **[`/tags/dbt`](/tags/dbt)** — trang đó gom tất cả bất
 kể thư mục.
