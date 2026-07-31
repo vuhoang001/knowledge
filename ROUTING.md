@@ -143,6 +143,7 @@ updated: 2026-07-31
 
 | # | Rule |
 |---|---|
+| R15 | Mỗi file `reference/`/`skills/` có ít nhất một case study minh hoạ |
 | R7 | File có trong manifest `docs/index.md` |
 | R8 | File có mục `## Related Topics` |
 
@@ -192,6 +193,35 @@ tới mức cần nhiều file, chúng **không** thành thư mục con của `k
 đúng về bản chất: Schema Registry và Kafka Connect là hệ thống triển khai riêng, không
 phải bộ phận bên trong broker. Chúng lên thành `docs/etl/schema-registry/` và
 `docs/etl/kafka-connect/`, **ngang hàng** với `kafka/`.
+
+## Rule phủ case study (R15)
+
+Mỗi file trong `reference/` và `skills/` **nên có ít nhất một case study minh hoạ**.
+
+Lý do: file kỹ thuật bao giờ cũng có bảng *Trade-offs* và *Common Mistakes* — nhưng bảng
+đánh đổi đọc xong quên ngay. Thứ nhớ được là **một ca hỏng cụ thể có số**. Case study là
+chỗ biến một dòng cảnh báo thành một câu chuyện có triệu chứng đo được.
+
+**Cách linter đối chiếu:** nó đọc mọi link trong `case-studies/*.md`; file nào trong
+`reference/` hoặc `skills/` **không được case study nào trỏ tới** thì bị cảnh báo. Nghĩa
+là case study **bắt buộc phải link tới kỹ thuật nó minh hoạ** — không link thì coi như
+chưa phủ.
+
+Mức WARN chứ không ERROR: viết case study là việc nội dung, không phải việc cấu trúc.
+Nhưng nó hiện trong mỗi lần chạy CI nên khoảng trống không biến mất khỏi tầm mắt.
+
+Khuôn một case study — theo đúng mạch này để đọc bài nào cũng thấy quen:
+
+| Mục | Nội dung |
+|---|---|
+| Nhãn | Sự cố thật hay tình huống dựng lại — **ghi rõ** |
+| Bối cảnh | Mô hình và dữ liệu, chạy được |
+| Triệu chứng | Con số sai, **chạy thật** |
+| Giả thuyết sai lúc đầu | Đã nghi gì, vì sao sai — chỗ mất thời gian nằm ở đây |
+| Nguyên nhân thật | Có bằng chứng |
+| Vì sao không test nào bắt được | Bảng test và kết quả |
+| Cách sửa | Chạy thật, có số đối chứng |
+| Dấu hiệu nhận ra sớm | Query kiểm được ngay hôm nay |
 
 ## Kiểm kê kho
 

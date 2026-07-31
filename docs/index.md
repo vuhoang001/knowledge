@@ -44,6 +44,9 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [CS: join hai fact phồng tổng](data-modeling/case-studies/join-hai-fact-lam-phong-tong.md) | Hai fact khác grain join thẳng — doanh thu phồng 67% | 📝 |
 | [CS: dimension phồng 365 lần](data-modeling/case-studies/dimension-phinh-365-lan.md) | Type 2 cho cột đổi hằng ngày: 100k khách thành 36,5tr dòng | 📝 |
 | [CS: hai mart không ghép được](data-modeling/case-studies/hai-mart-khong-ghep-duoc.md) | Thiếu conformed dimension — câu hỏi cắt ngang bất khả thi | 📝 |
+| [CS: thêm trạng thái thứ tám](data-modeling/case-studies/them-trang-thai-thu-tam.md) | Danh sách trạng thái hardcode trong WHERE — hụt 21% doanh thu | 📝 |
+| [CS: một nửa số đơn biến mất](data-modeling/case-studies/don-dang-giao-bien-mat.md) | `JOIN` loại sạch đơn chưa giao — 4 đơn còn 2 | 📝 |
+| [CS: chọn OBT rồi cần as-is](data-modeling/case-studies/chon-obt-roi-can-as-is.md) | OBT không có khái niệm phiên bản, as-is bất khả thi | 📝 |
 | [surrogate-key](data-modeling/reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá dimension | 🟡 |
 
 ## Data Quality

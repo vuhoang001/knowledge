@@ -170,6 +170,29 @@ for (const { f, fm } of allFm) {
       add(f, 'R13', `khong dan toi ${m.f} (doc_type=${m.fm.doc_type}, tag "${key}")`);
 }
 
+// R15 — moi file reference/ va skills/ nen co it nhat MOT case study minh hoa.
+// Bao gio cung co bang trade-off; thu thieu la mot ca hong CU THE de nho.
+// Doi chieu bang link: case study phai tro toi ky thuat no minh hoa.
+{
+  const covered = {};
+  for (const f of files) {
+    if (!f.includes('/case-studies/') || basename(f) === 'index.md') continue;
+    const dir = dirname(dirname(f));
+    for (const m of readFileSync(f, 'utf8').matchAll(/\]\(([^)#]+\.md)/g)) {
+      const tgt = join(dirname(f), m[1]).replace(/\\/g, '/');
+      if (tgt.includes('/reference/') || tgt.includes('/skills/'))
+        (covered[tgt] ??= []).push(basename(f));
+    }
+  }
+  for (const f of files) {
+    const rel = relative(DOCS, f);
+    if (basename(f) === 'index.md') continue;
+    if (!rel.includes('/reference/') && !rel.includes('/skills/')) continue;
+    if (!covered[f])
+      add(f, 'R15', 'chua case study nao minh hoa — them mot ca hong cu the vao case-studies/ cua chu de', 'WARN');
+  }
+}
+
 // R10 — sidebar_position trung trong cung thu muc
 const byDir = {};
 for (const file of files) {
@@ -212,6 +235,7 @@ const RULES = {
   R7: 'co trong manifest', R8: 'co Related Topics', R9: 'do sau toi da 3 tang',
   R10: 'sidebar_position khong trung', R11: '_category_.json hop le',
   R12: 'doc_type khop thu muc', R13: 'chu de dan toi tai lieu cua no',
+  R15: 'ky thuat co case study minh hoa',
   R14: 'catalog.md con moi',
 };
 

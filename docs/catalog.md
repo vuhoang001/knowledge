@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**29 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**32 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (14)
 
@@ -63,16 +63,19 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 |---|---|---|---|
 | [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
 
-## Case study (5)
+## Case study (8)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
 | [Báo cáo tháng 1 tự đổi số vào tháng 4](data-modeling/case-studies/bao-cao-qua-khu-tu-doi-so.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
+| [Chọn OBT xong, sáu tháng sau sếp hỏi câu as-is](data-modeling/case-studies/chon-obt-roi-can-as-is.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
 | [Dimension phồng 365 lần sau một năm](data-modeling/case-studies/dimension-phinh-365-lan.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
+| [Một nửa số đơn biến mất khỏi báo cáo](data-modeling/case-studies/don-dang-giao-bien-mat.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
 | [Hai mart đúng, ghép lại thì không trả lời được câu nào](data-modeling/case-studies/hai-mart-khong-ghep-duoc.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
 | [Doanh thu phồng 67% vì join hai bảng fact](data-modeling/case-studies/join-hai-fact-lam-phong-tong.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
+| [Thêm trạng thái thứ tám, năm báo cáo sai năm kiểu](data-modeling/case-studies/them-trang-thai-thu-tam.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
 | [Nội dung AI sinh ghi sai tên catalog Trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | `etl/dbt/case-studies` | data-engineering | 📘 ổn định, chưa chạy tay |
 
 ## Cheatsheet (1)
