@@ -405,6 +405,35 @@ ngay_sk | sinh_vien_sk | lop_sk        ← khong co cot so nao
 KHÔNG đi học buổi nào"* — thứ chỉ trả lời được khi có bảng ghi lại sự kiện đã xảy ra để
 đối chiếu với danh sách đầy đủ.
 
+## Số này là thuộc tính hay là fact?
+
+Không phải cột số nào cũng là fact, và không phải cột chữ nào cũng là dimension. Giá bán
+niêm yết của sản phẩm là một con số — nhưng nó **mô tả sản phẩm**, không đo một sự kiện.
+
+Kimball gọi tình huống này là *numeric values as attributes or facts*, và phép thử là:
+
+> **Cột này bạn sẽ `SUM`, hay bạn sẽ `WHERE` và `GROUP BY`?**
+
+| Dấu hiệu | Nó là |
+|---|---|
+| Cộng lại có nghĩa | **Fact** |
+| Dùng để lọc, gộp, phân khoảng | **Thuộc tính dimension** |
+| Đổi theo từng sự kiện | Fact |
+| Đổi theo thực thể, ổn định giữa các sự kiện | Thuộc tính |
+| Người dùng hỏi "tổng bao nhiêu" | Fact |
+| Người dùng hỏi "có bao nhiêu cái trong khoảng X–Y" | Thuộc tính |
+
+**Câu trả lời hay gặp nhất là: cả hai.** Giá niêm yết vừa là thuộc tính của
+`dim_san_pham` (để lọc "sản phẩm dưới 1 triệu"), vừa là fact trong `fct_ban` (giá thực tế
+lúc bán, có thể khác giá niêm yết do khuyến mãi).
+
+Đó không phải trùng lặp — hai cột trả lời hai câu hỏi khác nhau, và **giá lúc bán mới là
+sự thật của giao dịch**. Chi tiết ở [year-to-date và timespan](../skills/ytd-timespan-facts.md):
+dùng giá hiện tại thay cho giá lúc bán làm doanh thu lệch 39%.
+
+Khi cột số nằm ở dimension và cần phân nhóm theo ngưỡng, dùng bảng khoảng thay vì
+`CASE WHEN` — xem [đưa hành vi vào dimension](../skills/behavior-dimension.md).
+
 ## Trade-offs
 
 | Tách fact/dimension (star) | Gộp hết vào một bảng (OBT) |

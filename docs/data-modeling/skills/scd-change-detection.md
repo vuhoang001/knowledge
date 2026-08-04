@@ -490,7 +490,7 @@ chỉ khi hash ổn định, tức là đã tránh xong bẫy 3 và bẫy 4.
 
 ## Related Topics
 
-- [SCD](scd.md) — Type 0–6 và thuật toán năm bước; trang này là bước 3 viết đủ
+- [SCD](scd.md) — Type 0–7 và thuật toán năm bước; trang này là bước 3 viết đủ
 - [Surrogate key](../reference/surrogate-key.md) — khoá cấp cho mỗi phiên bản mới
 - [Grain](../reference/grain.md) — grain của dimension Type 2 là *một phiên bản*, không phải *một thực thể*
 - [dbt: source, seed, snapshot](../../etl/dbt/reference/sources-seeds-snapshots.md) — công cụ hiện thực

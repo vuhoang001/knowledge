@@ -36,26 +36,43 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 | 3 | [Surrogate key và Natural key](reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
 | 4 | [Quy trình thiết kế 4 bước](reference/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
 | 5 | [Star, Snowflake, OBT](reference/star-snowflake-obt.md) | Ba cách bố trí; đo thật chi phí OBT, và chỗ Data Vault đứng | intermediate | 📝 review |
+| 6 | [Date dimension](reference/date-dimension.md) | Vì sao lịch phải là bảng — quý tài chính, ngày lễ, múi giờ | beginner | 📝 draft |
+| 7 | [Bus architecture và bus matrix](reference/bus-architecture.md) | Dựng từng quy trình một mà cuối cùng vẫn ghép lại được | intermediate | 📝 draft |
 
 ### [Kỹ năng](skills/index.md) — kỹ thuật áp dụng lên phần trên
 
 | # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
 |---|---|---|---|---|
-| 1 | [**SCD**](skills/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–6) | intermediate | 📝 review |
+| 1 | [**SCD**](skills/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–7) | intermediate | 📝 review |
 | 2 | [Phát hiện thay đổi cho SCD 2](skills/scd-change-detection.md) | Biết dòng nào đã đổi: so cột, hash, `updated_at`, CDC | advanced | 📝 draft |
 | 3 | [Junk dimension](skills/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
 | 4 | [Mini-dimension](skills/mini-dimension.md) | Dim lớn có vài cột đổi nhanh — tách sao cho Type 2 không phình | advanced | 📝 draft |
 | 5 | [Role-playing dimension](skills/role-playing-dimension.md) | Một dim đóng nhiều vai trong cùng fact | intermediate | 📝 draft |
 | 6 | [Conformed dimension](skills/conformed-dimension.md) | Điều kiện để cộng số từ hai fact khác nhau | advanced | 📝 draft |
 | 7 | [Bridge table](skills/bridge-table.md) | Quan hệ nhiều-nhiều — tổng không bị nhân đôi | advanced | 📝 draft |
+| 8 | [Degenerate dimension](skills/degenerate-dimension.md) | Số đơn hàng: ở lại fact hay dựng bảng riêng | intermediate | 📝 draft |
+| 9 | [Cây phân cấp](skills/hierarchy.md) | Cây sâu không đều — dẹt, kéo cấp cha, hay bridge đường đi | advanced | 📝 draft |
+| 10 | [Dữ liệu về muộn](skills/late-arriving.md) | Fact về sau khi dimension đã đổi, và ngược lại | advanced | 📝 draft |
+| 11 | [Aggregate fact table](skills/aggregate-fact-table.md) | Bảng tổng hợp: cái gì được lưu, và vì sao nó trôi | intermediate | 📝 draft |
+| 12 | [Nhiều tiền tệ và đơn vị đo](skills/multi-currency-uom.md) | Số đo có đơn vị thì cột số một mình là vô nghĩa | intermediate | 📝 draft |
+| 13 | [Audit dimension](skills/audit-dimension.md) | Truy được dòng nào do lần chạy nào sinh ra | intermediate | 📝 draft |
+| 14 | [NULL trong fact và dimension](skills/null-handling.md) | Logic ba trị làm bộ lọc âm thầm nuốt dòng | intermediate | 📝 draft |
+| 15 | [Conformed facts](skills/conformed-facts.md) | Ghép được rồi, hai số đó có so được không | intermediate | 📝 draft |
+| 16 | [Thiết kế thuộc tính dimension](skills/dimension-attribute-design.md) | Cờ dạng chữ, nhiều cây phân cấp, drill down, ghi chú | beginner | 📝 draft |
+| 17 | [Header/line và phân bổ fact](skills/allocated-facts.md) | Số đo cấp đơn xuống cấp dòng, và P&L theo sản phẩm | advanced | 📝 draft |
+| 18 | [Centipede fact table](skills/centipede-fact.md) | Fact hai chục khoá ngoại cho vài chiều thật | intermediate | 📝 draft |
+| 19 | [Year-to-date và timespan](skills/ytd-timespan-facts.md) | Luỹ kế thì đừng lưu; khoảng hiệu lực thì phải lưu | intermediate | 📝 draft |
+| 20 | [Đưa hành vi vào dimension](skills/behavior-dimension.md) | Số tổng hợp, phân khoảng động, nhóm nghiên cứu, step | advanced | 📝 draft |
+| 21 | [Thực thể không đồng nhất](skills/heterogeneous-schema.md) | Supertype/subtype khi các loại không chung thuộc tính | advanced | 📝 draft |
+| 22 | [Real-time fact table](skills/real-time-fact.md) | Ngày hôm nay chưa đầy nhưng vẫn được đếm là một ngày | advanced | 📝 draft |
 
 ### Ba nhóm còn lại
 
 | Nhóm | Nội dung |
 |---|---|
-| [Bài tập](tutorials/index.md) | *(chưa có bài riêng cho data modeling)* |
+| [Bài tập](tutorials/index.md) | [Dựng star schema bằng DuckDB](tutorials/star-schema-duckdb.md) — 4 bước thiết kế, 3 fact, 4 phép kiểm |
 | [Cheatsheet](cheatsheets/index.md) | [SCD — tra nhanh](cheatsheets/scd.md) |
-| [Case study](case-studies/index.md) | **7 ca** — mỗi kỹ thuật ở trên có ít nhất một ca hỏng cụ thể |
+| [Case study](case-studies/index.md) | **24 ca** — mỗi kỹ thuật ở trên có ít nhất một ca hỏng cụ thể |
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 lý thuyết, `verified_at` còn trống
 
@@ -88,18 +105,49 @@ Grain                    ← bắt đầu ở đây
       ↓
 Fact và Dimension
       ↓
-Surrogate key
+Surrogate key · Date dimension · Degenerate dimension
       ↓
 SCD                      ← trọng tâm
       ↓
 Quy trình thiết kế 4 bước
       ↓
+Lab: dựng star schema bằng DuckDB   ← chạy thật ở đây
+      ↓
 Star / Snowflake / OBT
+      ↓
+Kỹ thuật theo tình huống: cây phân cấp, dữ liệu về muộn,
+bảng tổng hợp, nhiều tiền tệ, audit dimension
       ↓
 Triển khai bằng dbt snapshot
 ```
 
-**Đường ngắn nhất tới chỗ dùng được: Grain → Fact/Dimension → SCD → Quy trình.**
+**Đường ngắn nhất tới chỗ dùng được: Grain → Fact/Dimension → SCD → Quy trình → Lab.**
+
+## Bản đồ so với danh sách kỹ thuật Kimball
+
+Kho này bám theo [danh sách kỹ thuật mô hình chiều của Kimball Group](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/).
+Bảng dưới cho biết đang phủ tới đâu — để biết cái gì còn thiếu mà không phải mở lại trang
+gốc đối chiếu.
+
+| Nhóm kỹ thuật Kimball | Số kỹ thuật | Đã phủ | Còn thiếu |
+|---|---|---|---|
+| Khái niệm nền | 9 | 9 | — |
+| Fact table cơ bản | 10 | 10 | — |
+| Dimension cơ bản | 14 | 14 | — |
+| Tích hợp qua conformed dimension | 7 | 7 | — |
+| SCD | 8 | 8 | — |
+| Cây phân cấp | 3 | 3 | — |
+| Fact table nâng cao | 13 | 13 | — |
+| Dimension nâng cao | 14 | 12 | dimension-to-dimension join và behavior tag time series mới ở mức một mục, chưa có case study riêng |
+| Schema chuyên dụng | 3 | 3 | — |
+
+Toàn bộ **81 kỹ thuật** trong danh sách Kimball đã có chỗ trong kho. Hai kỹ thuật ở dòng
+áp chót được viết như một mục bên trong file khác thay vì file riêng — chúng hiếm gặp tới
+mức dựng case study riêng sẽ là bịa tình huống, và luật [R15](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md)
+tồn tại để chặn đúng việc đó.
+
+Phủ hết danh sách **không** phải mục tiêu tự thân. Giá trị nằm ở chỗ mỗi kỹ thuật đều đi
+kèm một ca hỏng có số chạy thật — đọc bảng đánh đổi thì quên, nhớ được là con số.
 
 ## Related Topics
 

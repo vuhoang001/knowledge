@@ -1,7 +1,7 @@
 ---
 title: SCD — Slowly Changing Dimension
 sidebar_position: 1
-description: Khi thuộc tính của một thực thể thay đổi, báo cáo về quá khứ nên dùng giá trị lúc đó hay giá trị bây giờ — và sáu cách hiện thực hoá lựa chọn đó.
+description: Khi thuộc tính của một thực thể thay đổi, báo cáo về quá khứ nên dùng giá trị lúc đó hay giá trị bây giờ — và tám cách hiện thực hoá lựa chọn đó.
 tags: [scd, data-modeling, dimension, kimball, slowly-changing-dimension]
 domain: data-engineering
 category: concept
@@ -35,7 +35,7 @@ Dimension là bảng mô tả *thực thể* (khách hàng, sản phẩm, cửa 
 chúng đổi — chậm, vài lần một năm. Mỗi lần đổi, hệ thống phải quyết định làm gì với
 giá trị cũ: **ghi đè** (mất lịch sử) hay **giữ lại** (tốn chỗ, phức tạp hơn khi join).
 
-Sáu "Type" được đánh số từ 0 đến 6 là sáu cách xử lý. Thực tế **95% là Type 1 và
+Tám "Type" được đánh số từ 0 đến 7 là tám cách xử lý. Thực tế **95% là Type 1 và
 Type 2** — học chắc hai cái đó, biết ba cái còn lại tồn tại là đủ.
 
 > **Vì sao gọi là "slowly".** Cột đổi hằng giờ (số dư tài khoản, trạng thái đơn) không
@@ -237,6 +237,69 @@ khach_sk | khach_hang_id | khu_vuc_luc_do | khu_vuc_hien_tai | valid_from | vali
 `GROUP BY khu_vuc_luc_do` cho *as-was*, `GROUP BY khu_vuc_hien_tai` cho *as-is* — một
 bảng trả lời cả hai câu hỏi. Giá phải trả: mỗi lần khách đổi vùng phải `UPDATE` lại
 **toàn bộ** dòng lịch sử của khách đó.
+
+### Type 5 — mini-dimension cộng outrigger Type 1
+
+Type 4 giải quyết việc cột đổi nhanh làm dimension phình, nhưng để lại một lỗ: từ
+`dim_khach_hang` **không nhìn thấy** nhóm hiện tại của khách. Muốn biết "khách này bây giờ
+thuộc nhóm nào" phải đi qua fact.
+
+Type 5 vá lỗ đó: thêm vào dimension chính một khoá trỏ tới mini-dimension, **cập nhật kiểu
+Type 1**.
+
+```text
+dim_khach_hang       khach_sk | khach_id | ho_ten | khach_nhom_sk_hien_tai
+dim_khach_hang_nhom  khach_nhom_sk | nhom_thu_nhap | nhom_tuoi
+fct_don_hang         khach_sk | khach_nhom_sk  ← nhom LUC DO
+```
+
+Hai đường đi, hai câu trả lời:
+
+| Muốn biết | Đi đường nào |
+|---|---|
+| Nhóm **lúc giao dịch** (as-was) | `fct.khach_nhom_sk` |
+| Nhóm **hiện tại** (as-is) | `dim_khach_hang.khach_nhom_sk_hien_tai` |
+
+Cột `khach_nhom_sk_hien_tai` là một **outrigger Type 1** — nó bị ghi đè mỗi khi khách đổi
+nhóm, nên nó không giữ lịch sử và không được dùng cho báo cáo quá khứ. Cùng cái bẫy mô tả
+ở [dimension-to-dimension join](centipede-fact.md#dimension-to-dimension-join).
+
+Khi nào dùng: đã dùng Type 4, và có câu hỏi *"khách hiện tại thuộc nhóm nào"* mà không
+muốn quét fact.
+
+### Type 7 — hai dimension song song
+
+Type 6 nhồi cả as-was lẫn as-is vào một bảng, và phải `UPDATE` toàn bộ lịch sử mỗi lần đổi.
+Type 7 tránh việc đó bằng cách để fact mang **hai khoá**:
+
+```text
+fct_don_hang   khach_sk        → dim_khach_hang       (Type 2, day du lich su)
+               khach_durable   → dim_khach_hien_tai   (Type 1, mot dong moi khach)
+```
+
+```sql
+-- as-was: khu vuc luc mua
+SELECT d.khu_vuc, sum(f.doanh_thu) FROM fct_don_hang f
+JOIN dim_khach_hang d USING (khach_sk) GROUP BY 1;
+
+-- as-is: khu vuc hien tai
+SELECT h.khu_vuc, sum(f.doanh_thu) FROM fct_don_hang f
+JOIN dim_khach_hien_tai h USING (khach_durable) GROUP BY 1;
+```
+
+`dim_khach_hien_tai` thường chỉ là một **view** trên dim Type 2 lọc `la_hien_tai`, khoá
+theo [durable key](../reference/surrogate-key.md) — không tốn thêm chỗ lưu.
+
+| | Type 6 | Type 7 |
+|---|---|---|
+| Số bảng | 1 | 2 (một thường là view) |
+| Đổi giá trị | `UPDATE` **toàn bộ** dòng lịch sử của khách | Không `UPDATE` gì |
+| Fact mang | 1 khoá | 2 khoá |
+| Thêm một thuộc tính cần as-is | Thêm cột + backfill toàn bảng | Có sẵn |
+| Người dùng chọn nhầm | Dễ — hai cột cạnh nhau | Khó hơn — phải chọn bảng |
+
+**Type 7 là lựa chọn mặc định tốt hơn Type 6** khi có nhiều hơn một hoặc hai thuộc tính
+cần cả hai cách nhìn. Điều kiện: dimension phải có durable key.
 
 ## Khi nào nên dùng
 

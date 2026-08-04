@@ -13,7 +13,14 @@ updated: 2026-07-31
 
 Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học.
 
-*Chưa có file nào.* Thêm vào đây khi có — xem [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
+| # | Bài | Làm được gì sau khi xong | Thời lượng |
+|---|---|---|---|
+| 1 | [Dựng một star schema từ đầu bằng DuckDB](star-schema-duckdb.md) | Đi hết bốn bước thiết kế trên dữ liệu thật: `dim_ngay`, dimension Type 2, transaction fact, accumulating snapshot, drill-across — kèm bốn phép kiểm bắt buộc | ~20 phút |
+
+Lab chạy bằng venv ngoài repo: `~/Documents/learn-lab/dbt/.venv/bin/python`. Mọi câu SQL
+tự chứa, dán thẳng vào DuckDB là chạy.
+
+**Ô *Kết quả của bạn* để trống nghĩa là chưa chạy.** Chạy rồi mới điền `verified_at`.
 
 ## Related Topics
 

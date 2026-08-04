@@ -42,6 +42,53 @@ Trả lời câu hỏi hay bị coi là thừa: *"đã có `khach_hang_id` rồi
   Không có SK thì fact không cách nào trỏ tới *đúng phiên bản*.
 - **Join số nguyên nhanh hơn join chuỗi.** Lợi ích nhỏ nhất, hay bị nêu đầu tiên.
 
+## Bốn loại khoá, không phải hai
+
+Kimball tách rõ hơn cặp natural/surrogate, và sự phân biệt này chỉ lộ ra khi dimension đã
+có [SCD](../skills/scd.md) Type 2:
+
+| Loại khoá | Là gì | Ví dụ | Duy nhất theo |
+|---|---|---|---|
+| **Natural key** | Mã của hệ nguồn | `KH001` từ CRM | Một thực thể **trong một hệ nguồn** |
+| **Durable key** | Mã bền của warehouse cho **một thực thể xuyên mọi phiên bản** | `khach_durable_id = 42` | Một thực thể, mãi mãi |
+| **Surrogate key** | Khoá của **một phiên bản** dimension | `khach_sk = 137` | Một dòng dimension |
+| **Supernatural key** | Durable key khi natural key **không đáng tin** | mã do warehouse cấp sau khi khớp trùng | Một thực thể sau khi hợp nhất |
+
+Ba câu hỏi phân biệt chúng:
+
+```sql
+-- "Doanh thu cua don nay, luc do khach o khu vuc nao?"   -> surrogate key
+-- "Tong doanh thu ca doi cua khach nay?"                 -> durable key
+-- "Ma nay ung voi ban ghi nao ben CRM?"                  -> natural key
+```
+
+**Vì sao cần durable key riêng.** Trên dim Type 2, một khách có N dòng và N surrogate key.
+Gộp doanh thu cả đời khách thì phải gộp theo cái gì? Natural key làm được — cho tới khi hệ
+nguồn đổi mã, hoặc khách tồn tại ở hai hệ nguồn với hai mã. Durable key là cột không bao
+giờ đổi, do warehouse cấp và giữ.
+
+```sql
+CREATE TABLE dim_khach (
+  khach_sk        BIGINT,      -- moi phien ban mot gia tri
+  khach_durable   BIGINT,      -- mot khach mot gia tri, xuyen moi phien ban
+  khach_id_crm    VARCHAR,     -- natural key, giu de truy vet
+  ...
+);
+```
+
+**Supernatural key** là durable key trong trường hợp khó nhất: natural key **không tin
+được** — số CMND nhập sai, khách đăng ký hai lần bằng hai email. Warehouse chạy khớp trùng
+rồi tự cấp một mã bền cho thực thể đã hợp nhất. Kimball nhấn mạnh: từ lúc đó, **mã đó mới
+là danh tính**, natural key chỉ còn là dữ liệu tham chiếu.
+
+## Khoá thay thế cho chính dòng fact
+
+Fact cũng có thể có surrogate key của riêng nó (`ban_sk`). Khi nào đáng thêm và khi nào
+không — xem [year-to-date và timespan](../skills/ytd-timespan-facts.md#fact-table-surrogate-key).
+
+Lưu ý quan trọng: `ban_sk` duy nhất **không** chứng minh grain đúng. Hai dòng trùng grain
+vẫn có hai `ban_sk` khác nhau và vẫn qua được test `unique`.
+
 ## Cần trả lời
 
 - [ ] Sinh SK bằng gì: dãy tăng dần vs hash (`dbt_utils.generate_surrogate_key`) —
@@ -57,11 +104,15 @@ Trả lời câu hỏi hay bị coi là thừa: *"đã có `khach_hang_id` rồi
 | Fact join bằng natural key trên dim Type 2 | Doanh thu nhân đôi — xem [SCD](../skills/scd.md#common-mistakes) |
 | Để SK là `NULL` khi chưa tìm thấy dimension | Inner join làm **mất dòng** fact; dùng `-1` thay vì `NULL` |
 | Gán ý nghĩa vào SK ("SK bắt đầu bằng 9 là khách VIP") | Mất đúng thứ làm SK có giá trị: sự vô nghĩa |
+| Không có durable key trên dim Type 2 | Không gộp được "cả đời khách" khi hệ nguồn đổi mã |
+| Dùng natural key làm durable key | Sáp nhập hệ nguồn là mất danh tính thực thể |
+| Tin `fact_sk` duy nhất là grain đúng | Grain trùng vẫn qua được test `unique` |
 
 ## Related Topics
 
-- [SCD](../skills/scd.md) — nơi SK trở thành bắt buộc
+- [SCD](../skills/scd.md) — nơi SK trở thành bắt buộc, và nơi durable key trở nên cần
 - [Fact và Dimension](fact-and-dimension.md) — SK là thứ nối hai loại bảng
+- [Year-to-date và timespan](../skills/ytd-timespan-facts.md) — khoá thay thế cho dòng fact
 - [Grain](grain.md)
 
 ## References

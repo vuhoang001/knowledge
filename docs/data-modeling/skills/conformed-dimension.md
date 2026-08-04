@@ -151,6 +151,37 @@ trả lời được** khi hai mart dùng hai dimension riêng.
 **Không** join thẳng `fct_don_hang` với `fct_tra_hang`. Hai fact khác grain join trực
 tiếp là nhân bản dòng — xem [Fact và Dimension](../reference/fact-and-dimension.md).
 
+### Kỹ thuật này có tên: multipass SQL
+
+Kimball gọi mẫu trên là **multipass SQL to avoid fact-to-fact table joins**, và đặt nó
+thành một kỹ thuật riêng vì nó là **luật cứng**, không phải mẹo tối ưu:
+
+> **Không bao giờ join hai fact table trực tiếp với nhau.** Gộp riêng từng fact về cùng
+> một mức, rồi mới ghép kết quả.
+
+Ba lượt, đúng theo thứ tự:
+
+| Lượt | Làm gì | Vì sao không gộp được |
+|---|---|---|
+| 1 | Gộp fact A theo các dimension chung | Grain A là *một dòng đơn* |
+| 2 | Gộp fact B theo **đúng** các dimension đó | Grain B là *một lần trả hàng* |
+| 3 | `FULL JOIN` hai kết quả theo khoá chung | Chỉ tới đây hai bên mới cùng grain |
+
+Ba điều dễ sai ở lượt 3:
+
+- **Dùng `FULL JOIN`, không dùng `INNER`.** Khu vực chỉ có bán mà chưa có trả hàng sẽ bị
+  `INNER JOIN` ném đi — báo cáo mất một nhóm mà không ai biết.
+- **`coalesce(...,0)` cho bên thiếu.** Không có dòng trả hàng nghĩa là 0, không phải `NULL`
+  — xem [NULL trong fact và dimension](null-handling.md).
+- **`nullif` ở mẫu số.** Chia cho 0 khi một khu vực có trả hàng mà chưa có doanh thu.
+
+Hai lượt đầu **phải gộp theo cùng một tập cột**. Lượt 1 gộp theo `khu_vuc`, lượt 2 gộp
+theo `khu_vuc, thang` là ghép ra số vô nghĩa — và SQL vẫn chạy.
+
+Fan-out xảy ra khi bỏ qua luật này có số cụ thể ở
+[case study join hai fact làm phồng tổng](../case-studies/join-hai-fact-lam-phong-tong.md),
+và một ví dụ chạy được ở [bài lab, bước 6](../tutorials/star-schema-duckdb.md).
+
 ### Trước và sau
 
 | | Hai dimension riêng | Conformed |

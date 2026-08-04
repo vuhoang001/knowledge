@@ -42,6 +42,46 @@ graph TD
 
 Vòng lặp về **bước 2** chứ không về bước 1 — vì sai thì gần như luôn sai ở grain.
 
+## Bước 0 — Lấy yêu cầu nghiệp vụ *và* thực trạng dữ liệu, cùng lúc
+
+Kimball xếp *gather business requirements and data realities* làm việc đầu tiên, và nhấn
+mạnh chữ **và**: hỏi nghiệp vụ mà không mở dữ liệu nguồn ra xem thì thiết kế ra thứ không
+dựng được; đọc dữ liệu nguồn mà không hỏi nghiệp vụ thì dựng ra thứ không ai cần.
+
+Hai việc chạy **song song**, không nối tiếp:
+
+| Phía nghiệp vụ | Phía dữ liệu |
+|---|---|
+| Anh/chị ra quyết định gì hằng tuần? | Bảng nguồn nào ghi việc đó? |
+| Câu hỏi nào hiện không trả lời được? | Cột nào thật sự được điền đủ? |
+| Số nào hiện đang phải tính tay bằng Excel? | Dữ liệu về trễ bao lâu ([đo thật](../skills/late-arriving.md)) |
+| Khi số sai thì hậu quả là gì? | Bao nhiêu % dòng có khoá mồ côi? |
+
+Cột phải là **đo được**, không phải hỏi. Đội nguồn nói *"cột này luôn có"*, nhưng
+`count(*) FILTER (WHERE cot IS NULL)` mới là câu trả lời — và nó hay khác hẳn.
+
+Sản phẩm của bước này là một câu duy nhất: *"quy trình X, grain Y, người dùng Z sẽ dùng
+để quyết định W"*. Không viết được câu đó thì chưa đủ để đi tiếp.
+
+### Workshop mô hình hoá chung — vì sao ngồi cùng phòng
+
+Kimball đặt *collaborative dimensional modeling workshops* thành một kỹ thuật riêng, vì
+cách làm phổ biến hơn — kiến trúc sư thiết kế xong rồi mang đi trình bày — hỏng theo một
+kiểu rất khó sửa: nghiệp vụ gật đầu trong buổi trình bày vì họ không đọc được sơ đồ, rồi
+ba tháng sau nói *"cái này không đúng ý tôi"*.
+
+Cách làm thay thế: dựng mô hình **ngay trong phòng**, cùng người nghiệp vụ, trên bảng
+trắng. Cụ thể:
+
+- Người nghiệp vụ **tự khai grain** bằng tiếng của họ: *"một dòng là một lần khám"*.
+- Mọi cột đều được **đặt tên bằng từ nghiệp vụ dùng**, không phải tên cột hệ nguồn.
+- Mỗi thuộc tính đều có người trả lời được câu *"giá trị này đổi thì báo cáo cũ nên ra số
+  nào"* — đó chính là quyết định [SCD](../skills/scd.md), và nó là quyết định **nghiệp
+  vụ**, không phải kỹ thuật.
+
+Cái đắt nhất mà workshop tránh được: phát hiện sau sáu tháng rằng "khách hàng hoạt động"
+có ba định nghĩa, và fact đã nạp theo định nghĩa sai.
+
 ## Bước 1 — Chọn quy trình nghiệp vụ, không chọn báo cáo
 
 **Sai:** "làm bảng cho dashboard doanh thu theo vùng".
@@ -78,6 +118,10 @@ Giá trị nằm ở **các cột dùng chung**. `dim_khach_hang` xuất hiện 
 Không có bus matrix thì sau một năm bạn có ba định nghĩa "khách hàng hoạt động" khác nhau,
 ba con số khác nhau cho cùng một câu hỏi, và không ai biết cái nào đúng. Đây là lỗi tổ
 chức, không phải lỗi kỹ thuật — nên nó không tự lộ ra qua test.
+
+Bus matrix nên là **một bảng trong kho**, không phải một slide: cách dựng, cách đo độ phủ
+và cách dùng nó để xếp thứ tự ưu tiên nằm ở
+[bus architecture, bus matrix và value chain](bus-architecture.md).
 
 ## Bước 2 — Khai grain
 
