@@ -1,0 +1,385 @@
+{
+  "description": "Bo cau hoi on tap Data Modeling — 10 de / 20 trung binh / 30 kho moi chu de",
+  "generated_from": "docs/data-modeling/",
+  "topics": 29,
+  "total_questions": 1740,
+  "quiz": [
+    {
+      "topic": "aggregate-fact-table",
+      "title": "Aggregate fact table và shrunken rollup dimension",
+      "group": "skills",
+      "file": "aggregate-fact-table.json",
+      "source": "docs/data-modeling/skills/aggregate-fact-table.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "allocated-facts",
+      "title": "Header/line và phân bổ fact",
+      "group": "skills",
+      "file": "allocated-facts.json",
+      "source": "docs/data-modeling/skills/allocated-facts.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "audit-dimension",
+      "title": "Audit dimension và error event schema",
+      "group": "skills",
+      "file": "audit-dimension.json",
+      "source": "docs/data-modeling/skills/audit-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "behavior-dimension",
+      "title": "Đưa hành vi vào dimension",
+      "group": "skills",
+      "file": "behavior-dimension.json",
+      "source": "docs/data-modeling/skills/behavior-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "bridge-table",
+      "title": "Bridge table",
+      "group": "skills",
+      "file": "bridge-table.json",
+      "source": "docs/data-modeling/skills/bridge-table.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "bus-architecture",
+      "title": "Bus architecture, bus matrix và value chain",
+      "group": "reference",
+      "file": "bus-architecture.json",
+      "source": "docs/data-modeling/reference/bus-architecture.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "centipede-fact",
+      "title": "Centipede fact table và dimension-to-dimension join",
+      "group": "skills",
+      "file": "centipede-fact.json",
+      "source": "docs/data-modeling/skills/centipede-fact.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "conformed-dimension",
+      "title": "Conformed dimension",
+      "group": "skills",
+      "file": "conformed-dimension.json",
+      "source": "docs/data-modeling/skills/conformed-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "conformed-facts",
+      "title": "Conformed facts — cùng tên phải cùng nghĩa",
+      "group": "skills",
+      "file": "conformed-facts.json",
+      "source": "docs/data-modeling/skills/conformed-facts.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "date-dimension",
+      "title": "Date dimension",
+      "group": "reference",
+      "file": "date-dimension.json",
+      "source": "docs/data-modeling/reference/date-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "degenerate-dimension",
+      "title": "Degenerate dimension",
+      "group": "skills",
+      "file": "degenerate-dimension.json",
+      "source": "docs/data-modeling/skills/degenerate-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "design-process",
+      "title": "Quy trình thiết kế 4 bước",
+      "group": "reference",
+      "file": "design-process.json",
+      "source": "docs/data-modeling/reference/design-process.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "dimension-attribute-design",
+      "title": "Thiết kế thuộc tính dimension",
+      "group": "skills",
+      "file": "dimension-attribute-design.json",
+      "source": "docs/data-modeling/skills/dimension-attribute-design.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "fact-and-dimension",
+      "title": "Fact và Dimension",
+      "group": "reference",
+      "file": "fact-and-dimension.json",
+      "source": "docs/data-modeling/reference/fact-and-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "grain",
+      "title": "Grain",
+      "group": "reference",
+      "file": "grain.json",
+      "source": "docs/data-modeling/reference/grain.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "heterogeneous-schema",
+      "title": "Thực thể không đồng nhất — supertype, subtype và measure type",
+      "group": "skills",
+      "file": "heterogeneous-schema.json",
+      "source": "docs/data-modeling/skills/heterogeneous-schema.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "hierarchy",
+      "title": "Cây phân cấp — cố định, hơi lệch và lệch hẳn",
+      "group": "skills",
+      "file": "hierarchy.json",
+      "source": "docs/data-modeling/skills/hierarchy.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "junk-dimension",
+      "title": "Junk dimension và cột cardinality thấp",
+      "group": "skills",
+      "file": "junk-dimension.json",
+      "source": "docs/data-modeling/skills/junk-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "late-arriving",
+      "title": "Dữ liệu về muộn — late arriving fact và dimension",
+      "group": "skills",
+      "file": "late-arriving.json",
+      "source": "docs/data-modeling/skills/late-arriving.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "mini-dimension",
+      "title": "Mini-dimension",
+      "group": "skills",
+      "file": "mini-dimension.json",
+      "source": "docs/data-modeling/skills/mini-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "multi-currency-uom",
+      "title": "Nhiều loại tiền tệ và nhiều đơn vị đo",
+      "group": "skills",
+      "file": "multi-currency-uom.json",
+      "source": "docs/data-modeling/skills/multi-currency-uom.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "null-handling",
+      "title": "NULL trong fact và trong dimension",
+      "group": "skills",
+      "file": "null-handling.json",
+      "source": "docs/data-modeling/skills/null-handling.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "real-time-fact",
+      "title": "Real-time fact table — phân vùng nóng",
+      "group": "skills",
+      "file": "real-time-fact.json",
+      "source": "docs/data-modeling/skills/real-time-fact.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "role-playing-dimension",
+      "title": "Role-playing dimension",
+      "group": "skills",
+      "file": "role-playing-dimension.json",
+      "source": "docs/data-modeling/skills/role-playing-dimension.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "scd-change-detection",
+      "title": "Phát hiện thay đổi cho SCD Type 2",
+      "group": "skills",
+      "file": "scd-change-detection.json",
+      "source": "docs/data-modeling/skills/scd-change-detection.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "scd",
+      "title": "SCD — Slowly Changing Dimension",
+      "group": "skills",
+      "file": "scd.json",
+      "source": "docs/data-modeling/skills/scd.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "star-snowflake-obt",
+      "title": "Star, Snowflake và One Big Table",
+      "group": "reference",
+      "file": "star-snowflake-obt.json",
+      "source": "docs/data-modeling/reference/star-snowflake-obt.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "surrogate-key",
+      "title": "Surrogate key và Natural key",
+      "group": "reference",
+      "file": "surrogate-key.json",
+      "source": "docs/data-modeling/reference/surrogate-key.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "ytd-timespan-facts",
+      "title": "Year-to-date và timespan trong fact",
+      "group": "skills",
+      "file": "ytd-timespan-facts.json",
+      "source": "docs/data-modeling/skills/ytd-timespan-facts.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+// Cấu hình cho extension markdownlint của VSCode.
+//
+// Nguồn sự thật về chất lượng nội dung vẫn là `npm run lint` (rule định tuyến, xem
+// ROUTING.md) và `npm run build` (link hỏng, YAML hỏng, MDX hỏng). File này chỉ để
+// markdownlint thôi cảnh báo những chỗ nó không biết là quy ước cố ý của repo —
+// giữ lại phần còn lại vì chúng vẫn bắt lỗi thật.
+{
+  "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint/main/schema/markdownlint-config-schema.json",
+
+  // Frontmatter `title:` bị đếm là h1 thứ nhất, `# Tiêu đề` là h1 thứ hai. Mọi file
+  // trong docs/ đều viết vậy — Docusaurus cần cả hai.
+  "MD025": false,
+
+  // Repo dùng separator gọn `|---|---|` trong bảng, kể cả ở CLAUDE.md và ROUTING.md.
+  "MD060": false,
+
+  // `<details>`/`<summary>` là bắt buộc cho khối FAQ; `<code>` bên trong `<summary>`
+  // vì markdown không chạy trong đó. Xem CLAUDE.md, mục MDX v3.
+  "MD033": false,
+
+  // Hai blockquote liền nhau cách nhau một dòng trống là cố ý (ví dụ: khối "Tình
+  // huống dựng lại" tách khỏi khối "Chốt"), không phải một blockquote bị vỡ.
+  "MD028": false,
+
+  // Prose tiếng Việt xuống dòng ở ~90 ký tự, không phải 80.
+  "MD013": false,
+
+  // Heading kết thúc bằng `C#` bị tưởng là closed atx (`## Tiêu đề ##`). CommonMark
+  // đòi khoảng trắng trước dấu `#` đóng, nên nó vẫn render đủ chữ — chỉ rule là sai.
+  "MD020": false,
+
+  // Code block flush-left giữa hai item làm markdown ngắt list; item kế mở list mới
+  // với `start=2`, nên rule đòi đánh lại từ 1 dù render ra vẫn là 1,2,3,4. Muốn bật
+  // lại rule này thì phải thụt code block vào trong item — đổi nội dung, không phải
+  // đổi config.
+  "MD029": false
+}
