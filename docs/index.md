@@ -91,6 +91,65 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [data-quality/index](data-quality/index.md) | Ba tầng bảo vệ dữ liệu, không phụ thuộc công cụ | 🗂️ |
 | [six-dimensions](data-quality/six-dimensions.md) | Uniqueness, completeness, validity, integrity, timeliness, accuracy | 📝 |
 
+## Design Patterns
+
+23 pattern GoF bằng C#. Đọc [`what-is-a-pattern`](patterns/reference/what-is-a-pattern.md)
+và [`choosing-a-pattern`](patterns/reference/choosing-a-pattern.md) trước; 23 trang còn lại
+là tài liệu **tra**, không phải giáo trình đọc tuần tự.
+
+| File | Trả lời câu hỏi | TT |
+|---|---|---|
+| [patterns/index](patterns/index.md) | Bản đồ khái niệm + thứ tự đọc | 🗂️ |
+| [what-is-a-pattern](patterns/reference/what-is-a-pattern.md) | Pattern là gì, ba nhóm, và **khi nào đừng dùng** | 📝 |
+| [solid](patterns/reference/solid.md) | Năm nguyên lý, mỗi cái một vi phạm chạy ra lỗi thật | 📝 |
+| [composition-over-inheritance](patterns/reference/composition-over-inheritance.md) | Kế thừa nhân số lớp, composition cộng — 72 so với 11 | 📝 |
+| [coupling-cohesion](patterns/reference/coupling-cohesion.md) | Đo fan-out bằng reflection; 7 so với 3 khi tách god class | 📝 |
+| [choosing-a-pattern](patterns/reference/choosing-a-pattern.md) | Tra ngược từ triệu chứng sang tên pattern | 📝 |
+| [singleton](patterns/skills/singleton.md) | Lazy tự viết tạo 8 thể hiện; fan-out ẩn không đo được | 📝 |
+| [factory-method](patterns/skills/factory-method.md) | Hai `switch` song song sớm muộn cũng lệch nhau | 📝 |
+| [abstract-factory](patterns/skills/abstract-factory.md) | Một họ sản phẩm phải khớp; trộn họ không ném lỗi nào | 📝 |
+| [builder](patterns/skills/builder.md) | Constructor 4 tham số cùng kiểu: 183 tờ giấy thành 242 | 📝 |
+| [prototype](patterns/skills/prototype.md) | `MemberwiseClone` **và** `record with` đều là sao chép nông | 📝 |
+| [adapter](patterns/skills/adapter.md) | `catch { return null; }` biến sự cố thành dữ liệu sai | 📝 |
+| [bridge](patterns/skills/bridge.md) | Hai trục: `n × m` lớp thành `n + m`; 48 so với 14 | 📝 |
+| [composite](patterns/skills/composite.md) | Cây có chu trình → `StackOverflow`, không bắt được | 📝 |
+| [decorator](patterns/skills/decorator.md) | Thứ tự bọc đổi ngữ nghĩa: cache ngoài kiểm quyền là thủng | 📝 |
+| [facade](patterns/skills/facade.md) | Hạ fan-out người gọi từ 5 xuống 1; và bẫy phình god object | 📝 |
+| [flyweight](patterns/skills/flyweight.md) | 500k ô: 112 MB xuống 24 MB, đo bằng `GC.GetTotalMemory` | 📝 |
+| [proxy](patterns/skills/proxy.md) | Lazy proxy: 1 truy vấn khi không chạm, 501 khi có chạm | 📝 |
+| [chain-of-responsibility](patterns/skills/chain-of-responsibility.md) | Không ai nhận thì trả `null` — yêu cầu biến mất im lặng | 📝 |
+| [command](patterns/skills/command.md) | `HoanTac` tính ngược bằng công thức: tồn kho 10 thành 24 | 📝 |
+| [interpreter](patterns/skills/interpreter.md) | Một cây, nhiều đầu ra — đánh giá và sinh SQL cùng lúc | 📝 |
+| [iterator](patterns/skills/iterator.md) | Sửa khi đang duyệt; và lazy duyệt lại là tính lại | 📝 |
+| [mediator](patterns/skills/mediator.md) | `n(n-1)/2` thành `n`: 190 liên kết còn 20 | 📝 |
+| [memento](patterns/skills/memento.md) | Chụp trạng thái không phá đóng gói; bẫy chụp nông | 📝 |
+| [observer](patterns/skills/observer.md) | Quên `-=` là rò rỉ; một observer ném chặn các observer sau | 📝 |
+| [state](patterns/skills/state.md) | Luật chuyển trạng thái có chỗ để cưỡng chế | 📝 |
+| [strategy](patterns/skills/strategy.md) | Vẫn còn `switch` chọn strategy thì chưa phải Strategy | 📝 |
+| [template-method](patterns/skills/template-method.md) | Lớp con quên gọi `base` làm luật chung biến mất | 📝 |
+| [visitor](patterns/skills/visitor.md) | Thêm thao tác rẻ, thêm kiểu nút đắt — nhưng đắt *ồn ào* | 📝 |
+| [Lab: refactor switch sang pattern](patterns/tutorials/refactor-switch-sang-pattern.md) | Bốn bậc leo thang, và biết **dừng ở bậc nào** | 📝 |
+| [Cheatsheet 23 GoF](patterns/cheatsheets/gof-23.md) | Bảng một trang: ý định, nên/đừng dùng, hiện thân trong .NET | 📝 |
+| [CS: test xanh riêng, đỏ chung](patterns/case-studies/test-xanh-rieng-do-chung.md) | Singleton giữ trạng thái giữa test; đổi tên test là đổi kết quả | 📝 |
+| [CS: thêm loại thứ năm, sáu chỗ sót](patterns/case-studies/them-loai-thu-nam-sua-bay-cho.md) | Sáu `switch` song song, nhánh mặc định che hết | 📝 |
+| [CS: in 183 tờ thành 242](patterns/case-studies/constructor-chin-tham-so-hoan-vi.md) | Hai tham số `int` cạnh nhau bị hoán vị, biên dịch sạch | 📝 |
+| [CS: sửa bản sao, gốc đổi theo](patterns/case-studies/nhan-ban-doi-tuong-dung-chung-list.md) | `ReferenceEquals(r1.Cot, r2.Cot) == True` sau `with` | 📝 |
+| [CS: báo cáo thiếu 4,2 triệu](patterns/case-studies/adapter-nuot-loi-thanh-danh-sach-rong.md) | Adapter nuốt lỗi; giám sát không có gì để đếm | 📝 |
+| [CS: thêm một tuỳ chọn, 36 lớp](patterns/case-studies/mot-tram-lop-con-cho-mot-tinh-nang.md) | Bùng nổ tổ hợp: 6 lớp thành 72 sau ba chiều | 📝 |
+| [CS: tiến trình chết không log](patterns/case-studies/duyet-cay-khong-bao-gio-dung.md) | Chu trình trong cây composite; `StackOverflow` không bắt được | 📝 |
+| [CS: thực tập sinh đọc bảng lương](patterns/case-studies/doi-thu-tu-decorator-mat-cache.md) | Đảo hai dòng nối dây làm thủng phân quyền | 📝 |
+| [CS: facade 1 method thành 31](patterns/case-studies/facade-phinh-thanh-god-object.md) | Gom theo danh mục thì không có giới hạn tự nhiên | 📝 |
+| [CS: tô đỏ một ô, cả bảng đỏ](patterns/case-studies/flyweight-chia-se-nham-trang-thai.md) | Flyweight dùng chung mà có setter: 6/6 ô đổi màu | 📝 |
+| [CS: một property thành 501 truy vấn](patterns/case-studies/lazy-proxy-sinh-n-cong-mot-query.md) | N+1: 1002ms so với 2ms, kết quả vẫn đúng | 📝 |
+| [CS: yêu cầu biến mất, không ai báo](patterns/case-studies/request-roi-qua-het-chain.md) | Chuỗi không có mắt xích chốt; HTTP vẫn trả 200 | 📝 |
+| [CS: undo làm tồn kho 10 thành 24](patterns/case-studies/undo-khong-tra-lai-trang-thai-cu.md) | Chỉ sai khi chạm chặn trên — dữ liệu test đẹp không bắt được | 📝 |
+| [CS: 8,4 MB rò rỉ sau 2000 lần mở](patterns/case-studies/su-kien-giu-doi-tuong-khong-cho-gc.md) | Nguồn giữ observer; `WeakReference.IsAlive` vẫn `True` sau GC | 📝 |
+| [CS: giao hàng trước khi trả tiền](patterns/case-studies/chuyen-trang-thai-trai-phep.md) | 8/12 chuyển trạng thái trái phép chưa ai test | 📝 |
+| [CS: lớp con nhận cả dòng hỏng](patterns/case-studies/lop-con-quen-goi-base.md) | `override` thay thế chứ không bổ sung luật chung | 📝 |
+| [CS: thêm một toán tử, sáu nơi sửa](patterns/case-studies/them-node-moi-sua-moi-visitor.md) | Trình biên dịch nhắc, hay production nhắc | 📝 |
+| [CS: job đêm chết vì `RemoveAll`](patterns/case-studies/sua-list-dang-duyet.md) | Và ca khó hơn: `Count()` rồi duyệt = gọi API hai lần | 📝 |
+| [CS: sáu kiểu làm việc của hai](patterns/case-studies/abstract-factory-cho-mot-hien-thuc.md) | Over-engineering làm **mọi** chỉ số chất lượng đẹp lên | 📝 |
+
 ## ETL & Streaming
 
 ### dbt — [`etl/dbt/`](etl/dbt/index.md)
@@ -137,7 +196,7 @@ Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutori
 
 ## Thư mục đã dựng, chưa có nội dung
 
-[concepts](concepts/) · [architecture](architecture/) · [patterns](patterns/) ·
+[concepts](concepts/) · [architecture](architecture/) ·
 [algorithms](algorithms/) · [protocols](protocols/) · [tools](tools/) ·
 [backend](backend/) · [frontend](frontend/) · [devops](devops/) · [cloud](cloud/) ·
 [ai](ai/) · [security](security/) · [networking](networking/)

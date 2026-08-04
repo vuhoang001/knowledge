@@ -17,9 +17,9 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**67 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**116 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (16)
+## Tài liệu tham chiếu (21)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
@@ -41,8 +41,13 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Source, seed và snapshot](etl/dbt/reference/sources-seeds-snapshots.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Test và data quality trong dbt](etl/dbt/reference/testing.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [dbt là gì và nó thật sự làm gì](etl/dbt/reference/what-is-dbt.md) | `etl/dbt/reference` | data-engineering | ✅ đã chạy tay |
+| [Chọn pattern nào — đi từ triệu chứng, không từ danh sách](patterns/reference/choosing-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
+| [Composition over inheritance](patterns/reference/composition-over-inheritance.md) | `patterns/reference` | backend | 🟡 draft |
+| [Coupling và cohesion — thước đo pattern thật sự phục vụ](patterns/reference/coupling-cohesion.md) | `patterns/reference` | backend | 🟡 draft |
+| [SOLID — năm nguyên lý, năm ca hỏng chạy được](patterns/reference/solid.md) | `patterns/reference` | backend | 🟡 draft |
+| [Design pattern là gì — và khi nào đừng dùng](patterns/reference/what-is-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
 
-## Kỹ năng (23)
+## Kỹ năng (46)
 
 Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.
 
@@ -71,8 +76,31 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [SCD — Slowly Changing Dimension](data-modeling/skills/scd.md) | `data-modeling/skills` | data-engineering | 📝 lý thuyết |
 | [Year-to-date và timespan trong fact](data-modeling/skills/ytd-timespan-facts.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
 | [Triển khai test trong dbt](etl/dbt/skills/implementing-tests.md) | `etl/dbt/skills` | data-engineering | 📝 lý thuyết |
+| [Abstract Factory](patterns/skills/abstract-factory.md) | `patterns/skills` | backend | 🟡 draft |
+| [Adapter](patterns/skills/adapter.md) | `patterns/skills` | backend | 🟡 draft |
+| [Bridge](patterns/skills/bridge.md) | `patterns/skills` | backend | 🟡 draft |
+| [Builder](patterns/skills/builder.md) | `patterns/skills` | backend | 🟡 draft |
+| [Chain of Responsibility](patterns/skills/chain-of-responsibility.md) | `patterns/skills` | backend | 🟡 draft |
+| [Command](patterns/skills/command.md) | `patterns/skills` | backend | 🟡 draft |
+| [Composite](patterns/skills/composite.md) | `patterns/skills` | backend | 🟡 draft |
+| [Decorator](patterns/skills/decorator.md) | `patterns/skills` | backend | 🟡 draft |
+| [Facade](patterns/skills/facade.md) | `patterns/skills` | backend | 🟡 draft |
+| [Factory Method](patterns/skills/factory-method.md) | `patterns/skills` | backend | 🟡 draft |
+| [Flyweight](patterns/skills/flyweight.md) | `patterns/skills` | backend | 🟡 draft |
+| [Interpreter](patterns/skills/interpreter.md) | `patterns/skills` | backend | 🟡 draft |
+| [Iterator](patterns/skills/iterator.md) | `patterns/skills` | backend | 🟡 draft |
+| [Mediator](patterns/skills/mediator.md) | `patterns/skills` | backend | 🟡 draft |
+| [Memento](patterns/skills/memento.md) | `patterns/skills` | backend | 🟡 draft |
+| [Observer](patterns/skills/observer.md) | `patterns/skills` | backend | 🟡 draft |
+| [Prototype](patterns/skills/prototype.md) | `patterns/skills` | backend | 🟡 draft |
+| [Proxy](patterns/skills/proxy.md) | `patterns/skills` | backend | 🟡 draft |
+| [Singleton](patterns/skills/singleton.md) | `patterns/skills` | backend | 🟡 draft |
+| [State](patterns/skills/state.md) | `patterns/skills` | backend | 🟡 draft |
+| [Strategy](patterns/skills/strategy.md) | `patterns/skills` | backend | 🟡 draft |
+| [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
+| [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (2)
+## Bài tập (3)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -80,8 +108,9 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 |---|---|---|---|
 | [Dựng một star schema từ đầu bằng DuckDB](data-modeling/tutorials/star-schema-duckdb.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
+| ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
 
-## Case study (25)
+## Case study (44)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
@@ -112,14 +141,34 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Doanh thu trung bình mỗi ngày nhảy từ 862 lên 1.050 trong cùng một ngày](data-modeling/case-studies/so-hom-nay-nhay-suot-ngay.md) | `data-modeling/case-studies` | data-engineering | 🟡 draft |
 | [Thêm trạng thái thứ tám, năm báo cáo sai năm kiểu](data-modeling/case-studies/them-trang-thai-thu-tam.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
 | [Nội dung AI sinh ghi sai tên catalog Trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | `etl/dbt/case-studies` | data-engineering | 📘 ổn định, chưa chạy tay |
+| [Sáu kiểu để làm việc của hai kiểu](patterns/case-studies/abstract-factory-cho-mot-hien-thuc.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Báo cáo thiếu 4,2 triệu, không có lỗi nào](patterns/case-studies/adapter-nuot-loi-thanh-danh-sach-rong.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Giao hàng trước khi khách trả tiền](patterns/case-studies/chuyen-trang-thai-trai-phep.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [In 183 tờ giấy thành 242](patterns/case-studies/constructor-chin-tham-so-hoan-vi.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Thực tập sinh đọc được bảng lương](patterns/case-studies/doi-thu-tu-decorator-mat-cache.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Tiến trình chết không để lại log nào](patterns/case-studies/duyet-cay-khong-bao-gio-dung.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Facade một method thành 31 method](patterns/case-studies/facade-phinh-thanh-god-object.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Tô đỏ một ô, cả bảng đỏ theo](patterns/case-studies/flyweight-chia-se-nham-trang-thai.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Một dòng truy cập property thành 501 truy vấn](patterns/case-studies/lazy-proxy-sinh-n-cong-mot-query.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Một lớp con nhận cả dòng dữ liệu hỏng](patterns/case-studies/lop-con-quen-goi-base.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Thêm một tuỳ chọn, sinh thêm 36 lớp](patterns/case-studies/mot-tram-lop-con-cho-mot-tinh-nang.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Sửa bản sao, bản gốc đổi theo](patterns/case-studies/nhan-ban-doi-tuong-dung-chung-list.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Yêu cầu đổi hàng biến mất, không ai báo](patterns/case-studies/request-roi-qua-het-chain.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [8,4 MB rò rỉ sau 2000 lần mở màn hình](patterns/case-studies/su-kien-giu-doi-tuong-khong-cho-gc.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Job đêm chết vì một dòng RemoveAll](patterns/case-studies/sua-list-dang-duyet.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Test xanh khi chạy riêng, đỏ khi chạy chung](patterns/case-studies/test-xanh-rieng-do-chung.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Thêm định dạng thứ năm, sáu chỗ bỏ sót](patterns/case-studies/them-loai-thu-nam-sua-bay-cho.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Thêm một toán tử, sáu nơi phải sửa](patterns/case-studies/them-node-moi-sua-moi-visitor.md) | `patterns/case-studies` | backend | 🟡 draft |
+| [Hoàn tác hai lệnh, tồn kho từ 10 thành 24](patterns/case-studies/undo-khong-tra-lai-trang-thai-cu.md) | `patterns/case-studies` | backend | 🟡 draft |
 
-## Cheatsheet (1)
+## Cheatsheet (2)
 
 Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
 | [SCD — Cheatsheet](data-modeling/cheatsheets/scd.md) | `data-modeling/cheatsheets` | data-engineering | 📘 ổn định, chưa chạy tay |
+| [23 pattern GoF — tra nhanh](patterns/cheatsheets/gof-23.md) | `patterns/cheatsheets` | backend | 🟡 draft |
 
 ## FAQ (0)
 

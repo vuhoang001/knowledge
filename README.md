@@ -63,9 +63,17 @@ graph TD
 | [Databases](docs/databases/) | [SQL](docs/databases/sql/) | ⬜ chưa bắt đầu |
 | [Languages](docs/languages/) | [Python](docs/languages/python/) | ⬜ chưa bắt đầu |
 
+### Software Engineering
+
+| Nhóm | Nội dung | Trạng thái |
+|---|---|---|
+| [Design Patterns](docs/patterns/) | [Pattern là gì](docs/patterns/reference/what-is-a-pattern.md) · [SOLID](docs/patterns/reference/solid.md) · [Chọn pattern nào](docs/patterns/reference/choosing-a-pattern.md) · [**23 pattern GoF**](docs/patterns/skills/index.md) · [Cheatsheet](docs/patterns/cheatsheets/gof-23.md) · [19 case study](docs/patterns/case-studies/index.md) | 📝 đang viết |
+
+Ví dụ viết bằng C#, chạy bằng `dotnet run <file>.cs` (.NET 10+, không cần tạo project).
+
 ### Chưa có nội dung
 
-`concepts/` · `architecture/` · `patterns/` · `algorithms/` · `protocols/` ·
+`concepts/` · `architecture/` · `algorithms/` · `protocols/` ·
 `tools/` · `backend/` · `frontend/` · `devops/` · `cloud/` · `ai/` · `security/` ·
 `networking/`
 
