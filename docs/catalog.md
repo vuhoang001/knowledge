@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**122 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**123 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (21)
 
@@ -100,12 +100,13 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (9)
+## Bài tập (10)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| ["26 bài tập có đáp số — tự viết, tự chấm"](data-modeling/tutorials/bai-tap-co-dap-so.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Lab dimension — ngày, vai, NULL và cờ: bốn cách làm mất dòng"](data-modeling/tutorials/lab-dimension.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Lab fact nâng cao — phân bổ, luỹ kế, bảng tổng hợp, con rết"](data-modeling/tutorials/lab-fact-nang-cao.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Lab nền tảng — grain, fact/dimension, khoá: bốn cách làm phồng số"](data-modeling/tutorials/lab-nen-tang-grain-fact-dim.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |

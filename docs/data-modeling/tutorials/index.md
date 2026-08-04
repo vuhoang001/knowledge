@@ -13,6 +13,9 @@ updated: 2026-07-31
 
 Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học.
 
+> **Bài 1–7 là lab chẩn đoán** — bày sẵn bẫy rồi giải thích. **Bài 8 ngược lại**: bạn tự
+> viết, có đáp số để tự chấm. Làm lab trước, rồi kiểm bằng bài 8.
+
 | # | Bài | Làm được gì sau khi xong | Thời lượng |
 |---|---|---|---|
 | 1 | [Dựng một star schema từ đầu bằng DuckDB](star-schema-duckdb.md) | Đi hết bốn bước thiết kế trên dữ liệu thật: `dim_ngay`, dimension Type 2, transaction fact, accumulating snapshot, drill-across — kèm bốn phép kiểm bắt buộc | ~20 phút |
@@ -22,6 +25,7 @@ Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là h�
 | 5 | [Lab fact nâng cao — phân bổ, luỹ kế, bảng tổng hợp](lab-fact-nang-cao.md) | Sai số làm tròn 1 đồng, cột YTD phồng 3,38 lần, avg-của-avg lệch 5,7%, con rết 7 khoá | ~50 phút |
 | 6 | [Lab tích hợp — ghép được nhưng có so được không](lab-tich-hop.md) | Hai định nghĩa doanh thu lệch 3,9%; drill-across ba lượt; bus matrix thành bảng đo được | ~40 phút |
 | 7 | [Lab vận hành — khi số sai thì mất bao lâu để biết](lab-van-hanh.md) | Nạp trùng phồng 25%; không có audit thì xoá 10 dòng để diệt 5; phân vùng nóng | ~40 phút |
+| 8 | [**26 bài tập có đáp số**](bai-tap-co-dap-so.md) | **Bạn viết, đáp số cho trước, lời giải giấu đi** — tự chấm không cần hỏi ai | ~90 phút |
 
 Lab chạy bằng venv ngoài repo: `~/Documents/learn-lab/dbt/.venv/bin/python`. Mọi câu SQL
 tự chứa, dán thẳng vào DuckDB là chạy.

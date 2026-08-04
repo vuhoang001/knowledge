@@ -54,6 +54,7 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [Lab: fact nâng cao](data-modeling/tutorials/lab-fact-nang-cao.md) | Sai số làm tròn 1 đồng, cột YTD phồng 3,38 lần, avg-của-avg lệch 5,7%, con rết 7 khoá | 📝 |
 | [Lab: tích hợp](data-modeling/tutorials/lab-tich-hop.md) | Hai định nghĩa doanh thu lệch 3,9%; drill-across ba lượt; bus matrix thành bảng đo được | 📝 |
 | [Lab: vận hành](data-modeling/tutorials/lab-van-hanh.md) | Nạp trùng phồng 25%; không có audit thì xoá 10 dòng để diệt 5; phân vùng nóng | 📝 |
+| [26 bài tập có đáp số](data-modeling/tutorials/bai-tap-co-dap-so.md) | Tự viết SQL, đáp số cho trước, lời giải giấu trong `<details>` — tự chấm | 📝 |
 | [bus-architecture](data-modeling/reference/bus-architecture.md) | Bus matrix là bảng dữ liệu, không phải slide; value chain và drill-across dọc chuỗi | 📝 |
 | [null-handling](data-modeling/skills/null-handling.md) | `NULL <> 'x'` trả về `UNKNOWN` — bộ lọc nuốt dòng mà không báo | 📝 |
 | [conformed-facts](data-modeling/skills/conformed-facts.md) | Cùng tên phải cùng nghĩa; không conform thì bắt buộc đổi tên | 📝 |
