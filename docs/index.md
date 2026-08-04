@@ -55,6 +55,14 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [Lab: tích hợp](data-modeling/tutorials/lab-tich-hop.md) | Hai định nghĩa doanh thu lệch 3,9%; drill-across ba lượt; bus matrix thành bảng đo được | 📝 |
 | [Lab: vận hành](data-modeling/tutorials/lab-van-hanh.md) | Nạp trùng phồng 25%; không có audit thì xoá 10 dòng để diệt 5; phân vùng nóng | 📝 |
 | [26 bài tập có đáp số](data-modeling/tutorials/bai-tap-co-dap-so.md) | Tự viết SQL, đáp số cho trước, lời giải giấu trong `<details>` — tự chấm | 📝 |
+| [Phụ lục seed](data-modeling/tutorials/bt-00-seed.md) | Mười bảng seed mới cho bộ bài tập, kèm bẫy cố ý của từng bảng | 📝 |
+| [Bài tập bộ 1: nền tảng](data-modeling/tutorials/bt-01-nen-tang.md) | 23 bài: grain 7 bảng, semi-additive, surrogate key, star vs OBT, quy trình 4 bước | 📝 |
+| [Bài tập bộ 2: dimension theo thời gian](data-modeling/tutorials/bt-02-dimension-thoi-gian.md) | 22 bài: SCD 1/2/3/6, ba kiểu `updated_at` nói dối, mini-dim, role-playing, về muộn | 📝 |
+| [Bài tập bộ 3: cột và bảng](data-modeling/tutorials/bt-03-cot-va-bang.md) | 23 bài: junk 4/24 tổ hợp, degenerate, con rết 19 khoá, `NOT IN` trả 0 dòng | 📝 |
+| [Bài tập bộ 4: quan hệ và cây](data-modeling/tutorials/bt-04-quan-he-va-cay.md) | 16 bài: bridge phồng 72% rồi thiếu 90.000, cây ragged, 63,9% ô trống | 📝 |
+| [Bài tập bộ 5: fact nâng cao](data-modeling/tutorials/bt-05-fact-nang-cao.md) | 19 bài: phân bổ mất 1 đồng, YTD phồng 3,38 lần, avg-của-avg, hành vi | 📝 |
+| [Bài tập bộ 6: tích hợp](data-modeling/tutorials/bt-06-tich-hop.md) | 18 bài: join tên nhóm trả 0 dòng, drill-across, bus matrix, 2/7 đơn ngoại tệ mất | 📝 |
+| [Bài tập bộ 7: vận hành](data-modeling/tutorials/bt-07-van-hanh.md) | 14 bài: dòng `-1` của `dim_ngay`, nạp trùng +45,5%, ngày hôm nay chưa đầy | 📝 |
 | [bus-architecture](data-modeling/reference/bus-architecture.md) | Bus matrix là bảng dữ liệu, không phải slide; value chain và drill-across dọc chuỗi | 📝 |
 | [null-handling](data-modeling/skills/null-handling.md) | `NULL <> 'x'` trả về `UNKNOWN` — bộ lọc nuốt dòng mà không báo | 📝 |
 | [conformed-facts](data-modeling/skills/conformed-facts.md) | Cùng tên phải cùng nghĩa; không conform thì bắt buộc đổi tên | 📝 |

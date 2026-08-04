@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**123 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**131 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (21)
 
@@ -100,13 +100,21 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (10)
+## Bài tập (18)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
 | ["26 bài tập có đáp số — tự viết, tự chấm"](data-modeling/tutorials/bai-tap-co-dap-so.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Phụ lục seed — mười bảng cho bộ bài tập"](data-modeling/tutorials/bt-00-seed.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 1 — Nền tảng: grain, fact/dim, surrogate key, star/OBT"](data-modeling/tutorials/bt-01-nen-tang.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 2 — Dimension theo thời gian: SCD, phát hiện thay đổi, mini-dim, role-playing, về muộn"](data-modeling/tutorials/bt-02-dimension-thoi-gian.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 3 — Cột và bảng: junk, degenerate, con rết, thuộc tính, NULL"](data-modeling/tutorials/bt-03-cot-va-bang.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 4 — Quan hệ và cây: bridge, phân cấp, thực thể không đồng nhất"](data-modeling/tutorials/bt-04-quan-he-va-cay.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 5 — Fact nâng cao: phân bổ, luỹ kế, bảng tổng hợp, hành vi"](data-modeling/tutorials/bt-05-fact-nang-cao.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 6 — Tích hợp: conformed dimension, conformed facts, bus matrix, đa tiền tệ"](data-modeling/tutorials/bt-06-tich-hop.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập bộ 7 — Vận hành: date dimension, audit, real-time"](data-modeling/tutorials/bt-07-van-hanh.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Lab dimension — ngày, vai, NULL và cờ: bốn cách làm mất dòng"](data-modeling/tutorials/lab-dimension.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Lab fact nâng cao — phân bổ, luỹ kế, bảng tổng hợp, con rết"](data-modeling/tutorials/lab-fact-nang-cao.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Lab nền tảng — grain, fact/dimension, khoá: bốn cách làm phồng số"](data-modeling/tutorials/lab-nen-tang-grain-fact-dim.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
