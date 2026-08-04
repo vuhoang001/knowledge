@@ -70,7 +70,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 
 | Nhóm | Nội dung |
 |---|---|
-| [Bài tập](tutorials/index.md) | [Dựng star schema bằng DuckDB](tutorials/star-schema-duckdb.md) — 4 bước thiết kế, 3 fact, 4 phép kiểm |
+| [Bài tập](tutorials/index.md) | **7 lab chạy thật** — star schema, SCD, nền tảng, dimension, fact nâng cao, tích hợp, vận hành |
 | [Cheatsheet](cheatsheets/index.md) | [SCD — tra nhanh](cheatsheets/scd.md) |
 | [Case study](case-studies/index.md) | **24 ca** — mỗi kỹ thuật ở trên có ít nhất một ca hỏng cụ thể |
 

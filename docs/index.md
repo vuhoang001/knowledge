@@ -48,6 +48,12 @@ Thiết kế bảng. Đọc [`grain`](data-modeling/reference/grain.md) trước
 | [multi-currency-uom](data-modeling/skills/multi-currency-uom.md) | Chốt cả số bản địa lẫn số quy đổi vào fact, kèm tỷ giá đã dùng | 📝 |
 | [audit-dimension](data-modeling/skills/audit-dimension.md) | Mỗi dòng fact trỏ về lần chạy sinh ra nó; error event schema cho dòng bị loại | 📝 |
 | [Lab: star schema DuckDB](data-modeling/tutorials/star-schema-duckdb.md) | Dựng 3 fact + dim dùng chung từ dữ liệu thô, kèm 4 phép kiểm bắt buộc | 📝 |
+| [Lab: SCD bằng dbt snapshot](data-modeling/tutorials/scd-bang-dbt-snapshot.md) | `dbt snapshot` chỉ ghi lịch sử từ lần chạy đầu — as-was join ra 0 dòng | 📝 |
+| [Lab: nền tảng](data-modeling/tutorials/lab-nen-tang-grain-fact-dim.md) | Tái hiện rồi sửa: trộn grain (+77,5%), join hai fact, dim có grain bằng fact (+44,1%), join Type 2 bằng natural key (+26,9%) | 📝 |
+| [Lab: dimension](data-modeling/tutorials/lab-dimension.md) | Khoá `NULL` làm hụt 17,3%, lọc `<>` nuốt dòng, cây dẹt bỏ rơi nhánh nông | 📝 |
+| [Lab: fact nâng cao](data-modeling/tutorials/lab-fact-nang-cao.md) | Sai số làm tròn 1 đồng, cột YTD phồng 3,38 lần, avg-của-avg lệch 5,7%, con rết 7 khoá | 📝 |
+| [Lab: tích hợp](data-modeling/tutorials/lab-tich-hop.md) | Hai định nghĩa doanh thu lệch 3,9%; drill-across ba lượt; bus matrix thành bảng đo được | 📝 |
+| [Lab: vận hành](data-modeling/tutorials/lab-van-hanh.md) | Nạp trùng phồng 25%; không có audit thì xoá 10 dòng để diệt 5; phân vùng nóng | 📝 |
 | [bus-architecture](data-modeling/reference/bus-architecture.md) | Bus matrix là bảng dữ liệu, không phải slide; value chain và drill-across dọc chuỗi | 📝 |
 | [null-handling](data-modeling/skills/null-handling.md) | `NULL <> 'x'` trả về `UNKNOWN` — bộ lọc nuốt dòng mà không báo | 📝 |
 | [conformed-facts](data-modeling/skills/conformed-facts.md) | Cùng tên phải cùng nghĩa; không conform thì bắt buộc đổi tên | 📝 |

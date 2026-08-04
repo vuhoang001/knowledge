@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**116 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**122 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (21)
 
@@ -100,12 +100,18 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (3)
+## Bài tập (9)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| ["Lab dimension — ngày, vai, NULL và cờ: bốn cách làm mất dòng"](data-modeling/tutorials/lab-dimension.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Lab fact nâng cao — phân bổ, luỹ kế, bảng tổng hợp, con rết"](data-modeling/tutorials/lab-fact-nang-cao.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Lab nền tảng — grain, fact/dimension, khoá: bốn cách làm phồng số"](data-modeling/tutorials/lab-nen-tang-grain-fact-dim.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Lab tích hợp — ghép được nhưng có so được không"](data-modeling/tutorials/lab-tich-hop.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Lab vận hành — khi số sai, mất bao lâu để biết dòng nào sai"](data-modeling/tutorials/lab-van-hanh.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| [SCD Type 2 bằng dbt snapshot — và cái bẫy không sách nào nói](data-modeling/tutorials/scd-bang-dbt-snapshot.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | [Dựng một star schema từ đầu bằng DuckDB](data-modeling/tutorials/star-schema-duckdb.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
