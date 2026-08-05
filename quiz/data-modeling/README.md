@@ -69,13 +69,13 @@ real-time-fact
 
 ```bash
 # doc 5 cau kho ngau nhien cua mot chu de
-jq -r '.questions[] | select(.level=="hard") | "\(.id)  \(.question)"' quiz/scd.json | shuf -n 5
+jq -r '.questions[] | select(.level=="hard") | "\(.id)  \(.question)"' quiz/data-modeling/scd.json | shuf -n 5
 
 # gop toan bo thanh mot file
-jq -s '{total: (map(.questions | length) | add), topics: .}' quiz/*.json > /tmp/all.json
+jq -s '{total: (map(.questions | length) | add), topics: .}' quiz/data-modeling/*.json > /tmp/all.json
 
 # dem cau theo muc tren toan bo
-jq -r '.questions[].level' quiz/*.json | sort | uniq -c
+jq -r '.questions[].level' quiz/data-modeling/*.json | sort | uniq -c
 ```
 
 ## Quan hệ với `anki/`

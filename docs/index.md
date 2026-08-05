@@ -202,6 +202,38 @@ Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutori
 | [query-engines/trino/index](query-engines/trino/index.md) | Query engine phân tán, không lưu dữ liệu; đọc nhiều nguồn qua connector | 🟡 |
 | [orchestration/airflow/index](orchestration/airflow/index.md) | Airflow điều phối, không xử lý — `logical_date` không phải "bây giờ" | 🟡 |
 
+## Bash
+
+Shell scripting — viết lại từ [behitek/hoc-bash](https://github.com/behitek/hoc-bash),
+nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đầu ở
+[`shell-la-gi`](bash/reference/shell-la-gi.md); hai lỗi đắt nhất nằm ở
+[`quoting`](bash/reference/quoting-va-expansion.md) và
+[`exit-code`](bash/reference/exit-code-va-control-flow.md).
+
+| File | Trả lời câu hỏi | TT |
+|---|---|---|
+| [bash/index](bash/index.md) | Bản đồ khái niệm + lộ trình học | 🗂️ |
+| [shell-la-gi](bash/reference/shell-la-gi.md) | Shell biến văn bản thành tiến trình; bash vs sh vs zsh | 📝 |
+| [streams-va-redirection](bash/reference/streams-va-redirection.md) | Ba dòng stdin/stdout/stderr và cách nối lại; cạm bẫy thứ tự `2>&1` | 📝 |
+| [quoting-va-expansion](bash/reference/quoting-va-expansion.md) | Word splitting, glob, và vì sao luôn bọc nháy kép quanh biến | 📝 |
+| [exit-code-va-control-flow](bash/reference/exit-code-va-control-flow.md) | `if cmd` chạy trên thành/bại, không phải true/false; `pipefail` | 📝 |
+| [file-permissions](bash/reference/file-permissions.md) | Đọc `-rwxr-xr-x` và đổi bằng octal | 📝 |
+| [process-va-job-control](bash/reference/process-va-job-control.md) | `&`, `nohup`, signal, `kill` — job nền sống chết thế nào | 📝 |
+| [text-processing](bash/skills/text-processing.md) | `grep`/`awk`/`sed`/`sort`/`uniq` ghép pipeline | 📝 |
+| [find-va-xargs](bash/skills/find-va-xargs.md) | Duyệt cây thư mục, chạy hàng loạt, an toàn với tên có dấu cách | 📝 |
+| [variables-arrays-expansion](bash/skills/variables-arrays-expansion.md) | Biến, mảng, default và cắt chuỗi bằng parameter expansion | 📝 |
+| [conditionals-va-loops](bash/skills/conditionals-va-loops.md) | `[[ ]]`, `case`, và `while read` đọc file đúng cách | 📝 |
+| [functions](bash/skills/functions.md) | `echo` trả dữ liệu, `return` trả exit code, `local` | 📝 |
+| [viet-script-an-toan](bash/skills/viet-script-an-toan.md) | `set -euo pipefail`, quoting, `trap` — khung mọi script | 📝 |
+| [bash-lab-text-processing](bash/tutorials/bash-lab-text-processing.md) | Lab: pipeline trả lời câu hỏi từ `access.log`, output chạy thật | 📝 |
+| [bash-lab-first-script](bash/tutorials/bash-lab-first-script.md) | Lab: từ `hello.sh` tới script có `trap`, debug `bash -x` | 📝 |
+| [cheatsheets/commands](bash/cheatsheets/commands.md) | Bảng tra lệnh theo nhóm | 🗂️ |
+| [cheatsheets/test-operators](bash/cheatsheets/test-operators-va-expansion.md) | Toán tử test, parameter expansion, biến đặc biệt | 🗂️ |
+| [cs: word-splitting](bash/case-studies/bien-khong-nhay-word-splitting.md) | Tên file có dấu cách xoá nhầm cả thư mục | 📝 |
+| [cs: pipe nuốt exit code](bash/case-studies/pipe-nuot-exit-code.md) | Pipeline xanh giả — lỗi giữa pipe bị nuốt | 📝 |
+| [cs: glob không khớp](bash/case-studies/glob-khong-khop.md) | Vòng lặp chạy một lần với dấu sao literal | 📝 |
+| [cs: set -e không bắt](bash/case-studies/set-e-khong-bat.md) | `set -e` bật nhưng script vẫn chạy tiếp sau lỗi | 📝 |
+
 ## Nền tảng
 
 | File | Chốt một câu | TT |

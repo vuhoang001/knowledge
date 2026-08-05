@@ -1,0 +1,369 @@
+{
+  "topic": "find-va-xargs",
+  "title": "Tìm file với find và xargs",
+  "group": "skills",
+  "source": "docs/bash/skills/find-va-xargs.md",
+  "counts": { "easy": 10, "medium": 20, "hard": 30 },
+  "questions": [
+    {
+      "id": "find-e01",
+      "level": "easy",
+      "question": "find về bản chất là gì?",
+      "answer": "Một vòng lặp đệ quy qua cây thư mục theo mô hình duyệt → lọc → làm gì đó. Nó đi đệ quy xuống mọi thư mục con từ path bắt đầu."
+    },
+    {
+      "id": "find-e02",
+      "level": "easy",
+      "question": "Cú pháp ba phần của find là gì?",
+      "answer": "find <path> <điều kiện> <hành động>. Ví dụ: find logs -name '*.log' -type f -exec wc -l {} +."
+    },
+    {
+      "id": "find-e03",
+      "level": "easy",
+      "question": "Phần path trong find dùng để làm gì?",
+      "answer": "Là nơi bắt đầu duyệt. find đi đệ quy xuống mọi thư mục con của path đó."
+    },
+    {
+      "id": "find-e04",
+      "level": "easy",
+      "question": "Hành động mặc định của find là gì khi bạn không ghi hành động nào?",
+      "answer": "Mặc định là -print, tức in đường dẫn của mỗi file khớp."
+    },
+    {
+      "id": "find-e05",
+      "level": "easy",
+      "question": "-name '*.log' làm gì?",
+      "answer": "Lọc theo tên file khớp glob '*.log'. Phải nháy để shell không nở glob trước."
+    },
+    {
+      "id": "find-e06",
+      "level": "easy",
+      "question": "-type f và -type d khác nhau thế nào?",
+      "answer": "-type f chỉ khớp file thường; -type d chỉ khớp thư mục."
+    },
+    {
+      "id": "find-e07",
+      "level": "easy",
+      "question": "-iname khác -name ở điểm nào?",
+      "answer": "-iname giống -name nhưng không phân biệt hoa thường. Ví dụ -iname '*.LOG' khớp cả .log lẫn .LOG."
+    },
+    {
+      "id": "find-e08",
+      "level": "easy",
+      "question": "xargs làm gì?",
+      "answer": "Đọc stdin, cắt thành các đối số, nối vào cuối một lệnh rồi chạy. Dùng để biến danh sách tên file thành đối số cho lệnh không đọc stdin như rm, wc, cp."
+    },
+    {
+      "id": "find-e09",
+      "level": "easy",
+      "question": "-maxdepth 2 nghĩa là gì?",
+      "answer": "Không duyệt sâu quá 2 tầng thư mục."
+    },
+    {
+      "id": "find-e10",
+      "level": "easy",
+      "question": "Nhiều điều kiện đứng cạnh nhau trong find được ghép bằng phép gì?",
+      "answer": "Mặc định là AND. Các test đứng cạnh nhau phải cùng thỏa thì file mới khớp."
+    },
+    {
+      "id": "find-m01",
+      "level": "medium",
+      "question": "Vì sao find . -name *.log (không nháy) là lỗi?",
+      "answer": "Shell nở *.log tại thư mục hiện tại trước khi find chạy, nên find nhận -name top.log (ví dụ) và chỉ tìm được đúng file đó thay vì tự khớp trên toàn cây. Phải nháy: -name '*.log'."
+    },
+    {
+      "id": "find-m02",
+      "level": "medium",
+      "question": "-exec cmd {} \\; và -exec cmd {} + khác nhau thế nào?",
+      "answer": "\\; gọi lệnh riêng cho từng file (mỗi file một process); + gộp tối đa file vào một lần gọi lệnh (giống xargs, nhanh hơn nhiều với danh sách lớn)."
+    },
+    {
+      "id": "find-m03",
+      "level": "medium",
+      "question": "Khi nào phải dùng -exec {} \\; thay vì {} +?",
+      "answer": "Khi lệnh chỉ nhận đúng một đối số một lần, hoặc cần chèn {} vào giữa lệnh chứ không phải cuối."
+    },
+    {
+      "id": "find-m04",
+      "level": "medium",
+      "question": "-mtime -7 nghĩa là gì?",
+      "answer": "File được sửa trong vòng 7 ngày qua (mới hơn 7 ngày)."
+    },
+    {
+      "id": "find-m05",
+      "level": "medium",
+      "question": "-mtime +7 nghĩa là gì?",
+      "answer": "File cũ hơn 7 ngày (sửa cách đây hơn 7 ngày)."
+    },
+    {
+      "id": "find-m06",
+      "level": "medium",
+      "question": "-size +10M và -size -1k khác nhau thế nào?",
+      "answer": "-size +10M khớp file lớn hơn 10 MB; -size -1k khớp file nhỏ hơn 1 KB. Dấu + là lớn hơn, - là nhỏ hơn."
+    },
+    {
+      "id": "find-m07",
+      "level": "medium",
+      "question": "! -name '*.log' làm gì?",
+      "answer": "Phủ định điều kiện — khớp mọi thứ KHÔNG phải .log."
+    },
+    {
+      "id": "find-m08",
+      "level": "medium",
+      "question": "Vì sao ngoặc trong \\( A -o B \\) phải escape?",
+      "answer": "Vì ( và ) là ký tự đặc biệt của shell; phải escape (hoặc nháy) để chúng đến được find nguyên vẹn, để find hiểu là nhóm OR."
+    },
+    {
+      "id": "find-m09",
+      "level": "medium",
+      "question": "Trong find logs -name '*.log' -mtime -7, hai điều kiện được ghép ra sao và có tác dụng gì?",
+      "answer": "Chúng là AND: file phải vừa khớp *.log vừa sửa trong 7 ngày. Nên old.log (chỉnh về 2025-01-01) bị loại."
+    },
+    {
+      "id": "find-m10",
+      "level": "medium",
+      "question": "Tại sao thường phải thêm -type f khi dùng -name '*.log'?",
+      "answer": "Vì -name '*.log' cũng khớp cả thư mục có tên kết thúc .log. Nếu định thao tác lên file, thêm -type f để loại thư mục."
+    },
+    {
+      "id": "find-m11",
+      "level": "medium",
+      "question": "Vì sao ls | xargs với tên có dấu cách cũng gãy?",
+      "answer": "Cùng bệnh với find | xargs: ls in tên phân cách bằng newline nhưng xargs mặc định cắt theo khoảng trắng, nên tên có dấu cách bị xé. Không nên phân tích output của ls bằng script; dùng find -print0."
+    },
+    {
+      "id": "find-m12",
+      "level": "medium",
+      "question": "-print0 và -0 dùng để làm gì cùng nhau?",
+      "answer": "-print0 phân cách kết quả bằng byte NUL; xargs -0 cắt theo đúng NUL đó. Cặp này an toàn với tên file có dấu cách/newline."
+    },
+    {
+      "id": "find-m13",
+      "level": "medium",
+      "question": "Khi nào nên dùng find -print0 | xargs -0 thay vì -exec {} +?",
+      "answer": "Khi cần các cờ của xargs mà -exec không có: -P (song song), -n1, -I{} (chèn tên vào giữa lệnh)."
+    },
+    {
+      "id": "find-m14",
+      "level": "medium",
+      "question": "-I{} trong xargs làm gì và có tác dụng phụ nào?",
+      "answer": "Chèn tên file vào vị trí {} ở giữa lệnh (ví dụ mv {} backup/). Nó ngầm bật -n1 (mỗi lần một file) nên mất lợi thế gộp, chậm hơn với danh sách lớn."
+    },
+    {
+      "id": "find-m15",
+      "level": "medium",
+      "question": "Lời khuyên trước khi dùng -delete là gì?",
+      "answer": "Chạy thử với -print trước, thấy đúng danh sách rồi mới đổi thành -delete. -delete không hoàn tác được."
+    },
+    {
+      "id": "find-m16",
+      "level": "medium",
+      "question": "Lỗi \"paths must precede expression\" thường do đâu?",
+      "answer": "Do đặt một path (hoặc glob đã bị shell nở thành nhiều path) sau phần điều kiện, thường vì quên nháy -name. Nháy -name '*.log' lại là hết."
+    },
+    {
+      "id": "find-m17",
+      "level": "medium",
+      "question": "-mtime -7, +7 và 7 (không dấu) khác nhau thế nào?",
+      "answer": "-7 là mới hơn 7 ngày; +7 là cũ hơn 7 ngày; 7 không dấu là đúng ngày thứ 7."
+    },
+    {
+      "id": "find-m18",
+      "level": "medium",
+      "question": "Vì sao dùng NUL làm dấu phân cách chứ không phải newline?",
+      "answer": "Tên file trên Linux được phép chứa mọi byte trừ / và NUL. Newline, dấu cách, tab đều hợp lệ trong tên nên có thể trùng nội dung tên; NUL là byte duy nhất không bao giờ nằm trong tên."
+    },
+    {
+      "id": "find-m19",
+      "level": "medium",
+      "question": "Về tốc độ và an toàn, -exec {} + và xargs -0 khác nhau ra sao?",
+      "answer": "Ngang nhau về tốc độ và an toàn với tên file. Khác biệt: xargs cho thêm -P (song song) và -I{}; -exec + gọn hơn, không cần pipe."
+    },
+    {
+      "id": "find-m20",
+      "level": "medium",
+      "question": "Trong -exec cmd {} \\;, những phần nào phải escape và vì sao?",
+      "answer": "Cả \\; lẫn {} phải escape để shell không nuốt mất, để find nhận đúng ký tự kết thúc lệnh và chỗ chèn tên file."
+    },
+    {
+      "id": "find-h01",
+      "level": "hard",
+      "question": "Với cây có file 'báo cáo.log', vì sao find logs -name '*.log' | xargs wc -l báo lỗi \"No such file or directory\"?",
+      "answer": "xargs mặc định tách đối số theo khoảng trắng, nên 'báo cáo.log' bị xé thành hai token 'báo' và 'cáo.log'. wc cố mở hai đường dẫn không tồn tại và báo lỗi."
+    },
+    {
+      "id": "find-h02",
+      "level": "hard",
+      "question": "Trong demo gãy trên, total của wc là 6 thay vì 7 — điều đó nói lên gì?",
+      "answer": "File 'báo cáo.log' (1 dòng) không được đếm vì tên bị xé, nên total tính thiếu 1 dòng. Bản -print0 | xargs -0 cho đủ 4 file và total = 7."
+    },
+    {
+      "id": "find-h03",
+      "level": "hard",
+      "question": "Nếu lệnh phía sau xargs là rm thay vì wc, hậu quả của tên bị xé là gì?",
+      "answer": "rm cố xoá hai đường dẫn không tồn tại; và tệ hơn, nếu tình cờ có file tên 'báo' thật thì nó xoá nhầm file đó."
+    },
+    {
+      "id": "find-h04",
+      "level": "hard",
+      "question": "find logs -name '*.log' -print0 | xargs -0 wc -l sửa vấn đề tên có dấu cách thế nào?",
+      "answer": "-print0 phân cách bằng byte NUL (không bao giờ có trong tên file) và xargs -0 cắt theo đúng NUL, nên 'báo cáo.log' giữ nguyên là một đối số. Kết quả đủ 4 file, total = 7."
+    },
+    {
+      "id": "find-h05",
+      "level": "hard",
+      "question": "Chạy find . -name *.log (không nháy) trong bash khi CWD có top.log ra kết quả gì và vì sao?",
+      "answer": "Chỉ ra ./top.log. Bash nở *.log thành top.log tại CWD trước khi find chạy, nên find nhận -name top.log và chỉ khớp đúng file đó, không đệ quy tìm mọi .log."
+    },
+    {
+      "id": "find-h06",
+      "level": "hard",
+      "question": "Cùng lệnh find . -name '*.log' (có nháy) khác kết quả thế nào?",
+      "answer": "find nhận đúng chuỗi *.log và tự khớp trên toàn cây, nên trả về top.log cùng mọi .log trong logs/ (kernel.log, báo cáo.log, old.log, error.log)."
+    },
+    {
+      "id": "find-h07",
+      "level": "hard",
+      "question": "find . -name *.log không nháy chạy trong zsh (khi không có file .log ở CWD) hành xử khác bash ra sao?",
+      "answer": "zsh mặc định bật nomatch, nên báo 'no matches found' và KHÔNG chạy find. Cùng một lệnh, bash và zsh cho hai hành vi khác nhau — lý do phải nháy để kết quả nhất quán."
+    },
+    {
+      "id": "find-h08",
+      "level": "hard",
+      "question": "Vì sao nháy -name '*.log' làm kết quả giống nhau ở mọi shell?",
+      "answer": "Nháy chặn shell nở glob, nên chuỗi *.log đến find nguyên vẹn ở cả bash lẫn zsh. Chính find tự khớp glob trên cây, không phụ thuộc hành vi nomatch/no-glob của từng shell."
+    },
+    {
+      "id": "find-h09",
+      "level": "hard",
+      "question": "Trong find logs -name '*.log' -type f -exec wc -l {} +, dòng 'total' xuất hiện chứng tỏ điều gì?",
+      "answer": "+ gộp tất cả file vào MỘT lần gọi wc, nên wc thấy nhiều file cùng lúc và in dòng total. Nếu dùng \\; thì wc chạy riêng từng file, không có total."
+    },
+    {
+      "id": "find-h10",
+      "level": "hard",
+      "question": "Vì sao -exec wc -l {} \\; cho một file thì không có dòng total?",
+      "answer": "\\; gọi wc riêng cho từng file với đúng một đối số mỗi lần, nên mỗi lần wc chỉ thấy một file và không in total. Chỉ khi wc nhận nhiều file cùng lúc mới có total."
+    },
+    {
+      "id": "find-h11",
+      "level": "hard",
+      "question": "Khi nào -exec {} \\; là bắt buộc dù chậm hơn?",
+      "answer": "Khi lệnh chỉ nhận đúng một đối số, hoặc cần chèn {} vào giữa lệnh chứ không phải cuối. Đánh đổi: fork nhiều process nên chậm hơn với danh sách lớn."
+    },
+    {
+      "id": "find-h12",
+      "level": "hard",
+      "question": "Muốn chèn tên file vào giữa lệnh, ví dụ mv <file> /tmp/backup/, viết thế nào cho an toàn tên có dấu cách?",
+      "answer": "find logs -name '*.log' -print0 | xargs -0 -I{} mv {} /tmp/backup/. -I{} chèn tên vào vị trí {}; -print0/-0 giữ an toàn tên có dấu cách."
+    },
+    {
+      "id": "find-h13",
+      "level": "hard",
+      "question": "Vì sao -I{} lại làm chậm với danh sách lớn?",
+      "answer": "Vì -I{} ngầm bật -n1, tức mỗi lần gọi lệnh chỉ xử lý một file, mất lợi thế gộp nhiều file vào một lần gọi. Fork nhiều process hơn."
+    },
+    {
+      "id": "find-h14",
+      "level": "hard",
+      "question": "find | xargs (không -0) chấp nhận được trong tình huống nào?",
+      "answer": "Gần như không bao giờ. Chỉ khi chắc chắn tên file không có khoảng trắng/newline — mà bạn hiếm khi chắc được điều đó."
+    },
+    {
+      "id": "find-h15",
+      "level": "hard",
+      "question": "Muốn chạy 4 process song song trên kết quả find, nên dùng -exec {} + hay xargs? Vì sao?",
+      "answer": "Dùng find -print0 | xargs -0 -P4, vì -exec {} + không có cờ song song. -P4 là tính năng riêng của xargs."
+    },
+    {
+      "id": "find-h16",
+      "level": "hard",
+      "question": "Tìm mọi .log NGOẠI TRỪ file có tên chứa 'old' viết thế nào?",
+      "answer": "find logs -type f -name '*.log' ! -name '*old*'. ! là phủ định; các điều kiện AND với nhau nên chỉ file .log mà tên không chứa 'old' mới khớp."
+    },
+    {
+      "id": "find-h17",
+      "level": "hard",
+      "question": "Viết find lọc file .log HOẶC .py trong logs, dùng nhóm OR đúng cú pháp shell.",
+      "answer": "find logs -type f \\( -name '*.log' -o -name '*.py' \\). Ngoặc phải escape để shell không nuốt, -o là OR bên trong nhóm."
+    },
+    {
+      "id": "find-h18",
+      "level": "hard",
+      "question": "Vì sao \\( và \\) cần escape mà không thể viết trần ( )?",
+      "answer": "Vì ( ) là ký tự đặc biệt của shell (subshell), shell sẽ diễn giải chúng thay vì truyền cho find. Escape (hoặc nháy) để find nhận nguyên và hiểu là nhóm biểu thức."
+    },
+    {
+      "id": "find-h19",
+      "level": "hard",
+      "question": "Với touch -d '2025-01-01' logs/app/old.log rồi find logs -name '*.log' -mtime -7 (chạy ngày 2026-08-05), old.log có xuất hiện không? Vì sao?",
+      "answer": "Không. old.log có mtime 2025-01-01, quá 7 ngày so với hôm nay, nên -mtime -7 (mới hơn 7 ngày) loại nó ra."
+    },
+    {
+      "id": "find-h20",
+      "level": "hard",
+      "question": "Vì sao -exec {} + được coi là mặc định nên chọn?",
+      "answer": "Vì nó gộp nhiều file vào một lần gọi lệnh (nhanh nhất, ít fork), an toàn với tên file, và gọn (không cần pipe). Chỉ đổi khi cần một-file-một-lần hoặc cờ riêng của xargs."
+    },
+    {
+      "id": "find-h21",
+      "level": "hard",
+      "question": "Nếu quên -type f và có một thư mục tên 'report.log', find . -name '*.log' -exec rm {} + gây hậu quả gì?",
+      "answer": "-name '*.log' cũng khớp thư mục 'report.log', nên rm cố xoá cả thư mục đó (rm thường sẽ báo lỗi vì là directory). Thêm -type f để chỉ khớp file thường, tránh nhầm."
+    },
+    {
+      "id": "find-h22",
+      "level": "hard",
+      "question": "Vì sao NUL an toàn tuyệt đối làm dấu phân cách trong khi mọi ký tự in được đều rủi ro?",
+      "answer": "Tên file Linux được phép chứa mọi byte trừ / và NUL. Bất kỳ ký tự in được nào (dấu cách, newline, tab) đều có thể xuất hiện trong tên và gây nhầm; NUL là byte duy nhất không bao giờ nằm trong tên nên phân tách bằng nó không thể sai."
+    },
+    {
+      "id": "find-h23",
+      "level": "hard",
+      "question": "Chỉ thao tác trên file .log ở tối đa 2 tầng, không đi sâu hơn — viết find thế nào?",
+      "answer": "find logs -maxdepth 2 -type f -name '*.log'. -maxdepth 2 chặn đệ quy quá 2 tầng; các điều kiện AND nên chỉ file .log trong phạm vi độ sâu đó mới khớp."
+    },
+    {
+      "id": "find-h24",
+      "level": "hard",
+      "question": "Vì sao -exec {} + và xargs -0 được nói là ngang nhau về an toàn tên file?",
+      "answer": "Cả hai đều truyền tên file như đối số riêng biệt không qua tách theo khoảng trắng của shell: -exec + để find tự đưa từng tên, xargs -0 cắt theo NUL. Không cái nào bị 'báo cáo.log' xé đôi."
+    },
+    {
+      "id": "find-h25",
+      "level": "hard",
+      "question": "Khi cần chạy một lệnh thẳng, không cần cờ xargs, nên chọn -exec {} + hay find -print0 | xargs -0?",
+      "answer": "Chọn -exec {} + vì gọn hơn, không cần pipe, và đã an toàn/nhanh tương đương. Chỉ chuyển sang xargs khi cần -P, -n1, hay -I{}."
+    },
+    {
+      "id": "find-h26",
+      "level": "hard",
+      "question": "Trong ví dụ, vì sao output của find (bfs) có thể lệch nhỏ so với GNU find và điều đó nhắc gì về việc ghi output thật?",
+      "answer": "Máy lab dùng bfs 4.1.1 (tương thích GNU find) chứ không phải GNU findutils, nên thứ tự/định dạng output có thể khác chút. Nhắc rằng phải ghi rõ môi trường (shell, phiên bản find) khi dán output thật để người đọc phân biệt được."
+    },
+    {
+      "id": "find-h27",
+      "level": "hard",
+      "question": "Tại sao 'phân tích output của ls bằng script' bị coi là chống chỉ định?",
+      "answer": "Vì ls in tên phân cách bằng newline nhưng script/xargs mặc định cắt theo khoảng trắng, nên tên có dấu cách gãy — cùng bệnh với find | xargs. Dùng find -print0 để có đầu ra an toàn cho máy đọc."
+    },
+    {
+      "id": "find-h28",
+      "level": "hard",
+      "question": "Đếm tổng số dòng của mọi .log trong 7 ngày qua, an toàn tên có dấu cách, viết đầy đủ một dòng.",
+      "answer": "find logs -type f -name '*.log' -mtime -7 -exec wc -l {} +. -exec {} + an toàn tên file và gộp để có dòng total; các điều kiện AND lọc đúng .log mới hơn 7 ngày."
+    },
+    {
+      "id": "find-h29",
+      "level": "hard",
+      "question": "Muốn xem trước danh sách sẽ bị xoá rồi mới xoá thật, quy trình an toàn là gì?",
+      "answer": "Chạy find ... -print trước, kiểm tra đúng danh sách, rồi mới đổi -print thành -delete. Vì -delete không hoàn tác được."
+    },
+    {
+      "id": "find-h30",
+      "level": "hard",
+      "question": "Vì sao lỗi 'paths must precede expression' hay đi kèm việc quên nháy -name?",
+      "answer": "Khi quên nháy, shell nở *.log thành nhiều tên; cái đầu bị find coi là path, các cái sau find không biết xếp vào đâu (path phải đứng trước điều kiện) nên báo lỗi. Nháy -name '*.log' lại là hết."
+    }
+  ]
+}

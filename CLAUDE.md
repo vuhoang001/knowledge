@@ -20,7 +20,7 @@ sản phẩm dẫn xuất, đã gitignore — đừng sửa tay, đừng commit.
 | Bản đồ khái niệm của một công nghệ | `docs/<lĩnh vực>/<công nghệ>/index.md` |
 | Khuôn để viết file mới | `templates/full-topic.md` (chủ đề lớn) · `templates/short-topic.md` (ngắn) |
 
-Corpus hiện ~160 KB / 47 file — **đọc thẳng file, đừng dựng index hay RAG.** Toàn bộ
+Corpus hiện ~1.8 MB / 179 file — **đọc thẳng file, đừng dựng index hay RAG.** Toàn bộ
 kho nhét vừa context window nhiều lần; grep + read luôn cho kết quả tốt hơn retrieval.
 Chỉ tính lại lựa chọn này khi kho vượt vài trăm file, hoặc khi cần tra cứu ngữ nghĩa
 từ **ngoài** agent (web app, bot).

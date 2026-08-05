@@ -1,0 +1,164 @@
+{
+  "description": "Bo cau hoi on tap Bash — 10 de / 20 trung binh / 30 kho moi chu de",
+  "generated_from": "docs/bash/",
+  "topics": 12,
+  "total_questions": 720,
+  "quiz": [
+    {
+      "topic": "shell-la-gi",
+      "title": "Shell là gì",
+      "group": "reference",
+      "file": "shell-la-gi.json",
+      "source": "docs/bash/reference/shell-la-gi.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "streams-va-redirection",
+      "title": "Streams và redirection",
+      "group": "reference",
+      "file": "streams-va-redirection.json",
+      "source": "docs/bash/reference/streams-va-redirection.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "quoting-va-expansion",
+      "title": "Quoting và expansion",
+      "group": "reference",
+      "file": "quoting-va-expansion.json",
+      "source": "docs/bash/reference/quoting-va-expansion.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "exit-code-va-control-flow",
+      "title": "Exit code và control flow",
+      "group": "reference",
+      "file": "exit-code-va-control-flow.json",
+      "source": "docs/bash/reference/exit-code-va-control-flow.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "file-permissions",
+      "title": "File permissions",
+      "group": "reference",
+      "file": "file-permissions.json",
+      "source": "docs/bash/reference/file-permissions.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "process-va-job-control",
+      "title": "Process và job control",
+      "group": "reference",
+      "file": "process-va-job-control.json",
+      "source": "docs/bash/reference/process-va-job-control.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "text-processing",
+      "title": "Xử lý văn bản bằng pipeline",
+      "group": "skills",
+      "file": "text-processing.json",
+      "source": "docs/bash/skills/text-processing.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "find-va-xargs",
+      "title": "Tìm file với find và xargs",
+      "group": "skills",
+      "file": "find-va-xargs.json",
+      "source": "docs/bash/skills/find-va-xargs.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "variables-arrays-expansion",
+      "title": "Biến, mảng và parameter expansion",
+      "group": "skills",
+      "file": "variables-arrays-expansion.json",
+      "source": "docs/bash/skills/variables-arrays-expansion.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "conditionals-va-loops",
+      "title": "Điều kiện và vòng lặp",
+      "group": "skills",
+      "file": "conditionals-va-loops.json",
+      "source": "docs/bash/skills/conditionals-va-loops.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "functions",
+      "title": "Hàm trong bash",
+      "group": "skills",
+      "file": "functions.json",
+      "source": "docs/bash/skills/functions.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    },
+    {
+      "topic": "viet-script-an-toan",
+      "title": "Viết script an toàn",
+      "group": "skills",
+      "file": "viet-script-an-toan.json",
+      "source": "docs/bash/skills/viet-script-an-toan.md",
+      "counts": {
+        "easy": 10,
+        "medium": 20,
+        "hard": 30,
+        "total": 60
+      }
+    }
+  ]
+}

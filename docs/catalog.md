@@ -17,14 +17,20 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**131 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**151 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (21)
+## Tài liệu tham chiếu (27)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Exit code và control flow](bash/reference/exit-code-va-control-flow.md) | `bash/reference` | devops | 🟡 draft |
+| [File permissions](bash/reference/file-permissions.md) | `bash/reference` | devops | 🟡 draft |
+| [Process và job control](bash/reference/process-va-job-control.md) | `bash/reference` | devops | 🟡 draft |
+| [Quoting và expansion](bash/reference/quoting-va-expansion.md) | `bash/reference` | devops | 🟡 draft |
+| [Shell là gì](bash/reference/shell-la-gi.md) | `bash/reference` | devops | 🟡 draft |
+| [Streams và redirection](bash/reference/streams-va-redirection.md) | `bash/reference` | devops | 🟡 draft |
 | [Bus architecture, bus matrix và value chain](data-modeling/reference/bus-architecture.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
 | [Date dimension](data-modeling/reference/date-dimension.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
 | [Quy trình thiết kế 4 bước](data-modeling/reference/design-process.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
@@ -47,12 +53,18 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [SOLID — năm nguyên lý, năm ca hỏng chạy được](patterns/reference/solid.md) | `patterns/reference` | backend | 🟡 draft |
 | [Design pattern là gì — và khi nào đừng dùng](patterns/reference/what-is-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
 
-## Kỹ năng (46)
+## Kỹ năng (52)
 
 Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Điều kiện và vòng lặp](bash/skills/conditionals-va-loops.md) | `bash/skills` | devops | 🟡 draft |
+| [Tìm file với find và xargs](bash/skills/find-va-xargs.md) | `bash/skills` | devops | 🟡 draft |
+| [Hàm trong bash](bash/skills/functions.md) | `bash/skills` | devops | 🟡 draft |
+| [Xử lý văn bản bằng pipeline](bash/skills/text-processing.md) | `bash/skills` | devops | 🟡 draft |
+| [Biến, mảng và parameter expansion](bash/skills/variables-arrays-expansion.md) | `bash/skills` | devops | 🟡 draft |
+| [Viết script an toàn](bash/skills/viet-script-an-toan.md) | `bash/skills` | devops | 🟡 draft |
 | [Aggregate fact table và shrunken rollup dimension](data-modeling/skills/aggregate-fact-table.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
 | [Header/line và phân bổ fact](data-modeling/skills/allocated-facts.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
 | [Audit dimension và error event schema](data-modeling/skills/audit-dimension.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
@@ -100,12 +112,14 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (18)
+## Bài tập (20)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| ['Lab: viết script bash đầu tiên'](bash/tutorials/bash-lab-first-script.md) | `bash/tutorials` | devops | 🟡 draft |
+| ['Lab: xử lý văn bản bằng pipeline'](bash/tutorials/bash-lab-text-processing.md) | `bash/tutorials` | devops | 🟡 draft |
 | ["26 bài tập có đáp số — tự viết, tự chấm"](data-modeling/tutorials/bai-tap-co-dap-so.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Phụ lục seed — mười bảng cho bộ bài tập"](data-modeling/tutorials/bt-00-seed.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Bài tập bộ 1 — Nền tảng: grain, fact/dim, surrogate key, star/OBT"](data-modeling/tutorials/bt-01-nen-tang.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
@@ -125,12 +139,16 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
 
-## Case study (44)
+## Case study (48)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Tên file có dấu cách xoá nhầm cả thư mục](bash/case-studies/bien-khong-nhay-word-splitting.md) | `bash/case-studies` | devops | 🟡 draft |
+| [Vòng lặp chạy một lần với dấu sao literal](bash/case-studies/glob-khong-khop.md) | `bash/case-studies` | devops | 🟡 draft |
+| [Pipeline xanh giả — lỗi giữa pipe bị nuốt](bash/case-studies/pipe-nuot-exit-code.md) | `bash/case-studies` | devops | 🟡 draft |
+| ['set -e bật nhưng script vẫn chạy tiếp sau lỗi'](bash/case-studies/set-e-khong-bat.md) | `bash/case-studies` | devops | 🟡 draft |
 | [dim_san_pham 67% ô trống — và không cột nào đặt được NOT NULL](data-modeling/case-studies/bang-san-pham-hai-phan-ba-o-trong.md) | `data-modeling/case-studies` | data-engineering | 🟡 draft |
 | [Dashboard báo 800, query tay ra 1.000 — và trung bình lệch 50%](data-modeling/case-studies/bang-tong-hop-lech-so.md) | `data-modeling/case-studies` | data-engineering | 🟡 draft |
 | [Báo cáo theo danh mục cấp 3 chỉ thấy một nửa doanh thu](data-modeling/case-studies/bao-cao-cap-3-mat-mot-nua.md) | `data-modeling/case-studies` | data-engineering | 🟡 draft |
@@ -176,12 +194,14 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Thêm một toán tử, sáu nơi phải sửa](patterns/case-studies/them-node-moi-sua-moi-visitor.md) | `patterns/case-studies` | backend | 🟡 draft |
 | [Hoàn tác hai lệnh, tồn kho từ 10 thành 24](patterns/case-studies/undo-khong-tra-lai-trang-thai-cu.md) | `patterns/case-studies` | backend | 🟡 draft |
 
-## Cheatsheet (2)
+## Cheatsheet (4)
 
 Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Cheatsheet lệnh bash](bash/cheatsheets/commands.md) | `bash/cheatsheets` | devops | 🟡 draft |
+| [Cheatsheet toán tử test và expansion](bash/cheatsheets/test-operators-va-expansion.md) | `bash/cheatsheets` | devops | 🟡 draft |
 | [SCD — Cheatsheet](data-modeling/cheatsheets/scd.md) | `data-modeling/cheatsheets` | data-engineering | 📘 ổn định, chưa chạy tay |
 | [23 pattern GoF — tra nhanh](patterns/cheatsheets/gof-23.md) | `patterns/cheatsheets` | backend | 🟡 draft |
 
