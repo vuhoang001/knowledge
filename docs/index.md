@@ -187,12 +187,55 @@ Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, se
 
 Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md).
 
-### Streaming
+### Kafka — [`etl/kafka/`](etl/kafka/index.md)
 
-| File | Chốt một câu | TT |
+Log ghi-thêm phân tán. Output nhóm reference/skills là **minh hoạ, chưa chạy** (cần cluster);
+chỉ [bài tập Docker](etl/kafka/tutorials/kafka-lab.md) mới chạy thật.
+
+| File | Trả lời câu hỏi | TT |
 |---|---|---|
-| [etl/kafka/index](etl/kafka/index.md) | Kafka là một cái log, không phải hàng đợi — message không mất khi đọc xong | 🟡 |
-| [etl/flink/index](etl/flink/index.md) | Engine stream có state; event time và watermark là chỗ sai nhiều nhất | 🟡 |
+| [etl/kafka/index](etl/kafka/index.md) | Bản đồ khái niệm + lộ trình | 🗂️ |
+| [what-is-kafka](etl/kafka/reference/what-is-kafka.md) | Log vs queue: message không mất khi đọc xong | 📝 |
+| [topic-partition-offset](etl/kafka/reference/topic-partition-offset.md) | Partition là đơn vị song song **và** thứ tự | 📝 |
+| [replication-durability](etl/kafka/reference/replication-durability.md) | `acks=all` + `min.insync.replicas=2` mới là bền | 📝 |
+| [retention-compaction](etl/kafka/reference/retention-compaction.md) | Xoá theo thời gian vs giữ bản mới nhất mỗi key | 📝 |
+| [delivery-semantics](etl/kafka/reference/delivery-semantics.md) | At-most/at-least/exactly-once; idempotence, transaction | 📝 |
+| [producer-tuning](etl/kafka/skills/producer-tuning.md) | `acks`, idempotence, batching, partitioner | 📝 |
+| [consumer-groups](etl/kafka/skills/consumer-groups.md) | Rebalance, commit offset, xử lý chậm bị đá | 📝 |
+| [schema-registry](etl/kafka/skills/schema-registry.md) | Avro/Protobuf và luật tương thích khi đổi schema | 📝 |
+| [kafka-connect-cdc](etl/kafka/skills/kafka-connect-cdc.md) | Debezium bắt thay đổi từ database, không code | 📝 |
+| [operations-lag](etl/kafka/skills/operations-lag.md) | Consumer lag là chỉ số sức khoẻ số một | 📝 |
+| [Cheatsheet: CLI và config](etl/kafka/cheatsheets/cli-and-config.md) | Tra nhanh lệnh `kafka-*` và config | 📝 |
+| [Lab: Kafka trên Docker](etl/kafka/tutorials/kafka-lab.md) | Produce, consume, rebalance, compaction tận mắt | 📝 |
+| [CS: mất thứ tự vì đổi key](etl/kafka/case-studies/mat-thu-tu-vi-doi-key.md) | Key quyết định partition; thứ tự vỡ khi đổi key | 📝 |
+| [CS: rebalance không dứt](etl/kafka/case-studies/rebalance-lien-tuc.md) | Xử lý lâu hơn `max.poll.interval.ms` → bị đá | 📝 |
+| [CS: mất dữ liệu acks=1](etl/kafka/case-studies/mat-du-lieu-acks-1.md) | Leader chết trước khi follower kịp sao chép | 📝 |
+| [CS: compaction không như mong đợi](etl/kafka/case-studies/compaction-khong-nhu-mong-doi.md) | Compaction là quá trình nền, không tức thì | 📝 |
+
+### Flink — [`etl/flink/`](etl/flink/index.md)
+
+Engine xử lý stream có state. Output reference/skills là **minh hoạ, chưa chạy** (cần cluster);
+chỉ [bài tập Docker](etl/flink/tutorials/flink-lab.md) mới chạy thật.
+
+| File | Trả lời câu hỏi | TT |
+|---|---|---|
+| [etl/flink/index](etl/flink/index.md) | Bản đồ khái niệm + lộ trình | 🗂️ |
+| [what-is-flink](etl/flink/reference/what-is-flink.md) | Stream vs batch; bounded vs unbounded | 📝 |
+| [architecture](etl/flink/reference/architecture.md) | JobManager, TaskManager, slot, parallelism | 📝 |
+| [event-time-watermark](etl/flink/reference/event-time-watermark.md) | Vì sao processing time cho số sai lặng lẽ | 📝 |
+| [state-and-checkpoint](etl/flink/reference/state-and-checkpoint.md) | Nơi giữ state; khôi phục sau khi chết | 📝 |
+| [exactly-once](etl/flink/reference/exactly-once.md) | Two-phase commit; sink phải hỗ trợ gì | 📝 |
+| [datastream-vs-table-sql](etl/flink/skills/datastream-vs-table-sql.md) | Chọn API nào cho việc nào | 📝 |
+| [windows](etl/flink/skills/windows.md) | Tumbling/sliding/session; allowed lateness | 📝 |
+| [savepoint-upgrade](etl/flink/skills/savepoint-upgrade.md) | Sửa code mà không mất state; vì sao cần `uid()` | 📝 |
+| [connectors](etl/flink/skills/connectors.md) | Kafka source/sink, Iceberg sink, CDC | 📝 |
+| [backpressure-tuning](etl/flink/skills/backpressure-tuning.md) | Đọc backpressure, chỉnh parallelism | 📝 |
+| [Cheatsheet: config và SQL](etl/flink/cheatsheets/config-and-sql.md) | Config theo nhóm + cú pháp watermark/window | 📝 |
+| [Lab: Flink SQL trên Docker](etl/flink/tutorials/flink-lab.md) | Windowed aggregation, watermark, late data | 📝 |
+| [CS: cửa sổ không chạy](etl/flink/case-studies/cua-so-khong-chay-idle-partition.md) | Partition im lặng giữ watermark đứng yên | 📝 |
+| [CS: số sai vì processing time](etl/flink/case-studies/so-sai-vi-processing-time.md) | Đến muộn bị gán sai cửa sổ, không lỗi nào báo | 📝 |
+| [CS: state phình](etl/flink/case-studies/state-phinh-thieu-ttl.md) | Thiếu TTL thì keyed state chỉ có tăng | 📝 |
+| [CS: trùng lặp ở sink](etl/flink/case-studies/trung-lap-vi-sink-khong-transaction.md) | Exactly-once không tự lan tới sink không 2PC | 📝 |
 
 ## Storage · Query Engines · Orchestration
 
