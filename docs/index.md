@@ -284,16 +284,6 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [databases/sql/index](databases/sql/index.md) | Phần SQL mà dbt và Trino bắt phải chắc: grain, join, window function, plan | 🟡 |
 | [languages/python/index](languages/python/index.md) | Phần Python hạ tầng dữ liệu thật sự dùng — và khi nào **không** nên dùng pandas | 🟡 |
 
-## Thư mục đã dựng, chưa có nội dung
-
-[concepts](concepts/) · [architecture](architecture/) ·
-[algorithms](algorithms/) · [protocols](protocols/) · [tools](tools/) ·
-[backend](backend/) · [frontend](frontend/) · [devops](devops/) · [cloud](cloud/) ·
-[ai](ai/) · [security](security/) · [networking](networking/)
-
-Mỗi thư mục có `_category_.json` (nhãn + thứ tự sidebar) và một `index.md` giữ chỗ —
-Docusaurus báo lỗi nếu một category rỗng.
-
 ## Loại tài liệu khác
 
 **Bài tập, case study, cheatsheet nằm *trong* từng chủ đề**, không gom ở thư mục toàn

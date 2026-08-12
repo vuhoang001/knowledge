@@ -143,6 +143,4 @@ repo này**, ví dụ `~/Documents/learn-lab/patterns`.
 ## Related Topics
 
 - [Data Modeling](../data-modeling/index.md) — cùng loại tri thức mất giá chậm
-- [Backend](../backend/index.md) — nơi các pattern này được dùng
-- [Architecture](../architecture/index.md) — quy mô lớn hơn: tầng và module
 - [Glossary](../glossary/index.md)

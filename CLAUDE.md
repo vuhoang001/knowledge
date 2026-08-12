@@ -25,11 +25,18 @@ kho nhét vừa context window nhiều lần; grep + read luôn cho kết quả 
 Chỉ tính lại lựa chọn này khi kho vượt vài trăm file, hoặc khi cần tra cứu ngữ nghĩa
 từ **ngoài** agent (web app, bot).
 
-Thư mục giữ chỗ mang `category: placeholder` trong frontmatter — Docusaurus báo lỗi nếu
-một category rỗng, nên chúng tồn tại để site build được, không phải vì có nội dung:
+**Không dựng thư mục rỗng.** Ngày 06/08/2026 đã xoá 12 thư mục giữ chỗ
+(`ai/`, `backend/`, `devops/`, `security/`…) — chúng chỉ chứa một `index.md` ghi
+"chưa có tài liệu nào", tồn tại vì Docusaurus báo lỗi khi category rỗng. Cái giá là
+sidebar đầy nhánh cụt. Thư mục mới **sinh cùng file nội dung đầu tiên**, không sinh
+trước.
+
+Thứ khác với thư mục rỗng: `index.md` của một công nghệ có **mục lục dự kiến** (Flink,
+Kafka, Trino, Iceberg, Airflow, Python, SQL — đánh dấu *chưa bắt đầu*, các dòng ⬜).
+Đó là kế hoạch học đã nghĩ xong, giữ nguyên.
 
 ```bash
-grep -rl 'category: placeholder' docs/     # những gì chưa viết
+grep -rln 'chưa bắt đầu' docs/     # đã có mục lục, chưa viết file nào
 ```
 
 ## Luật cứng

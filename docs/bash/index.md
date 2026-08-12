@@ -98,6 +98,4 @@ cho các kiểu hỏng im lặng.
 
 ## Related Topics
 
-- [DevOps](../devops/index.md) — bash là keo dán của mọi thứ vận hành
-- [Networking](../networking/index.md) — `ssh`, `scp`, `curl` sống ở đây
 - [Glossary](../glossary/index.md)

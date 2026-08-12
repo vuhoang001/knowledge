@@ -71,14 +71,12 @@ graph TD
 
 Ví dụ viết bằng C#, chạy bằng `dotnet run <file>.cs` (.NET 10+, không cần tạo project).
 
-### Chưa có nội dung
+### Thư mục mới
 
-`concepts/` · `architecture/` · `algorithms/` · `protocols/` ·
-`tools/` · `backend/` · `frontend/` · `devops/` · `cloud/` · `ai/` · `security/` ·
-`networking/`
-
-Thư mục dựng sẵn theo kiến trúc, chưa viết gì. Chủ đề mới không hợp thư mục nào thì
-tạo thư mục mới — `languages/` ra đời như vậy.
+Kho chỉ giữ thư mục **có nội dung**. Chủ đề mới không hợp thư mục nào thì tạo thư mục
+mới ngay lúc viết file đầu tiên — `languages/` ra đời như vậy. Đừng dựng sẵn thư mục
+rỗng: chúng làm sidebar phình ra toàn nhánh cụt và phải nuôi một `index.md` giữ chỗ chỉ
+để Docusaurus không báo lỗi category rỗng.
 
 ## Quy ước
 
