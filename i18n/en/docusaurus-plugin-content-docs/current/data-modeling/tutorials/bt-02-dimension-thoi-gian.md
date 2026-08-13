@@ -1,8 +1,7 @@
 ---
-title: "Bài tập bộ 2 — Dimension theo thời gian: SCD, phát hiện thay đổi, mini-dim, role-playing, về muộn"
-i18n_status: untranslated
+title: "Exercise set 2 — Dimensions over time: SCD, change detection, mini-dims, role-playing, late arrivals"
 sidebar_position: 11
-description: "22 bài tự viết: dựng Type 2 từ bản trích ngày, bắt ba kiểu updated_at nói dối, tách mini-dimension, ba vai của dim_ngay, và gán khoá cho fact về muộn."
+description: "22 exercises to write yourself: building Type 2 from daily extracts, catching three ways updated_at lies, splitting out a mini-dimension, dim_ngay's three roles, and assigning keys to a late-arriving fact."
 tags: [tutorial, bai-tap, scd, scd-change-detection, mini-dimension, role-playing-dimension, late-arriving, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,43 +12,43 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bài tập bộ 2 — Dimension theo thời gian
+# Exercise set 2 — Dimensions over time
 
-> **Chốt:** năm kỹ thuật trong bộ này trả lời **một** câu hỏi duy nhất từ năm góc —
-> *thuộc tính đổi rồi, báo cáo về quá khứ phải dùng giá trị nào?* Sai góc nào cũng ra số
-> đúng, chỉ là đúng cho câu hỏi khác.
+> **Takeaway:** the five techniques in this set answer **one** question from five angles —
+> *the attribute has changed; which value should a report about the past use?* Get the angle wrong and you still get a
+> correct number, just correct for a different question.
 
-## Kỹ thuật được luyện trong bộ này
+## Techniques practised in this set
 
-| # | Kỹ thuật | Tài liệu gốc | Số bài |
+| # | Technique | Source document | Exercises |
 |---|---|---|---|
 | 1 | SCD Type 1/2/3/6 | [SCD](../skills/scd.md) | 5 |
-| 2 | Phát hiện thay đổi | [Phát hiện thay đổi cho SCD 2](../skills/scd-change-detection.md) | 5 |
-| 3 | Mini-dimension | [Mini-dimension](../skills/mini-dimension.md) | 4 |
-| 4 | Role-playing dimension | [Role-playing dimension](../skills/role-playing-dimension.md) | 4 |
-| 5 | Dữ liệu về muộn | [Dữ liệu về muộn](../skills/late-arriving.md) | 4 |
+| 2 | Change detection | [Change detection for SCD 2](../skills/scd-change-detection.md) | 5 |
+| 3 | Mini-dimensions | [Mini-dimensions](../skills/mini-dimension.md) | 4 |
+| 4 | Role-playing dimensions | [Role-playing dimensions](../skills/role-playing-dimension.md) | 4 |
+| 5 | Late-arriving data | [Late-arriving data](../skills/late-arriving.md) | 4 |
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Bộ này sống trên `khach_hang_lich_su` — 4 khách × 5 ngày, xem
-[phụ lục seed](bt-00-seed.md#khach_hang_lich_sucsv). Nhiều bài dùng lại `dim_khach_t2`
-dựng ở [bộ 1 bài C.2](bt-01-nen-tang.md#bài-c2--dựng-dimension-type-2-từ-bản-trích-hàng-ngày);
-chưa có thì quay lại dựng trước.
+This set lives on `khach_hang_lich_su` — 4 customers × 5 days, see
+[the seed appendix](bt-00-seed.md#khach_hang_lich_sucsv). Several exercises reuse the `dim_khach_t2`
+built in [set 1, exercise C.2](bt-01-nen-tang.md#exercise-c2--build-a-type-2-dimension-from-daily-extracts);
+if you don't have it, go back and build it first.
 
 ---
 
-## Bộ A — SCD Type 1, 2, 3, 6
+## Group A — SCD Type 1, 2, 3, 6
 
-### Bài A.1 — Ba kiểu SCD, ba số dòng
+### Exercise A.1 — Three kinds of SCD, three row counts
 
-**Đề:** đếm số dòng dimension khách hàng theo ba cách xử lý: Type 1 (ghi đè, không giữ
-lịch sử), Type 2 **chỉ theo cột chậm** (`khu_vuc`, `hang`), và Type 2 **theo mọi cột**.
+**The task:** count the rows of a customer dimension under three treatments: Type 1 (overwrite, no
+history), Type 2 **on the slow columns only** (`khu_vuc`, `hang`), and Type 2 **on every column**.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────────┬─────────┐
@@ -61,10 +60,10 @@ lịch sử), Type 2 **chỉ theo cột chậm** (`khu_vuc`, `hang`), và Type 2
 └───────────────────┴─────────┘
 ```
 
-**4 → 6 → 18.** Chỉ đổi danh sách cột kích hoạt mà dim to gấp ba.
+**4 → 6 → 18.** Change only the list of triggering columns and the dim triples.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'Type 1 (ghi de)' kieu, count(distinct khach_id) so_dong from khach_hang_lich_su
@@ -74,31 +73,31 @@ union all select 'Type 2 (moi cot)', count(*)
         from khach_hang_lich_su);
 ```
 
-Với 5 ngày, chênh lệch 6 và 18 nghe không đáng sợ. Nhân lên quy mô thật thì nó đổi hẳn
-bản chất bài toán:
+Over 5 days, the gap between 6 and 18 doesn't sound alarming. Scale it up to real size and it changes
+the nature of the problem entirely:
 
-| | 4 khách × 5 ngày | 1 triệu khách × 3 năm |
+| | 4 customers × 5 days | 1 million customers × 3 years |
 |---|---|---|
-| Type 1 | 4 | 1 triệu |
-| Type 2 cột chậm | 6 | ~3 triệu |
-| Type 2 mọi cột | 18 | **~1 tỷ** |
+| Type 1 | 4 | 1 million |
+| Type 2 on slow columns | 6 | ~3 million |
+| Type 2 on every column | 18 | **~1 billion** |
 
-Con số 1 tỷ không phải doạ — nó là hệ quả số học của việc để một cột đổi hàng ngày
-(`diem_tin_dung`) vào danh sách kích hoạt. Xem
-[case study dimension phình 365 lần](../case-studies/dimension-phinh-365-lan.md).
+The billion figure isn't scaremongering — it's the arithmetic consequence of letting a daily-changing column
+(`diem_tin_dung`) into the trigger list. See
+[the case study on a dimension 365× bloated](../case-studies/dimension-phinh-365-lan.md).
 
-**Việc phải làm mỗi lần dựng Type 2:** viết ra danh sách cột kích hoạt, tường minh,
-ngay trong code — và bảo vệ nó bằng review. Danh sách đó là quyết định thiết kế đắt
-nhất của cả dimension.
+**What to do every time you build Type 2:** write out the trigger-column list explicitly,
+right in the code — and defend it in review. That list is the most expensive design decision in the whole
+dimension.
 
 </details>
 
-### Bài A.2 — As-was và as-is: 2,55 triệu đi từ Bắc vào Nam
+### Exercise A.2 — As-was and as-is: 2.55 million moving from North to South
 
-**Đề:** tính doanh thu theo `khu_vuc` **hai lần**: (a) *as-was* — khu vực của khách **tại
-thời điểm đặt hàng**; (b) *as-is* — khu vực **hiện tại**. Đặt cạnh nhau kèm cột chênh.
+**The task:** compute revenue by `khu_vuc` **twice**: (a) *as-was* — the customer's region **at
+order time**; (b) *as-is* — the **current** region. Put them side by side with a difference column.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬─────────┬─────────┬──────────┐
@@ -110,11 +109,11 @@ thời điểm đặt hàng**; (b) *as-is* — khu vực **hiện tại**. Đặ
 └────────────┴─────────┴─────────┴──────────┘
 ```
 
-Cả hai cột đều cộng lại bằng **10.215.000**. Không cột nào sai — nhưng Miền Bắc chênh
-**2,55 triệu**, tức **154%** so với chính nó.
+Both columns total **10,215,000**. Neither is wrong — but the North differs by
+**2.55 million**, i.e. **154%** against itself.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tien as (
@@ -135,32 +134,32 @@ full join (select d.khu_vuc, sum(t.tien) as_is
 order by 1;
 ```
 
-Toàn bộ chênh lệch đến từ **một** khách: `C1` chuyển từ Miền Bắc vào Miền Nam ngày
-03/07, mang theo hai đơn cũ `DH001` (600.000) và `DH003` (1.950.000) = **2.550.000**.
+The whole difference comes from **one** customer: `C1` moved from the North to the South on
+03/07, taking two old orders `DH001` (600,000) and `DH003` (1,950,000) = **2,550,000**.
 
-Câu hỏi nào dùng số nào:
+Which question uses which number:
 
-| Câu hỏi nghiệp vụ | Dùng |
+| The business question | Uses |
 |---|---|
-| "Tháng 7 chi nhánh Miền Bắc bán được bao nhiêu?" | **as-was** — chi nhánh đó thật sự đã bán |
-| "Khách Miền Nam hiện nay đã từng mua bao nhiêu?" | **as-is** — phân tích theo tập khách hiện tại |
-| "Vì sao báo cáo tháng 6 tháng này khác tháng trước?" | đang dùng **as-is** mà tưởng as-was |
+| "How much did the North branch sell in July?" | **as-was** — that branch really did sell it |
+| "How much have today's Southern customers ever bought?" | **as-is** — analysis over the current customer set |
+| "Why does this month's June report differ from last month's?" | you're using **as-is** while thinking it's as-was |
 
-Cái nguy hiểm không phải chọn sai, mà là **không biết mình đang dùng cái nào**. Báo cáo
-as-is thì con số quá khứ **tự đổi** mỗi lần dimension cập nhật — xem
-[case study báo cáo quá khứ tự đổi số](../case-studies/bao-cao-qua-khu-tu-doi-so.md).
+The danger isn't choosing wrong, it's **not knowing which one you're using**. In an
+as-is report the past figures **change themselves** every time the dimension updates — see
+[the case study on historical reports changing their own numbers](../case-studies/bao-cao-qua-khu-tu-doi-so.md).
 
-Ghi thẳng vào tên cột hoặc tiêu đề báo cáo: `doanh_thu_theo_khu_vuc_luc_dat_hang`.
+Write it straight into the column name or the report title: `doanh_thu_theo_khu_vuc_luc_dat_hang`.
 
 </details>
 
-### Bài A.3 — Ba phép kiểm toàn vẹn cho Type 2
+### Exercise A.3 — Three integrity checks for Type 2
 
-**Đề:** viết **một** câu trả ba số phải bằng 0: số cặp phiên bản **chồng lấn** khoảng
-hiệu lực, số khách có **số bản hiện tại khác 1**, và số **chỗ hở** giữa hai phiên bản
-liên tiếp.
+**The task:** write **one** statement returning three numbers that must all be zero: the number of version pairs with
+**overlapping** validity intervals, the number of customers whose **current-version count isn't 1**, and the number of **gaps**
+between consecutive versions.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────────┬───────────────────────────┬───────────┐
@@ -170,11 +169,11 @@ liên tiếp.
 └──────────────────┴───────────────────────────┴───────────┘
 ```
 
-Ba số 0 này nên là **test chạy mỗi lần build**, không phải câu query chạy một lần rồi
-quên.
+These three zeros should be a **test running on every build**, not a query run once and
+forgotten.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select
@@ -189,29 +188,29 @@ select
     where tiep is not null and tiep <> hieu_luc_den + interval 1 day) so_cho_ho;
 ```
 
-Ba phép kiểm bắt ba lỗi khác nhau, và mỗi lỗi hỏng theo một kiểu:
+The three checks catch three different bugs, each breaking in its own way:
 
-| Kiểm | Bắt lỗi gì | Triệu chứng nếu bỏ qua |
+| The check | The bug it catches | The symptom if skipped |
 |---|---|---|
-| **Chồng lấn** | hai phiên bản cùng hiệu lực một ngày | as-was join trả **2 dòng** → doanh thu nhân đôi |
-| **Số bản hiện tại ≠ 1** | quên đóng bản cũ, hoặc đóng hết | as-is trả **nhân đôi** hoặc **0 dòng** |
-| **Chỗ hở** | có ngày không phiên bản nào phủ | fact ngày đó rơi vào `-1`, **mất khỏi báo cáo** |
+| **Overlap** | two versions in force on the same day | the as-was join returns **2 rows** → revenue doubles |
+| **Current-version count ≠ 1** | forgetting to close the old version, or closing them all | as-is returns **doubles** or **0 rows** |
+| **Gaps** | a day covered by no version | that day's fact falls into `-1`, **lost from the report** |
 
-Điều kiện chồng lấn `a.tu <= b.den and b.tu <= a.den` là dạng chuẩn của giao hai khoảng.
-Viết `a.tu between b.tu and b.den` là **thiếu một nửa** trường hợp — khoảng b nằm gọn
-trong a sẽ lọt lưới.
+The overlap condition `a.tu <= b.den and b.tu <= a.den` is the standard form for two intervals intersecting.
+Writing `a.tu between b.tu and b.den` **misses half** the cases — an interval b sitting entirely
+inside a slips through.
 
-Trong dbt, ba câu này thành ba `singular test` trong `tests/`. Xem
-[SCD](../skills/scd.md) và [lab SCD bằng dbt snapshot](scd-bang-dbt-snapshot.md).
+In dbt these three become three singular tests in `tests/`. See
+[SCD](../skills/scd.md) and [the SCD lab with dbt snapshots](scd-bang-dbt-snapshot.md).
 
 </details>
 
-### Bài A.4 — Type 3: một cột "giá trị trước"
+### Exercise A.4 — Type 3: a "previous value" column
 
-**Đề:** với mỗi khách, lấy phiên bản **hiện tại** kèm một cột `khu_vuc_truoc` — giá trị
-ngay trước đó — và ngày đổi. Đó chính là Type 3.
+**The task:** for each customer, take the **current** version plus a `khu_vuc_truoc` column — the value
+immediately before — and the change date. That's Type 3.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬──────────────────┬───────────────┬────────────┐
@@ -224,10 +223,10 @@ ngay trước đó — và ngày đổi. Đó chính là Type 3.
 └──────────┴──────────────────┴───────────────┴────────────┘
 ```
 
-Hai dòng trong bảng này **phơi bày đúng chỗ Type 3 gãy**. Tìm ra cả hai.
+Two rows in this table **expose exactly where Type 3 breaks**. Find both.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select khach_id, khu_vuc khu_vuc_hien_tai,
@@ -236,30 +235,30 @@ select khach_id, khu_vuc khu_vuc_hien_tai,
 from dim_khach_t2 qualify la_hien_tai order by khach_id;
 ```
 
-**Chỗ gãy thứ nhất — `C3`:** `khu_vuc_truoc` = `Mien Trung`, y hệt giá trị hiện tại. Vì
-`C3` đổi `hang` (Bạc → Vàng) chứ không đổi `khu_vuc`. Type 3 có **một cột `_truoc` cho
-mỗi thuộc tính**, và cột đó bị "tiêu" bởi bất kỳ thay đổi nào của bản ghi. Nhìn vào bảng
-này người đọc kết luận "C3 từng ở Miền Trung rồi chuyển về Miền Trung" — vô nghĩa.
+**Break one — `C3`:** `khu_vuc_truoc` = `Mien Trung`, identical to the current value. Because
+`C3` changed `hang` (Silver → Gold), not `khu_vuc`. Type 3 has **one `_truoc` column per
+attribute**, and that column is "consumed" by any change to the record. Looking at this table,
+the reader concludes "C3 used to be in Mien Trung and then moved to Mien Trung" — nonsense.
 
-**Chỗ gãy thứ hai — `C2` và `C4`:** `khu_vuc_truoc` là `NULL` vì chưa từng đổi. Mọi
-query kiểu `where khu_vuc_truoc <> khu_vuc` sẽ **lặng lẽ loại** hai khách này (logic ba
-trị). Phải là `is distinct from`.
+**Break two — `C2` and `C4`:** `khu_vuc_truoc` is `NULL` because they've never changed. Any
+query of the form `where khu_vuc_truoc <> khu_vuc` will **silently exclude** these two customers (three-valued
+logic). It has to be `is distinct from`.
 
-Và chỗ gãy thứ ba, không hiện ra ở đây vì dữ liệu quá ngắn: Type 3 chỉ nhớ **một** bước.
-Khách đổi khu vực lần thứ hai là bước đầu tiên biến mất vĩnh viễn.
+And a third break, not visible here because the data is too short: Type 3 remembers **one** step only.
+When a customer changes region a second time, the first step is lost forever.
 
-Nên Type 3 chỉ hợp một tình huống hẹp: **thay đổi hiếm, có kế hoạch, và cần so song song
-cũ/mới** — ví dụ tái cấu trúc vùng bán hàng một lần trong năm, khi báo cáo cần xem cả
-theo vùng cũ lẫn vùng mới. Ngoài trường hợp đó thì dùng Type 2.
+So Type 3 suits only one narrow situation: **a rare, planned change where you need to compare
+old/new side by side** — for example a once-a-year sales-territory restructure, when reports need to be viewed
+by both the old and the new territories. Outside that case, use Type 2.
 
 </details>
 
-### Bài A.5 — Type 6: lịch sử và hiện tại trên cùng một dòng
+### Exercise A.5 — Type 6: history and the present on one row
 
-**Đề:** mở rộng `dim_khach_t2` thành Type 6 — mỗi dòng có **cả** `khu_vuc_luc_do` (giá
-trị của phiên bản đó) **và** `khu_vuc_hien_tai` (giá trị mới nhất của khách).
+**The task:** extend `dim_khach_t2` into Type 6 — each row carrying **both** `khu_vuc_luc_do` (that
+version's value) **and** `khu_vuc_hien_tai` (the customer's latest value).
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────┬──────────┬────────────────┬──────────────────┬─────────────┬──────────────┐
@@ -274,10 +273,10 @@ trị của phiên bản đó) **và** `khu_vuc_hien_tai` (giá trị mới nh�
 └───────────┴──────────┴────────────────┴──────────────────┴─────────────┴──────────────┘
 ```
 
-Chỉ **dòng 1** có hai cột khác nhau. Đó là toàn bộ giá trị của Type 6.
+Only **row 1** has two different columns. That's the entire value of Type 6.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select d.khach_key, d.khach_id, d.khu_vuc khu_vuc_luc_do,
@@ -287,39 +286,39 @@ select d.khach_key, d.khach_id, d.khu_vuc khu_vuc_luc_do,
 from dim_khach_t2 d order by d.khach_id, d.hieu_luc_tu;
 ```
 
-Type 6 = Type 1 + Type 2 + Type 3 trong một bảng. Fact chỉ join **một lần** bằng
-`khach_key`, rồi người đọc **tự chọn cột**:
+Type 6 = Type 1 + Type 2 + Type 3 in one table. The fact joins **once** by
+`khach_key`, and the reader then **picks the column**:
 
 ```sql
--- cung mot join, hai cach nhin
-select khu_vuc_luc_do,    sum(tien) from ... -- as-was, ra 4.200.000 cho Mien Bac
-select khu_vuc_hien_tai,  sum(tien) from ... -- as-is,  ra 1.650.000
+-- one join, two viewpoints
+select khu_vuc_luc_do,    sum(tien) from ... -- as-was, gives 4,200,000 for Mien Bac
+select khu_vuc_hien_tai,  sum(tien) from ... -- as-is,  gives 1,650,000
 ```
 
-Đó là ưu điểm thật: bài A.2 phải viết **hai** kiểu join khác nhau, còn ở đây chỉ đổi tên
-cột. Người dùng BI không bao giờ viết đúng được điều kiện `between ... and ...`, nhưng
-đổi cột thì ai cũng làm được.
+That's the real advantage: exercise A.2 had to write **two** different join styles, while here you just change a
+column name. A BI user will never write the `between ... and ...` condition correctly, but
+changing a column is something anybody can do.
 
-Cái giá: cột `_hien_tai` phải **cập nhật lại toàn bộ phiên bản cũ** mỗi lần khách đổi.
-`C1` đổi một lần là phải `update` cả 2 dòng của C1. Đó là ghi đè hàng loạt trên bảng
-lớn — trên Iceberg/Delta thì là rewrite file, không rẻ.
+The price: the `_hien_tai` column must be **updated across every old version** whenever the customer changes.
+One change for `C1` means `update`ing both of C1's rows. That's a bulk overwrite on a large
+table — on Iceberg/Delta that's a file rewrite, and it isn't cheap.
 
-**Quy tắc chọn:** thuộc tính mà **cả hai cách nhìn đều được hỏi thường xuyên** thì Type
-6. Còn lại thì Type 2 và ép người dùng nói rõ họ muốn gì.
+**The choosing rule:** an attribute where **both viewpoints are asked for regularly** gets Type
+6. Everything else gets Type 2, forcing the user to say which they want.
 
 </details>
 
 ---
 
-## Bộ B — Phát hiện thay đổi
+## Group B — Change detection
 
-### Bài B.1 — Ba cách phát hiện, một sự thật
+### Exercise B.1 — Three detection methods, one truth
 
-**Đề:** với hai cột chậm `khu_vuc` và `hang`, đếm số thay đổi thật từ 02/07 trở đi, rồi
-so với số mà **`updated_at`** báo và số mà **hash** báo. Kèm số lần `updated_at` **bỏ
-sót** và **báo thừa**.
+**The task:** for the two slow columns `khu_vuc` and `hang`, count the real changes from 02/07 onwards, then
+compare against what **`updated_at`** reports and what a **hash** reports. Include the number of changes `updated_at`
+**misses** and **reports spuriously**.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬────────────────┬──────────┬───────────────────┬─────────────────────┬──────────┐
@@ -329,11 +328,11 @@ sót** và **báo thừa**.
 └─────────┴────────────────┴──────────┴───────────────────┴─────────────────────┴──────────┘
 ```
 
-**`updated_at` báo 3 khi sự thật là 2 — và trong 3 cái đó chỉ 1 cái đúng.** Hash đúng
-tuyệt đối.
+**`updated_at` reports 3 when the truth is 2 — and of those 3, only 1 is right.** The hash is
+exactly right.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with x as (
@@ -352,25 +351,25 @@ select count(*) filter (where su_that) su_that,
 from x where ngay_trich > '2026-07-01';
 ```
 
-Hash **không bao giờ** sai, vì nó tính trên chính nội dung cần theo dõi — nó không thể
-bất đồng với sự thật, nó *là* sự thật được nén lại.
+The hash is **never** wrong, because it's computed over exactly the content being tracked — it can't
+disagree with the truth, it *is* the truth compressed.
 
-`updated_at` sai vì nó là **lời hứa của hệ thống nguồn**, và hệ thống nguồn không hứa
-với kho dữ liệu. Một `UPDATE` chạy tay quên trigger, một job batch `touch` cả bảng — là
-lời hứa gãy.
+`updated_at` is wrong because it's **a promise from the source system**, and the source system made no promise
+to the warehouse. One hand-run `UPDATE` bypassing the trigger, one batch job `touch`ing the whole table, and
+the promise is broken.
 
-Điều kiện duy nhất để tin `updated_at`: nó do **CDC đọc từ transaction log** sinh ra
-(Debezium, binlog). Lúc đó nó không phải cột ứng dụng ghi, mà là dấu vết database ghi —
-khác hẳn về độ tin cậy.
+The only condition under which to trust `updated_at`: it's produced by **CDC reading the transaction log**
+(Debezium, binlog). Then it isn't a column the application writes but a trace the database writes —
+an entirely different level of reliability.
 
 </details>
 
-### Bài B.2 — Chỉ mặt từng dòng `updated_at` nói dối
+### Exercise B.2 — Name every row where `updated_at` lies
 
-**Đề:** liệt kê **từng dòng** mà `updated_at` bất đồng với sự thật, kèm nhãn `BO SOT` /
+**The task:** list **each row** where `updated_at` disagrees with the truth, labelled `BO SOT` /
 `BAO THUA` / `khop`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬──────────┬────────────┬─────────┬─────────┬─────────────────┬──────────┐
@@ -384,7 +383,7 @@ khác hẳn về độ tin cậy.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with x as (
@@ -400,33 +399,33 @@ from x where ngay_trich > '2026-07-01' and (su_that or theo_updated_at)
 order by khach_id, ngay_trich;
 ```
 
-Ba câu chuyện, ba hậu quả:
+Three stories, three consequences:
 
-**`C1` ngày 03/07 — `BO SOT`.** Khách chuyển vùng thật, `updated_at` đứng im ở `2026-06-28`.
-Pipeline tin `updated_at` sẽ **không tạo phiên bản mới**, và mọi đơn từ 03/07 bị gán vào
-Miền Bắc. Lỗi này **im lặng tuyệt đối** — không dòng nào thiếu, không tổng nào lệch,
-chỉ là gán sai vùng.
+**`C1` on 03/07 — `BO SOT`.** The customer really moved region while `updated_at` sat still at `2026-06-28`.
+A pipeline trusting `updated_at` **won't create a new version**, and every order from 03/07 gets assigned to
+the North. This bug is **completely silent** — no row missing, no total off,
+just the wrong region.
 
-**`C1` ngày 04/07 — `BAO THUA`.** `updated_at` nhích lên `2026-07-04` nhưng hai cột chậm
-không đổi (đổi `khoang_thu_nhap`). Pipeline tin `updated_at` sẽ tạo phiên bản thứ ba
-thừa. Từ đó `C1` có 3 phiên bản, as-was join vẫn ra một dòng nên **không ai phát hiện** —
-dim cứ thế phình.
+**`C1` on 04/07 — `BAO THUA`.** `updated_at` moves to `2026-07-04` but neither slow column
+changed (`khoang_thu_nhap` did). A pipeline trusting `updated_at` creates a spurious third version.
+From then on `C1` has 3 versions, and the as-was join still returns one row so **nobody notices** —
+the dim just bloats.
 
-**`C2` ngày 03/07 — `BAO THUA` thuần tuý.** Không một cột nào đổi, `updated_at` vẫn nhích.
-Đây là dấu vết của batch job `touch` cả bảng — rất phổ biến ở hệ thống nguồn cũ.
+**`C2` on 03/07 — pure `BAO THUA`.** Not one column changed, yet `updated_at` moved.
+This is the trace of a batch job `touch`ing the whole table — very common in older source systems.
 
-Chú ý `C1` xuất hiện ở **cả hai** loại lỗi, ngày liền nhau. Nên thống kê kiểu *"độ chính
-xác của `updated_at` là 90%"* là vô nghĩa: cái sai và cái đúng không phân bố ngẫu nhiên,
-chúng bám vào đúng những khách hay thay đổi nhất.
+Note that `C1` appears in **both** kinds of error, on consecutive days. So a statistic like *"`updated_at`
+is 90% accurate"* is meaningless: the wrong and the right aren't randomly distributed,
+they cling to exactly the customers who change most.
 
 </details>
 
-### Bài B.3 — Chọn cột kích hoạt: một quyết định, ba kết quả
+### Exercise B.3 — Choosing the trigger columns: one decision, three results
 
-**Đề:** đếm số phiên bản Type 2 sinh ra ứng với **ba** danh sách cột kích hoạt khác nhau:
-chỉ `khu_vuc`; `khu_vuc` + `hang`; và toàn bộ 5 cột nghiệp vụ.
+**The task:** count the Type 2 versions produced under **three** different trigger-column lists:
+`khu_vuc` alone; `khu_vuc` + `hang`; and all 5 business columns.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────────────────────┬─────────┐
@@ -439,7 +438,7 @@ chỉ `khu_vuc`; `khu_vuc` + `hang`; và toàn bộ 5 cột nghiệp vụ.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select '1. chi khu_vuc' kich_hoat, count(*) so_dong
@@ -451,30 +450,30 @@ union all select '3. toan bo 5 cot nghiep vu', count(*)
         from khach_hang_lich_su);
 ```
 
-Cách chọn không phải "cột nào quan trọng" mà là **"thuộc tính nào mà báo cáo về quá khứ
-cần đúng theo thời điểm"**. Hỏi từng cột đúng một câu:
+The way to choose isn't "which column is important" but **"which attribute must a report about the past
+get right as of the time"**. Ask each column exactly one question:
 
-> *Nếu cột này đổi, báo cáo tháng trước có được phép đổi số theo không?*
+> *If this column changes, is last month's report allowed to change its numbers with it?*
 
-| Cột | Trả lời | Type |
+| Column | The answer | Type |
 |---|---|---|
-| `khu_vuc` | Không — doanh thu chi nhánh cũ phải giữ nguyên | **2** |
-| `hang` | Không — chương trình ưu đãi tính theo hạng lúc đó | **2** |
-| `ho_ten` | Được — sửa lỗi chính tả thì sửa hết | **1** |
-| `nhom_tuoi`, `khoang_thu_nhap` | Cần lịch sử, nhưng đổi nhanh | **mini-dimension** |
-| `diem_tin_dung` | Đây là số đo, không phải thuộc tính | **đưa vào fact** |
+| `khu_vuc` | No — the old branch's revenue must stay put | **2** |
+| `hang` | No — the loyalty programme is computed on the tier at the time | **2** |
+| `ho_ten` | Yes — fixing a spelling fixes it everywhere | **1** |
+| `nhom_tuoi`, `khoang_thu_nhap` | History needed, but they change fast | **a mini-dimension** |
+| `diem_tin_dung` | This is a measure, not an attribute | **put it in the fact** |
 
-Số 18 ở dòng 3 là cái giá của việc **không hỏi câu đó** — nhét hết vào Type 2 cho "an
-toàn". Nó không an toàn, nó chỉ đắt.
+The 18 in row 3 is the price of **not asking that question** — cramming everything into Type 2 to be
+"safe". It isn't safe, it's just expensive.
 
 </details>
 
-### Bài B.4 — Hash: hai cái bẫy khi ghép chuỗi
+### Exercise B.4 — Hashing: two traps when concatenating
 
-**Đề:** tính hash cho hai bộ giá trị khác nhau nhưng ghép chuỗi ra **giống hệt nhau**,
-và một bộ có `NULL`. Chứng minh cả hai đều làm hash sai.
+**The task:** compute a hash for two different value sets whose concatenation is **identical**,
+and one set containing `NULL`. Prove both make the hash wrong.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬─────────┬─────────┬──────────────────────────────────┐
@@ -485,7 +484,7 @@ và một bộ có `NULL`. Chứng minh cả hai đều làm hash sai.
 └─────────┴─────────┴─────────┴──────────────────────────────────┘
 ```
 
-Hai dòng, hai bộ giá trị khác nhau, **cùng một hash**. Và bẫy thứ hai:
+Two rows, two different value sets, **the same hash**. And the second trap:
 
 ```text
 ┌───────────┐
@@ -496,51 +495,51 @@ Hai dòng, hai bộ giá trị khác nhau, **cùng một hash**. Và bẫy thứ
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- BAY 1: noi khong co dau phan cach
+-- TRAP 1: concatenating with no separator
 select a, b, a||b noi, md5(a||b) hash_sai
 from (values ('Mien','Bac'), ('M','ienBac')) t(a,b);
 
--- BAY 2: mot cot NULL lam ca hash thanh NULL
+-- TRAP 2: one NULL column makes the whole hash NULL
 select md5('Mien Bac' || '|' || null) hash_null;
 ```
 
-**Bẫy 1 — thiếu dấu phân cách.** `'Mien'||'Bac'` và `'M'||'ienBac'` ra cùng chuỗi
-`MienBac`, nên cùng hash. Hai bản ghi khác nhau bị coi là giống nhau → **bỏ sót thay
-đổi**. Trên dữ liệu thật, chuyện này xảy ra với mã sản phẩm và mã kho ghép liền.
+**Trap 1 — a missing separator.** `'Mien'||'Bac'` and `'M'||'ienBac'` give the same string
+`MienBac`, so the same hash. Two different records are treated as identical → **a missed
+change**. On real data this happens with product codes and warehouse codes concatenated together.
 
-**Bẫy 2 — `NULL` nuốt cả chuỗi.** `'abc' || NULL` là `NULL` trong SQL, nên `md5(...)`
-cũng `NULL`. Và `NULL <> NULL` không bao giờ `true` → mọi dòng có `NULL` đều **không bao
-giờ được coi là đã đổi**.
+**Trap 2 — `NULL` swallowing the whole string.** `'abc' || NULL` is `NULL` in SQL, so `md5(...)`
+is `NULL` too. And `NULL <> NULL` is never `true` → every row containing `NULL` is **never
+treated as changed**.
 
-Cách viết đúng, đủ cả hai:
+The right way, covering both:
 
 ```sql
 md5(coalesce(khu_vuc,'~') || '|' || coalesce(hang,'~'))
 ```
 
-Dấu `|` phải là ký tự **không thể xuất hiện trong dữ liệu**; `~` cho `NULL` phải khác
-chuỗi rỗng, vì nếu không thì `NULL` và `''` sẽ cùng hash.
+The `|` must be a character that **cannot appear in the data**; the `~` for `NULL` must differ from
+the empty string, or `NULL` and `''` would hash the same.
 
-Trong dbt có sẵn macro làm đúng chuyện này:
+dbt has a macro that does this correctly:
 
 ```sql
 {{ dbt_utils.generate_surrogate_key(['khu_vuc', 'hang']) }}
 ```
 
-Dùng macro thay vì tự nối là cách rẻ nhất để không dẫm phải cả hai bẫy. Xem
-[phát hiện thay đổi](../skills/scd-change-detection.md).
+Using the macro instead of hand-concatenating is the cheapest way to avoid both traps. See
+[change detection](../skills/scd-change-detection.md).
 
 </details>
 
-### Bài B.5 — Phát hiện bản ghi **biến mất**
+### Exercise B.5 — Detecting a **vanished** record
 
-**Đề:** bản trích ngày 05/07 giả sử **không còn** `C4` (khách bị xoá ở nguồn). Viết câu
-phát hiện bản ghi biến mất, và trả lời: Type 2 phải làm gì với nó?
+**The task:** suppose the 05/07 extract **no longer contains** `C4` (the customer was deleted at the source). Write a
+statement detecting the vanished record, and answer: what should Type 2 do about it?
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬─────────────┬────────────┐
@@ -551,7 +550,7 @@ phát hiện bản ghi biến mất, và trả lời: Type 2 phải làm gì v�
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with ngay_cuoi as (select max(ngay_trich) d from khach_hang_lich_su),
@@ -562,41 +561,41 @@ from gia_lap group by 1
 having max(ngay_trich) < (select d from ngay_cuoi);
 ```
 
-Đây là lỗ hổng mà **mọi** cách phát hiện thay đổi ở trên đều bỏ lọt. `updated_at`, hash,
-so cột — cả ba đều so *dòng hiện có* với *dòng trước*. Dòng **không còn** thì không có gì
-để so, nên không có gì được báo.
+This is the hole **every** change-detection method above misses. `updated_at`, hashing and
+column comparison all compare *an existing row* with *the previous row*. A row that's **gone** has nothing
+to compare against, so nothing gets reported.
 
-Hệ quả: khách bị xoá ở nguồn vẫn `la_hien_tai = true` trong dim, **mãi mãi**. Báo cáo
-"số khách đang hoạt động" cứ tăng đều và không bao giờ giảm.
+The consequence: a customer deleted at the source stays `la_hien_tai = true` in the dim, **forever**. The
+"active customers" report rises steadily and never falls.
 
-Ba cách xử lý, chọn theo nghiệp vụ:
+Three ways to handle it, chosen by business need:
 
-| Cách | Làm gì | Khi nào |
+| The approach | What it does | When |
 |---|---|---|
-| **Soft delete** | đóng phiên bản (`hieu_luc_den` = ngày cuối thấy), `la_hien_tai=false` | mặc định — giữ được lịch sử fact cũ |
-| **Cột cờ** | thêm `da_xoa = true`, giữ `la_hien_tai` | khi cần đếm cả khách đã xoá |
-| **Xoá thật** | `delete` khỏi dim | **gần như không bao giờ** — fact cũ mất khoá ngoại |
+| **Soft delete** | close the version (`hieu_luc_den` = the last day seen), `la_hien_tai=false` | the default — preserves history for old facts |
+| **A flag column** | add `da_xoa = true`, keep `la_hien_tai` | when you need to count deleted customers too |
+| **A real delete** | `delete` from the dim | **almost never** — old facts lose their foreign key |
 
-Điều kiện để làm được bất kỳ cách nào: bản trích phải là **full snapshot**. Nếu nguồn chỉ
-gửi bản ghi đã đổi (incremental) thì "vắng mặt" không có nghĩa là "bị xoá" — nó chỉ có
-nghĩa là "không đổi". Nhầm hai thứ này là xoá sạch dimension.
+The precondition for any of them: the extract must be a **full snapshot**. If the source only
+sends changed records (incremental), then "absent" doesn't mean "deleted" — it only
+means "unchanged". Confusing the two wipes out the dimension.
 
-**Luôn ghi rõ nguồn là full hay incremental, ngay cạnh code nạp.** Xem
-[dữ liệu về muộn](../skills/late-arriving.md).
+**Always state clearly whether the source is full or incremental, right beside the loading code.** See
+[late-arriving data](../skills/late-arriving.md).
 
 </details>
 
 ---
 
-## Bộ C — Mini-dimension
+## Group C — Mini-dimensions
 
-### Bài C.1 — Chứng minh phải tách: 6 × 6 hay 6 + 6
+### Exercise C.1 — Prove you must split: 6 × 6 or 6 + 6
 
-**Đề:** đếm số tổ hợp phân biệt của **cột chậm** (`khu_vuc`, `hang`) và của **cột nhân
-khẩu đổi nhanh** (`nhom_tuoi`, `khoang_thu_nhap`, dải `diem_tin_dung`). Rồi so hai kiến
-trúc: nhét chung một dim, hay tách hai dim.
+**The task:** count the distinct combinations of the **slow columns** (`khu_vuc`, `hang`) and of the
+**fast-changing demographic columns** (`nhom_tuoi`, `khoang_thu_nhap`, banded `diem_tin_dung`). Then compare the two
+architectures: cramming into one dim, or splitting into two.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────────────────────┬─────────────┬───────┐
@@ -607,45 +606,45 @@ trúc: nhét chung một dim, hay tách hai dim.
 └───────────────────────────────┴─────────────┴───────┘
 ```
 
-18 so với 12 chưa ấn tượng. Câu hỏi thật: **hai con số này lớn lên theo quy luật nào?**
+18 against 12 isn't impressive. The real question: **by what law do these two numbers grow?**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'Type 2 moi cot (mot dim)' cach, 18 so_dong_dim, 18 tong
 union all select 'dim cham + mini-dim (hai dim)', 6, (select 6 + count(*) from dim_nhan_khau);
 ```
 
-Đây là chỗ dữ liệu bé che mất bản chất. Quy luật lớn lên khác hẳn nhau:
+This is where small data hides the essence. The growth laws are entirely different:
 
 ```text
 mot dim  :  so_ban_cham  ×  so_to_hop_nhan_khau     ← NHAN
 hai dim  :  so_ban_cham  +  so_to_hop_nhan_khau     ← CONG
 ```
 
-Với `S` bản chậm và `M` tổ hợp nhân khẩu:
+With `S` slow versions and `M` demographic combinations:
 
-| | 6 × 6 | 1 triệu khách × 50 tổ hợp |
+| | 6 × 6 | 1 million customers × 50 combinations |
 |---|---|---|
-| Một dim (nhân) | 36 | **50 triệu dòng** |
-| Hai dim (cộng) | 12 | **1.000.050 dòng** |
+| One dim (multiply) | 36 | **50 million rows** |
+| Two dims (add) | 12 | **1,000,050 rows** |
 
-Nhân so với cộng — đó mới là lý do mini-dimension tồn tại, không phải "tiết kiệm 6 dòng".
+Multiplication versus addition — that's why mini-dimensions exist, not "saving 6 rows".
 
-Và tổ hợp nhân khẩu **có trần**: `nhom_tuoi` (5) × `khoang_thu_nhap` (4) × dải điểm (5)
-= tối đa 100 dòng, **bất kể có bao nhiêu khách**. Mini-dimension là bảng nhỏ và đứng yên,
-trong khi dim khách vẫn to.
+And the demographic combinations have a **ceiling**: `nhom_tuoi` (5) × `khoang_thu_nhap` (4) × score bands (5)
+= at most 100 rows, **however many customers there are**. A mini-dimension is a small table that stays still,
+while the customer dim stays large.
 
 </details>
 
-### Bài C.2 — Dựng mini-dimension bằng cách phân khoảng
+### Exercise C.2 — Build a mini-dimension by banding
 
-**Đề:** dựng `dim_nhan_khau` chứa mọi tổ hợp phân biệt của `nhom_tuoi`,
-`khoang_thu_nhap`, và `diem_tin_dung` **đã phân dải** (`600-699`, `700-749`, `750-799`,
+**The task:** build `dim_nhan_khau` holding every distinct combination of `nhom_tuoi`,
+`khoang_thu_nhap`, and **banded** `diem_tin_dung` (`600-699`, `700-749`, `750-799`,
 `800-849`).
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────┬───────────┬─────────────────┬──────────┐
@@ -660,10 +659,10 @@ trong khi dim khách vẫn to.
 └───────────────┴───────────┴─────────────────┴──────────┘
 ```
 
-**6 dòng.** Nếu không phân dải mà để `diem_tin_dung` thô, bạn sẽ ra 18.
+**6 rows.** Without banding, leaving `diem_tin_dung` raw, you'd get 18.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table dim_nhan_khau as
@@ -678,27 +677,27 @@ from (select distinct nhom_tuoi, khoang_thu_nhap,
 select * from dim_nhan_khau order by nhan_khau_key;
 ```
 
-**Phân dải là cả kỹ thuật.** `diem_tin_dung` thô có 18 giá trị trong 5 ngày và sẽ có
-hàng trăm giá trị trong một năm — mini-dimension mất luôn tính "nhỏ và đứng yên". Phân
-thành 4 dải thì trần cố định vĩnh viễn.
+**Banding is a technique in itself.** Raw `diem_tin_dung` has 18 values across 5 days and would have
+hundreds within a year — the mini-dimension would lose its "small and still" quality entirely. Banded
+into 4, the ceiling is fixed forever.
 
-Ba luật khi phân dải:
+Three rules when banding:
 
-1. **Dải phải do nghiệp vụ đặt, không do phân vị dữ liệu.** Dải theo `ntile(4)` sẽ **đổi
-   ranh giới mỗi lần chạy lại**, và báo cáo cũ không dựng lại được.
-2. **Dải phải phủ kín, kể cả ngoài biên.** `else '800-849'` ở trên là bug chờ nổ — điểm
-   900 sẽ rơi nhầm vào dải đó. Viết `else 'tren-800'`.
-3. **Đổi dải là đổi khoá.** Thêm một dải là sinh khoá mới cho mọi tổ hợp liên quan; fact
-   cũ vẫn trỏ khoá cũ. Nên bảng dải cũng cần lịch sử phiên bản nếu nghiệp vụ hay đổi.
+1. **The bands must be set by the business, not by data percentiles.** Bands from `ntile(4)` will **change their
+   boundaries on every re-run**, and old reports can't be reproduced.
+2. **The bands must cover everything, including beyond the edges.** The `else '800-849'` above is a bug waiting
+   to fire — a score of 900 would fall wrongly into that band. Write `else 'tren-800'`.
+3. **Changing a band changes the keys.** Adding a band creates new keys for every affected combination; old
+   facts still point at the old keys. So the band table itself needs version history if the business changes it often.
 
 </details>
 
-### Bài C.3 — Fact trỏ hai khoá, và câu hỏi mà một dim không trả được
+### Exercise C.3 — A fact with two keys, and the question one dim cannot answer
 
-**Đề:** dựng fact bán hàng trỏ **cả hai** khoá — `khach_key` (dim chậm) và
-`nhan_khau_key` (mini-dim) tại thời điểm đặt hàng. Rồi tính doanh thu theo `dai_diem`.
+**The task:** build a sales fact pointing at **both** keys — `khach_key` (the slow dim) and
+`nhan_khau_key` (the mini-dim) at order time. Then compute revenue by `dai_diem`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬────────┬───────────┐
@@ -711,11 +710,11 @@ Ba luật khi phân dải:
 └──────────┴────────┴───────────┘
 ```
 
-Tổng 4 dòng = **10.215.000**, và tổng `so_don` = 10. Thiếu dải `600-699` nghĩa là bạn
-đang join theo dải **hiện tại** của khách chứ không phải dải lúc đặt hàng.
+The 4 rows total **10,215,000**, and `so_don` totals 10. A missing `600-699` band means you're
+joining by the customer's **current** band rather than the band at order time.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with lich as (
@@ -737,41 +736,41 @@ join dim_nhan_khau nk on nk.nhom_tuoi = l.nhom_tuoi
 group by 1 order by 1;
 ```
 
-Điểm mấu chốt: fact chốt `nhan_khau_key` **tại ngày đặt hàng**, giống hệt cách nó chốt
-`khach_key`. Nhờ đó câu *"khách lúc mua thuộc dải điểm nào"* trả lời được **mà dim khách
-không phải phình một dòng nào**.
+The crux: the fact freezes `nhan_khau_key` **at the order date**, exactly as it freezes
+`khach_key`. That makes *"which score band was the customer in at purchase time"* answerable **without the customer
+dim bloating by a single row**.
 
-Đây cũng là câu mà Type 1 trên `diem_tin_dung` **không** trả lời được: ghi đè thì chỉ còn
-điểm hiện tại, và mọi đơn cũ đều bị gán theo điểm hôm nay.
+It's also the question Type 1 on `diem_tin_dung` **can't** answer: overwriting leaves only
+the current score, and every old order gets assigned today's score.
 
-Ba khả năng, ba kiến trúc:
+Three possibilities, three architectures:
 
-| Câu hỏi | Cần gì |
+| The question | What you need |
 |---|---|
-| "Khách này **giờ** thuộc dải nào?" | Type 1 là đủ |
-| "Lúc **mua** thì thuộc dải nào?" | mini-dim + khoá trong fact |
-| "Điểm của khách này **diễn biến ra sao**?" | fact riêng cho điểm tín dụng |
+| "Which band is this customer in **now**?" | Type 1 suffices |
+| "Which band were they in at **purchase** time?" | a mini-dim + a key in the fact |
+| "How has this customer's score **evolved**?" | a separate fact for credit scores |
 
-Dòng thứ ba là lời nhắc: khi câu hỏi bắt đầu bằng *"diễn biến"*, thứ bạn cần là một
-**fact table**, không phải dimension.
+The third row is a reminder: when a question starts with *"how has it evolved"*, what you need is a
+**fact table**, not a dimension.
 
 </details>
 
-### Bài C.4 — Mini-dimension làm mất khả năng gì
+### Exercise C.4 — What a mini-dimension takes away
 
-**Đề:** không có SQL. Trả lời: sau khi tách `nhom_tuoi` sang mini-dimension, câu truy vấn
-nào **khó hơn hẳn** so với để chung một bảng?
+**The task:** no SQL. Answer: after splitting `nhom_tuoi` into a mini-dimension, which query becomes
+**markedly harder** than with everything in one table?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Ba thứ mất đi:
+Three things are lost:
 
-**1. Lọc kết hợp chậm × nhanh không còn một bảng.** Câu *"khách hạng Kim cương thuộc
-nhóm tuổi 25-34"* trước chỉ cần `where` trên một dim; giờ phải qua fact để nối hai dim:
+**1. Combined slow × fast filtering is no longer in one table.** The question *"Diamond-tier customers in
+the 25-34 age group"* previously needed only a `where` on one dim; now it has to go via the fact to join two dims:
 
 ```sql
--- khong con lam duoc truc tiep tren dim
+-- no longer doable directly on the dim
 select count(distinct f.khach_key)
 from fct_ban_hang f
 join dim_khach_t2 d  on d.khach_key = f.khach_key
@@ -779,37 +778,37 @@ join dim_nhan_khau n on n.nhan_khau_key = f.nhan_khau_key
 where d.hang = 'Kim cuong' and n.nhom_tuoi = '25-34';
 ```
 
-Và câu này chỉ đếm được khách **có giao dịch**. Khách hạng Kim cương chưa mua gì thì
-không có dòng fact nào, nên **biến mất khỏi kết quả**. Đó là thay đổi ngữ nghĩa, không
-chỉ là cú pháp dài hơn.
+And this only counts customers **with transactions**. A Diamond-tier customer who hasn't bought anything has
+no fact row, so they **vanish from the result**. That's a change of semantics, not
+merely longer syntax.
 
-**2. Người dùng BI phải hiểu vì sao có hai bảng khách.** Đây là cái giá thật và hay bị
-bỏ qua. Trong công cụ kéo-thả, hai dimension cùng nói về khách hàng là nguồn nhầm lẫn
-vĩnh viễn.
+**2. BI users have to understand why there are two customer tables.** This is the real cost and the one usually
+overlooked. In a drag-and-drop tool, two dimensions both about customers are a permanent source of
+confusion.
 
-**3. Trạng thái nhân khẩu "hiện tại" của một khách không còn nằm ở đâu cả.** Nó chỉ tồn
-tại như khoá trên các dòng fact.
+**3. A customer's "current" demographic state lives nowhere at all.** It exists only
+as a key on fact rows.
 
-Cách chữa cho cả ba: thêm `nhan_khau_key_hien_tai` vào dim khách — con trỏ tới tổ hợp
-mới nhất. Đó là **Type 4 với outrigger**, và nó phục hồi cả ba khả năng trên với giá là
-một cột phải cập nhật.
+The cure for all three: add `nhan_khau_key_hien_tai` to the customer dim — a pointer to the
+latest combination. That's **Type 4 with an outrigger**, and it restores all three capabilities at the price of
+one column to maintain.
 
-**Kết luận thực dụng:** mini-dimension là **giải pháp cho vấn đề quy mô**. Chưa đo được
-dim phình thì đừng tách — bạn đang trả giá phức tạp cho một vấn đề chưa có.
-Xem [Mini-dimension](../skills/mini-dimension.md).
+**The pragmatic conclusion:** a mini-dimension is **a solution to a scale problem**. Until you can measure
+the dim bloating, don't split — you'd be paying the complexity price for a problem you don't have.
+See [Mini-dimensions](../skills/mini-dimension.md).
 
 </details>
 
 ---
 
-## Bộ D — Role-playing dimension
+## Group D — Role-playing dimensions
 
-### Bài D.1 — Một `dim_ngay`, ba vai trong một câu
+### Exercise D.1 — One `dim_ngay`, three roles in one statement
 
-**Đề:** join `don_hang` với `dim_ngay` **ba lần** — `ngay_dat`, `ngay_giao`, `ngay_nhan` —
-rồi tính số ngày xử lý và số ngày vận chuyển.
+**The task:** join `don_hang` to `dim_ngay` **three times** — `ngay_dat`, `ngay_giao`, `ngay_nhan` —
+then compute the processing days and the shipping days.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────┬────────────┬────────────┬────────────┬────────────┬─────────────────┐
@@ -828,10 +827,10 @@ rồi tính số ngày xử lý và số ngày vận chuyển.
 └─────────────┴────────────┴────────────┴────────────┴────────────┴─────────────────┘
 ```
 
-Dùng `left join`. Đổi sang `join` thường là mất bao nhiêu đơn?
+Use `left join`. How many orders do you lose switching to a plain `join`?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select h.don_hang_id, dd.ngay ngay_dat, dg.ngay ngay_giao, dn.ngay ngay_nhan,
@@ -843,35 +842,35 @@ left join dim_ngay dn on dn.ngay = h.ngay_nhan
 order by 1;
 ```
 
-Đổi sang `join` thường thì **mất 4 đơn** — mọi đơn chưa nhận (`DH004`, `DH006`, `DH008`,
-`DH009`) biến khỏi báo cáo. Với accumulating snapshot, đơn *chưa hoàn tất* chính là đơn
-người ta quan tâm nhất, nên `inner join` ở đây là lỗi nghiêm trọng.
+Switching to a plain `join` **loses 4 orders** — every unreceived order (`DH004`, `DH006`, `DH008`,
+`DH009`) disappears from the report. With an accumulating snapshot, the *incomplete* orders are exactly the ones
+people care about most, so an `inner join` here is a serious bug.
 
-Hai cách làm role-playing sạch hơn viết alias mỗi lần:
+Two ways to do role-playing more cleanly than writing aliases every time:
 
 ```sql
--- (a) view cho tung vai — nguoi dung BI thay ba bang ro rang
+-- (a) a view per role — BI users see three clearly-named tables
 create or replace view dim_ngay_dat as
   select ngay_key ngay_dat_key, ngay ngay_dat, thang thang_dat,
          la_ngay_lam_viec ngay_dat_la_ngay_lam_viec from dim_ngay;
 
--- (b) khoa -1 thay cho NULL, roi join thuong duoc an toan
+-- (b) a -1 key instead of NULL, so a plain join is safe
 select coalesce(cast(strftime(ngay_giao,'%Y%m%d') as int), -1) ngay_giao_key from don_hang;
 ```
 
-Cách (a) quan trọng hơn vẻ ngoài: nếu ba vai cùng dùng tên cột `thang`, người dùng kéo
-"Tháng" vào báo cáo mà **không biết mình đang lấy tháng nào**. Đổi tên cột theo vai là
-cách duy nhất để lỗi đó không xảy ra. Xem
-[Role-playing dimension](../skills/role-playing-dimension.md).
+Approach (a) matters more than it looks: if all three roles use a column named `thang`, a user dragging
+"Month" into a report **won't know which month they've taken**. Renaming columns by role is the
+only way to prevent that bug. See
+[Role-playing dimensions](../skills/role-playing-dimension.md).
 
 </details>
 
-### Bài D.2 — Ngày lịch và ngày làm việc: `DH003` chênh 3 lần
+### Exercise D.2 — Calendar days and working days: `DH003` differs 3×
 
-**Đề:** với các đơn đã giao, tính **song song** số ngày lịch và số **ngày làm việc** giữa
-đặt và giao, dùng cột `la_ngay_lam_viec` của `dim_ngay`.
+**The task:** for the delivered orders, compute **in parallel** the calendar days and the **working**
+days between order and delivery, using `dim_ngay`'s `la_ngay_lam_viec` column.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────┬────────────┬────────────┬───────────┬───────────────┐
@@ -888,11 +887,11 @@ cách duy nhất để lỗi đó không xảy ra. Xem
 └─────────────┴────────────┴────────────┴───────────┴───────────────┘
 ```
 
-`DH003` mất **3 ngày lịch nhưng chỉ 1 ngày làm việc**. Hai con số này dẫn tới hai kết
-luận trái ngược về hiệu suất giao hàng.
+`DH003` took **3 calendar days but only 1 working day**. Those two figures lead to opposite
+conclusions about delivery performance.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select h.don_hang_id, h.ngay_dat, h.ngay_giao,
@@ -902,28 +901,28 @@ select h.don_hang_id, h.ngay_dat, h.ngay_giao,
 from don_hang h where h.ngay_giao is not null order by 1;
 ```
 
-Đây là lý do **`dim_ngay` phải là một bảng, không phải hàm ngày tháng**. Không hàm SQL
-nào biết 04/07 và 05/07 là ngày nghỉ — đó là **dữ liệu**, và nó khác nhau theo từng
-quốc gia, từng công ty, từng năm.
+This is why **`dim_ngay` must be a table, not a set of date functions**. No SQL function
+knows 04/07 and 05/07 are non-working days — that's **data**, and it differs by
+country, by company, by year.
 
-Trung bình cộng phơi bày rõ hơn nữa: `avg(ngay_lich)` = 2,5 còn `avg(ngay_lam_viec)`
-= 1,5. Cam kết SLA *"giao trong 2 ngày"* — đạt hay không đạt hoàn toàn phụ thuộc vào việc
-đếm kiểu nào, và **hợp đồng thường không nói rõ**.
+The averages expose it further: `avg(ngay_lich)` = 2.5 while `avg(ngay_lam_viec)`
+= 1.5. An SLA commitment of *"delivery within 2 days"* — met or missed depends entirely on which
+counting you use, and **the contract usually doesn't say**.
 
-Chú ý điều kiện `d.ngay > h.ngay_dat and d.ngay <= h.ngay_giao`: mở đầu, đóng cuối. Dùng
-`between` là đếm cả ngày đặt → mọi đơn dôi thêm 1 ngày. Sai lệch một đơn vị kiểu này
-không bao giờ lộ ra khi nhìn tổng.
+Note the condition `d.ngay > h.ngay_dat and d.ngay <= h.ngay_giao`: open at the start, closed at the end. Using
+`between` counts the order date too → every order gains a day. An off-by-one like this
+never shows up when you look at the total.
 
-Xem [Date dimension](../reference/date-dimension.md).
+See [The date dimension](../reference/date-dimension.md).
 
 </details>
 
-### Bài D.3 — Dimension tự đóng hai vai: nhân viên và quản lý
+### Exercise D.3 — A dimension playing two roles: employee and manager
 
-**Đề:** `nhan_vien` có `nv_quan_ly_id` trỏ về chính bảng đó. Liệt kê mỗi nhân viên kèm
-tên và cấp bậc quản lý.
+**The task:** `nhan_vien` has an `nv_quan_ly_id` pointing back at the same table. List each employee with their
+manager's name and grade.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────┬─────────────┬────────────┬─────────────┐
@@ -937,7 +936,7 @@ tên và cấp bậc quản lý.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select nv.nv_id, nv.ho_ten nhan_vien, nv.cap_bac,
@@ -948,28 +947,28 @@ left join nhan_vien ql on ql.nv_id = nv.nv_quan_ly_id
 order by nv.nv_id;
 ```
 
-Khác biệt với `dim_ngay` ba vai: ở đây hai vai nằm trên **cùng một bảng**, nối bằng khoá
-tự tham chiếu. Kỹ thuật giống nhau (alias + `left join`), nhưng cái bẫy khác:
+The difference from `dim_ngay`'s three roles: here the two roles sit in **the same table**, linked by a
+self-referencing key. The technique is the same (alias + `left join`), but the trap differs:
 
-**`left join` là bắt buộc.** `NV04` không có quản lý; `inner join` là mất giám đốc khỏi
-mọi báo cáo — và giám đốc thường chính là dòng người ta muốn xem.
+**`left join` is mandatory.** `NV04` has no manager; an `inner join` loses the director from
+every report — and the director is usually exactly the row people want to see.
 
-**Chỉ đi được một cấp.** Câu này trả lời "quản lý trực tiếp là ai", không trả lời được
-"tất cả cấp trên" hay "tổng doanh thu cả cây dưới quyền NV04". Cho việc đó cần recursive
-CTE hoặc bridge cây phân cấp — bài của [bộ 4](bt-04-quan-he-va-cay.md).
+**It only goes up one level.** This statement answers "who is the direct manager", not
+"all the people above" or "the total revenue of NV04's whole reporting line". For that you need a recursive
+CTE or a hierarchy bridge — [set 4](bt-04-quan-he-va-cay.md)'s exercises.
 
-Trong mô hình chiều, `nv_quan_ly_id` nên là **outrigger** trỏ tới cùng `dim_nhan_vien`.
-Đừng chuẩn hoá thành bảng `dim_quan_ly` riêng — đó là cùng một tập thực thể, và tách ra
-là hai bảng phải giữ đồng bộ.
+In a dimensional model, `nv_quan_ly_id` should be an **outrigger** pointing at the same `dim_nhan_vien`.
+Don't normalise it into a separate `dim_quan_ly` — it's the same set of entities, and splitting it
+gives two tables to keep in sync.
 
 </details>
 
-### Bài D.4 — Vai nào cũng đúng, chỉ là trả lời câu khác
+### Exercise D.4 — Every role is right, it just answers a different question
 
-**Đề:** đếm số đơn theo tháng **ba lần**, mỗi lần theo một vai ngày khác nhau. Ba kết quả
-phải khác nhau — giải thích mỗi con số trả lời câu hỏi nào.
+**The task:** count orders per month **three times**, each by a different date role. The three results
+must differ — explain which question each number answers.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────┬────────┐
@@ -982,7 +981,7 @@ phải khác nhau — giải thích mỗi con số trả lời câu hỏi nào.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'theo ngay dat' vai, count(ngay_dat) so_don from don_hang
@@ -990,35 +989,35 @@ union all select 'theo ngay giao', count(ngay_giao) from don_hang
 union all select 'theo ngay nhan', count(ngay_nhan) from don_hang;
 ```
 
-**10 / 8 / 6.** Ba con số, không con nào sai:
+**10 / 8 / 6.** Three numbers, none of them wrong:
 
-| Vai | Trả lời | Ai hỏi |
+| The role | Answers | Who asks |
 |---|---|---|
-| `ngay_dat` | "Tháng 7 nhận được bao nhiêu đơn?" | kinh doanh, marketing |
-| `ngay_giao` | "Tháng 7 xuất kho bao nhiêu đơn?" | vận hành, kho |
-| `ngay_nhan` | "Tháng 7 ghi nhận doanh thu mấy đơn?" | kế toán |
+| `ngay_dat` | "How many orders did July bring in?" | sales, marketing |
+| `ngay_giao` | "How many orders shipped in July?" | operations, the warehouse |
+| `ngay_nhan` | "How many orders had revenue recognised in July?" | accounting |
 
-Đây là nguồn của một loại tranh cãi rất tốn thời gian: kế toán bảo tháng 7 có 6 đơn,
-kinh doanh bảo có 10, và **cả hai đều đúng**. Cuộc họp đó chỉ kết thúc khi ai đó hỏi
-"chúng ta đang đếm theo ngày nào".
+This is the source of a very time-consuming kind of argument: accounting says July had 6 orders,
+sales says 10, and **both are right**. That meeting only ends when somebody asks
+"which date are we counting by".
 
-Cách phòng, rẻ và hiệu quả: **không bao giờ để một cột tên là `ngay` hay `thang` trên
-báo cáo**. Luôn là `thang_dat_hang`, `thang_giao_hang`, `thang_ghi_nhan`. Tên dài hơn
-đổi lấy việc không ai phải hỏi lại.
+The prevention, cheap and effective: **never put a column simply named `ngay` or `thang` on a
+report**. Always `thang_dat_hang`, `thang_giao_hang`, `thang_ghi_nhan`. A longer name in
+exchange for nobody having to ask.
 
-Xem [case study hai phòng hai doanh thu](../case-studies/hai-phong-hai-doanh-thu.md).
+See [the case study on two departments, two revenue numbers](../case-studies/hai-phong-hai-doanh-thu.md).
 
 </details>
 
 ---
 
-## Bộ E — Dữ liệu về muộn
+## Group E — Late-arriving data
 
-### Bài E.1 — Fact về muộn: gán khoá theo thời điểm nào
+### Exercise E.1 — A late-arriving fact: which moment do you assign the key from
 
-**Đề:** ba dòng fact về muộn (`DHX1` C1 ngày 02/07, `DHX2` C3 ngày 01/07, `DHX3` C9 ngày
-03/07). Gán `khach_key` **hai cách** — as-of theo `ngay_dat`, và theo bản hiện tại — rồi
-đặt cạnh nhau.
+**The task:** three late-arriving fact rows (`DHX1` C1 on 02/07, `DHX2` C3 on 01/07, `DHX3` C9 on
+03/07). Assign `khach_key` **two ways** — as-of `ngay_dat`, and by the current version — then
+put them side by side.
 
 ```sql
 create or replace table fct_den_muon as
@@ -1028,7 +1027,7 @@ select * from (values ('DHX1','C1', date '2026-07-02', 500000),
 t(don_hang_id, khach_id, ngay_dat, tien);
 ```
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────┬──────────┬────────────┬────────────┬──────────────┬────────────────┬──────────────────┐
@@ -1041,7 +1040,7 @@ t(don_hang_id, khach_id, ngay_dat, tien);
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select f.don_hang_id, f.khach_id, f.ngay_dat,
@@ -1058,34 +1057,34 @@ select f.don_hang_id, f.khach_id, f.ngay_dat,
 from fct_den_muon f order by 1;
 ```
 
-Ba dòng, ba bài học:
+Three rows, three lessons:
 
-**`DHX1` — chỗ sai duy nhất, và nó im lặng.** Đơn xảy ra 02/07, lúc đó C1 còn ở Miền Bắc
-(`khach_key` = 1). Gán theo bản hiện tại là `khach_key` = 2, Miền Nam. Doanh thu 500.000
-chạy nhầm chi nhánh — **không lỗi, không cảnh báo, tổng vẫn đúng**.
+**`DHX1` — the only wrong one, and it's silent.** The order happened on 02/07, when C1 was still in the North
+(`khach_key` = 1). Assigning by the current version gives `khach_key` = 2, the South. Revenue of 500,000
+runs to the wrong branch — **no error, no warning, the total still right**.
 
-**`DHX2` — hai cách ra khoá khác nhau nhưng khu vực giống nhau.** C3 có 2 phiên bản
-(khoá 4 và 5) nhưng đổi `hang`, không đổi `khu_vuc`. Báo cáo theo khu vực không thấy
-khác biệt; báo cáo theo hạng khách thì có. **Lỗi chỉ hiện trên báo cáo bạn không kiểm.**
+**`DHX2` — the two ways give different keys but the same region.** C3 has 2 versions
+(keys 4 and 5) but changed `hang`, not `khu_vuc`. A report by region sees no
+difference; a report by customer tier does. **The bug appears only on the report you don't check.**
 
-**`DHX3` — khách không tồn tại.** Cả hai cách đều ra `-1`, và đó là hành vi đúng: dòng
-fact vẫn được nạp, tiền vẫn vào tổng, chỉ là chưa quy được về khách nào.
+**`DHX3` — a customer who doesn't exist.** Both ways give `-1`, and that's correct behaviour: the
+fact row still loads, the money still enters the total, it just isn't attributable to a customer yet.
 
-Luật: **fact về muộn phải tra dimension theo ngày của sự kiện, không phải ngày nạp.** Đó
-chính là lý do dimension Type 2 phải giữ khoảng hiệu lực — không có nó thì không có
-"lúc đó" để tra.
+The rule: **a late-arriving fact must look the dimension up by the event's date, not by the load date.** That's
+exactly why a Type 2 dimension must keep validity intervals — without them there's no
+"back then" to look up.
 
-Xem [Dữ liệu về muộn](../skills/late-arriving.md) và
-[case study fact đến muộn gán sai khu vực](../case-studies/fact-den-muon-gan-sai-khu-vuc.md).
+See [Late-arriving data](../skills/late-arriving.md) and
+[the case study on a late fact assigned the wrong region](../case-studies/fact-den-muon-gan-sai-khu-vuc.md).
 
 </details>
 
-### Bài E.2 — `inner join` nuốt mất 46,7% tiền
+### Exercise E.2 — `inner join` swallowing 46.7% of the money
 
-**Đề:** đo thiệt hại khi nạp `fct_den_muon` bằng `inner join` vào dimension thay vì
-`left join` + khoá `-1`.
+**The task:** measure the damage of loading `fct_den_muon` with an `inner join` to the dimension instead of a
+`left join` + a `-1` key.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬────────────┬──────────┬────────────────┐
@@ -1095,10 +1094,10 @@ Xem [Dữ liệu về muộn](../skills/late-arriving.md) và
 └──────────┴────────────┴──────────┴────────────────┘
 ```
 
-**700.000 trên 1.500.000 bốc hơi — 46,7%.**
+**700,000 out of 1,500,000 evaporates — 46.7%.**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select count(*) from fct_den_muon) fact_goc,
@@ -1111,50 +1110,50 @@ select (select count(*) from fct_den_muon) fact_goc,
         and f.ngay_dat between d.hieu_luc_tu and d.hieu_luc_den) tien_sau_inner;
 ```
 
-`DHX3` (khách `C9`) không có trong dimension nên `inner join` loại thẳng. Trên hệ thống
-thật, `C9` là khách vừa đăng ký sáng nay mà job nạp dimension chạy lúc nửa đêm — **không
-hiếm chút nào, mà là chuyện thường ngày**.
+`DHX3` (customer `C9`) isn't in the dimension so the `inner join` drops it outright. In a real
+system, `C9` is a customer who registered this morning while the dimension-loading job runs at midnight — **not
+rare at all, but an everyday occurrence**.
 
-Cách nạp đúng, hai bước:
+The right loading, in two steps:
 
 ```sql
--- 1. luon left join, khong khop thi -1
+-- 1. always left join; no match means -1
 insert into fct_ban_hang
 select f.don_hang_id, coalesce(d.khach_key, -1) khach_key, f.tien
 from staging_fact f
 left join dim_khach_t2 d on d.khach_id = f.khach_id
                         and f.ngay_dat between d.hieu_luc_tu and d.hieu_luc_den;
 
--- 2. test canh bao khi -1 vuot nguong
+-- 2. an alert test when -1 exceeds the threshold
 select count(*) so_dong_mo_coi from fct_ban_hang where khach_key = -1;
 ```
 
-Bước 2 mới là phần quan trọng: `-1` **không phải chỗ giấu rác**. Nó là hàng đợi. Có
-`-1` thì phải có cảnh báo, và phải có job đối chiếu lại khi dimension bắt kịp
-(*late-arriving dimension*).
+Step 2 is the important part: `-1` **isn't a rubbish bin**. It's a queue. If there's a
+`-1` there must be an alert, and a reconciliation job for when the dimension catches up
+(*a late-arriving dimension*).
 
-Không có cảnh báo thì `-1` âm thầm nuốt dữ liệu y hệt `inner join`, chỉ khác là tổng
-tiền vẫn đúng nên còn khó phát hiện hơn.
+Without the alert, `-1` silently swallows data exactly as an `inner join` does, except the money
+total is still right so it's even harder to spot.
 
 </details>
 
-### Bài E.3 — Dimension về muộn: vá lại khoá `-1`
+### Exercise E.3 — A late-arriving dimension: patching the `-1` keys
 
-**Đề:** giả sử `C9` xuất hiện trong dimension **sau khi** fact đã nạp với `-1`. Viết câu
-`update` vá lại đúng phiên bản theo `ngay_dat`, và câu kiểm trước/sau.
+**The task:** suppose `C9` appears in the dimension **after** the fact has loaded with `-1`. Write the
+`update` patching in the right version by `ngay_dat`, plus the before/after checks.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- 1. dimension bat kip: C9 xuat hien
+-- 1. the dimension catches up: C9 appears
 insert into dim_khach_t2
 select 7, 'C9', 'Khach moi', 'Mien Nam', 'Bac', date '2026-07-01', date '9999-12-31', true;
 
--- 2. dem truoc khi va
+-- 2. count before patching
 select count(*) filter (where khach_key = -1) mo_coi_truoc from fct_den_muon_da_gan;
 
--- 3. va lai, van theo as-of chu khong lay ban hien tai
+-- 3. patch, still as-of rather than taking the current version
 update fct_den_muon_da_gan f
 set khach_key = (select d.khach_key from dim_khach_t2 d
                  where d.khach_id = f.khach_id
@@ -1164,92 +1163,92 @@ where f.khach_key = -1
               where d.khach_id = f.khach_id
                 and f.ngay_dat between d.hieu_luc_tu and d.hieu_luc_den);
 
--- 4. dem lai
+-- 4. count again
 select count(*) filter (where khach_key = -1) mo_coi_sau from fct_den_muon_da_gan;
 ```
 
-Ba chi tiết quyết định đúng/sai:
+Three details decide right from wrong:
 
-**Vẫn phải as-of ở bước 3.** Cám dỗ lớn nhất khi vá là lấy đại bản hiện tại cho xong.
-Làm thế là tái lập đúng lỗi của bài E.1, chỉ chậm hơn vài ngày.
+**Step 3 must still be as-of.** The biggest temptation when patching is to grab the current version and be done.
+Doing that reproduces exercise E.1's bug exactly, just a few days later.
 
-**`exists` là bắt buộc.** Thiếu nó thì những dòng vẫn chưa khớp bị `update` thành `NULL`
-— tệ hơn `-1`, vì `-1` còn đếm được.
+**The `exists` is mandatory.** Without it, rows that still don't match get `update`d to `NULL`
+— worse than `-1`, because `-1` at least can be counted.
 
-**Khoảng hiệu lực của bản ghi đến muộn phải lùi về quá khứ.** `hieu_luc_tu` là ngày khách
-**thật sự bắt đầu tồn tại** (01/07), không phải ngày dimension biết về khách (hôm nay).
-Đặt sai là fact cũ mãi mãi không khớp được.
+**A late record's validity interval must reach back into the past.** `hieu_luc_tu` is the date the customer
+**genuinely began to exist** (01/07), not the date the dimension learned about them (today).
+Set it wrong and old facts can never match.
 
-Điểm cuối cùng: `update` trên fact table lớn là thao tác đắt. Nên nhiều nơi chọn cách
-khác — **để nguyên `-1`, và join qua một bảng ánh xạ** cập nhật hàng ngày. Đổi chi phí
-ghi lấy chi phí đọc; chọn cái nào tuỳ tần suất hai bên.
+One last point: an `update` on a large fact table is an expensive operation. So many places choose
+another way — **leave the `-1` and join through a mapping table** refreshed daily. Trading write
+cost for read cost; which to choose depends on the frequency of each.
 
 </details>
 
-### Bài E.4 — Fact về muộn làm báo cáo đã chốt đổi số
+### Exercise E.4 — A late fact making a closed report change its numbers
 
-**Đề:** không có SQL. Đơn `DHX1` (500.000, ngày 02/07) về vào ngày 10/07, sau khi báo cáo
-tháng đã gửi cho ban giám đốc. Liệt kê các lựa chọn và hệ quả.
+**The task:** no SQL. Order `DHX1` (500,000, dated 02/07) arrives on 10/07, after the monthly report has
+already gone to the board. List the options and their consequences.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Ba lựa chọn, không cái nào miễn phí:
+Three options, none of them free:
 
-| Cách | Báo cáo 02/07 | Ưu | Nhược |
+| The approach | The 02/07 report | Pro | Con |
 |---|---|---|---|
-| **Nạp về đúng ngày sự kiện** | đổi từ X thành X+500.000 | số luôn phản ánh sự thật | báo cáo đã gửi **tự đổi số** |
-| **Nạp vào ngày phát hiện (10/07)** | giữ nguyên | báo cáo đã gửi bất biến | 02/07 sai vĩnh viễn |
-| **Hai cột ngày** | tuỳ cột người đọc chọn | đúng cả hai | mô hình phức tạp hơn, phải dạy người dùng |
+| **Load it to the event date** | changes from X to X+500,000 | the numbers always reflect the truth | the report already sent **changes itself** |
+| **Load it to the discovery date (10/07)** | unchanged | the report already sent stays immutable | 02/07 is permanently wrong |
+| **Two date columns** | depends which column the reader picks | correct both ways | a more complex model, and users must be taught |
 
-Cách thứ ba là cách các hệ thống tài chính dùng, và nó có tên: **bi-temporal**. Fact giữ
-hai trục thời gian độc lập:
+The third is what financial systems use, and it has a name: **bi-temporal**. The fact keeps
+two independent time axes:
 
 ```text
 ngay_su_kien   = 2026-07-02   ← chuyen do xay ra khi nao
 ngay_ghi_nhan  = 2026-07-10   ← ta biet ve no khi nao
 ```
 
-Có hai cột đó thì trả lời được cả ba câu, kể cả câu khó nhất:
+With those two columns you can answer all three questions, including the hardest:
 
 ```sql
--- "bao cao 02/07 nhu ta da thay no vao ngay 05/07" — dung lai bao cao da gui
+-- "the 02/07 report as we saw it on 05/07" — reconstructing the report already sent
 select sum(tien) from fct_ban_hang
 where ngay_su_kien = date '2026-07-02' and ngay_ghi_nhan <= date '2026-07-05';
 ```
 
-Câu trên là thứ cứu bạn khi có người hỏi *"tuần trước báo cáo này ghi số khác, ai sửa?"*.
-Không có `ngay_ghi_nhan` thì câu hỏi đó **không trả lời được** — và đó là một cuộc điều
-tra vô vọng, không phải một truy vấn.
+That statement is what saves you when somebody asks *"last week this report showed a different number, who changed it?"*.
+Without `ngay_ghi_nhan` that question is **unanswerable** — and it becomes a hopeless
+investigation rather than a query.
 
-**Quy tắc:** fact có thể về muộn (thanh toán, trả hàng, điều chỉnh kế toán) thì cần cả
-hai trục ngay từ đầu. Thêm `ngay_ghi_nhan` sau khi đã có 2 năm dữ liệu là không thể — dữ
-liệu quá khứ không có thông tin đó.
+**The rule:** a fact that can arrive late (payments, returns, accounting adjustments) needs both
+axes from day one. Adding `ngay_ghi_nhan` after two years of data is impossible — the historical
+data doesn't carry that information.
 
-Xem [Dữ liệu về muộn](../skills/late-arriving.md) và
-[case study số hôm nay nhảy suốt ngày](../case-studies/so-hom-nay-nhay-suot-ngay.md).
+See [Late-arriving data](../skills/late-arriving.md) and
+[the case study on today's number jumping all day](../case-studies/so-hom-nay-nhay-suot-ngay.md).
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-| Số | Nghĩa | Bài |
+| The number | What it means | Exercise |
 |---|---|---|
-| 4 / 6 / 18 | Type 1 / Type 2 cột chậm / Type 2 mọi cột | A.1 |
-| 4.200.000 vs 1.650.000 | Miền Bắc as-was vs as-is, lệch 2,55 triệu | A.2 |
-| 0 / 0 / 0 | chồng lấn / sai số bản hiện tại / chỗ hở | A.3 |
-| 2 thật · 3 báo · 1 sót · 2 thừa | `updated_at` so với sự thật | B.1 |
-| 6 tổ hợp nhân khẩu | mini-dim: cộng thay vì nhân | C.1, C.2 |
-| 10 / 8 / 6 | đếm đơn theo ba vai ngày | D.4 |
-| 3 vs 1 ngày | `DH003` lịch so với ngày làm việc | D.2 |
-| khoá 1 chứ không phải 2 | fact về muộn phải tra as-of | E.1 |
-| 700.000 / 46,7% | `inner join` nuốt fact mồ côi | E.2 |
+| 4 / 6 / 18 | Type 1 / Type 2 on slow columns / Type 2 on every column | A.1 |
+| 4,200,000 vs 1,650,000 | the North as-was vs as-is, 2.55 million apart | A.2 |
+| 0 / 0 / 0 | overlaps / wrong current-version count / gaps | A.3 |
+| 2 real · 3 reported · 1 missed · 2 spurious | `updated_at` against the truth | B.1 |
+| 6 demographic combinations | a mini-dim: adding instead of multiplying | C.1, C.2 |
+| 10 / 8 / 6 | counting orders by three date roles | D.4 |
+| 3 vs 1 days | `DH003` in calendar days versus working days | D.2 |
+| key 1 rather than 2 | a late fact must be looked up as-of | E.1 |
+| 700,000 / 46.7% | `inner join` swallowing an orphan fact | E.2 |
 
 ## Related Topics
 
-- [Bài tập bộ 1 — Nền tảng](bt-01-nen-tang.md) — bộ trước
-- [Bài tập bộ 3 — Cột và bảng](bt-03-cot-va-bang.md) — bộ tiếp theo
-- [Phụ lục seed](bt-00-seed.md) — `khach_hang_lich_su` và ba kiểu `updated_at` nói dối
-- [Kỹ năng — Data Modeling](../skills/index.md) — lý thuyết của năm kỹ thuật trên
+- [Exercise set 1 — Foundations](bt-01-nen-tang.md) — the previous set
+- [Exercise set 3 — Columns and tables](bt-03-cot-va-bang.md) — the next set
+- [The seed appendix](bt-00-seed.md) — `khach_hang_lich_su` and the three ways `updated_at` lies
+- [Skills — Data Modeling](../skills/index.md) — the theory behind the five techniques above
