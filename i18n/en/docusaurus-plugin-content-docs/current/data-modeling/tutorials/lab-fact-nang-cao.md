@@ -1,8 +1,7 @@
 ---
-title: "Lab fact nâng cao — phân bổ, luỹ kế, bảng tổng hợp, con rết"
-i18n_status: untranslated
+title: "Advanced fact lab — allocation, cumulatives, summary tables, centipedes"
 sidebar_position: 5
-description: "Phân bổ phí ship rồi phát hiện lệch 1 đồng do làm tròn; cộng cột luỹ kế phồng 3,38 lần; avg-của-avg lệch 5,7%."
+description: "Allocating shipping fees then finding a 1-dong rounding gap; summing a cumulative column inflates 3.38×; avg-of-avg is 5.7% out."
 tags: [tutorial, allocated-facts, ytd-timespan-facts, aggregate-fact-table, centipede, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,23 +12,23 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Lab fact nâng cao — phân bổ, luỹ kế, bảng tổng hợp, con rết
+# Advanced fact lab — allocation, cumulatives, summary tables, centipedes
 
-> **Chốt:** ba bài đầu đều là **cột số nằm sai chỗ trong fact**. Không cột nào sai giá
-> trị; chúng chỉ không cộng được theo cách người ta sẽ cộng.
+> **Takeaway:** the first three exercises are all **a numeric column sitting in the wrong place in a fact**. None of the
+> columns holds a wrong value; they just don't add up the way people are going to add them.
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Mốc: **10 đơn · 15 dòng · doanh thu 10.215.000 · phí ship 400.000**.
+The benchmark: **10 orders · 15 lines · revenue 10,215,000 · shipping fees 400,000**.
 
-## Bài 1 — Phân bổ phí ship, và một đồng biến mất
+## Exercise 1 — Allocating the shipping fee, and one dong disappears
 
-Ở [lab nền tảng](lab-nen-tang-grain-fact-dim.md) bài 2, nhân bản `phi_ship` xuống mọi
-dòng làm nó phồng **77,5%**. Cách đúng là phân bổ theo tỷ trọng tiền hàng:
+In [the foundations lab](lab-nen-tang-grain-fact-dim.md), exercise 2, replicating `phi_ship` onto every
+line inflated it by **77.5%**. The right way is to allocate it in proportion to the goods amount:
 
 ```sql
 select ct.dong, ct.so_luong*ct.don_gia tien_hang,
@@ -39,7 +38,7 @@ from don_hang_chi_tiet ct join don_hang h using (don_hang_id)
 where ct.don_hang_id = 'DH003' order by ct.dong;
 ```
 
-`DH003` có phí ship 90.000 và ba dòng hàng:
+`DH003` has a shipping fee of 90,000 and three goods lines:
 
 ```text
 ┌───────┬───────────┬──────────────────┐
@@ -51,9 +50,9 @@ where ct.don_hang_id = 'DH003' order by ct.dong;
 └───────┴───────────┴──────────────────┘
 ```
 
-41.538 + 20.769 + 27.692 = **89.999**. Thiếu **một đồng**.
+41,538 + 20,769 + 27,692 = **89,999**. **One dong** short.
 
-Kiểm trên toàn bảng:
+Checked across the whole table:
 
 ```text
 ┌──────────────┬───────────┬────────────────┐
@@ -63,53 +62,53 @@ Kiểm trên toàn bảng:
 └──────────────┴───────────┴────────────────┘
 ```
 
-**Luật bất di của phân bổ: `sum(phan_bo)` phải bằng tổng gốc.** Lệch 1 đồng nghe vô hại,
-nhưng nó làm test đối soát **đỏ mỗi lần chạy** — và rồi ai đó sẽ nới ngưỡng test, và từ
-đó test không bắt được gì nữa.
+**Allocation's unbreakable law: `sum(phan_bo)` must equal the original total.** Being 1 dong out sounds harmless,
+but it makes the reconciliation test **red on every run** — and then somebody will loosen the test's threshold, and from
+then on the test catches nothing.
 
-**Việc cần làm:** sửa để tổng khớp tuyệt đối — gom sai số làm tròn về dòng lớn nhất của
-mỗi đơn:
+**What to do:** fix it so the total matches exactly — push the rounding error onto the largest line of
+each order:
 
 ```sql
--- goi y: dung sum(...) over (partition by don_hang_id) roi lay hieu cho dong cuoi
+-- hint: use sum(...) over (partition by don_hang_id) then give the last line the difference
 ```
 
-Xem [header/line và phân bổ fact](../skills/allocated-facts.md) và
-[case study phí ship phồng 133%](../case-studies/phi-ship-phong-133-phan-tram.md).
+See [header/line and allocating facts](../skills/allocated-facts.md) and
+[the case study on shipping fees 133% inflated](../case-studies/phi-ship-phong-133-phan-tram.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 2 — Chọn tiêu chí phân bổ: quyết định nghiệp vụ, không phải kỹ thuật
+## Exercise 2 — Choosing the allocation basis: a business decision, not a technical one
 
-Bài 1 chia theo **tiền hàng**. Nhưng hãng vận chuyển tính theo **cân**, không theo tiền.
+Exercise 1 divides by **goods amount**. But the carrier charges by **weight**, not by money.
 
-**Việc cần làm:** thêm cột `trong_luong_kg` vào `hang_hoa`, phân bổ lại theo trọng lượng,
-rồi so hai bảng kết quả. Sản phẩm nào đổi hạng nhiều nhất?
+**What to do:** add a `trong_luong_kg` column to `hang_hoa`, reallocate by weight,
+then compare the two result tables. Which product changes rank the most?
 
-| Số đo ở header | Tiêu chí hợp lý | Vì sao |
+| A header measure | The sensible basis | Why |
 |---|---|---|
-| Phí vận chuyển | Trọng lượng / thể tích | Hãng tính theo cân |
-| Chiết khấu toàn đơn | Tiền hàng | Chiết khấu tính trên giá trị |
-| Chi phí đóng gói | Số lượng món | Mỗi món một thao tác |
+| Shipping fee | Weight / volume | The carrier charges by weight |
+| Whole-order discount | Goods amount | The discount is computed on value |
+| Packing cost | Item count | Each item is one operation |
 
-Ghi lý do chọn **ngay cạnh code** — sáu tháng sau không ai nhớ vì sao chọn tiền hàng.
+Record the reason for the choice **right beside the code** — six months later nobody remembers why goods amount was chosen.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 3 — Cột luỹ kế: phồng 3,38 lần
+## Exercise 3 — A cumulative column: 3.38× inflated
 
-Dựng bảng có sẵn cột YTD, đúng như nhiều nơi vẫn làm:
+Build a table with a ready-made YTD column, exactly as many places do:
 
 ```sql
 with theo_ngay as (select ngay, sum(so_luong*don_gia) dt from don_hang_chi_tiet group by 1)
 select ngay, dt, sum(dt) over (order by ngay) dt_ytd from theo_ngay;
 ```
 
-Bảng này **đúng ở mọi dòng**. Nó hỏng ở thao tác tự nhiên nhất — kéo cột vào ô tổng:
+This table is **correct on every row**. It breaks on the most natural action of all — dragging the column into a total cell:
 
 ```text
 ┌────────────────┬─────────────┬───────────────┐
@@ -119,21 +118,21 @@ Bảng này **đúng ở mọi dòng**. Nó hỏng ở thao tác tự nhiên nh�
 └────────────────┴─────────────┴───────────────┘
 ```
 
-Phồng **3,38 lần** trên 5 ngày. Với 12 tháng thì khoảng 6,5 lần — và hệ số **thay đổi
-theo số kỳ đang xem**, nên không có tỷ lệ cố định nào để nhận ra.
+**3.38× inflated** across 5 days. Over 12 months it's about 6.5× — and the factor **changes
+with the number of periods on screen**, so there's no fixed ratio to recognise.
 
-`dt_ytd` non-additive theo thời gian, giống số dư. Khác biệt chí mạng: số dư *trông như*
-không cộng được, còn `doanh_thu_ytd` **trông y hệt** `doanh_thu`.
+`dt_ytd` is non-additive across time, like a balance. The fatal difference: a balance *looks*
+unsummable, while `doanh_thu_ytd` **looks exactly like** `doanh_thu`.
 
-**Việc cần làm:** bỏ cột đi, tính bằng window function lúc đọc. Xem
-[year-to-date và timespan](../skills/ytd-timespan-facts.md) và
-[case study cộng cột luỹ kế](../case-studies/cong-cot-luy-ke.md).
+**What to do:** drop the column and compute it with a window function at read time. See
+[year-to-date and timespan](../skills/ytd-timespan-facts.md) and
+[the case study on summing a cumulative column](../case-studies/cong-cot-luy-ke.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 4 — Bảng tổng hợp lưu `avg`: lệch 5,7%
+## Exercise 4 — A summary table storing `avg`: 5.7% out
 
 ```sql
 with theo_ngay as (select ngay, avg(so_luong*don_gia) tb from don_hang_chi_tiet group by 1)
@@ -149,22 +148,22 @@ from theo_ngay;
 └───────────┴─────────────┴──────────┘
 ```
 
-avg-của-avg cho mỗi **ngày** trọng số bằng nhau, bất kể ngày đó có 4 dòng hay 2 dòng.
+avg-of-avg gives each **day** equal weight, whether that day had 4 lines or 2.
 
-Cách sửa: bảng tổng hợp **chỉ lưu số cộng được** — `sum` và `count`, chia lúc đọc.
+The fix: a summary table **stores only summable numbers** — `sum` and `count`, dividing at read time.
 
-**Việc cần làm:** dựng `agg_ngay(ngay, doanh_thu, so_dong)`, rồi thêm một dòng lùi ngày
-vào `don_hang_chi_tiet` mà **không** dựng lại bảng tổng hợp. Viết query đối soát tìm ra
-ngày bị lệch. Xem [aggregate fact table](../skills/aggregate-fact-table.md) và
-[case study bảng tổng hợp lệch số](../case-studies/bang-tong-hop-lech-so.md).
+**What to do:** build `agg_ngay(ngay, doanh_thu, so_dong)`, then add a backdated row
+to `don_hang_chi_tiet` **without** rebuilding the summary table. Write a reconciliation query that finds
+the divergent day. See [aggregate fact tables](../skills/aggregate-fact-table.md) and
+[the case study on the summary table with divergent numbers](../case-studies/bang-tong-hop-lech-so.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 5 — Con rết: đếm khoá ngoại
+## Exercise 5 — The centipede: count the foreign keys
 
-Dựng fact theo kiểu chuẩn hoá quá tay — mỗi cấp thời gian một dimension:
+Build a fact in the over-normalised style — one dimension per time level:
 
 ```sql
 create or replace table fct_centipede as
@@ -179,57 +178,57 @@ select ct.don_hang_id, ct.dong,
 from don_hang_chi_tiet ct join don_hang h using (don_hang_id);
 ```
 
-Bảy khoá ngoại cho **ba chiều thật** (thời gian, hàng hoá, khách).
+Seven foreign keys for **three real dimensions** (time, goods, customer).
 
-**Phép thử:** bốn khoá thời gian ngoài `ngay_key` có mang thông tin gì mới không? Viết
-query chứng minh chúng suy ra được hoàn toàn từ `ngay_key`.
+**The test:** do the four time keys other than `ngay_key` carry any new information? Write a
+query proving they're fully derivable from `ngay_key`.
 
-Gộp lại thành một `dim_ngay` đầy đủ, rồi so: số khoá ngoại, số bảng phải join, và số cách
-join **sai** có thể xảy ra. Xem [centipede fact table](../skills/centipede-fact.md) và
-[case study fact tám khoá ngoại](../case-studies/fact-hai-chuc-khoa-ngoai.md).
+Collapse them into one complete `dim_ngay`, then compare: the number of foreign keys, the number of tables to join, and the number of
+**wrong** ways to join that are possible. See [centipede fact tables](../skills/centipede-fact.md) and
+[the case study on a fact with eight foreign keys](../case-studies/fact-hai-chuc-khoa-ngoai.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 6 — Nhiều đơn vị đo và nhiều tiền tệ
+## Exercise 6 — Several units of measure and several currencies
 
-`don_gia` đang là VND. Thêm một đơn hàng bằng USD:
+`don_gia` is currently in VND. Add an order in USD:
 
 ```sql
 insert into don_hang_chi_tiet values ('DH011',1,'SP-C',1,40,'2026-07-06');
 ```
 
-Giờ `sum(so_luong*don_gia)` cộng lẫn VND với USD — ra một số **hợp lệ và vô nghĩa**.
+Now `sum(so_luong*don_gia)` adds VND together with USD — producing a number that's **valid and meaningless**.
 
-**Việc cần làm:** thêm cột `tien_te` và `ty_gia_ap_dung`, chốt **hai số** trong fact
-(bản địa + quy đổi). Rồi thử quy đổi lúc đọc bằng tỷ giá hôm nay và xem doanh thu tháng 7
-đổi bao nhiêu. Xem [nhiều tiền tệ và đơn vị đo](../skills/multi-currency-uom.md) và
-[case study doanh thu đổi theo tỷ giá](../case-studies/doanh-thu-doi-theo-ty-gia.md).
+**What to do:** add `tien_te` and `ty_gia_ap_dung` columns, freeze **both numbers** in the fact
+(local + converted). Then try converting at read time with today's rate and see how much July's revenue
+changes. See [several currencies and units of measure](../skills/multi-currency-uom.md) and
+[the case study on revenue moving with the exchange rate](../case-studies/doanh-thu-doi-theo-ty-gia.md).
 
-Nhớ dọn: `delete from don_hang_chi_tiet where don_hang_id='DH011';`
+Remember to clean up: `delete from don_hang_chi_tiet where don_hang_id='DH011';`
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Điểm chung: cột đúng, phép cộng sai
+## What they share: the column is right, the addition is wrong
 
-| Bài | Con số | Cột có sai giá trị không |
+| Exercise | The number | Does the column hold a wrong value |
 |---|---|---|
-| 1 · phân bổ | lệch 1 đồng do làm tròn | Không |
-| 3 · cột YTD | phồng 3,38 lần | Không — mọi dòng đều đúng |
-| 4 · avg trong agg | lệch 5,7% | Không — đúng ở grain của nó |
-| 6 · cộng lẫn tiền tệ | vô nghĩa | Không |
+| 1 · allocation | 1 dong out from rounding | No |
+| 3 · the YTD column | 3.38× inflated | No — every row is correct |
+| 4 · avg in an agg | 5.7% out | No — correct at its own grain |
+| 6 · adding currencies together | Meaningless | No |
 
-**Phép thử một câu trước khi đưa bất kỳ cột số nào vào fact:** *"cộng cột này qua hai
-dòng bất kỳ, kết quả có nghĩa không?"*
+**The one-sentence test before putting any numeric column into a fact:** *"adding this column across any two
+rows — is the result meaningful?"*
 
 ## Related Topics
 
-- [Header/line và phân bổ fact](../skills/allocated-facts.md) — bài 1, 2
-- [Year-to-date và timespan](../skills/ytd-timespan-facts.md) — bài 3
-- [Aggregate fact table](../skills/aggregate-fact-table.md) — bài 4
-- [Centipede fact table](../skills/centipede-fact.md) — bài 5
-- [Nhiều tiền tệ và đơn vị đo](../skills/multi-currency-uom.md) — bài 6
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity, nền của cả lab
+- [Header/line and allocating facts](../skills/allocated-facts.md) — exercises 1 and 2
+- [Year-to-date and timespan](../skills/ytd-timespan-facts.md) — exercise 3
+- [Aggregate fact tables](../skills/aggregate-fact-table.md) — exercise 4
+- [Centipede fact tables](../skills/centipede-fact.md) — exercise 5
+- [Several currencies and units of measure](../skills/multi-currency-uom.md) — exercise 6
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity, the basis of the whole lab

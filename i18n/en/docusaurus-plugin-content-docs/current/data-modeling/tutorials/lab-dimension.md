@@ -1,8 +1,7 @@
 ---
-title: "Lab dimension — ngày, vai, NULL và cờ: bốn cách làm mất dòng"
-i18n_status: untranslated
+title: "Dimension lab — dates, roles, NULLs and flags: four ways to lose rows"
 sidebar_position: 4
-description: "Đơn chưa giao biến mất khỏi báo cáo, bộ lọc phủ định nuốt dòng, cờ dạng mã chia sai nhóm — tái hiện rồi sửa."
+description: "Undelivered orders vanishing from the report, a negative filter swallowing rows, coded flags splitting groups wrongly — reproduce then fix."
 tags: [tutorial, date-dimension, role-playing-dimension, null-handling, junk-dimension, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,20 +12,20 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Lab dimension — ngày, vai, NULL và cờ: bốn cách làm mất dòng
+# Dimension lab — dates, roles, NULLs and flags: four ways to lose rows
 
-> **Chốt:** lab trước làm số **phồng**. Lab này làm số **hụt** — nguy hiểm hơn, vì thiếu
-> thì không ai thấy. Dòng biến mất không để lại dấu vết nào trên báo cáo.
+> **Takeaway:** the previous lab made numbers **inflate**. This lab makes them **fall short** — more dangerous, because a
+> shortfall is invisible. A vanished row leaves no trace at all on the report.
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Mốc đối chiếu: **10 đơn · 15 dòng · 10.215.000**.
+The reconciliation benchmark: **10 orders · 15 lines · 10,215,000**.
 
-Điều đáng chú ý trong `don_hang`: hai đơn **chưa giao**.
+What's worth noticing in `don_hang`: two orders are **not yet delivered**.
 
 ```text
 ┌─────────────┬──────────┬────────────┬───────────┬────────────┐
@@ -37,11 +36,11 @@ Mốc đối chiếu: **10 đơn · 15 dòng · 10.215.000**.
 └─────────────┴──────────┴────────────┴───────────┴────────────┘
 ```
 
-Hai dòng `NULL` này là nguồn của ba bài đầu.
+These two `NULL` rows are the source of the first three exercises.
 
-## Bài 1 — Join theo ngày giao: mất 17,3% doanh thu
+## Exercise 1 — Joining on the delivery date: losing 17.3% of revenue
 
-Câu hỏi nghiệp vụ hoàn toàn bình thường: *"doanh thu theo tháng giao hàng"*.
+A perfectly ordinary business question: *"revenue by delivery month"*.
 
 ```sql
 select count(*) dong_con_lai, sum(ct.so_luong*ct.don_gia) doanh_thu
@@ -57,21 +56,21 @@ where h.ngay_giao is not null;
 └──────────────┴───────────┴───────────┴────────────────┴─────────┘
 ```
 
-Bỏ `where` đi mà join thẳng `dim_ngay` theo `ngay_giao` thì **kết quả y hệt** — `JOIN`
-thường tự loại dòng có khoá `NULL`, không cần ai viết điều kiện.
+Drop the `where` and join `dim_ngay` directly on `ngay_giao` and **the result is identical** — a plain
+`JOIN` discards rows with a `NULL` key by itself, with nobody writing a condition.
 
-> Doanh thu hụt **17,3%** và báo cáo trông hoàn toàn bình thường: không dòng lạ, không ô
-> trống, không cảnh báo.
+> Revenue falls **17.3%** short and the report looks perfectly normal: no odd rows, no empty
+> cells, no warning.
 
-**Việc cần làm:** đây là [case study "một nửa số đơn biến mất"](../case-studies/don-dang-giao-bien-mat.md).
-Sửa bằng dòng `-1` trong [date dimension](../reference/date-dimension.md): thêm một dòng
-nhãn *"Chưa xảy ra"*, và fact **không bao giờ** để `NULL` ở cột khoá.
+**What to do:** this is [the case study "half the orders vanished"](../case-studies/don-dang-giao-bien-mat.md).
+Fix it with the `-1` row in the [date dimension](../reference/date-dimension.md): add a row
+labelled *"Hasn't happened"*, and let the fact **never** hold `NULL` in a key column.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 2 — Dựng `dim_ngay` có dòng `-1`
+## Exercise 2 — Build a `dim_ngay` with a `-1` row
 
 ```sql
 create or replace table dim_ngay as
@@ -85,24 +84,24 @@ union all
 select -1, null, 'Chua xay ra', null, null;
 ```
 
-Rồi nạp fact với `coalesce`, không để `NULL` lọt vào khoá:
+Then load the fact with `coalesce`, letting no `NULL` into a key:
 
 ```sql
 coalesce(cast(strftime(h.ngay_giao,'%Y%m%d') as integer), -1) as ngay_giao_key
 ```
 
-**Việc cần làm:** chạy lại bài 1 với `dim_ngay` mới. Tổng phải quay về **10.215.000**, và
-hai đơn chưa giao hiện thành nhóm *"Chưa xảy ra"* thay vì biến mất.
+**What to do:** re-run exercise 1 with the new `dim_ngay`. The total must return to **10,215,000**, and
+the two undelivered orders appear as a *"Chua xay ra"* group instead of vanishing.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 3 — Ba vai của cùng một `dim_ngay`
+## Exercise 3 — Three roles for the same `dim_ngay`
 
-`don_hang` có `ngay_dat`, `ngay_giao`, `ngay_nhan` — cùng trỏ về một bảng lịch.
+`don_hang` has `ngay_dat`, `ngay_giao` and `ngay_nhan` — all pointing at one calendar table.
 
-**Đừng** copy `dim_ngay` thành ba bảng. Dựng ba **view có tên rõ nghĩa**:
+**Don't** copy `dim_ngay` into three tables. Build three **clearly-named views**:
 
 ```sql
 create or replace view dim_ngay_dat as
@@ -114,55 +113,55 @@ create or replace view dim_ngay_giao as
          la_ngay_lam_viec giao_ngay_lam_viec from dim_ngay;
 ```
 
-**Đổi tên cột là phần quan trọng nhất**, không phải chuyện thẩm mỹ: nhờ nó `select *`
-không đụng tên trùng, và người đọc query thấy `thu_giao` là hiểu ngay.
+**Renaming the columns is the most important part**, not a matter of aesthetics: it lets `select *`
+avoid name collisions, and a reader of the query sees `thu_giao` and understands immediately.
 
-**Việc cần làm:** viết query *"đơn đặt thứ mấy thì hay giao vào cuối tuần nhất"*. Nếu
-phải lần ngược lên xem `d1` là bảng nào thì bạn đang thiếu view. Xem
-[role-playing dimension](../skills/role-playing-dimension.md).
+**What to do:** write the query *"which order weekday most often gets delivered at the weekend"*. If you
+have to trace back to see which table `d1` is, you're missing the views. See
+[role-playing dimensions](../skills/role-playing-dimension.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 4 — Bộ lọc phủ định nuốt dòng NULL
+## Exercise 4 — A negative filter swallowing the NULL row
 
-`trang_thai` trong `don_hang` không có `NULL`, nên trước hết **tự tạo ra một cái**:
+`trang_thai` in `don_hang` has no `NULL`, so first **make one**:
 
 ```sql
 update don_hang set trang_thai = null where don_hang_id = 'DH009';
 ```
 
-Giờ chạy hai câu, cùng ý nghĩa tiếng Việt *"các đơn chưa hoàn thành"*:
+Now run two statements, both meaning *"the orders not yet complete"*:
 
 ```sql
 select count(*) from don_hang where trang_thai <> 'hoan_thanh';
 select count(*) from don_hang where trang_thai is distinct from 'hoan_thanh';
 ```
 
-**Dự đoán trước khi chạy:** hai số có bằng nhau không?
+**Predict before running:** are the two numbers equal?
 
 <details>
-<summary>Vì sao khác nhau</summary>
+<summary>Why they differ</summary>
 
-`NULL <> 'hoan_thanh'` trả về `UNKNOWN`, không phải `TRUE`. Mà `WHERE` chỉ giữ dòng
-`TRUE` — nên `DH009` bị loại khỏi **cả hai** nhóm: nó không phải "hoàn thành", cũng không
-lọt vào "khác hoàn thành".
+`NULL <> 'hoan_thanh'` returns `UNKNOWN`, not `TRUE`. And `WHERE` keeps only `TRUE`
+rows — so `DH009` is excluded from **both** groups: it isn't "complete", and it doesn't
+land in "not complete" either.
 
-Cộng hai nhóm lại **không** ra tổng bảng. Đó là bất biến đáng đặt thành test.
+Adding the two groups **doesn't** give the table's total. That's an invariant worth making a test.
 
 </details>
 
-Xem [NULL trong fact và dimension](../skills/null-handling.md) và
-[case study lọc "khác huỷ"](../case-studies/loc-khac-huy-mat-mot-phan-tu.md).
+See [NULLs in facts and dimensions](../skills/null-handling.md) and
+[the case study on filtering "not cancelled"](../case-studies/loc-khac-huy-mat-mot-phan-tu.md).
 
-Nhớ khôi phục: `update don_hang set trang_thai='moi' where don_hang_id='DH009';`
+Remember to restore: `update don_hang set trang_thai='moi' where don_hang_id='DH009';`
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 5 — Một cột trạng thái: để thẳng hay tách dimension?
+## Exercise 5 — One status column: leave it inline or split out a dimension?
 
 ```text
 ┌────────────┬────────┐        ┌───────────┬──────────┐
@@ -174,12 +173,12 @@ Nhớ khôi phục: `update don_hang set trang_thai='moi' where don_hang_id='DH0
 └────────────┴────────┘        └───────────┴──────────┘
 ```
 
-Ba giá trị, không thuộc tính đi kèm. Theo [junk dimension](../skills/junk-dimension.md):
-**để thẳng trong fact** — tạo bảng 3 dòng rồi join ở mọi query là trả phí mà không mua
-được gì.
+Three values, no accompanying attributes. Per [junk dimensions](../skills/junk-dimension.md):
+**leave it inline in the fact** — creating a 3-row table and joining it in every query pays a fee and buys
+nothing.
 
-Ngưỡng đảo chiều là lúc xuất hiện câu hỏi *"doanh thu từ đơn **hợp lệ**"*. Lúc đó trạng
-thái đã có thuộc tính:
+The threshold flips when the question *"revenue from **valid** orders"* appears. At that point the status
+has attributes:
 
 ```sql
 create or replace table dim_trang_thai as
@@ -191,19 +190,19 @@ select * from (values
 ) t(trang_thai, la_don_hop_le, la_don_chot);
 ```
 
-**Việc cần làm:** thêm trạng thái thứ tư `huy` cho một đơn, rồi trả lời *"doanh thu từ
-đơn hợp lệ"* — một lần bằng `where trang_thai in (...)` hardcode, một lần bằng
-`where la_don_hop_le`. Cái nào sống sót khi có trạng thái thứ năm? Xem
-[case study thêm trạng thái thứ tám](../case-studies/them-trang-thai-thu-tam.md).
+**What to do:** add a fourth status `huy` to one order, then answer *"revenue from
+valid orders"* — once with a hardcoded `where trang_thai in (...)`, once with
+`where la_don_hop_le`. Which survives a fifth status? See
+[the case study on adding an eighth status](../case-studies/them-trang-thai-thu-tam.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 6 — Cờ dạng mã và cây phân cấp
+## Exercise 6 — Coded flags and hierarchies
 
-`khach_hang.hang` đang là chữ đọc được (`Bac`, `Vang`, `Kim cuong`) — đúng chuẩn
-[thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md). Thử làm hỏng:
+`khach_hang.hang` currently holds readable text (`Bac`, `Vang`, `Kim cuong`) — right per
+[designing dimension attributes](../skills/dimension-attribute-design.md). Try breaking it:
 
 ```sql
 create or replace table dim_khach_ma as
@@ -212,10 +211,10 @@ select khach_id, ho_ten,
 from khach_hang;
 ```
 
-Chạy báo cáo theo `hang_ma` rồi tự hỏi: người đọc có biết `K` là gì không? Và nếu nguồn
-gõ lẫn `k` thường thì sao?
+Run a report by `hang_ma` and ask yourself: does the reader know what `K` is? And what if the source
+types a lower-case `k` somewhere?
 
-**Cây phân cấp:** `hang_hoa.nhom` mới có một tầng. Dựng cây hai tầng có nhánh nông:
+**Hierarchies:** `hang_hoa.nhom` has only one level so far. Build a two-level tree with a shallow branch:
 
 ```sql
 create or replace table danh_muc as
@@ -224,31 +223,31 @@ select * from (values
 ) t(dm_id, ten, cha_id);
 ```
 
-Gắn `SP-C` (laptop) thẳng vào `May tinh` (cấp 1), còn `SP-A`/`SP-D` vào `Thiet bi nhap`
-(cấp 2). Dẹt thành `cap_1`/`cap_2` rồi báo cáo theo `cap_2` — bao nhiêu phần trăm doanh
-thu rơi vào ô `NULL`? Xem [cây phân cấp](../skills/hierarchy.md) và
-[case study báo cáo cấp 3](../case-studies/bao-cao-cap-3-mat-mot-nua.md).
+Attach `SP-C` (a laptop) directly to `May tinh` (level 1), and `SP-A`/`SP-D` to `Thiet bi nhap`
+(level 2). Flatten into `cap_1`/`cap_2` then report by `cap_2` — what percentage of revenue
+lands in the `NULL` cell? See [hierarchies](../skills/hierarchy.md) and
+[the case study on the level-3 report](../case-studies/bao-cao-cap-3-mat-mot-nua.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Điểm chung: lỗi ở lab này đều làm **hụt**
+## What they share: every bug in this lab makes numbers **fall short**
 
-| Bài | Hụt | Vì sao không ai thấy |
+| Exercise | The shortfall | Why nobody sees it |
 |---|---|---|
-| 1 · khoá `NULL` | −17,3% | `JOIN` loại dòng, không báo |
-| 4 · lọc `<>` | mất dòng `NULL` | Logic ba trị, `WHERE` chỉ giữ `TRUE` |
-| 6 · cây dẹt | nhánh nông rơi vào `NULL` | BI ẩn nhóm `NULL` mặc định |
+| 1 · a `NULL` key | −17.3% | `JOIN` discards rows without reporting it |
+| 4 · a `<>` filter | loses the `NULL` row | Three-valued logic; `WHERE` keeps only `TRUE` |
+| 6 · a flattened tree | the shallow branch lands in `NULL` | BI hides the `NULL` group by default |
 
-**Bất biến chung cho cả ba:** tổng của mọi nhóm phải bằng tổng của bảng. Không cộng lại
-được nghĩa là có dòng đang rơi ra ngoài.
+**The shared invariant for all three:** the total of every group must equal the table's total. Not adding up
+means rows are falling outside.
 
 ## Related Topics
 
-- [Date dimension](../reference/date-dimension.md) — bài 1, 2
-- [Role-playing dimension](../skills/role-playing-dimension.md) — bài 3
-- [NULL trong fact và dimension](../skills/null-handling.md) — bài 4
-- [Junk dimension](../skills/junk-dimension.md) — bài 5
-- [Thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md) · [Cây phân cấp](../skills/hierarchy.md) — bài 6
-- [Lab nền tảng](lab-nen-tang-grain-fact-dim.md) — bốn cách làm phồng số
+- [The date dimension](../reference/date-dimension.md) — exercises 1 and 2
+- [Role-playing dimensions](../skills/role-playing-dimension.md) — exercise 3
+- [NULLs in facts and dimensions](../skills/null-handling.md) — exercise 4
+- [Junk dimensions](../skills/junk-dimension.md) — exercise 5
+- [Designing dimension attributes](../skills/dimension-attribute-design.md) · [Hierarchies](../skills/hierarchy.md) — exercise 6
+- [The foundations lab](lab-nen-tang-grain-fact-dim.md) — four ways to inflate numbers

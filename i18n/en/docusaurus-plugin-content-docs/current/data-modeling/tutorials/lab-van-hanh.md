@@ -1,8 +1,7 @@
 ---
-title: "Lab vận hành — khi số sai, mất bao lâu để biết dòng nào sai"
-i18n_status: untranslated
+title: "Operations lab — when the numbers are wrong, how long until you know which row is wrong"
 sidebar_position: 7
-description: "Nạp trùng phồng 25%; không có audit dimension thì xoá theo ngày mất 5 dòng tốt trên 10; phân vùng nóng và bảng nhiều loại thực thể."
+description: "A duplicate load inflating 25%; with no audit dimension, deleting by date loses 5 good rows out of 10; hot partitions and multi-entity-type tables."
 tags: [tutorial, audit-dimension, real-time, heterogeneous-schema, data-quality, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,14 +12,14 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Lab vận hành — khi số sai, mất bao lâu để biết dòng nào sai
+# Operations lab — when the numbers are wrong, how long until you know which row is wrong
 
-> **Chốt:** năm lab trước hỏi *"mô hình đúng chưa"*. Lab này hỏi câu khác: **dữ liệu sẽ
-> sai — khi đó bạn mất bao lâu để biết dòng nào sai và xoá đúng chừng đó?**
+> **Takeaway:** the five earlier labs ask *"is the model right"*. This lab asks a different question: **the data
+> will be wrong — when it is, how long does it take you to know which row is wrong and to delete exactly that much?**
 
-## Bài 1 — Nạp trùng: phồng 25%
+## Exercise 1 — A duplicate load: 25% inflated
 
-Mô phỏng đúng ca thật: job đêm lỗi giữa chừng, người trực chạy lại tay nhưng nhầm lô.
+Simulating the real case exactly: the nightly job failed mid-way, the on-call person re-ran it by hand but took the wrong batch.
 
 ```sql
 create or replace table fct_audit as select *, 1 as audit_sk from don_hang_chi_tiet;
@@ -35,13 +34,13 @@ insert into fct_audit select *, 3 from don_hang_chi_tiet where don_hang_id in ('
 └────────────────┴───────────┴───────────┴────────────────┴───────────┘
 ```
 
-Chẩn đoán thường nhanh — có người nhớ mình đã chạy lại tay. **Phần đắt là câu tiếp
-theo: xoá cái gì?**
+Diagnosis is usually quick — somebody remembers re-running it by hand. **The expensive part is the next
+question: what do you delete?**
 
-## Bài 2 — Không có `audit_sk`: xoá 10 dòng để diệt 5
+## Exercise 2 — Without `audit_sk`: delete 10 rows to kill 5
 
-Nếu fact không mang dấu vết lần chạy, thông tin duy nhất còn lại là **đơn hàng nào**.
-Nên cách xoá duy nhất là theo khoảng:
+If the fact carries no trace of the run, the only remaining information is **which order**.
+So the only way to delete is by range:
 
 ```sql
 select count(*) dong_bi_xoa,
@@ -58,19 +57,19 @@ from fct_audit where don_hang_id in ('DH001','DH003');
 └─────────────┴────────────────┴───────────────────┘
 ```
 
-**Một nửa số dòng bị xoá là dòng tốt.** Rồi phải nạp lại phần xoá nhầm, và trong lúc đó
-báo cáo hụt. Sự cố nhỏ thành nửa ngày.
+**Half the deleted rows are good rows.** Then you have to reload what was wrongly deleted, and meanwhile
+the reports fall short. A small incident becomes half a day.
 
-**Lưu ý:** `unique` trên khoá **có** đỏ trong ca này — nhưng nó chỉ nói *"có trùng"*,
-không nói **dòng nào là bản thừa**. Với hai dòng giống hệt nhau ở mọi cột, không thông
-tin nào trong bảng phân biệt được chúng. Đây **không phải lỗi thiếu test mà là lỗi thiếu
-metadata**.
+**Note:** `unique` on the key **does** go red in this case — but it only says *"there are duplicates"*,
+not **which row is the surplus**. With two rows identical in every column, no information
+in the table distinguishes them. This is **not a missing-test bug but a missing-metadata
+bug**.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 3 — Có `audit_sk`: một câu lệnh, đúng 5 dòng
+## Exercise 3 — With `audit_sk`: one statement, exactly 5 rows
 
 ```sql
 select audit_sk, count(*) dong, sum(so_luong*don_gia) doanh_thu
@@ -87,28 +86,28 @@ from fct_audit group by 1 order by 1;
 ```
 
 ```sql
-delete from fct_audit where audit_sk = 3;   -- dung 5 dong, khong dung dong nao khac
+delete from fct_audit where audit_sk = 3;   -- exactly 5 rows, and no others
 ```
 
-**Việc cần làm:** dựng `dim_audit(audit_sk, ma_lan_chay, thoi_diem_chay, file_nguon,
-so_dong_nguon)`, rồi viết query **phát hiện tự động** một lô bị nạp hai lần:
+**What to do:** build `dim_audit(audit_sk, ma_lan_chay, thoi_diem_chay, file_nguon,
+so_dong_nguon)`, then write a query that **automatically detects** a batch loaded twice:
 
 ```sql
 select file_nguon, count(*) so_lan_nap from dim_audit group by 1 having count(*) > 1;
 ```
 
-Câu này chạy được **ngay sau khi nạp**, trước khi ai kịp nhìn dashboard. Xem
-[audit dimension](../skills/audit-dimension.md) và
-[case study nạp hai lần](../case-studies/nap-hai-lan-khong-truy-duoc.md).
+This can run **immediately after the load**, before anybody has a chance to look at a dashboard. See
+[audit dimensions](../skills/audit-dimension.md) and
+[the case study on a file loaded twice](../case-studies/nap-hai-lan-khong-truy-duoc.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 4 — Đẳng thức khép kín: nạp + loại = nguồn
+## Exercise 4 — The closed-loop equality: loaded + rejected = source
 
-Dựng `fct_loi` cho dòng bị loại, với `chieu_chat_luong` theo
-[sáu chiều chất lượng](../../data-quality/six-dimensions.md):
+Build `fct_loi` for the rejected rows, with `chieu_chat_luong` following
+[the six dimensions of quality](../../data-quality/six-dimensions.md):
 
 ```sql
 create or replace table fct_loi as
@@ -118,7 +117,7 @@ select * from (values
 ) t(audit_sk, ma_dong, ly_do, chieu_chat_luong);
 ```
 
-Rồi kiểm bất biến mạnh nhất của cả pipeline:
+Then check the strongest invariant in the whole pipeline:
 
 ```sql
 select (select count(*) from fct_audit) da_nap,
@@ -126,42 +125,42 @@ select (select count(*) from fct_audit) da_nap,
        (select count(*) from fct_audit) + (select count(*) from fct_loi) cong_lai;
 ```
 
-Nó **không thể đúng một cách tình cờ**. `WHERE cot IS NOT NULL` rồi đi tiếp thì dữ liệu
-bị loại **bốc hơi không dấu vết** — không ai biết mất bao nhiêu, và tỷ lệ có tăng không.
+It **cannot hold by accident**. Writing `WHERE cot IS NOT NULL` and moving on means the rejected data
+**evaporates without a trace** — nobody knows how much was lost, or whether the rate is rising.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 5 — Phân vùng nóng: chỉ số nhảy suốt ngày
+## Exercise 5 — Hot partitions: the metric jumps all day
 
-Thêm dữ liệu "hôm nay chưa chốt":
+Add "today, not yet closed" data:
 
 ```sql
 create or replace table fct_hom_nay as
 select 'DH999' don_hang_id, current_date ngay, 500000 doanh_thu, false da_chot;
 ```
 
-Rồi tính "doanh thu trung bình mỗi ngày" gộp cả lịch sử lẫn hôm nay.
+Then compute "average revenue per day" across both history and today.
 
-**Việc cần làm:** chạy câu đó, ghi lại kết quả. Thêm một dòng nữa cho hôm nay, chạy lại.
-Con số đổi — dù không ngày lịch sử nào thay đổi.
+**What to do:** run that query and record the result. Add one more row for today and run it again.
+The number changes — even though no historical day changed.
 
-Nguyên nhân: mẫu số `count(distinct ngay)` đếm hôm nay là **một ngày trọn vẹn**, trong
-khi nó mới đầy một phần. Cách sửa: mang cột `da_chot` tới tận lớp báo cáo, và chỉ tính
-chỉ số ổn định trên ngày đã chốt.
+The cause: the denominator `count(distinct ngay)` counts today as **a whole day** while
+it's only partly full. The fix: carry the `da_chot` column all the way to the reporting layer, and compute
+the stable metric on closed days only.
 
-Xem [real-time fact table](../skills/real-time-fact.md) và
-[case study số hôm nay nhảy suốt ngày](../case-studies/so-hom-nay-nhay-suot-ngay.md).
+See [real-time fact tables](../skills/real-time-fact.md) and
+[the case study on today's number jumping all day](../case-studies/so-hom-nay-nhay-suot-ngay.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 6 — Bảng gộp nhiều loại thực thể
+## Exercise 6 — A table merging several entity types
 
-`hang_hoa` hiện chỉ có hàng vật lý. Thêm một **dịch vụ** — nó không có trọng lượng, còn
-hàng vật lý thì không có thời hạn:
+`hang_hoa` currently holds only physical goods. Add a **service** — it has no weight, while
+physical goods have no term:
 
 ```sql
 create or replace table san_pham_gop as
@@ -173,40 +172,40 @@ select * from (values
 ) t(ma, ten, loai, trong_luong_kg, thoi_han_thang);
 ```
 
-**Việc cần làm:** đo tỷ lệ ô trống. Rồi tách supertype (`ma`, `ten`, `loai` — mọi loại
-đều có) và subtype (mỗi loại một bảng, thuộc tính riêng). Sau khi tách, câu ràng buộc nào
-mới đặt được mà trước không?
+**What to do:** measure the empty-cell ratio. Then split out a supertype (`ma`, `ten`, `loai` — which every type
+has) and subtypes (one table per type, with its own attributes). After splitting, which constraint
+becomes declarable that wasn't before?
 
 <details>
-<summary>Đáp án</summary>
+<summary>Answer</summary>
 
-`NOT NULL` trên `trong_luong_kg` của bảng hàng hoá, và trên `thoi_han_thang` của bảng
-dịch vụ. Trên bảng gộp thì **không cột nào** đặt được, vì `NULL` hợp lệ ở phần lớn cột —
-mất tầng kiểm tra rẻ nhất trong kho.
+`NOT NULL` on `trong_luong_kg` in the goods table, and on `thoi_han_thang` in the
+services table. On the merged table **no column** can take it, because `NULL` is legitimate in most columns —
+losing the cheapest layer of checking in the warehouse.
 
 </details>
 
-Xem [thực thể không đồng nhất](../skills/heterogeneous-schema.md) và
-[case study dim_san_pham 67% ô trống](../case-studies/bang-san-pham-hai-phan-ba-o-trong.md).
+See [heterogeneous entities](../skills/heterogeneous-schema.md) and
+[the case study on dim_san_pham being 67% empty](../case-studies/bang-san-pham-hai-phan-ba-o-trong.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Ba tầng bảo vệ — lab này là tầng thứ ba
+## Three layers of protection — this lab is the third
 
-| Tầng | Công cụ | Trả lời |
+| Layer | Tooling | Answers |
 |---|---|---|
-| Chặn trước | `contract`, `not_null`, `unique` | Dữ liệu sai có được vào không |
-| Phát hiện | `dbt test` | Sau khi nạp, có bất thường không |
-| **Truy vết** | **audit dimension + error schema** | **Dòng nào, do lần chạy nào, vì sao bị loại** |
+| Blocking | `contract`, `not_null`, `unique` | Can wrong data get in |
+| Detecting | `dbt test` | After loading, is there an anomaly |
+| **Tracing** | **audit dimension + error schema** | **Which row, from which run, and why was it rejected** |
 
-Hai tầng đầu là câu hỏi có/không. Tầng ba quyết định sự cố mất **mười phút hay nửa ngày**.
+The first two layers answer yes/no questions. The third decides whether an incident costs **ten minutes or half a day**.
 
 ## Related Topics
 
-- [Audit dimension và error event schema](../skills/audit-dimension.md) — bài 1–4
-- [Real-time fact table](../skills/real-time-fact.md) — bài 5
-- [Thực thể không đồng nhất](../skills/heterogeneous-schema.md) — bài 6
-- [Six dimensions of data quality](../../data-quality/six-dimensions.md) — nhãn cho `fct_loi`
-- [Triển khai test trong dbt](../../etl/dbt/skills/implementing-tests.md) — hai tầng đầu
+- [Audit dimensions and error event schemas](../skills/audit-dimension.md) — exercises 1–4
+- [Real-time fact tables](../skills/real-time-fact.md) — exercise 5
+- [Heterogeneous entities](../skills/heterogeneous-schema.md) — exercise 6
+- [Six dimensions of data quality](../../data-quality/six-dimensions.md) — the labels for `fct_loi`
+- [Implementing tests in dbt](../../etl/dbt/skills/implementing-tests.md) — the first two layers
