@@ -1,9 +1,8 @@
 ---
-title: Kỹ năng — dbt
-i18n_status: untranslated
+title: Skills — dbt
 sidebar_key: dbt-skills
 sidebar_position: 0
-description: "Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần Tài liệu, không thay thế nó."
+description: "Techniques applied to a concrete situation — standing on top of the Reference group, not replacing it."
 tags: [skill, dbt]
 domain: data-engineering
 category: index
@@ -11,14 +10,14 @@ doc_type: index
 updated: 2026-07-31
 ---
 
-# Kỹ năng — dbt
+# Skills — dbt
 
-Kỹ thuật áp dụng vào một tình huống cụ thể — đứng **trên** phần Tài liệu, không thay thế nó.
+Techniques applied to a concrete situation — standing **on top of** the Reference group, not replacing it.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | Answers the question | Status |
 |---|---|---|---|
-| 1 | [Triển khai test](implementing-tests.md) | Sáu loại test: khai ở đâu, cú pháp gì, chạy ra output nào | 📝 có output thật |
+| 1 | [Implementing tests](implementing-tests.md) | The six kinds of test: where to declare them, what syntax, what output they produce | 📝 has real output |
 
 ## Related Topics
 
-- [dbt](../index.md) — chủ đề chứa thư mục này
+- [dbt](../index.md) — the topic this directory belongs to

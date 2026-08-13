@@ -1,8 +1,7 @@
 ---
-title: Cấu trúc một dbt project
-i18n_status: untranslated
+title: The structure of a dbt project
 sidebar_position: 2
-description: dbt_project.yml, profiles.yml, target/compiled — thư mục nào chứa gì.
+description: dbt_project.yml, profiles.yml, target/compiled — which directory holds what.
 tags: [dbt, configuration, project-structure]
 domain: data-engineering
 category: technology
@@ -12,37 +11,38 @@ difficulty: beginner
 verified_at:
 updated: 2026-07-31
 ---
-# Cấu trúc một dbt project
+# The structure of a dbt project
 
-> **Chốt (cần kiểm chứng):** `dbt_project.yml` mô tả *dự án*, `profiles.yml` mô tả
-> *chỗ kết nối tới*. Tách đôi vì dự án đi vào git, còn thông tin kết nối thì không.
+> **Takeaway (needs verifying):** `dbt_project.yml` describes the *project*, `profiles.yml` describes
+> *what to connect to*. They're split in two because the project goes into git and the connection details
+> don't.
 
 
-## Thư mục nào bắt buộc
+## Which directories are mandatory
 
-| Thư mục / file | Bắt buộc | Chứa gì |
+| Directory / file | Mandatory | Holds what |
 |---|---|---|
-| `dbt_project.yml` | ✅ | Thứ định nghĩa "đây là một dbt project" |
-| `models/` | ✅ | Các file `.sql` — đơn vị cơ bản |
-| `profiles.yml` | ✅ (ngoài project) | Thông tin **kết nối**. Xem mục dưới |
-| `seeds/` | tuỳ | CSV nhỏ nạp thành bảng |
-| `tests/` | tuỳ | Singular test |
-| `macros/` | tuỳ | Macro và generic test tự viết |
-| `snapshots/` | tuỳ | SCD Type 2 |
-| `analyses/` | tuỳ | SQL biên dịch được nhưng **không** tạo bảng |
-| `target/` | sinh ra | Sản phẩm biên dịch — **gitignore** |
-| `dbt_packages/` | sinh ra | Package tải bằng `dbt deps` — **gitignore** |
-| `logs/` | sinh ra | Log — **gitignore** |
+| `dbt_project.yml` | ✅ | The thing that defines "this is a dbt project" |
+| `models/` | ✅ | The `.sql` files — the basic unit |
+| `profiles.yml` | ✅ (outside the project) | The **connection** details. See the section below |
+| `seeds/` | optional | Small CSVs loaded as tables |
+| `tests/` | optional | Singular tests |
+| `macros/` | optional | Macros and your own generic tests |
+| `snapshots/` | optional | SCD Type 2 |
+| `analyses/` | optional | SQL that compiles but does **not** create a table |
+| `target/` | generated | Compilation output — **gitignore it** |
+| `dbt_packages/` | generated | Packages downloaded by `dbt deps` — **gitignore it** |
+| `logs/` | generated | Logs — **gitignore it** |
 
-Giữ nguyên tên mặc định. Mọi tài liệu và mọi câu trả lời trên mạng đều giả định bố cục
-này; đổi tên là tự tách mình khỏi cộng đồng.
+Keep the default names. Every piece of documentation and every answer online assumes this layout;
+renaming them cuts you off from the community.
 
-## `dbt_project.yml` — config theo tầng
+## `dbt_project.yml` — configuration by layer
 
 ```yaml
 name: scratch
 version: '1.0'
-profile: scratch          # trỏ tới tên profile trong profiles.yml
+profile: scratch          # points at the profile name in profiles.yml
 
 model-paths: ['models']
 seed-paths: ['seeds']
@@ -52,19 +52,19 @@ snapshot-paths: ['snapshots']
 clean-targets: ['target', 'dbt_packages']
 
 models:
-  scratch:                # tên project
-    +materialized: view   # mặc định cho MỌI model
-    marts:                # thư mục models/marts/
+  scratch:                # the project name
+    +materialized: view   # the default for EVERY model
+    marts:                # the models/marts/ directory
       +materialized: table
 ```
 
-Config **thừa kế theo thư mục**: khai ở `scratch:` áp cho tất cả, khai ở `marts:` đè lên
-cho riêng thư mục đó. Dấu `+` phân biệt config của dbt với tên thư mục con.
+Configuration **inherits by directory**: declared at `scratch:` it applies to everything, declared at
+`marts:` it overrides for that directory alone. The `+` distinguishes a dbt config from a subdirectory name.
 
-Thứ tự thắng: `config()` trong model > thư mục con > project. Có bằng chứng ở
-[Model và `ref()`](models-and-ref.md).
+Precedence: `config()` in the model > subdirectory > project. There's evidence in
+[Models and `ref()`](models-and-ref.md).
 
-## `profiles.yml` — và vì sao KHÔNG commit
+## `profiles.yml` — and why NOT to commit it
 
 ```yaml
 scratch:
@@ -76,19 +76,19 @@ scratch:
       schema: main
 ```
 
-**File này chứa thông tin kết nối** — host, user, password, token. Commit là rò rỉ.
+**This file holds connection details** — host, user, password, token. Committing it is a leak.
 
-Hai chỗ đặt:
+Two places to put it:
 
-| Cách | Khi nào |
+| Approach | When |
 |---|---|
-| `~/.dbt/profiles.yml` | Mặc định. Mỗi người một bản, nằm ngoài repo |
-| `--profiles-dir .` | Lab hoặc CI — file nằm cạnh project, và **phải** trong `.gitignore` |
+| `~/.dbt/profiles.yml` | The default. One per person, outside the repo |
+| `--profiles-dir .` | A lab or CI — the file sits next to the project, and **must** be in `.gitignore` |
 
-Trong production, giá trị nhạy cảm khai bằng `{{ env_var('DBT_PASSWORD') }}` để file chỉ
-chứa *tên biến*, không chứa giá trị.
+In production, declare sensitive values with `{{ env_var('DBT_PASSWORD') }}` so the file only
+holds *variable names*, not values.
 
-Kiểm cấu hình bằng `dbt debug`:
+Check the configuration with `dbt debug`:
 
 ```text
 Using profiles.yml file at ./profiles.yml
@@ -100,12 +100,12 @@ adapter version: 1.10.1
 Connection test: [OK connection ok]
 ```
 
-Chạy `dbt debug` **trước** khi nghi ngờ bất cứ thứ gì khác. Nó tách bạch "sai kết nối"
-với "sai SQL" — hai loại lỗi hay bị lẫn.
+Run `dbt debug` **before** suspecting anything else. It separates "wrong connection"
+from "wrong SQL" — two kinds of error that often get confused.
 
-## `target/` — `compiled/` khác `run/` chỗ nào
+## `target/` — how `compiled/` differs from `run/`
 
-Đây là phân biệt quan trọng nhất khi debug.
+This is the most important distinction when debugging.
 
 ```text
 target/
@@ -117,23 +117,23 @@ target/
 └── partial_parse.msgpack   cache parse, để lần sau khởi động nhanh
 ```
 
-Cùng một model `stg_hang_hoa`:
+The same model `stg_hang_hoa`:
 
 ```sql
--- target/compiled/... : chỉ SELECT
+-- target/compiled/... : only the SELECT
 select * from "scratch"."main"."hang_hoa"
 ```
 
 ```sql
--- target/run/... : có DDL bọc ngoài
+-- target/run/... : with the DDL wrapped around it
 create view "scratch"."main"."stg_hang_hoa__dbt_tmp" as (
     select * from "scratch"."main"."hang_hoa"
   );
 ```
 
-**Debug logic SQL → đọc `compiled/`. Debug lỗi DDL/quyền → đọc `run/`.**
+**Debugging SQL logic → read `compiled/`. Debugging a DDL or permission error → read `run/`.**
 
-## `.gitignore` tối thiểu
+## The minimum `.gitignore`
 
 ```gitignore
 target/
@@ -143,10 +143,10 @@ profiles.yml          # nếu để cạnh project
 *.duckdb
 ```
 
-Ba thư mục đầu **tái tạo được**: `dbt deps` + `dbt run` là có lại. Commit chúng chỉ làm
-repo phình và tạo conflict vô nghĩa.
+The first three directories are **reproducible**: `dbt deps` + `dbt run` brings them back. Committing them
+only bloats the repo and creates meaningless conflicts.
 
 ## Related Topics
 
-- [Mục lục dbt](index.md)
-- [dbt là gì](what-is-dbt.md) §2 — vì sao `target/compiled/` là chỗ quan trọng nhất
+- [dbt contents](index.md)
+- [What dbt is](what-is-dbt.md) §2 — why `target/compiled/` is the most important place

@@ -1,8 +1,7 @@
 ---
-title: Macro, Jinja và package
-i18n_status: untranslated
+title: Macros, Jinja and packages
 sidebar_position: 7
-description: Jinja chạy trước khi SQL rời máy — và ngưỡng nào thì nên viết macro.
+description: Jinja runs before the SQL leaves your machine — and the threshold for writing a macro.
 tags: [dbt, jinja, macro, dbt-utils]
 domain: data-engineering
 category: technology
@@ -12,22 +11,22 @@ difficulty: intermediate
 verified_at:
 updated: 2026-07-31
 ---
-# Macro, Jinja, package — khi SQL bắt đầu bị copy-paste
+# Macros, Jinja, packages — when SQL starts getting copy-pasted
 
-> **Chốt:** Jinja là template engine chạy **trước** khi SQL rời máy bạn. Mọi thứ
-> `{{ }}` và `{% %}` biến mất trong `target/compiled/` — warehouse không bao giờ
-> thấy chúng.
+> **Takeaway:** Jinja is a template engine that runs **before** the SQL leaves your machine. Everything in
+> `{{ }}` and `{% %}` disappears in `target/compiled/` — the warehouse never
+> sees it.
 
 
-## Ba cú pháp Jinja
+## The three Jinja syntaxes
 
-| Cú pháp | Tên | Làm gì | Có trong SQL compile |
+| Syntax | Name | What it does | Present in the compiled SQL |
 |---|---|---|---|
-| `{{ ... }}` | expression | **In ra** giá trị | ✅ kết quả |
-| `{% ... %}` | statement | Câu lệnh: `if`, `for`, `set`, `macro` | ❌ chỉ tác dụng |
-| `{# ... #}` | comment | Chú thích | ❌ biến mất hoàn toàn |
+| `{{ ... }}` | expression | **Prints** a value | ✅ the result |
+| `{% ... %}` | statement | Statements: `if`, `for`, `set`, `macro` | ❌ only its effect |
+| `{# ... #}` | comment | A comment | ❌ disappears entirely |
 
-Chứng minh — model này:
+The proof — this model:
 
 ```sql
 {{ config(materialized='table', post_hook="...") }}
@@ -40,7 +39,7 @@ select
 from {% raw %}{{ ref('stg_don_hang') }}{% endraw %}
 ```
 
-biên dịch thành:
+compiles into:
 
 ```sql
 -- 
@@ -54,9 +53,9 @@ select
 from "scratch"."main"."stg_don_hang"
 ```
 
-Chú ý dòng `-- ` còn trơ lại: chú thích `{% raw %}{# #}{% endraw %}` bị xoá sạch, chỉ còn dấu `--` của SQL.
+Note the bare `-- ` line left behind: the `{% raw %}{# #}{% endraw %}` comment is wiped out, leaving only SQL's `--`.
 
-## Viết macro
+## Writing a macro
 
 ```sql
 -- macros/tien_te.sql
@@ -65,28 +64,28 @@ Chú ý dòng `-- ` còn trơ lại: chú thích `{% raw %}{# #}{% endraw %}` b�
 {% endmacro %}{% endraw %}
 ```
 
-Gọi bằng `{% raw %}{{ dinh_dang_tien('thanh_tien') }}{% endraw %}`. Macro **sinh ra chuỗi SQL**, không
-chạy gì cả — nó là template text, không phải hàm của database.
+Call it with `{% raw %}{{ dinh_dang_tien('thanh_tien') }}{% endraw %}`. A macro **produces a SQL string**; it doesn't
+run anything — it's template text, not a database function.
 
-Hệ quả: macro sai cú pháp thì lỗi xuất hiện ở **SQL đã compile**, không ở chỗ bạn viết
-macro. Luôn đọc `target/compiled/` khi macro có vẻ sai.
+The consequence: a macro with a syntax error surfaces in the **compiled SQL**, not where you wrote the
+macro. Always read `target/compiled/` when a macro looks wrong.
 
-Generic test tự viết cũng là macro, bọc bằng `{% raw %}{% test %}{% endraw %}` — xem
-[Triển khai test](../skills/implementing-tests.md).
+Your own generic tests are also macros, wrapped in `{% raw %}{% test %}{% endraw %}` — see
+[Implementing tests](../skills/implementing-tests.md).
 
-## Bốn biến hay dùng
+## The four commonly used variables
 
-| Biến | Là gì | Ví dụ giá trị thật |
+| Variable | What it is | An example real value |
 |---|---|---|
-| `{% raw %}{{ this }}{% endraw %}` | Chính model đang chạy | `"scratch"."main"."mart_incr"` |
-| `{% raw %}{{ target.name }}{% endraw %}` | Target đang dùng | `dev` |
-| `{% raw %}{{ var('x', 'mặc định') }}{% endraw %}` | Biến khai trong `dbt_project.yml` hoặc `--vars` | `chua_khai` |
-| `{% raw %}{{ env_var('DBT_X') }}{% endraw %}` | Biến môi trường | — |
+| `{% raw %}{{ this }}{% endraw %}` | The model currently running | `"scratch"."main"."mart_incr"` |
+| `{% raw %}{{ target.name }}{% endraw %}` | The target in use | `dev` |
+| `{% raw %}{{ var('x', 'default') }}{% endraw %}` | A variable declared in `dbt_project.yml` or `--vars` | `chua_khai` |
+| `{% raw %}{{ env_var('DBT_X') }}{% endraw %}` | An environment variable | — |
 
-`{% raw %}{{ this }}{% endraw %}` là thứ làm `incremental` hoạt động được — xem
-[Materialization](materializations.md).
+`{% raw %}{{ this }}{% endraw %}` is what makes `incremental` work — see
+[Materializations](materializations.md).
 
-Truyền `var` từ dòng lệnh đè lên mặc định:
+Passing a `var` from the command line to override the default:
 
 ```bash
 dbt compile --select mart_jinja --vars '{moi_truong: production}'
@@ -97,12 +96,12 @@ dbt compile --select mart_jinja --vars '{moi_truong: production}'
     'production' as bien_var
 ```
 
-Dùng `var()` cho thứ đổi theo **lần chạy** (ngày bắt đầu backfill, cờ bật/tắt). Dùng
-`env_var()` cho thứ **không được vào git** (mật khẩu, token).
+Use `var()` for things that change **per run** (a backfill's start date, a feature flag). Use
+`env_var()` for things that **must not go into git** (passwords, tokens).
 
-## `run_query()` — chạy SQL lúc compile
+## `run_query()` — running SQL at compile time
 
-Khác mọi thứ ở trên: nó **hỏi warehouse ngay lúc biên dịch**, rồi dùng kết quả để sinh SQL.
+Unlike everything above: it **asks the warehouse right at compile time** and then uses the result to generate SQL.
 
 ```sql
 {% raw %}{% macro cot_cua(ten_bang) %}
@@ -123,13 +122,13 @@ dbt run-operation cot_cua --args '{ten_bang: stg_don_hang}'
 Cot cua stg_don_hang: don_hang_id, dong, ma_hang, so_luong, don_gia, thanh_tien, ngay
 ```
 
-`{% raw %}{% if execute %}{% endraw %}` bắt buộc: dbt parse project **hai lượt**, lượt đầu chưa kết nối
-warehouse nên `run_query` trả `None`. Thiếu nó là lỗi khó hiểu ở lượt parse.
+The `{% raw %}{% if execute %}{% endraw %}` is mandatory: dbt parses the project in **two passes**, and the first pass
+isn't connected to the warehouse, so `run_query` returns `None`. Omitting it gives a baffling error at parse time.
 
-Dùng khi cần sinh SQL theo **danh sách cột thật** — ví dụ pivot động, hoặc `select` mọi
-cột trừ vài cột.
+Use it when you need to generate SQL from the **real column list** — a dynamic pivot, for example, or
+selecting every column except a few.
 
-## Hook — chạy quanh model
+## Hooks — running around a model
 
 ```sql
 {{ config(post_hook="{% raw %}{{ log('post-hook chay sau khi tao ' ~ this, info=True) }}{% endraw %}") }}
@@ -140,13 +139,13 @@ post-hook chay sau khi tao "scratch"."main"."mart_jinja"
 1 of 1 OK created sql table model main.mart_jinja ................ [OK in 0.07s]
 ```
 
-| Hook | Chạy khi | Dùng cho |
+| Hook | Runs when | Used for |
 |---|---|---|
-| `pre-hook` | trước model | set biến session, khoá bảng |
-| `post-hook` | sau model | `GRANT`, `ANALYZE`, gọi API |
-| `on-run-start` / `on-run-end` | đầu/cuối cả lần chạy | log tổng, thông báo |
+| `pre-hook` | before the model | setting session variables, locking a table |
+| `post-hook` | after the model | `GRANT`, `ANALYZE`, calling an API |
+| `on-run-start` / `on-run-end` | at the start/end of the whole run | summary logging, notifications |
 
-Cấp quyền là ca dùng phổ biến nhất: `post_hook="grant select on {% raw %}{{ this }}{% endraw %} to role_bi"`.
+Granting permissions is the most common use: `post_hook="grant select on {% raw %}{{ this }}{% endraw %} to role_bi"`.
 
 ## `packages.yml` + `dbt deps`
 
@@ -165,30 +164,30 @@ Installing dbt-labs/dbt_utils
 Installed from version 1.4.1
 ```
 
-| Package | Dùng để |
+| Package | Used for |
 |---|---|
-| `dbt_utils` | Test và macro dùng chung — cần ngay từ đầu |
-| `dbt_expectations` | Bộ test kiểu Great Expectations |
-| `codegen` | Sinh sẵn `schema.yml` từ bảng có thật |
+| `dbt_utils` | Shared tests and macros — needed from day one |
+| `dbt_expectations` | A Great Expectations-style test suite |
+| `codegen` | Generating `schema.yml` from existing tables |
 
-Khoá version bằng khoảng (`>=1.1.0, <2.0.0`), đừng ghim cứng một số cũng đừng để trống.
-`package-lock.yml` sinh ra sau `dbt deps` — **commit nó** để cả nhóm cùng version.
+Pin the version with a range (`>=1.1.0, <2.0.0`); don't hard-pin one and don't leave it open.
+`package-lock.yml` is generated after `dbt deps` — **commit it** so the whole team is on the same version.
 
-`dbt_packages/` thì **gitignore** — đó là thư mục tải về, tái tạo bằng `dbt deps`.
+`dbt_packages/` should be **gitignored** — it's a download directory, reproducible with `dbt deps`.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Đọc lỗi macro ở file macro thay vì `target/compiled/` | Tìm nhầm chỗ; macro chỉ sinh chuỗi |
-| Quên `{% raw %}{% if execute %}{% endraw %}` quanh `run_query` | Lỗi khó hiểu ở lượt parse đầu |
-| Dùng `var()` cho mật khẩu | Vào git; phải dùng `env_var()` |
-| Viết macro khi mới copy-paste **hai** lần | Trừu tượng hoá sớm, khó đọc hơn cả bản lặp |
-| Không commit `package-lock.yml` | Mỗi máy một version package |
-| Commit `dbt_packages/` | Repo phình, conflict vô nghĩa |
+| Reading a macro error in the macro file instead of `target/compiled/` | Looking in the wrong place; a macro only produces a string |
+| Forgetting `{% raw %}{% if execute %}{% endraw %}` around `run_query` | A baffling error on the first parse pass |
+| Using `var()` for a password | It goes into git; you must use `env_var()` |
+| Writing a macro after copy-pasting only **twice** | Abstracting too early, harder to read than the duplication |
+| Not committing `package-lock.yml` | A different package version on every machine |
+| Committing `dbt_packages/` | A bloated repo and meaningless conflicts |
 
 ## Related Topics
 
-- [Mục lục dbt](index.md)
-- [dbt là gì](what-is-dbt.md) §2 — Jinja biến mất ở `target/compiled/`
-- [Test và data quality](testing.md) §1 — generic test tự viết
+- [dbt contents](index.md)
+- [What dbt is](what-is-dbt.md) §2 — Jinja disappearing in `target/compiled/`
+- [Testing and data quality](testing.md) §1 — writing your own generic tests

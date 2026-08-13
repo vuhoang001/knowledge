@@ -1,36 +1,35 @@
 ---
-title: Lab dbt trên DuckDB
-i18n_status: untranslated
+title: dbt lab on DuckDB
 sidebar_position: 1
-description: Bảy bài tập chạy thật từ dbt debug tới chuyển sang Trino — mỗi bài có ô dán output.
+description: Seven exercises really run, from dbt debug to switching to Trino — each with a box to paste output into.
 tags: [dbt, duckdb, tutorial, lab, hands-on]
 domain: data-engineering
 category: technology
 doc_type: tutorial
 status: review
 difficulty: beginner
-verified_at: 2026-07-30       # bài 1–3 đã chạy
+verified_at: 2026-07-30       # exercises 1–3 have been run
 lab: ~/Documents/learn-lab/dbt
 updated: 2026-07-31
 ---
-# Bài tập dbt
+# dbt exercises
 
-Làm trong `~/Documents/learn-lab/dbt`. Mỗi bài **chạy thật, dán output vào ô Kết quả**.
-Đọc hiểu không tính.
+Do these in `~/Documents/learn-lab/dbt`. For each one, **really run it and paste the output into the
+Result box**. Reading and understanding doesn't count.
 
-> **Vì sao lab dùng DuckDB chứ không phải Trino `.60`.** Học dbt trên Trino là học ba
-> thứ cùng lúc — dbt, Trino, Iceberg — và lỗi nào cũng có ba nghi phạm, không phân
-> biệt được lỗi hiểu sai dbt với lỗi cấu hình cụm. DuckDB không server, cả kho là
-> một file, xoá đi là về trắng. Chuyển sang Trino ở bài 7, khi dbt đã không còn là biến số.
+> **Why the lab uses DuckDB rather than Trino `.60`.** Learning dbt on Trino means learning three
+> things at once — dbt, Trino, Iceberg — and every error has three suspects, so you can't tell a
+> misunderstanding of dbt from a cluster misconfiguration. DuckDB has no server, the whole warehouse is
+> one file, and deleting it puts you back at zero. You switch to Trino in exercise 7, once dbt is no longer a variable.
 
-Dữ liệu seed sẵn: `don_hang_chi_tiet.csv` (15 dòng, đơn hàng nhiều dòng hàng) và
-`hang_hoa.csv` (4 mặt hàng). Nhỏ để soi được bằng mắt — cố ý.
+The seed data is ready: `don_hang_chi_tiet.csv` (15 rows, orders with several line items) and
+`hang_hoa.csv` (4 items). Small enough to inspect by eye — deliberately.
 
 ---
 
-## Bài 1 — Nối được
+## Exercise 1 — Getting connected
 
-**Làm gì:**
+**What to do:**
 
 ```bash
 cd ~/Documents/learn-lab/dbt
@@ -38,97 +37,97 @@ cd ~/Documents/learn-lab/dbt
 .venv/bin/dbt seed  --profiles-dir .
 ```
 
-**Xong khi:** `All checks passed!` và hai bảng seed vào `lab.duckdb`. Mở file đó bằng
-`duckdb lab.duckdb` rồi `SELECT * FROM don_hang_chi_tiet;` để tự thấy dữ liệu.
+**Done when:** `All checks passed!` and the two seed tables are in `lab.duckdb`. Open that file with
+`duckdb lab.duckdb` then `SELECT * FROM don_hang_chi_tiet;` to see the data for yourself.
 
-**Kết quả:** ✅ 30/07/2026 — pass.
+**Result:** ✅ 2026-07-30 — pass.
 
 ---
 
-## Bài 2 — Model đầu tiên, và xem dbt SINH RA gì
+## Exercise 2 — Your first model, and seeing what dbt GENERATES
 
-**Làm gì:** tạo `models/stg_don_hang.sql`, chỉ `SELECT` từ seed, đổi tên cột, thêm
-cột tính `thanh_tien = so_luong * don_gia`. Chạy `dbt run`, rồi **mở
+**What to do:** create `models/stg_don_hang.sql`, just a `SELECT` from the seed, renaming columns and adding
+a computed column `thanh_tien = so_luong * don_gia`. Run `dbt run`, then **open
 `target/compiled/dbt_lab/models/stg_don_hang.sql`**.
 
-**Xong khi:** so được file mình viết với file dbt sinh ra, và nói được dbt đã thay
-đổi đúng những gì.
+**Done when:** you can compare the file you wrote against the file dbt generated, and say exactly what dbt
+changed.
 
-> Đây là chỗ mô hình tư duy cốt lõi trở thành thứ nhìn thấy được, không còn là câu
-> chữ. Đừng bỏ bước mở `target/compiled/`.
+> This is where the core mental model becomes something you can see, rather than words on a page. Don't
+> skip opening `target/compiled/`.
 
-**Kết quả:** ✅ 30/07/2026 — khác đúng một chỗ: `{{ ref(...) }}` → `"lab"."main"."don_hang_chi_tiet"`.
-Chi tiết ở [01-dbt-la-gi.md](../reference/what-is-dbt.md) §2.
-
----
-
-## Bài 3 — Test bắt lỗi grain
-
-**Làm gì:** thêm `models/schema.yml`, đặt test `unique` lên `don_hang_id` của
-`stg_don_hang`. Chạy `dbt test`.
-
-**Xong khi:** test **FAIL** — và bạn giải thích được vì sao đó là test sai chứ không
-phải dữ liệu sai. Sau đó sửa cho đúng grain (gợi ý: grain thật là *cặp* cột nào?).
-
-> Bài quan trọng nhất của cả module. Đúng lớp lỗi làm lệch số trên dashboard mà
-> không ai thấy.
-
-**Kết quả:** ✅ 30/07/2026 — `FAIL 4`, grain thật là `(don_hang_id, dong)`.
-Output đầy đủ ở [06-test-va-data-quality.md](../reference/testing.md) §5.
+**Result:** ✅ 2026-07-30 — exactly one difference: `{{ ref(...) }}` → `"lab"."main"."don_hang_chi_tiet"`.
+Details in [01-dbt-la-gi.md](../reference/what-is-dbt.md) §2.
 
 ---
 
-## Bài 4 — `ref()` dựng nên DAG
+## Exercise 3 — A test catching a grain error
 
-**Làm gì:** thêm `stg_hang_hoa.sql`, rồi `mart_doanh_thu_theo_nhom.sql` join hai
-model qua `ref()`. Chạy `dbt run`, sau đó `dbt docs generate && dbt docs serve`.
+**What to do:** add `models/schema.yml` and put a `unique` test on `stg_don_hang`'s `don_hang_id`.
+Run `dbt test`.
 
-**Xong khi:** đổi tên `stg_don_hang.sql` và thấy dbt **báo lỗi phụ thuộc** chứ không
-chạy bừa. Rồi thử thay `ref()` bằng tên bảng thẳng — xem DAG mất cạnh ra sao.
+**Done when:** the test **FAILS** — and you can explain why that's a wrong test rather than wrong data.
+Then fix it to the right grain (hint: which *pair* of columns is the real grain?).
 
-**Kết quả:**
+> The most important exercise in the whole module. Exactly the class of error that skews dashboard
+> numbers without anybody noticing.
 
----
-
-## Bài 5 — Materialization
-
-**Làm gì:** đổi mart sang `table`, rồi `incremental` với `is_incremental()`. Chạy
-hai lần, so số dòng và thời gian.
-
-**Xong khi:** nói được điều gì xảy ra khi một đơn hàng **cũ** bị sửa lại, và
-`--full-refresh` giải quyết gì.
-
-**Kết quả:**
+**Result:** ✅ 2026-07-30 — `FAIL 4`, the real grain is `(don_hang_id, dong)`.
+The full output is in [06-test-va-data-quality.md](../reference/testing.md) §5.
 
 ---
 
-## Bài 6 — Ba tầng data quality
+## Exercise 4 — `ref()` builds the DAG
 
-**Làm gì:** thêm một singular test trong `tests/`, bật `contract: enforced` cho mart,
-rồi viết một unit test cho công thức `thanh_tien`.
+**What to do:** add `stg_hang_hoa.sql`, then `mart_doanh_thu_theo_nhom.sql` joining the two models through
+`ref()`. Run `dbt run`, then `dbt docs generate && dbt docs serve`.
 
-**Xong khi:** cố tình làm sai từng tầng một và thấy **đúng tầng đó** bắt được:
-sai dữ liệu → test bắt; sai kiểu cột → contract chặn trước khi build; sai công thức
-→ unit test bắt dù dữ liệu hợp lệ.
+**Done when:** you rename `stg_don_hang.sql` and see dbt **report a dependency error** rather than running
+regardless. Then try replacing `ref()` with the table name directly — and watch the DAG lose an edge.
 
-**Kết quả:**
+**Result:**
 
 ---
 
-## Bài 7 — Chuyển sang Trino
+## Exercise 5 — Materializations
 
-**Chỉ làm sau khi bài 1–6 xong.** Đổi `profiles.yml` sang `dbt-trino` trỏ `.60:8080`.
-Chạy lại chính các model đó.
+**What to do:** switch the mart to `table`, then to `incremental` with `is_incremental()`. Run it twice
+and compare the row count and the timing.
 
-**Xong khi:** nói được cái gì phải đổi và cái gì giữ nguyên — đó là câu trả lời thật
-cho "dbt độc lập với warehouse tới mức nào".
+**Done when:** you can say what happens when an **old** order gets modified, and what `--full-refresh`
+solves.
 
-> ⚠ Catalog trên `.60` tên là `hdos_silver` / `polaris_silver`, **không có catalog
-> tên `iceberg`**. Xem mục "Sai lầm đã mắc" ở [README](../index.md).
+**Result:**
 
-**Kết quả:**
+---
 
-## Liên kết
+## Exercise 6 — The three data-quality layers
 
-- [Mục lục dbt](../index.md)
-- [Trino](../../../query-engines/trino/index.md) — cần cho bài 7
+**What to do:** add a singular test in `tests/`, turn on `contract: enforced` for the mart, then write a
+unit test for the `thanh_tien` formula.
+
+**Done when:** you deliberately break each layer in turn and see **that exact layer** catch it:
+wrong data → the test catches it; wrong column type → the contract blocks it before the build; wrong formula
+→ the unit test catches it even though the data is valid.
+
+**Result:**
+
+---
+
+## Exercise 7 — Switching to Trino
+
+**Only do this after exercises 1–6 are finished.** Switch `profiles.yml` to `dbt-trino` pointing at
+`.60:8080`. Re-run those same models.
+
+**Done when:** you can say what had to change and what stayed the same — that's the real answer to
+"how warehouse-independent is dbt".
+
+> ⚠ The catalogs on `.60` are named `hdos_silver` / `polaris_silver`; there is **no catalog named
+> `iceberg`**. See the "Mistakes already made" section in the [README](../index.md).
+
+**Result:**
+
+## Links
+
+- [dbt contents](../index.md)
+- [Trino](../../../query-engines/trino/index.md) — needed for exercise 7

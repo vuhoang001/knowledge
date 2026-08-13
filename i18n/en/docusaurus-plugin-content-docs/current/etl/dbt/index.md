@@ -1,7 +1,6 @@
 ---
 title: dbt (data build tool)
-i18n_status: untranslated
-description: Transform SQL có DAG và test — chữ T trong ELT. dbt sinh SQL, warehouse chạy SQL.
+description: SQL transforms with a DAG and tests — the T in ELT. dbt generates SQL, the warehouse runs SQL.
 tags: [dbt, elt, transformation, data-engineering]
 domain: data-engineering
 category: technology
@@ -14,141 +13,141 @@ updated: 2026-07-31
 ---
 # dbt (data build tool)
 
-**dbt không có engine và không chuyển dữ liệu.** Nó biên dịch SQL + Jinja thành SQL
-thuần rồi gửi cho warehouse chạy. Là chữ **T** trong ELT — không phải E, không phải L.
+**dbt has no engine and moves no data.** It compiles SQL + Jinja into plain SQL and then sends it to the
+warehouse to run. It's the **T** in ELT — not the E, not the L.
 
-Hiểu sai chỗ này là mọi thứ sai theo: sẽ đi tìm "dbt chạy chậm" trong khi phải tìm
-ở warehouse, và sẽ tưởng dbt thay được Spark/Flink.
+Get this wrong and everything follows: you'll go looking for "dbt is slow" when you should be looking
+in the warehouse, and you'll think dbt can replace Spark/Flink.
 
-**Lab:** `~/Documents/learn-lab/dbt` — venv riêng, `dbt-duckdb`, seed sẵn.
-Chạy: `.venv/bin/dbt <lệnh> --profiles-dir .`
+**Lab:** `~/Documents/learn-lab/dbt` — its own venv, `dbt-duckdb`, seeds ready.
+Run it with: `.venv/bin/dbt <command> --profiles-dir .`
 
-## Mục lục — các component của dbt
+## Contents — dbt's components
 
-| # | Component | Trả lời câu hỏi | Trạng thái |
+| # | Component | Answers the question | Status |
 |---|---|---|---|
-| 01 | [dbt là gì](reference/what-is-dbt.md) | Nó thật sự làm gì, `ref()` và test là gì | ✅ đã chạy |
-| 02 | [Cấu trúc project](reference/project-structure.md) | `dbt_project.yml`, `profiles.yml`, `target/` | 📝 có output thật |
-| 03 | [Model và `ref()`](reference/models-and-ref.md) | Đơn vị cơ bản, DAG mọc ra từ đâu | 📝 có output thật |
-| 04 | [Source, seed, snapshot](reference/sources-seeds-snapshots.md) | Dữ liệu vào từ đâu khi không phải model | 📝 có output thật |
-| 05 | [Materialization](reference/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | 📝 có output thật |
-| 06 | [Test và data quality](reference/testing.md) | 3 tầng: test · contract · unit test | 📝 lý thuyết, chưa chạy |
-| 07 | [Macro, Jinja, package](reference/macros-jinja-packages.md) | Khi SQL bắt đầu bị copy-paste | 📝 có output thật |
-| 08 | [Docs và lineage](reference/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 📝 có output thật |
-| 09 | [Bài tập](tutorials/dbt-lab-duckdb.md) | Chạy thật, có output dán lại | 🔄 đang làm |
+| 01 | [What dbt is](reference/what-is-dbt.md) | What it actually does, and what `ref()` and tests are | ✅ run |
+| 02 | [The project structure](reference/project-structure.md) | `dbt_project.yml`, `profiles.yml`, `target/` | 📝 has real output |
+| 03 | [Models and `ref()`](reference/models-and-ref.md) | The basic unit, and where the DAG comes from | 📝 has real output |
+| 04 | [Sources, seeds, snapshots](reference/sources-seeds-snapshots.md) | Where data comes in from when it isn't a model | 📝 has real output |
+| 05 | [Materializations](reference/materializations.md) | `view` / `table` / `incremental` / `ephemeral` | 📝 has real output |
+| 06 | [Testing and data quality](reference/testing.md) | The 3 layers: test · contract · unit test | 📝 theory, not yet run |
+| 07 | [Macros, Jinja, packages](reference/macros-jinja-packages.md) | When SQL starts getting copy-pasted | 📝 has real output |
+| 08 | [Docs and lineage](reference/docs-and-lineage.md) | `dbt docs`, and impact analysis when changing a column | 📝 has real output |
+| 09 | [Exercises](tutorials/dbt-lab-duckdb.md) | Really run, with the output pasted back | 🔄 in progress |
 
-Ký hiệu: ✅ đã chạy tay · 📝 lý thuyết chưa kiểm chứng · 🔄 đang làm · ⬜ chưa viết
+Symbols: ✅ run by hand · 📝 theory, unverified · 🔄 in progress · ⬜ not written
 
-## Bản đồ khái niệm
+## The concept map
 
-| Khái niệm | Là gì | Khi nào dùng |
+| Concept | What it is | When to use it |
 |---|---|---|
-| `model` | Một file `.sql` = một `SELECT` → thành view/table | Đơn vị cơ bản, mọi thứ xoay quanh nó |
-| `ref()` | Trỏ tới model khác | **Luôn luôn** thay vì viết tên bảng — thứ dựng nên DAG |
-| `source()` | Trỏ tới bảng có sẵn dbt không tạo ra | Bảng do Spark/Flink/ingest ghi vào |
-| materialization | `view` / `table` / `incremental` / `ephemeral` | Quyết định dbt tạo ra cái gì |
-| `incremental` | Chỉ xử lý dòng mới, không build lại cả bảng | Bảng fact lớn |
-| generic test | `unique`, `not_null`, `accepted_values`, `relationships` | Khai trong YAML, 90% nhu cầu |
-| singular test | File `.sql` trả về **các dòng sai** | Luật nghiệp vụ riêng |
-| `seed` | CSV nhỏ → bảng | Bảng tra cứu tay |
-| `snapshot` | Bắt thay đổi theo thời gian (SCD2) | Dimension đổi chậm |
-| macro / Jinja | Hàm sinh SQL | Khi bắt đầu copy-paste SQL |
-| `dbt_utils` | Gói test/macro cộng đồng | `unique_combination_of_columns` — cần ngay |
-| `dbt docs` | Sinh trang web + sơ đồ lineage | Bàn giao, rà tác động |
+| `model` | One `.sql` file = one `SELECT` → becomes a view/table | The basic unit; everything revolves around it |
+| `ref()` | Points at another model | **Always**, instead of writing a table name — it's what builds the DAG |
+| `source()` | Points at an existing table dbt didn't create | A table written by Spark/Flink/an ingest job |
+| materialization | `view` / `table` / `incremental` / `ephemeral` | Decides what dbt creates |
+| `incremental` | Process only new rows instead of rebuilding the whole table | Large fact tables |
+| generic test | `unique`, `not_null`, `accepted_values`, `relationships` | Declared in YAML, covers 90% of needs |
+| singular test | A `.sql` file returning **the offending rows** | Your own business rules |
+| `seed` | A small CSV → a table | Hand-maintained lookup tables |
+| `snapshot` | Captures changes over time (SCD2) | Slowly changing dimensions |
+| macro / Jinja | A function that generates SQL | When you start copy-pasting SQL |
+| `dbt_utils` | The community test/macro package | `unique_combination_of_columns` — needed right away |
+| `dbt docs` | Generates a website + a lineage diagram | Handover, impact analysis |
 
-## Lộ trình
+## The learning path
 
-- [x] **Hiểu** — giải thích được vì sao dbt không thay Spark, và `ref()` để làm gì
-- [ ] **Chạy được** — model chạy trên lab DuckDB, `dbt run` + `dbt test` xanh (bài 1–3)
-- [ ] **Sửa được** — tự gỡ ≥3 lỗi thật, đọc được `target/compiled/` (bài 4–6)
-- [ ] **Thiết kế được** — chuyển cùng model đó sang Trino, chọn được materialization và bảo vệ được lựa chọn (bài 7)
+- [x] **Understand** — be able to explain why dbt doesn't replace Spark, and what `ref()` is for
+- [ ] **Run it** — models running on the DuckDB lab, with `dbt run` + `dbt test` green (exercises 1–3)
+- [ ] **Fix it** — debug ≥3 real errors yourself, and be able to read `target/compiled/` (exercises 4–6)
+- [ ] **Design it** — move those same models onto Trino, choose a materialization and defend the choice (exercise 7)
 
-## Tự kiểm
+## Check yourself
 
-Gấp tài liệu, trả lời miệng, rồi mới mở đáp án.
+Close the document, answer out loud, and only then open the answer.
 
 <details>
-<summary>1. dbt có chuyển dữ liệu không?</summary>
+<summary>1. Does dbt move data?</summary>
 
-Không. Nó biên dịch SQL rồi gửi cho warehouse chạy. Không có engine tính toán riêng.
-Là chữ T trong ELT.
+No. It compiles SQL and sends it to the warehouse to run. It has no computation engine of its own.
+It's the T in ELT.
 
 </details>
 
 <details>
-<summary>2. Vì sao phải dùng <code>ref()</code> thay vì viết thẳng tên bảng?</summary>
+<summary>2. Why use <code>ref()</code> instead of writing the table name directly?</summary>
 
-`ref()` là thứ duy nhất cho dbt biết phụ thuộc. Viết thẳng tên bảng thì DAG mất một
-cạnh → dbt có thể chạy sai thứ tự, và lineage nói dối. Nguy hiểm ở chỗ **model vẫn
-chạy được**, không báo lỗi gì.
+`ref()` is the only thing that tells dbt about a dependency. Write the table name directly and the DAG loses
+an edge → dbt may run things in the wrong order, and the lineage lies. The danger is that **the model still
+runs**, reporting no error at all.
 
 </details>
 
 <details>
-<summary>3. Khác nhau giữa <code>source()</code> và <code>ref()</code>?</summary>
+<summary>3. What's the difference between <code>source()</code> and <code>ref()</code>?</summary>
 
-`source()` = bảng dbt KHÔNG tạo ra (Spark/Flink ghi vào). `ref()` = model do chính
-dbt tạo. Nhầm chỗ này là dbt tưởng nó sở hữu bảng của người khác, và mất luôn
+`source()` = a table dbt did NOT create (written by Spark/Flink). `ref()` = a model dbt created
+itself. Confuse them and dbt thinks it owns somebody else's table, and you also lose
 `dbt source freshness`.
 
 </details>
 
 <details>
-<summary>4. Khi nào <code>view</code>, khi nào <code>table</code>, khi nào <code>incremental</code>?</summary>
+<summary>4. When <code>view</code>, when <code>table</code>, when <code>incremental</code>?</summary>
 
-`view` — rẻ, luôn tươi, nhưng tính lại mỗi lần query; hợp tầng staging.
-`table` — build lại toàn bộ mỗi lần chạy; hợp mart nhỏ/vừa.
-`incremental` — chỉ thêm dòng mới; hợp fact lớn, đổi lại phải tự lo dữ liệu sửa muộn.
-
-</details>
-
-<details>
-<summary>5. Test <code>unique</code> pass nhưng số vẫn sai — nghi gì trước?</summary>
-
-Nghi mình test sai grain. `unique` trên đúng một cột không nói gì về bảng có grain
-tổ hợp. Xác định grain TRƯỚC khi viết test.
+`view` — cheap, always fresh, but recomputed on every query; suits the staging layer.
+`table` — fully rebuilt on every run; suits small and medium marts.
+`incremental` — only appends new rows; suits large facts, in exchange for handling late-arriving edits yourself.
 
 </details>
 
 <details>
-<summary>6. Muốn biết dbt thật sự gửi câu SQL nào đi thì xem đâu?</summary>
+<summary>5. The <code>unique</code> test passes but the numbers are still wrong — what do I suspect first?</summary>
 
-`target/compiled/`. Đó là SQL sau khi Jinja đã render — thứ warehouse thật sự nhận.
+Suspect that you tested the wrong grain. A `unique` on exactly one column says nothing about a table with a
+composite grain. Establish the grain BEFORE writing tests.
 
 </details>
 
-## Sai lầm đã mắc
+<details>
+<summary>6. Where do I look to see the actual SQL dbt sent?</summary>
 
-Chi tiết nằm ở [`case-studies/`](case-studies/index.md) — trang này chỉ liệt kê.
+`target/compiled/`. That's the SQL after Jinja has rendered — what the warehouse actually receives.
 
-| Ngày | Sự cố | Bài học |
+</details>
+
+## Mistakes already made
+
+The details are in [`case-studies/`](case-studies/index.md) — this page only lists them.
+
+| Date | Incident | Lesson |
 |---|---|---|
-| 30/07/2026 | [AI sinh sai tên catalog Trino](case-studies/ai-sinh-sai-ten-catalog-trino.md) | Chi tiết môi trường phải kiểm bằng lệnh, không bằng cách đọc |
-| 30/07/2026 | [`unique` trên `don_hang_id`](reference/testing.md#5-trường-hợp-thật--test-fail-vì-test-sai-không-phải-dữ-liệu-sai) | Xác định grain trước khi viết test — test sai chứ dữ liệu không sai |
+| 2026-07-30 | [The AI generated the wrong Trino catalog name](case-studies/ai-sinh-sai-ten-catalog-trino.md) | Environment details must be verified by running a command, not by reading |
+| 2026-07-30 | [`unique` on `don_hang_id`](reference/testing.md#5-a-real-case--the-test-fails-because-the-test-is-wrong-not-the-data) | Establish the grain before writing tests — the test was wrong, not the data |
 
-## Nguồn
+## Sources
 
-- [ ] docs.getdbt.com — phần *Build your DAG* (đọc hết, đừng nhảy cóc)
-- [ ] `dbt_utils` — đọc danh sách test có sẵn trước khi tự viết
-- [ ] `dbt-trino` README — phần cấu hình Iceberg (để dành bài 7)
+- [ ] docs.getdbt.com — the *Build your DAG* section (read it all, don't skip)
+- [ ] `dbt_utils` — read the list of available tests before writing your own
+- [ ] `dbt-trino` README — the Iceberg configuration section (saved for exercise 7)
 
-## Liên quan trong kho
+## Related in this knowledge base
 
-Tài liệu về dbt nhưng **không nằm trong thư mục này** — chúng ở theo *dạng tài liệu*
-(`doc_type`), không theo chủ đề:
+Documents about dbt that **aren't in this directory** — they live by *document type*
+(`doc_type`) rather than by topic:
 
-| Dạng | Tài liệu | Dùng khi |
+| Type | Document | Use when |
 |---|---|---|
-| Bài tập | [dbt lab — DuckDB](tutorials/dbt-lab-duckdb.md) | chạy thật, có ô dán output |
-| Case study | *(chưa có)* | đã debug xong một sự cố dbt thật |
-| Cheatsheet | *(chưa có)* | đang làm, cần tra nhanh cú pháp |
-| Kỹ năng | [Triển khai test](skills/implementing-tests.md) | cần viết test thật, không phải hiểu khái niệm |
+| Exercises | [dbt lab — DuckDB](tutorials/dbt-lab-duckdb.md) | really running it, with a box to paste output |
+| Case study | *(none yet)* | a real dbt incident has been debugged |
+| Cheatsheet | *(none yet)* | working, and needing a quick syntax lookup |
+| Skills | [Implementing tests](skills/implementing-tests.md) | needing to write real tests, not understand the concept |
 
-Xem đầy đủ mọi thứ mang tag này: **[`/tags/dbt`](/tags/dbt)** — trang đó gom tất cả bất
-kể thư mục.
+To see everything carrying this tag: **[`/tags/dbt`](/tags/dbt)** — that page gathers it all regardless
+of directory.
 
-## Liên kết
+## Links
 
-- [Trino](../../query-engines/trino/index.md) — đích chuyển sang ở bài 7
-- [Iceberg](../../storage/iceberg/index.md) — table format dưới Trino
-- [SQL](../../databases/sql/index.md) — nền của mọi thứ ở đây
+- [Trino](../../query-engines/trino/index.md) — the target we move onto in exercise 7
+- [Iceberg](../../storage/iceberg/index.md) — the table format under Trino
+- [SQL](../../databases/sql/index.md) — the foundation of everything here

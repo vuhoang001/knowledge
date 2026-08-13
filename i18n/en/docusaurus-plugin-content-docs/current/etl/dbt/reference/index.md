@@ -1,9 +1,8 @@
 ---
-title: Tài liệu — dbt
-i18n_status: untranslated
+title: Reference — dbt
 sidebar_key: dbt-reference
 sidebar_position: 0
-description: "Giải thích nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước."
+description: "Explains what it is, why, and what the trade-offs are. Read this group first."
 tags: [reference, dbt]
 domain: data-engineering
 category: index
@@ -11,21 +10,21 @@ doc_type: index
 updated: 2026-07-31
 ---
 
-# Tài liệu — dbt
+# Reference — dbt
 
-Giải thích *nó là gì, vì sao, đánh đổi ra sao*. Đọc nhóm này trước.
+Explains *what it is, why, and what the trade-offs are*. Read this group first.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | Answers the question | Status |
 |---|---|---|---|
-| 1 | [dbt là gì và nó thật sự làm gì](what-is-dbt.md) | Nhìn tận mắt SQL mà dbt sinh ra: ref() biến thành gì, test biên dịch  | ✅ đã chạy tay |
-| 2 | [Cấu trúc một dbt project](project-structure.md) | dbt_project.yml, profiles.yml, target/compiled — thư mục nào chứa gì. | 🟡 draft |
-| 3 | [Model và ref() — DAG mọc ra từ đâu](models-and-ref.md) | ref() không phải cách viết tắt tên bảng mà là cách duy nhất khai báo p | 🟡 draft |
-| 4 | [Source, seed và snapshot](sources-seeds-snapshots.md) | Ba cách đưa dữ liệu không do dbt tính ra vào DAG — và vì sao snapshot  | 🟡 draft |
-| 5 | [Materialization](materializations.md) | view, table, incremental, ephemeral — cùng một SELECT, khác thứ dbt bọ | 🟡 draft |
-| 6 | [Test và data quality trong dbt](testing.md) | Ba tầng test/contract/unit test, bốn cơ chế test, và ca test fail vì t | 📝 lý thuyết |
-| 7 | [Macro, Jinja và package](macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy — và ngưỡng nào thì nên viết macro. | 🟡 draft |
-| 8 | [dbt docs và lineage](docs-and-lineage.md) | Sơ đồ lineage chính xác đúng bằng mức bạn dùng ref() kỷ luật. | 🟡 draft |
+| 1 | [What dbt is and what it actually does](what-is-dbt.md) | See with your own eyes the SQL dbt generates: what ref() becomes, what a test compiles  | ✅ run by hand |
+| 2 | [The structure of a dbt project](project-structure.md) | dbt_project.yml, profiles.yml, target/compiled — which directory holds what. | 🟡 draft |
+| 3 | [Models and ref() — where the DAG comes from](models-and-ref.md) | ref() isn't shorthand for a table name, it's the only way to declare a d | 🟡 draft |
+| 4 | [Sources, seeds and snapshots](sources-seeds-snapshots.md) | Three ways to bring data dbt didn't compute into the DAG — and why a snapshot  | 🟡 draft |
+| 5 | [Materializations](materializations.md) | view, table, incremental, ephemeral — the same SELECT, a different thing dbt wra | 🟡 draft |
+| 6 | [Testing and data quality in dbt](testing.md) | The three layers test/contract/unit test, the four test mechanisms, and a test failing because t | 📝 theory |
+| 7 | [Macros, Jinja and packages](macros-jinja-packages.md) | Jinja runs before the SQL leaves your machine — and the threshold for writing a macro. | 🟡 draft |
+| 8 | [dbt docs and lineage](docs-and-lineage.md) | The lineage diagram is exactly as accurate as your discipline with ref(). | 🟡 draft |
 
 ## Related Topics
 
-- [dbt](../index.md) — chủ đề chứa thư mục này
+- [dbt](../index.md) — the topic this directory belongs to

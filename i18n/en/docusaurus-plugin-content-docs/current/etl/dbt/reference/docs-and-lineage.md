@@ -1,8 +1,7 @@
 ---
-title: dbt docs và lineage
-i18n_status: untranslated
+title: dbt docs and lineage
 sidebar_position: 8
-description: Sơ đồ lineage chính xác đúng bằng mức bạn dùng ref() kỷ luật.
+description: The lineage graph is exactly as accurate as your discipline with ref().
 tags: [dbt, docs, lineage, exposures]
 domain: data-engineering
 category: technology
@@ -12,52 +11,52 @@ difficulty: intermediate
 verified_at:
 updated: 2026-07-31
 ---
-# Docs và lineage — rà tác động trước khi sửa
+# Docs and lineage — impact analysis before you change anything
 
-> **Chốt:** `dbt docs` không phải tính năng trang trí. Sơ đồ lineage là **cùng một
-> DAG** mà dbt dùng để xếp thứ tự chạy — nên nó chính xác đúng bằng mức bạn dùng
-> `ref()` kỷ luật. Viết tên bảng thẳng thì sơ đồ nói dối.
+> **Takeaway:** `dbt docs` isn't a decorative feature. The lineage graph is **the same
+> DAG** dbt uses to order the run — so it's exactly as accurate as your discipline with
+> `ref()`. Write table names directly and the graph lies.
 
 
-## `manifest.json` khác `catalog.json` chỗ nào
+## How `manifest.json` differs from `catalog.json`
 
-`dbt docs generate` sinh cả hai. Chúng trả lời hai câu hỏi khác hẳn nhau:
+`dbt docs generate` produces both. They answer two entirely different questions:
 
 | | `manifest.json` | `catalog.json` |
 |---|---|---|
-| Trả lời | dbt **biết gì** về project của bạn | warehouse **thật sự có gì** |
-| Sinh khi | mọi lệnh dbt | chỉ `dbt docs generate` |
-| Nguồn | đọc file `.sql` và `.yml` | truy vấn `information_schema` |
-| Kích thước thật | 756 KB | nhỏ hơn nhiều |
+| Answers | what dbt **knows** about your project | what the warehouse **actually has** |
+| Produced by | every dbt command | only `dbt docs generate` |
+| Source | reading the `.sql` and `.yml` files | querying `information_schema` |
+| Real size | 756 KB | much smaller |
 
-Đo trên project 4 model:
+Measured on a 4-model project:
 
 ```text
 manifest.json  nodes: 16 | sources: 1 | macros: 605
 catalog.json   nodes: 7
 ```
 
-`manifest` có 16 node vì nó đếm cả test, seed, snapshot, unit test. 605 macro là kể cả
-macro của dbt và `dbt_utils`.
+`manifest` has 16 nodes because it counts tests, seeds, snapshots and unit tests too. The 605 macros include
+dbt's own macros and `dbt_utils`'s.
 
-Bên trong một node của `manifest`:
+Inside one node of `manifest`:
 
 ```text
 depends_on: ['seed.scratch.don_hang_chi_tiet']
 description: Một dòng = **một dòng hàng trong một đơn**. Grain là cặp `(...)`
 ```
 
-Bên trong cùng node đó ở `catalog`:
+Inside the same node in `catalog`:
 
 ```text
 cot that trong warehouse: don_hang_id, dong, ma_hang, so_luong, don_gia, thanh_tien, ngay
 kieu cua thanh_tien: INTEGER
 ```
 
-**`manifest` là ý định, `catalog` là hiện thực.** Lệch nhau nghĩa là model đã đổi mà chưa
-chạy lại — và `dbt docs` hiển thị cả hai cạnh nhau nên nhìn ra ngay.
+**`manifest` is intent, `catalog` is reality.** A mismatch means the model changed and hasn't been
+re-run — and `dbt docs` shows both side by side, so you spot it immediately.
 
-## Mô tả cột → hiện lên docs
+## Column descriptions → showing up in docs
 
 ```yaml
 models:
@@ -67,12 +66,12 @@ models:
         description: "Mã đơn hàng. KHÔNG unique — một đơn có nhiều dòng."
 ```
 
-Mô tả này đi vào `manifest.json` rồi lên trang docs. Nó là chỗ **duy nhất** trả lời được
-câu *"cột này nghĩa là gì"* mà không phải hỏi người viết.
+That description goes into `manifest.json` and then onto the docs page. It's the **only** place that answers
+*"what does this column mean"* without having to ask whoever wrote it.
 
-### `{% raw %}{% docs %}{% endraw %}` — mô tả dài, dùng lại nhiều chỗ
+### `{% raw %}{% docs %}{% endraw %}` — long descriptions, reused in several places
 
-Khai một lần trong `models/docs/docs.md`:
+Declare it once in `models/docs/docs.md`:
 
 ```markdown
 {% raw %}{% docs mo_ta_grain %}
@@ -81,37 +80,37 @@ không phải `don_hang_id`.
 {% enddocs %}{% endraw %}
 ```
 
-Gọi ở bất kỳ đâu:
+Call it anywhere:
 
 ```yaml
     description: "{% raw %}{{ doc('mo_ta_grain') }}{% endraw %}"
 ```
 
-Kiểm trong `manifest.json` sau `dbt docs generate` — nó đã render:
+Check `manifest.json` after `dbt docs generate` — it's been rendered:
 
 ```text
 description da render doc(): Một dòng = **một dòng hàng trong một đơn**. Grain là cặp `(d
 ```
 
-Dùng khi cùng một định nghĩa xuất hiện ở nhiều model. Sửa một chỗ, mọi nơi đổi theo —
-đúng nguyên tắc một kiến thức một chỗ.
+Use it when the same definition appears in several models. Change one place and everywhere follows —
+exactly the one-piece-of-knowledge-in-one-place principle.
 
-## `dbt docs serve` — và host cho cả nhóm
+## `dbt docs serve` — and hosting it for the team
 
 ```bash
 dbt docs generate    # sinh manifest.json + catalog.json + index.html
 dbt docs serve       # mở web server cục bộ, mặc định cổng 8080
 ```
 
-`dbt docs serve` chỉ chạy trên máy bạn. Muốn cả nhóm xem thì **trang này là tĩnh** — đẩy
-`target/index.html` + hai file JSON lên bất kỳ static host nào: GitHub Pages, S3, nginx.
-Thường gắn vào CI: mỗi lần merge vào `main` thì sinh lại và deploy.
+`dbt docs serve` only runs on your machine. To let the whole team see it, note that **the page is static** — push
+`target/index.html` plus the two JSON files to any static host: GitHub Pages, S3, nginx.
+Usually wired into CI: regenerate and deploy on every merge into `main`.
 
-## `state:modified` — CI chỉ chạy phần đổi
+## `state:modified` — CI running only the changed part
 
-Đây là lý do thực dụng nhất để quan tâm tới `manifest.json`.
+This is the most pragmatic reason to care about `manifest.json`.
 
-Lưu manifest của lần chạy trước, sửa **một** model, rồi so:
+Save the previous run's manifest, change **one** model, then compare:
 
 ```bash
 cp target/manifest.json state/
@@ -125,7 +124,7 @@ scratch.marts.mart_jinja
 scratch.staging.stg_don_hang
 ```
 
-So với chạy tất cả:
+Compared with running everything:
 
 ```text
 scratch.marts.mart_doanh_thu_ngay
@@ -134,20 +133,20 @@ scratch.staging.stg_don_hang
 scratch.staging.stg_hang_hoa
 ```
 
-**3 thay vì 4.** `stg_hang_hoa` không đổi và không nằm hạ nguồn của model đã đổi nên
-được bỏ qua.
+**3 instead of 4.** `stg_hang_hoa` didn't change and isn't downstream of the changed model, so it's
+skipped.
 
-Trên project 4 model thì tiết kiệm chẳng bao nhiêu. Trên project 400 model, sửa một
-model staging thì `state:modified+` chạy vài chục thay vì bốn trăm — khác biệt giữa CI
-2 phút và CI 40 phút.
+On a 4-model project the saving is negligible. On a 400-model project, changing one staging model means
+`state:modified+` runs a few dozen instead of four hundred — the difference between a 2-minute CI and a
+40-minute one.
 
-Điều kiện: phải có `manifest.json` của **lần chạy trước** làm mốc. Thường lưu như một
-artifact của CI, hoặc lấy từ lần deploy production gần nhất.
+The precondition: you need the **previous run's** `manifest.json` as the baseline. Usually stored as a
+CI artifact, or taken from the most recent production deploy.
 
-## `exposures` — khai ai đang đọc model của bạn
+## `exposures` — declaring who reads your models
 
-DAG của dbt dừng ở model cuối cùng. Nhưng thực tế còn có dashboard, API, notebook đang
-đọc bảng đó — và dbt **không biết gì** về chúng.
+dbt's DAG stops at the last model. But in reality there are dashboards, APIs and notebooks reading that
+table — and dbt **knows nothing** about them.
 
 ```yaml
 exposures:
@@ -160,35 +159,34 @@ exposures:
       - ref('mart_doanh_thu_ngay')
 ```
 
-Giá trị thật: `dbt ls --select +exposure:dashboard_doanh_thu` cho biết **mọi thứ mà
-dashboard đó phụ thuộc vào**. Trước khi xoá một cột, câu lệnh đó trả lời được *"xoá cái
-này thì gãy dashboard nào"* — thứ mà không có exposure thì chỉ biết sau khi có người
-phàn nàn.
+The real value: `dbt ls --select +exposure:dashboard_doanh_thu` tells you **everything that dashboard
+depends on**. Before dropping a column, that command answers *"what dashboard does dropping this
+break"* — something you'd otherwise only learn once somebody complains.
 
-## Vì sao phần này quan trọng hơn vẻ ngoài
+## Why this matters more than it looks
 
-`dbt docs` nhìn giống "tài liệu cho đẹp". Thực ra ba thứ dưới đây là **công cụ vận hành**:
+`dbt docs` looks like "documentation for prettiness". In fact these three things are **operational tools**:
 
-| Thứ | Trả lời câu hỏi |
+| Thing | The question it answers |
 |---|---|
-| Lineage graph | "Sửa cột này thì gãy cái gì" |
-| `state:modified` | "CI cần chạy lại những gì" |
-| `exposures` | "Ai đang phụ thuộc vào bảng này ngoài dbt" |
+| The lineage graph | "What breaks if I change this column" |
+| `state:modified` | "What does CI need to re-run" |
+| `exposures` | "Who depends on this table outside dbt" |
 
-Cả ba đều là câu hỏi **rà tác động**, và không có chúng thì câu trả lời là đoán.
+All three are **impact-analysis** questions, and without them the answer is guesswork.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Không viết `description` | Không ai biết cột nghĩa là gì, kể cả bạn sáu tháng sau |
-| Chỉ `dbt docs serve` cục bộ | Chỉ mình bạn xem được; phải deploy trang tĩnh |
-| Không lưu `manifest.json` làm mốc | Không dùng được `state:modified`, CI chạy toàn bộ |
-| Bỏ qua `exposures` | Xoá cột xong mới biết gãy dashboard |
-| Copy cùng một mô tả vào nhiều model | Sửa một chỗ, các chỗ khác lệch; dùng `{% raw %}{% docs %}{% endraw %}` |
+| Not writing a `description` | Nobody knows what the column means, including you six months later |
+| Only running `dbt docs serve` locally | Only you can see it; you have to deploy the static page |
+| Not saving a `manifest.json` baseline | You can't use `state:modified`, and CI runs everything |
+| Ignoring `exposures` | You only learn you broke a dashboard after dropping the column |
+| Copying the same description into several models | Fix one place and the others drift; use `{% raw %}{% docs %}{% endraw %}` |
 
 ## Related Topics
 
-- [Mục lục dbt](index.md)
-- [Model và `ref()`](models-and-ref.md) — DAG đến từ đâu
-- [Bài tập](../tutorials/dbt-lab-duckdb.md) bài 4
+- [dbt contents](index.md)
+- [Models and `ref()`](models-and-ref.md) — where the DAG comes from
+- [Exercises](../tutorials/dbt-lab-duckdb.md) exercise 4

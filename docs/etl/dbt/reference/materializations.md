@@ -128,7 +128,7 @@ Chưa trả lời được cả bốn thì dùng `table`. Chậm hơn nhưng **k
 
 ## Chọn loại nào
 
-```text
+```text i18n-prose
 Model có nặng không?
 ├─ Không  → view          (mặc định, rẻ nhất, luôn tươi)
 └─ Có

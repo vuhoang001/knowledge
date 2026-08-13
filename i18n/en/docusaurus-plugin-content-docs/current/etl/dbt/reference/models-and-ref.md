@@ -1,8 +1,7 @@
 ---
-title: Model và ref() — DAG mọc ra từ đâu
-i18n_status: untranslated
+title: Models and ref() — where the DAG comes from
 sidebar_position: 3
-description: ref() không phải cách viết tắt tên bảng mà là cách duy nhất khai báo phụ thuộc.
+description: ref() isn't shorthand for a table name, it's the only way to declare a dependency.
 tags: [dbt, model, ref, dag, lineage, ephemeral]
 domain: data-engineering
 category: technology
@@ -13,45 +12,45 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Model và `ref()` — DAG mọc ra từ đâu
+# Models and `ref()` — where the DAG comes from
 
-> **Chốt:** một model = một file `.sql` = một câu `SELECT`. `ref()` không phải cách viết
-> tắt tên bảng — nó là **cách duy nhất** khai báo phụ thuộc. Viết thẳng tên bảng thì
-> model vẫn chạy, nhưng DAG mất một cạnh và lineage nói dối.
+> **Takeaway:** one model = one `.sql` file = one `SELECT`. `ref()` isn't shorthand for a table
+> name — it's **the only way** to declare a dependency. Write the table name directly and the
+> model still runs, but the DAG loses an edge and the lineage lies.
 
-Mọi output trong trang này chạy thật trên dbt 1.12.0 + dbt-duckdb 1.10.1.
+All the output on this page was really run on dbt 1.12.0 + dbt-duckdb 1.10.1.
 
-## Model là gì — và không được chứa gì
+## What a model is — and what it must not contain
 
-Một model là **một câu `SELECT`**. Không `CREATE`, không `INSERT`, không dấu `;` cuối.
+A model is **one `SELECT`**. No `CREATE`, no `INSERT`, no trailing `;`.
 
-Lý do: dbt **bọc** câu `SELECT` của bạn vào DDL do nó sinh ra. Bạn viết `CREATE` thì
-thành `CREATE TABLE ... AS (CREATE TABLE ...)`. Dấu `;` cắt câu làm đôi, phần bọc phía
-sau thành câu rời.
+The reason: dbt **wraps** your `SELECT` in DDL it generates itself. Write a `CREATE` and you
+get `CREATE TABLE ... AS (CREATE TABLE ...)`. A `;` cuts the statement in two, and the wrapping
+after it becomes a stray statement.
 
-Nói cách khác: bạn khai **kết quả muốn có**, dbt lo cách tạo ra nó. Đổi từ `view` sang
-`table` sang `incremental` mà **không sửa một chữ SQL nào** — đó là thứ mua được bằng
-việc từ bỏ quyền viết DDL.
+Put differently: you declare **the result you want**, and dbt handles how to create it. Switching from `view`
+to `table` to `incremental` **without editing a character of SQL** — that's what you buy by
+giving up the right to write DDL.
 
-## `ref()` dựng nên DAG
+## `ref()` builds the DAG
 
-Mỗi lần dbt thấy `ref('a')` trong model `b`, nó ghi một cạnh `a → b`. Từ tập cạnh đó:
+Every time dbt sees `ref('a')` in model `b`, it records an edge `a → b`. From that edge set:
 
-| dbt làm được | Nhờ đâu |
+| What dbt can do | Thanks to |
 |---|---|
-| Tự biết thứ tự chạy | sắp topo trên DAG |
-| Chạy đúng nhánh bị ảnh hưởng (`--select x+`) | duyệt đồ thị |
-| Vẽ lineage trong `dbt docs` | chính đồ thị đó |
-| Báo lỗi khi model bị trỏ tới biến mất | kiểm cạnh |
+| Know the run order by itself | a topological sort over the DAG |
+| Run exactly the affected branch (`--select x+`) | graph traversal |
+| Draw the lineage in `dbt docs` | that same graph |
+| Report an error when a referenced model disappears | edge validation |
 
-Viết thẳng `from lab.main.don_hang_chi_tiet` thì **model vẫn chạy** — và đó mới là chỗ
-nguy hiểm. Không báo gì, nhưng dbt có thể chạy sai thứ tự, và lineage **nói dối**.
+Writing `from lab.main.don_hang_chi_tiet` directly means **the model still runs** — and that's precisely the
+danger. Nothing is reported, but dbt may run things in the wrong order and the lineage **lies**.
 
-**Quy tắc không có ngoại lệ: không bao giờ viết tên bảng thẳng.**
+**The rule with no exceptions: never write a table name directly.**
 
-### `ref()` biên dịch thành gì
+### What `ref()` compiles into
 
-Model `mart_doanh_thu_ngay.sql` viết:
+The model `mart_doanh_thu_ngay.sql` is written:
 
 ```sql
 select d.ngay, h.nhom, sum(d.thanh_tien) as doanh_thu, count(*) as so_dong
@@ -60,7 +59,7 @@ join {{ ref('stg_hang_hoa') }} h on d.ma_hang = h.ma_hang
 group by 1, 2
 ```
 
-`target/compiled/.../mart_doanh_thu_ngay.sql` — thứ warehouse thật sự nhận:
+`target/compiled/.../mart_doanh_thu_ngay.sql` — what the warehouse actually receives:
 
 ```sql
 select d.ngay, h.nhom, sum(d.thanh_tien) as doanh_thu, count(*) as so_dong
@@ -69,27 +68,27 @@ join "scratch"."main"."stg_hang_hoa" h on d.ma_hang = h.ma_hang
 group by 1, 2
 ```
 
-`ref()` biến mất, thành tên bảng đầy đủ ba phần. **Chuyển sang warehouse khác thì phần
-tên này tự đổi** — đó là lý do không hardcode.
+`ref()` disappears, becoming a fully qualified three-part table name. **Move to a different warehouse and
+this naming part changes itself** — which is why you don't hardcode it.
 
-## Đặt tên theo tầng
+## Naming by layer
 
-| Tiền tố | Tầng | Làm gì | Materialization hay dùng |
+| Prefix | Layer | What it does | The usual materialization |
 |---|---|---|---|
-| `stg_` | staging | 1 nguồn = 1 model. Đổi tên cột, ép kiểu, **không** join | `view` |
-| `int_` | intermediate | Bước trung gian phức tạp, không ai đọc trực tiếp | `ephemeral` / `view` |
-| `fct_` `dim_` | mart | Bảng cho người dùng cuối | `table` / `incremental` |
+| `stg_` | staging | 1 source = 1 model. Rename columns, cast types, **no** joins | `view` |
+| `int_` | intermediate | A complex intermediate step nobody reads directly | `ephemeral` / `view` |
+| `fct_` `dim_` | mart | Tables for end users | `table` / `incremental` |
 
-Vì sao phải tầng hoá: không có `stg_`, mỗi mart tự ép kiểu và đổi tên theo cách riêng —
-đến lúc hai mart ra số khác nhau thì không biết bên nào đúng. Tầng `stg_` là **một chỗ
-duy nhất** định nghĩa "cột này nghĩa là gì".
+Why layering is necessary: without `stg_`, every mart casts types and renames columns in its own way —
+and by the time two marts produce different numbers, nobody knows which is right. The `stg_` layer is **the
+one single place** that defines "what this column means".
 
-## Chọn model để chạy
+## Selecting models to run
 
-Chạy trên project có DAG: `don_hang_chi_tiet` (seed) → `stg_don_hang` → `mart_doanh_thu_ngay`.
+Run on a project with the DAG: `don_hang_chi_tiet` (a seed) → `stg_don_hang` → `mart_doanh_thu_ngay`.
 
 ```bash
-dbt ls --select stg_don_hang+          # chính nó + mọi thứ XUÔI dòng
+dbt ls --select stg_don_hang+          # itself + everything DOWNSTREAM
 ```
 
 ```text
@@ -98,7 +97,7 @@ scratch.staging.stg_don_hang
 ```
 
 ```bash
-dbt ls --select +mart_doanh_thu_ngay   # chính nó + mọi thứ NGƯỢC dòng
+dbt ls --select +mart_doanh_thu_ngay   # itself + everything UPSTREAM
 ```
 
 ```text
@@ -109,23 +108,23 @@ scratch.don_hang_chi_tiet
 scratch.hang_hoa
 ```
 
-Chú ý bản ngược dòng kéo về **cả seed** — vì seed cũng là node trong DAG.
+Note that the upstream version pulls in **the seeds too** — because a seed is also a node in the DAG.
 
-| Cú pháp | Nghĩa |
+| Syntax | Meaning |
 |---|---|
-| `x` | đúng model `x` |
-| `x+` | `x` và mọi thứ phụ thuộc vào nó (xuôi dòng) |
-| `+x` | `x` và mọi thứ nó phụ thuộc (ngược dòng) |
-| `x+2` | xuôi dòng nhưng **chỉ 2 bước** |
-| `tag:daily` | mọi model mang tag đó |
-| `state:modified` | model đổi so với một `manifest.json` trước — nền của CI |
+| `x` | exactly model `x` |
+| `x+` | `x` and everything depending on it (downstream) |
+| `+x` | `x` and everything it depends on (upstream) |
+| `x+2` | downstream but **only 2 steps** |
+| `tag:daily` | every model carrying that tag |
+| `state:modified` | models changed relative to an earlier `manifest.json` — the basis of CI |
 
-`+x` là câu lệnh cần khi **debug**: dựng lại đúng chuỗi sinh ra một bảng sai.
-`x+` là câu lệnh cần khi **sửa**: chạy lại mọi thứ bị ảnh hưởng bởi thay đổi.
+`+x` is the command you need when **debugging**: rebuild the exact chain that produced a wrong table.
+`x+` is the command you need when **fixing**: re-run everything affected by a change.
 
-## `config()` trong model hay `dbt_project.yml`?
+## `config()` in the model or `dbt_project.yml`?
 
-`dbt_project.yml` khai `marts` là `table`:
+`dbt_project.yml` declares `marts` as `table`:
 
 ```yaml
 models:
@@ -135,14 +134,14 @@ models:
       +materialized: table
 ```
 
-Model `marts/mart_test_config.sql` khai ngược lại:
+The model `marts/mart_test_config.sql` declares the opposite:
 
 ```sql
 {{ config(materialized='view') }}
 select 1 as x
 ```
 
-Kết quả trong warehouse:
+The result in the warehouse:
 
 ```text
 ┌──────────────────┬────────────┐
@@ -152,20 +151,20 @@ Kết quả trong warehouse:
 └──────────────────┴────────────┘
 ```
 
-**`config()` trong model thắng.** Thứ tự ưu tiên: càng gần model càng thắng —
-`config()` trong file > cấu hình thư mục con > cấu hình project.
+**`config()` in the model wins.** The precedence order: closer to the model wins —
+`config()` in the file > subdirectory configuration > project configuration.
 
-Hệ quả thực dụng: đặt mặc định hợp lý ở `dbt_project.yml`, chỉ dùng `config()` cho
-**ngoại lệ** — và mỗi lần dùng nên có comment nói vì sao, vì nó đang phá mặc định.
+The practical consequence: set sensible defaults in `dbt_project.yml` and use `config()` only for
+**exceptions** — and each use should carry a comment saying why, because it's breaking the default.
 
-## `ephemeral` — model không tồn tại trong warehouse
+## `ephemeral` — a model that doesn't exist in the warehouse
 
 ```sql
 {{ config(materialized='ephemeral') }}
 select don_hang_id, thanh_tien from {{ ref('stg_don_hang') }}
 ```
 
-Model dùng nó biên dịch ra:
+The model using it compiles into:
 
 ```sql
 with __dbt__cte__stg_eph as (
@@ -173,7 +172,7 @@ select don_hang_id, thanh_tien from "scratch"."main"."stg_don_hang"
 ) select don_hang_id, sum(thanh_tien) as tong from __dbt__cte__stg_eph group by 1
 ```
 
-Bị **nhúng thành CTE**. Kiểm trong warehouse:
+It gets **inlined as a CTE**. Checking in the warehouse:
 
 ```text
 ┌─────────────────────┬────────────┐
@@ -188,14 +187,15 @@ Bị **nhúng thành CTE**. Kiểm trong warehouse:
 └─────────────────────┴────────────┘
 ```
 
-`stg_eph` **không có trong danh sách**. Nó chỉ tồn tại lúc biên dịch.
+`stg_eph` is **not in the list**. It only exists at compile time.
 
-Đánh đổi: gọn warehouse, nhưng **không query trực tiếp được** và không debug riêng
-được. Dùng cho bước trung gian không ai cần đọc; đừng dùng nếu bạn sẽ phải mở nó ra xem.
+The trade-off: a tidier warehouse, but you **can't query it directly** and can't debug it in
+isolation. Use it for intermediate steps nobody needs to read; don't use it if you'll have to open it up and
+look.
 
-## Vòng trong DAG
+## Cycles in the DAG
 
-Hai model trỏ vào nhau:
+Two models pointing at each other:
 
 ```sql
 -- stg_vong_a.sql
@@ -204,30 +204,30 @@ select 1 as x from {{ ref('stg_vong_b') }}
 select 1 as x from {{ ref('stg_vong_a') }}
 ```
 
-`dbt run` dừng ngay, **không chạy model nào**:
+`dbt run` stops immediately and runs **no model at all**:
 
 ```text
 Found a cycle: model.scratch.stg_vong_b --> model.scratch.stg_vong_a
 ```
 
-Đây là một trong ít lỗi dbt bắt được ở mức đồ thị, trước khi chạm warehouse. Bắt được
-vì `ref()` khai báo phụ thuộc tường minh — viết thẳng tên bảng thì dbt **không thấy
-vòng**, và bảng sẽ được dựng theo thứ tự tuỳ hứng.
+This is one of the few errors dbt catches at the graph level, before touching the warehouse. It catches it
+because `ref()` declares the dependency explicitly — write the table name directly and dbt **can't see the
+cycle**, so the tables get built in an arbitrary order.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Viết thẳng tên bảng thay vì `ref()` | Model vẫn chạy, DAG mất cạnh, lineage nói dối, có thể chạy sai thứ tự |
-| Có `CREATE`/`INSERT`/`;` trong model | dbt bọc DDL của nó ra ngoài → SQL hỏng |
-| Join ở tầng `stg_` | Mất tính "một nguồn một model", tầng staging hết tác dụng |
-| Rắc `config()` khắp nơi | Không đọc `dbt_project.yml` là không biết model chạy kiểu gì |
-| `ephemeral` cho model cần debug | Không query trực tiếp được, phải đọc SQL compile để hiểu |
+| Writing a table name directly instead of `ref()` | The model still runs, the DAG loses an edge, the lineage lies, and things may run in the wrong order |
+| Having `CREATE`/`INSERT`/`;` inside a model | dbt wraps its DDL around it → broken SQL |
+| Joining in the `stg_` layer | You lose the "one source, one model" property and the staging layer stops serving its purpose |
+| Sprinkling `config()` everywhere | Reading `dbt_project.yml` no longer tells you how a model runs |
+| `ephemeral` for a model you need to debug | You can't query it directly and have to read the compiled SQL to understand it |
 
 ## Related Topics
 
-- [dbt là gì](what-is-dbt.md) — `ref()` lần đầu, và SQL compile
-- [Materialization](materializations.md) — `view`/`table`/`incremental`/`ephemeral` chọn thế nào
-- [Cấu trúc project](project-structure.md) — `target/compiled/` nằm ở đâu
-- [Source, seed, snapshot](sources-seeds-snapshots.md) — `source()` khác `ref()` chỗ nào
-- [Bài tập](../tutorials/dbt-lab-duckdb.md) bài 4
+- [What dbt is](what-is-dbt.md) — `ref()` for the first time, and the compiled SQL
+- [Materializations](materializations.md) — how to choose `view`/`table`/`incremental`/`ephemeral`
+- [The project structure](project-structure.md) — where `target/compiled/` lives
+- [Sources, seeds, snapshots](sources-seeds-snapshots.md) — how `source()` differs from `ref()`
+- [Exercises](../tutorials/dbt-lab-duckdb.md) exercise 4

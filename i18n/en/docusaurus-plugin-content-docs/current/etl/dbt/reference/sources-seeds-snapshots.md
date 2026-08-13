@@ -1,8 +1,7 @@
 ---
-title: Source, seed và snapshot
-i18n_status: untranslated
+title: Sources, seeds and snapshots
 sidebar_position: 4
-description: Ba cách đưa dữ liệu không do dbt tính ra vào DAG — và vì sao snapshot không build lại được.
+description: Three ways to bring data dbt didn't compute into the DAG — and why a snapshot can't be rebuilt.
 tags: [dbt, source, seed, snapshot, scd, freshness]
 domain: data-engineering
 category: technology
@@ -12,30 +11,30 @@ difficulty: intermediate
 verified_at:
 updated: 2026-07-31
 ---
-# Source, seed, snapshot — dữ liệu vào từ đâu khi không phải model
+# Sources, seeds, snapshots — where data comes in from when it isn't a model
 
-> **Chốt:** ba cách đưa dữ liệu *không do dbt tính ra* vào DAG. Nhầm giữa chúng là
-> dbt tưởng nó sở hữu bảng của người khác.
+> **Takeaway:** three ways to bring data *dbt didn't compute* into the DAG. Confuse them and
+> dbt thinks it owns somebody else's table.
 
-| | Trỏ tới / tạo ra | Ai tạo bảng | Dùng khi |
+| | Points at / creates | Who creates the table | Use when |
 |---|---|---|---|
-| `source()` | bảng đã có sẵn | người khác (Spark, Flink, ingest) | đầu vào của cả DAG |
-| `seed` | CSV trong repo → bảng | dbt | bảng tra cứu tay, nhỏ, ít đổi |
-| `snapshot` | bảng lịch sử SCD2 | dbt | dimension đổi chậm, cần biết "hồi đó giá trị là gì" |
+| `source()` | an existing table | somebody else (Spark, Flink, an ingest job) | the input to the whole DAG |
+| `seed` | a CSV in the repo → a table | dbt | a hand-maintained lookup table, small, rarely changing |
+| `snapshot` | an SCD2 history table | dbt | a slowly changing dimension where you need to know "what the value was back then" |
 
 
-## Ba thứ, ba vai trò khác hẳn nhau
+## Three things, three completely different roles
 
 | | `source()` | `seed` | `snapshot` |
 |---|---|---|---|
-| Dữ liệu đến từ | hệ khác ghi vào | file CSV trong repo | model/source dbt đọc |
-| dbt có tạo bảng không | **không** | có | có |
-| Chạy bằng | — (chỉ tham chiếu) | `dbt seed` | `dbt snapshot` |
-| Tái tạo được không | — | ✅ | ❌ **không bao giờ** |
+| The data comes from | another system writing it | a CSV file in the repo | a dbt model/source it reads |
+| Does dbt create the table | **no** | yes | yes |
+| Run with | — (a reference only) | `dbt seed` | `dbt snapshot` |
+| Reproducible | — | ✅ | ❌ **never** |
 
-Dòng cuối là điều quan trọng nhất cả trang.
+That last row is the most important thing on this page.
 
-## `source()` — bảng dbt KHÔNG sở hữu
+## `source()` — a table dbt does NOT own
 
 ```yaml
 # models/staging/src.yml
@@ -51,15 +50,15 @@ sources:
           error_after: {count: 24, period: hour}
 ```
 
-Dùng trong model: `from {{ source('he_nguon', 'raw_don_hang') }}`.
+Used in a model: `from {{ source('he_nguon', 'raw_don_hang') }}`.
 
-**Vì sao không dùng `ref()`:** `ref()` nói *"dbt tạo ra bảng này"*. Bảng do Spark/Flink/
-ingest ghi vào thì dbt không sở hữu — khai nhầm thành `ref()` là dbt tưởng nó chịu trách
-nhiệm, và mất luôn `dbt source freshness`.
+**Why not `ref()`:** `ref()` says *"dbt created this table"*. A table written by Spark/Flink/an
+ingest job isn't owned by dbt — declaring it as a `ref()` makes dbt think it's responsible, and you also lose
+`dbt source freshness`.
 
-### `dbt source freshness` — chỗ hay bỏ quên nhất
+### `dbt source freshness` — the most commonly forgotten thing
 
-Nguồn nạp lần cuối 25/07, chạy ngày 31/07:
+The source was last loaded on 25/07, run on 31/07:
 
 ```text
 1 of 1 START freshness of he_nguon.raw_don_hang ......................... [RUN]
@@ -67,26 +66,26 @@ Nguồn nạp lần cuối 25/07, chạy ngày 31/07:
 [ERROR]: in source raw_don_hang (models/staging/src.yml)
 ```
 
-**Vì sao thiếu freshness thì nguồn chết mà mọi test vẫn xanh:** test kiểm *dữ liệu đang
-có*. Nguồn ngừng nạp từ hôm qua thì dữ liệu hôm qua vẫn hợp lệ — `not_null` xanh,
-`unique` xanh, `relationships` xanh. Chỉ có **freshness** hỏi câu *"dữ liệu này cũ chưa"*.
+**Why a missing freshness check means the source can die while every test stays green:** tests check *the data
+that's there*. If the source stopped loading yesterday, yesterday's data is still valid — `not_null` green,
+`unique` green, `relationships` green. Only **freshness** asks *"is this data stale"*.
 
-Đây là chiều **timeliness** trong [sáu chiều chất lượng](../../../data-quality/six-dimensions.md),
-và là chiều duy nhất không test nào khác chạm tới.
+This is the **timeliness** dimension from the [six quality dimensions](../../../data-quality/six-dimensions.md),
+and the only dimension no other test touches.
 
-## `seed` — CSV nhỏ, không phải đường nạp dữ liệu
+## `seed` — small CSVs, not a data-loading route
 
 ```bash
 dbt seed
 ```
 
-Đọc CSV trong `seeds/` thành bảng. **Giới hạn quan trọng:** seed đi vào git, nên chỉ hợp
-file **nhỏ và ít đổi** — bảng tra cứu tay, danh mục mã, ánh xạ quốc gia.
+Reads the CSVs in `seeds/` into tables. **An important limit:** seeds go into git, so they only suit
+**small, rarely changing** files — hand-maintained lookup tables, code lists, country mappings.
 
-Không dùng seed để nạp dữ liệu thật. Vài nghìn dòng là repo phình, diff vô nghĩa, và
-`dbt seed` chạy hàng phút vì nó `INSERT` từng lô.
+Don't use seeds to load real data. A few thousand rows bloats the repo, produces meaningless diffs, and
+`dbt seed` takes minutes because it `INSERT`s batch by batch.
 
-Ép kiểu khi dbt đoán sai:
+Force the types when dbt guesses wrongly:
 
 ```yaml
 seeds:
@@ -94,13 +93,13 @@ seeds:
     hang_hoa:
       +column_types:
         ma_hang: varchar(10)
-        gia: decimal(18,2)     # đừng để dbt đoán thành double
+        gia: decimal(18,2)     # don't let dbt guess double
 ```
 
-CSV đổi **cấu trúc** (thêm/bớt cột) thì phải `dbt seed --full-refresh` — nạp thường chỉ
-thay nội dung, không thay schema.
+When a CSV's **structure** changes (adding/removing a column), you need `dbt seed --full-refresh` — an
+ordinary load only replaces the contents, not the schema.
 
-## `snapshot` — SCD Type 2, và là thứ duy nhất mất là mất luôn
+## `snapshot` — SCD Type 2, and the only thing that's gone for good once lost
 
 ```sql
 -- snapshots/snp_hang_hoa.sql
@@ -111,7 +110,7 @@ select ma_hang, ten_hang, nhom from {{ ref('stg_hang_hoa') }}
 {% endsnapshot %}{% endraw %}
 ```
 
-Chạy lần đầu:
+The first run:
 
 ```text
 ┌─────────┬───────────────┬────────────────────────────┬──────────────┐
@@ -122,7 +121,7 @@ Chạy lần đầu:
 └─────────┴───────────────┴────────────────────────────┴──────────────┘
 ```
 
-Đổi `nhom` của `SP-A` thành `Phụ kiện` rồi `dbt snapshot` lại:
+Change `SP-A`'s `nhom` to `Phụ kiện` and run `dbt snapshot` again:
 
 ```text
 ┌─────────┬───────────────┬────────────────────────────┬────────────────────────────┐
@@ -133,48 +132,48 @@ Chạy lần đầu:
 └─────────┴───────────────┴────────────────────────────┴────────────────────────────┘
 ```
 
-Dòng cũ **đóng lại**, dòng mới mở ra. Đây chính là [SCD](../../../data-modeling/skills/scd.md)
-Type 2 do dbt làm hộ — bốn cột `dbt_valid_from` / `dbt_valid_to` / `dbt_scd_id` /
-`dbt_updated_at` dbt tự thêm.
+The old row is **closed** and a new one opens. This is exactly [SCD](../../../data-modeling/skills/scd.md)
+Type 2 done for you by dbt — the four columns `dbt_valid_from` / `dbt_valid_to` / `dbt_scd_id` /
+`dbt_updated_at` are added by dbt itself.
 
-### `strategy: check` hay `timestamp`
+### `strategy: check` or `timestamp`
 
-| Strategy | Cần gì | Chọn khi |
+| Strategy | Needs | Choose when |
 |---|---|---|
-| `check` + `check_cols` | không cần gì thêm | Nguồn **không** có cột thời gian đáng tin |
-| `timestamp` + `updated_at` | cột thời gian đáng tin | Nguồn cập nhật cột đó đàng hoàng, và dữ liệu lớn |
+| `check` + `check_cols` | nothing extra | The source has **no** trustworthy timestamp column |
+| `timestamp` + `updated_at` | a trustworthy timestamp column | The source maintains that column properly, and the data is large |
 
-Bốn cách phát hiện thay đổi và bẫy của từng cách ở
-[Phát hiện thay đổi cho SCD 2](../../../data-modeling/skills/scd-change-detection.md).
+The four ways of detecting changes and each one's trap are in
+[Change detection for SCD 2](../../../data-modeling/skills/scd-change-detection.md).
 
-`check_cols: all` tiện nhưng nguy hiểm: thêm một cột kỹ thuật vô nghĩa vào nguồn là
-**mọi dòng sinh version mới**. Liệt kê cột tường minh.
+`check_cols: all` is convenient but dangerous: add one meaningless technical column to the source and
+**every row gets a new version**. List the columns explicitly.
 
-### Vì sao snapshot phải cẩn thận hơn mọi thứ khác
+### Why snapshots need more care than anything else
 
-Model sai thì `dbt run` lại. **Snapshot sai thì phần lịch sử đã ghi mất luôn** — không
-có nguồn nào dựng lại được, vì lịch sử đó chỉ tồn tại trong chính bảng snapshot.
+If a model is wrong, `dbt run` again. **If a snapshot is wrong, the history already recorded is gone for good**
+— no source can rebuild it, because that history only exists inside the snapshot table itself.
 
-Hệ quả thực hành:
+The practical consequences:
 
-- Chạy thử trên **bản sao** trước khi chạy lần đầu ở production.
-- Đặt lịch chạy **đều đặn**. Snapshot bỏ lỡ một ngày là mất thay đổi của ngày đó vĩnh viễn.
-- Không sửa `check_cols` bừa — đổi tập cột là đổi định nghĩa "thế nào là thay đổi".
+- Test-run it on a **copy** before the first production run.
+- Schedule it to run **regularly**. A snapshot missing one day loses that day's changes permanently.
+- Don't casually change `check_cols` — changing the column set changes the definition of "what counts as a change".
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Dùng `ref()` cho bảng hệ khác ghi | dbt tưởng nó sở hữu bảng; mất `source freshness` |
-| Khai source nhưng không khai `freshness` | Nguồn chết mà mọi test vẫn xanh |
-| Dùng seed nạp dữ liệu thật | Repo phình, `dbt seed` chạy hàng phút |
-| Để dbt đoán kiểu cột seed | Số tiền thành `double`, sai số khi cộng |
-| `check_cols: all` | Thêm cột kỹ thuật là mọi dòng sinh version mới |
-| Snapshot chạy lần đầu thẳng trên production | Sai là mất lịch sử vĩnh viễn |
-| Snapshot chạy không đều | Mất thay đổi của những ngày bỏ lỡ |
+| Using `ref()` for a table another system writes | dbt thinks it owns the table; you lose `source freshness` |
+| Declaring a source without declaring `freshness` | The source dies while every test stays green |
+| Using seeds to load real data | A bloated repo, and `dbt seed` taking minutes |
+| Letting dbt guess a seed's column types | Money becomes a `double`, with rounding errors when summed |
+| `check_cols: all` | Adding a technical column gives every row a new version |
+| Running a snapshot for the first time straight on production | If it's wrong, the history is lost permanently |
+| Running snapshots irregularly | You lose the changes of the days you missed |
 
 ## Related Topics
 
-- [Mục lục dbt](index.md)
-- [Model và `ref()`](models-and-ref.md)
-- [Test và data quality](testing.md) §4 — chiều **Timeliness** chính là `source freshness`
+- [dbt contents](index.md)
+- [Models and `ref()`](models-and-ref.md)
+- [Testing and data quality](testing.md) §4 — the **Timeliness** dimension *is* `source freshness`

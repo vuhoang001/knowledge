@@ -1,8 +1,7 @@
 ---
-title: Nội dung AI sinh ghi sai tên catalog Trino
-i18n_status: untranslated
+title: AI-generated content wrote the wrong Trino catalog name
 sidebar_position: 1
-description: Một buổi mất vì tin tài liệu do AI sinh — sai ở đúng chỗ khó kiểm nhất là chi tiết môi trường.
+description: An afternoon lost to trusting AI-generated documentation — wrong in exactly the hardest place to verify, the environment details.
 tags: [dbt, trino, case-study, verified-at, ai-generated]
 domain: data-engineering
 category: technology
@@ -13,33 +12,33 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Nội dung AI sinh ghi sai tên catalog Trino
+# AI-generated content wrote the wrong Trino catalog name
 
-> **Chốt:** Nội dung AI sinh đọc rất thuyết phục và sai ở đúng chỗ khó kiểm nhất — chi
-> tiết cụ thể của môi trường. Đây là lý do mỗi file trong kho có `verified_at`, và trống
-> nghĩa là chưa tin được.
+> **Takeaway:** AI-generated content reads very convincingly and is wrong in exactly the hardest place to
+> verify — the environment's specific details. This is why every file in this knowledge base has a
+> `verified_at`, and empty means not yet trustworthy.
 
-**Ngày:** 30/07/2026 · **Mất:** khoảng một buổi
+**Date:** 2026-07-30 · **Cost:** about an afternoon
 
-## Bối cảnh
+## Context
 
-Đang dựng module dbt, cần cấu hình `profiles.yml` trỏ sang Trino. Bản đầu của tài liệu
-do AI sinh ghi:
+Building the dbt module, needing to configure `profiles.yml` to point at Trino. The first draft of the
+documentation, AI-generated, said:
 
-> *"`profiles.yml` trỏ `192.168.100.60:8080`, catalog `iceberg`"*
+> *"`profiles.yml` points at `192.168.100.60:8080`, catalog `iceberg`"*
 
-Làm theo y nguyên. `dbt debug` fail.
+Followed exactly. `dbt debug` failed.
 
-## Giả thuyết sai lúc đầu
+## The wrong first hypotheses
 
-Nghi cấu hình dbt — sai cú pháp `profiles.yml`, sai `--profiles-dir`, sai version
-adapter, thiếu quyền. Mất một buổi đi loanh quanh trong dbt.
+Suspected the dbt configuration — wrong `profiles.yml` syntax, wrong `--profiles-dir`, wrong adapter
+version, missing permissions. Lost an afternoon going round in circles inside dbt.
 
-**Lỗi nằm ở chỗ khác hẳn.**
+**The bug was somewhere completely different.**
 
-## Cái thật sự sai
+## What was actually wrong
 
-Chạy `SHOW CATALOGS` trên Trino `.60`:
+Running `SHOW CATALOGS` on the `.60` Trino:
 
 ```
 hdos_silver
@@ -48,32 +47,32 @@ polaris_silver
 system
 ```
 
-**Không hề có catalog tên `iceberg`.** Cái tên đó AI bịa ra — nó là tên *thường gặp*
-trong tài liệu Trino trên mạng, không phải tên thật của môi trường này.
+**There is no catalog named `iceberg` at all.** The AI invented that name — it's the name *commonly seen*
+in Trino documentation online, not this environment's real name.
 
-## Vì sao khó bắt
+## Why it was hard to catch
 
-| Thứ AI sinh sai | Bắt được không |
+| What the AI got wrong | Catchable? |
 |---|---|
-| Cú pháp SQL sai | ✅ chạy là báo lỗi ngay |
-| Tên hàm không tồn tại | ✅ báo lỗi ngay |
-| **Tên catalog / host / schema của môi trường** | ❌ đọc rất hợp lý, chỉ sai khi chạy thật |
+| Wrong SQL syntax | ✅ it errors the moment you run it |
+| A function name that doesn't exist | ✅ errors immediately |
+| **The environment's catalog / host / schema names** | ❌ reads perfectly plausibly, only wrong when really run |
 
-Loại thứ ba nguy hiểm nhất vì nó **đúng về hình thức**. Không ai đọc `catalog: iceberg`
-mà thấy nghi ngờ — trong khi đó chính là dòng sai.
+The third kind is the most dangerous because it is **formally correct**. Nobody reads `catalog: iceberg`
+and feels suspicious — and yet that's exactly the wrong line.
 
-## Bài học — không phải về dbt
+## The lesson — which isn't about dbt
 
-Bài học nằm ở chính kho này, không phải ở dbt hay Trino:
+The lesson is about this knowledge base itself, not about dbt or Trino:
 
-- **`verified_at` trống nghĩa là chưa ai chạy thật.** Đọc với thái độ nghi ngờ.
-- **Chi tiết môi trường phải kiểm bằng lệnh, không kiểm bằng cách đọc.** `SHOW CATALOGS`,
-  `SHOW SCHEMAS`, `dbt debug` — chạy trước, chép output về, rồi mới viết vào tài liệu.
-- Đây là lý do luật cứng #1 và #2 của kho tồn tại: không tự điền `verified_at`, không
-  dán output bịa.
+- **An empty `verified_at` means nobody has really run it.** Read it with suspicion.
+- **Environment details must be verified by running a command, not by reading.** `SHOW CATALOGS`,
+  `SHOW SCHEMAS`, `dbt debug` — run first, copy the output back, and only then write it into the documentation.
+- This is why the knowledge base's hard rules #1 and #2 exist: never fill in `verified_at` yourself, never
+  paste invented output.
 
 ## Related Topics
 
-- [dbt](../index.md) — chủ đề chứa case study này
-- [Trino](../../../query-engines/trino/index.md) — hệ thống bị ghi sai tên catalog
-- [dbt là gì](../reference/what-is-dbt.md) — phần cấu hình kết nối
+- [dbt](../index.md) — the topic this case study belongs to
+- [Trino](../../../query-engines/trino/index.md) — the system whose catalog name was written wrongly
+- [What dbt is](../reference/what-is-dbt.md) — the connection configuration section

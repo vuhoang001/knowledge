@@ -1,9 +1,8 @@
 ---
 title: Cheatsheet — dbt
-i18n_status: untranslated
 sidebar_key: dbt-cheatsheets
 sidebar_position: 0
-description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
+description: "Quick lookup while working, not for learning something the first time."
 tags: [cheatsheet, dbt]
 domain: data-engineering
 category: index
@@ -13,10 +12,10 @@ updated: 2026-07-31
 
 # Cheatsheet — dbt
 
-Tra nhanh khi **đang làm**, không dùng để học lần đầu.
+Quick lookup while **working**, not for learning something the first time.
 
-*Chưa có file nào.* Thêm vào đây khi có — xem [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
+*No files yet.* Add them here when there are — see [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
 
 ## Related Topics
 
-- [dbt](../index.md) — chủ đề chứa thư mục này
+- [dbt](../index.md) — the topic this directory belongs to

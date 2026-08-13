@@ -1,9 +1,8 @@
 ---
 title: Case study — dbt
-i18n_status: untranslated
 sidebar_key: dbt-case-studies
 sidebar_position: 0
-description: "Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu."
+description: "Real incidents already debugged, with the wrong first hypothesis included."
 tags: [case-study, dbt]
 domain: data-engineering
 category: index
@@ -13,12 +12,12 @@ updated: 2026-07-31
 
 # Case study — dbt
 
-Sự cố thật đã debug xong, kèm **giả thuyết sai lúc đầu**.
+Real incidents already debugged, with **the wrong first hypothesis** included.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | Answers the question | Status |
 |---|---|---|---|
-| 1 | [Nội dung AI sinh ghi sai tên catalog Trino](ai-sinh-sai-ten-catalog-trino.md) | Một buổi mất vì tin tài liệu do AI sinh — sai ở đúng chỗ khó kiểm nhất | 🟡 draft |
+| 1 | [AI-generated content wrote the wrong Trino catalog name](ai-sinh-sai-ten-catalog-trino.md) | An afternoon lost to trusting AI-generated documentation — wrong in exactly the hardest place to verify | 🟡 draft |
 
 ## Related Topics
 
-- [dbt](../index.md) — chủ đề chứa thư mục này
+- [dbt](../index.md) — the topic this directory belongs to
