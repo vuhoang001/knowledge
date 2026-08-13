@@ -1,8 +1,7 @@
 ---
-title: "Bài tập bộ 4 — Quan hệ và cây: bridge, phân cấp, thực thể không đồng nhất"
-i18n_status: untranslated
+title: "Exercise set 4 — Relationships and trees: bridges, hierarchies, heterogeneous entities"
 sidebar_position: 13
-description: "16 bài tự viết: bridge nhiều-nhiều phồng 72%, tìm đơn có hệ số 0,9, cây ragged cắt mất nhánh sâu, và 63,9% ô trống của bảng supertype."
+description: "16 exercises to write yourself: a many-to-many bridge inflating 72%, finding the order whose weights total 0.9, a ragged tree cutting off the deep branch, and a supertype table 63.9% empty."
 tags: [tutorial, bai-tap, bridge-table, hierarchy, heterogeneous-schema, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,40 +12,40 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bài tập bộ 4 — Quan hệ và cây
+# Exercise set 4 — Relationships and trees
 
-> **Chốt:** ba kỹ thuật ở đây đều xử lý cùng một thứ mà star schema không có chỗ chứa —
-> **quan hệ không phải nhiều-một**. Nhiều-nhiều, sâu không đều, và các loại không chung
-> thuộc tính. Nhét bừa vào star là phồng số hoặc mất dòng.
+> **Takeaway:** the three techniques here all handle the same thing a star schema has no room for —
+> **relationships that aren't many-to-one**. Many-to-many, unevenly deep, and types sharing no
+> attributes. Cramming them into a star inflates numbers or loses rows.
 
-## Kỹ thuật được luyện trong bộ này
+## Techniques practised in this set
 
-| # | Kỹ thuật | Tài liệu gốc | Số bài |
+| # | Technique | Source document | Exercises |
 |---|---|---|---|
-| 1 | Bridge table | [Bridge table](../skills/bridge-table.md) | 6 |
-| 2 | Cây phân cấp | [Cây phân cấp](../skills/hierarchy.md) | 5 |
-| 3 | Thực thể không đồng nhất | [Thực thể không đồng nhất](../skills/heterogeneous-schema.md) | 5 |
+| 1 | Bridge tables | [Bridge tables](../skills/bridge-table.md) | 6 |
+| 2 | Hierarchies | [Hierarchies](../skills/hierarchy.md) | 5 |
+| 3 | Heterogeneous entities | [Heterogeneous entities](../skills/heterogeneous-schema.md) | 5 |
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Ba bảng chính: `nhan_vien_don` (bridge, có **một đơn hệ số không khép kín**),
-`cay_nhom_hang` (cây **hai gốc, sâu 1→4**), `giao_dich_tai_chinh` (bốn loại, mỗi loại
-điền cột khác nhau). Xem [phụ lục seed](bt-00-seed.md).
+Three main tables: `nhan_vien_don` (a bridge, with **one order whose weights don't close**),
+`cay_nhom_hang` (a tree with **two roots, depth 1→4**), `giao_dich_tai_chinh` (four types, each
+filling different columns). See [the seed appendix](bt-00-seed.md).
 
 ---
 
-## Bộ A — Bridge table
+## Group A — Bridge tables
 
-### Bài A.1 — Join thẳng qua bridge: phồng 72%
+### Exercise A.1 — Joining straight through the bridge: 72% inflated
 
-**Đề:** đo thiệt hại khi join `don_hang_chi_tiet` với `nhan_vien_don` mà **không** nhân
-hệ số.
+**The task:** measure the damage of joining `don_hang_chi_tiet` to `nhan_vien_don` **without**
+multiplying by the weight.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬──────────┬──────────┬────────────┐
@@ -56,10 +55,10 @@ hệ số.
 └──────────┴──────────┴──────────┴────────────┘
 ```
 
-Phồng **72%**. Và như mọi lần, hệ số phồng không tròn nên trông không giống lỗi.
+**72% inflated.** And as always, the inflation factor isn't round so it doesn't look like a bug.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select count(*) from don_hang_chi_tiet) dong_goc,
@@ -69,28 +68,28 @@ select (select count(*) from don_hang_chi_tiet) dong_goc,
         from don_hang_chi_tiet ct join nhan_vien_don nd using (don_hang_id)) tien_phong;
 ```
 
-Khác biệt với các kiểu phồng đã gặp ở bộ 1: ở đây **không có lỗi nào trong câu SQL**.
-Join đúng khoá, đúng điều kiện. Vấn đề nằm ở chỗ quan hệ *đơn hàng → nhân viên* là
-**nhiều-nhiều**, và star schema không có cách nào biểu diễn nó bằng một khoá ngoại.
+The difference from the inflation kinds met in set 1: here **there's no error in the SQL at all**.
+The right key, the right condition. The problem is that the *order → employee* relationship is
+**many-to-many**, and a star schema has no way to represent that with one foreign key.
 
-Ba cách sai thường gặp, và vì sao mỗi cách vẫn sai:
+Three common wrong approaches, and why each is still wrong:
 
-| Cách | Vấn đề |
+| The approach | The problem |
 |---|---|
-| Lấy `min(nv_id)` cho mỗi đơn | mất dữ liệu — 7 dòng phân công biến mất |
-| Thêm `nv_1_key`, `nv_2_key`, `nv_3_key` vào fact | đơn có 4 người thì sao; và không nhóm được |
-| Nhân bản dòng fact cho mỗi nhân viên | chính là 26 dòng ở trên — phồng |
+| Take `min(nv_id)` per order | data lost — 7 assignment rows vanish |
+| Add `nv_1_key`, `nv_2_key`, `nv_3_key` to the fact | what about an order with 4 people; and you can't group |
+| Replicate the fact row per employee | that's the 26 rows above — inflation |
 
-Cách đúng là **giữ bridge và mang theo hệ số phân bổ**, bài A.2.
+The right way is to **keep the bridge and carry an allocation weight**, exercise A.2.
 
 </details>
 
-### Bài A.2 — Nhân hệ số, và phát hiện tổng vẫn sai
+### Exercise A.2 — Multiply by the weight, and find the total is still wrong
 
-**Đề:** tính doanh thu phân bổ theo từng nhân viên bằng cách nhân `he_so`. Rồi cộng lại
-và so với 10.215.000.
+**The task:** compute allocated revenue per employee by multiplying by `he_so`. Then sum it up
+and compare against 10,215,000.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────┬───────────────────┐
@@ -111,10 +110,10 @@ và so với 10.215.000.
 └──────────────┴───────────┴──────────┘
 ```
 
-Nhân hệ số rồi mà vẫn **thiếu 90.000**. Tìm cho ra vì sao.
+Even after multiplying by the weight, it's still **90,000 short**. Work out why.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select nv.ho_ten, round(sum(ct.so_luong*ct.don_gia * nd.he_so)) doanh_thu_phan_bo
@@ -128,25 +127,25 @@ select round(sum(ct.so_luong*ct.don_gia * nd.he_so)) tong_phan_bo, 10215000 tong
 from don_hang_chi_tiet ct join nhan_vien_don nd using (don_hang_id);
 ```
 
-Hệ số **sửa được phồng** nhưng **không tự đảm bảo khép kín**. Nhân hệ số là điều kiện
-cần, không phải điều kiện đủ.
+Weights **fix the inflation** but **don't guarantee closure by themselves**. Multiplying by the weight is a necessary
+condition, not a sufficient one.
 
-Đây là chỗ bridge table nguy hiểm hơn hẳn các kỹ thuật khác: sau khi nhân hệ số, con số
-**trông đã đúng** — không còn phồng 72%, tổng gần bằng tổng thật, mọi thứ có vẻ ổn. Sai
-số 0,88% chìm nghỉm trong bất kỳ báo cáo nào.
+This is where bridge tables are far more dangerous than the other techniques: after multiplying by the weight, the number
+**looks right** — no more 72% inflation, the total is close to the real total, everything seems fine. A
+0.88% error drowns in any report.
 
-Và nó chỉ lộ ra khi bạn **chủ động đối chiếu với tổng độc lập**. Không đối chiếu thì
-không bao giờ biết.
+And it only surfaces when you **actively reconcile against an independent total**. Without reconciling you
+never know.
 
-Bài A.3 tìm thủ phạm.
+Exercise A.3 finds the culprit.
 
 </details>
 
-### Bài A.3 — Tìm đơn có hệ số không khép kín
+### Exercise A.3 — Find the order whose weights don't close
 
-**Đề:** viết câu tìm mọi đơn có `sum(he_so)` khác 1.
+**The task:** write a statement finding every order whose `sum(he_so)` differs from 1.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────┬────────────┬───────┐
@@ -156,11 +155,11 @@ Bài A.3 tìm thủ phạm.
 └─────────────┴────────────┴───────┘
 ```
 
-Một đơn duy nhất. `DH008` trị giá 900.000, thiếu 10% = **90.000** — khớp đúng chênh lệch
-ở bài A.2.
+Exactly one order. `DH008` is worth 900,000, and 10% short = **90,000** — matching exercise A.2's
+gap exactly.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select don_hang_id, round(sum(he_so),2) tong_he_so, count(*) so_nv
@@ -170,15 +169,15 @@ having abs(sum(he_so) - 1.0) > 0.001
 order by 1;
 ```
 
-Hai chi tiết quyết định câu này có dùng được không:
+Two details decide whether this statement is usable:
 
-**`abs(...) > 0.001` chứ không phải `<> 1.0`.** `he_so` là số thực; `0.5 + 0.3 + 0.2`
-trong IEEE 754 **không** bằng đúng `1.0`. So sánh bằng là báo động giả cho những đơn hoàn
-toàn bình thường — và rồi ai đó tắt cảnh báo, và từ đó không bắt được gì nữa.
+**`abs(...) > 0.001` rather than `<> 1.0`.** `he_so` is a float; `0.5 + 0.3 + 0.2`
+in IEEE 754 does **not** equal exactly `1.0`. An equality comparison is a false alarm for perfectly
+ordinary orders — and then somebody turns the alert off, and from then on nothing gets caught.
 
-**`having` chứ không phải `where`.** Điều kiện áp lên nhóm, không lên dòng.
+**`having` rather than `where`.** The condition applies to the group, not the row.
 
-Câu này phải là **test chạy mỗi lần build**, không phải query chạy một lần:
+This statement must be a **test running on every build**, not a query run once:
 
 ```sql
 -- dbt: tests/bridge_he_so_khep_kin.sql
@@ -188,20 +187,20 @@ group by 1
 having abs(sum(he_so) - 1.0) > 0.001
 ```
 
-dbt coi test là fail khi truy vấn **trả về dòng**. Nên câu trên trả 1 dòng → build đỏ →
-không ai kịp dựng báo cáo trên dữ liệu sai.
+dbt treats a test as failed when the query **returns rows**. So the statement above returns 1 row → the build goes red →
+nobody has time to build a report on wrong data.
 
-Không có test này thì `DH008` sống trong hệ thống mãi mãi, và mỗi tháng ai đó lại mất
-nửa ngày tìm xem 0,88% đi đâu.
+Without this test, `DH008` lives in the system forever, and every month somebody loses
+half a day working out where the 0.88% went.
 
 </details>
 
-### Bài A.4 — Sửa hệ số: chuẩn hoá lúc đọc hay lúc ghi
+### Exercise A.4 — Fixing the weights: normalise at read time or at write time
 
-**Đề:** sửa để tổng phân bổ bằng đúng 10.215.000, **hai cách**: chuẩn hoá hệ số lúc đọc,
-và vá dữ liệu nguồn.
+**The task:** fix it so the allocated total equals exactly 10,215,000, **two ways**: normalising the weights at read time,
+and patching the source data.
 
-**Đáp số phải ra (cả hai cách):**
+**The answer it must produce (both ways):**
 
 ```text
 ┌──────────────┬───────────┬───────┐
@@ -212,10 +211,10 @@ và vá dữ liệu nguồn.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- CACH 1: chuan hoa luc doc — chia cho tong he so cua chinh don do
+-- WAY 1: normalise at read time — divide by that order's own weight total
 with he_so_chuan as (
   select don_hang_id, nv_id,
          he_so / sum(he_so) over (partition by don_hang_id) he_so_chuan
@@ -227,35 +226,35 @@ from don_hang_chi_tiet ct join he_so_chuan h using (don_hang_id);
 ```
 
 ```sql
--- CACH 2: va nguon — nang he_so cua NV03 tren DH008 tu 0.4 len 0.5
+-- WAY 2: patch the source — raise NV03's he_so on DH008 from 0.4 to 0.5
 update nhan_vien_don set he_so = 0.5 where don_hang_id='DH008' and nv_id='NV03';
 ```
 
-**Cách nào đúng phụ thuộc `0,9` nghĩa là gì** — và đó là câu hỏi nghiệp vụ, không phải
-câu hỏi kỹ thuật:
+**Which is right depends on what `0.9` means** — and that's a business question, not a
+technical one:
 
-| `0,9` nghĩa là | Cách đúng | Vì sao |
+| If `0.9` means | The right way | Why |
 |---|---|---|
-| **Lỗi nhập liệu** — lẽ ra phải là 1,0 | vá nguồn | sửa gốc, không che triệu chứng |
-| **10% thuộc về kênh khác** (đối tác, tự động) | thêm dòng `nv_id = 'KHAC'` hệ số 0,1 | tổng khép kín và **giữ đúng sự thật** |
-| **Tỷ trọng tương đối**, không phải phần trăm | chuẩn hoá lúc đọc | hệ số vốn không nhằm cộng thành 1 |
+| **A data-entry error** — it should have been 1.0 | patch the source | fix the root, don't mask the symptom |
+| **10% belongs to another channel** (a partner, automation) | add a row `nv_id = 'KHAC'` with weight 0.1 | the total closes and **the truth is preserved** |
+| **Relative weights**, not percentages | normalise at read time | the weights were never meant to sum to 1 |
 
-Chuẩn hoá lúc đọc là **cám dỗ nguy hiểm nhất** trong ba cách: nó làm mọi con số khớp
-ngay lập tức, nên trông như đã sửa xong. Nhưng nếu `0,9` thật sự là lỗi nhập, bạn vừa
-**giấu lỗi đi** — và tháng sau có đơn hệ số `2,5` thì nó cũng bị chuẩn hoá âm thầm thành
-hợp lệ.
+Normalising at read time is **the most dangerous temptation** of the three: it makes every number match
+immediately, so it looks like a completed fix. But if `0.9` really is a data-entry error, you've just
+**hidden a bug** — and next month an order with weight `2.5` gets silently normalised into
+validity too.
 
-Quy tắc: **chuẩn hoá lúc đọc thì vẫn phải giữ test ở bài A.3.** Chuẩn hoá là để báo cáo
-dùng được ngay, test là để có người đi sửa gốc.
+The rule: **if you normalise at read time, keep exercise A.3's test anyway.** Normalising makes the report
+usable now; the test makes somebody go and fix the root.
 
 </details>
 
-### Bài A.5 — Hai câu hỏi, hai cách dùng bridge
+### Exercise A.5 — Two questions, two ways to use a bridge
 
-**Đề:** tính cho mỗi nhân viên: doanh thu **phân bổ** (nhân hệ số) và doanh thu
-**ảnh hưởng** (mọi đơn có tham gia, không nhân hệ số). Đặt cạnh nhau.
+**The task:** compute, per employee: **allocated** revenue (multiplied by the weight) and
+**influenced** revenue (every order they took part in, unweighted). Put them side by side.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────┬─────────────────┬─────────────────────┐
@@ -268,10 +267,10 @@ dùng được ngay, test là để có người đi sửa gốc.
 └───────────┴─────────────────┴─────────────────────┘
 ```
 
-Tổng cột `doanh_thu_anh_huong` = **17.565.000** — đúng bằng con số "phồng 72%" ở bài A.1.
+The `doanh_thu_anh_huong` column totals **17,565,000** — exactly the "72% inflated" figure from exercise A.1.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select nv.ho_ten, count(distinct nd.don_hang_id) so_don_tham_gia,
@@ -282,35 +281,35 @@ join nhan_vien nv using (nv_id)
 group by 1 order by 3 desc;
 ```
 
-**Con số "phồng" ở bài A.1 hoá ra là một con số hợp lệ** — cho một câu hỏi khác:
+**The "inflated" number from exercise A.1 turns out to be a legitimate number** — for a different question:
 
-| Câu hỏi | Phép tính | Tổng |
+| The question | The calculation | The total |
 |---|---|---|
-| "Mỗi NV **mang về** bao nhiêu doanh thu?" | nhân hệ số | 10.215.000 ✅ |
-| "Mỗi NV **đụng tay vào** bao nhiêu doanh thu?" | không nhân | 17.565.000 |
+| "How much revenue did each employee **bring in**?" | multiply by the weight | 10,215,000 ✅ |
+| "How much revenue did each employee **have a hand in**?" | unweighted | 17,565,000 |
 
-Cột thứ hai gọi là **impact analysis**, và nó **cố ý** không cộng lại được. Đó là điều
-phải ghi rõ ngay cạnh nó, vì người đọc luôn có phản xạ kéo cột vào ô tổng.
+The second column is called **impact analysis**, and it **deliberately** doesn't add up. That's something
+to state right beside it, because a reader's reflex is always to drag the column into a total cell.
 
-Chú ý thứ tự xếp hạng đổi: theo doanh thu ảnh hưởng thì `Bui Van G` đứng nhì với chỉ 3
-đơn; theo phân bổ thì anh ta **đứng nhất** (3.660.000). Vì `Bui Van G` làm một mình đơn
-`DH005` — đơn to nhất, 2.700.000.
+Notice the ranking changes: by influenced revenue, `Bui Van G` is second with only 3
+orders; by allocated revenue he's **first** (3,660,000). Because `Bui Van G` worked order
+`DH005` alone — the biggest order, 2,700,000.
 
-Hai bảng xếp hạng khác nhau từ cùng một bridge. Nếu dùng để tính thưởng, phải chốt trước
-dùng cột nào — và đó là quyết định của phòng nhân sự, không phải của người viết SQL.
+Two different rankings from the same bridge. If you're using it to compute bonuses, you must settle up front
+which column — and that's HR's decision, not the SQL author's.
 
 </details>
 
-### Bài A.6 — Bridge có khoảng hiệu lực
+### Exercise A.6 — A bridge with validity intervals
 
-**Đề:** không có SQL. `nhan_vien_don` hiện không có thời gian. Chuyện gì xảy ra khi nhân
-viên **chuyển phòng ban** giữa kỳ, và sửa mô hình thế nào?
+**The task:** no SQL. `nhan_vien_don` currently has no time dimension. What happens when an employee
+**changes department** mid-period, and how do you fix the model?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-`NV01` đang ở *Kinh doanh*. Giả sử ngày 04/07 chuyển sang *Hỗ trợ*. Bây giờ hỏi *"doanh
-thu theo phòng ban"*:
+`NV01` is in *Kinh doanh*. Suppose they move to *Ho tro* on 04/07. Now ask *"revenue
+by department"*:
 
 ```sql
 select nv.phong_ban, round(sum(ct.so_luong*ct.don_gia * nd.he_so))
@@ -318,17 +317,17 @@ from don_hang_chi_tiet ct join nhan_vien_don nd using (don_hang_id)
 join nhan_vien nv using (nv_id) group by 1;
 ```
 
-Câu này gán **toàn bộ** doanh thu của `NV01`, kể cả các đơn từ 01/07, vào phòng ban
-**hiện tại**. Đúng là bài toán as-was/as-is của [bộ 2](bt-02-dimension-thoi-gian.md), lần
-này núp trong bridge.
+This assigns **all** of `NV01`'s revenue, including orders from 01/07, to their
+**current** department. That's exactly [set 2](bt-02-dimension-thoi-gian.md)'s as-was/as-is problem, this
+time hiding inside a bridge.
 
-Ba tầng sửa, và phải phân biệt rõ chúng chữa bệnh khác nhau:
+Three layers of fix, and it matters that you distinguish which illness each cures:
 
-**Tầng 1 — `dim_nhan_vien` thành Type 2.** Sửa vấn đề "phòng ban lúc nào". Fact chốt
-`nv_key` (phiên bản) chứ không phải `nv_id`.
+**Layer 1 — make `dim_nhan_vien` Type 2.** Fixes the "which department when" problem. The fact freezes
+`nv_key` (the version) rather than `nv_id`.
 
-**Tầng 2 — bridge có khoảng hiệu lực.** Sửa vấn đề khác: *phân công* cũng đổi theo thời
-gian. Đơn `DH003` ban đầu do `NV01` phụ trách 0,5, sau bàn giao lại còn 0,3:
+**Layer 2 — give the bridge validity intervals.** Fixes a different problem: *assignments* also change over
+time. Order `DH003` was initially `NV01`'s at 0.5, then handed over leaving 0.3:
 
 ```csv
 don_hang_id,nv_id,he_so,hieu_luc_tu,hieu_luc_den
@@ -336,28 +335,28 @@ DH003,NV01,0.5,2026-07-02,2026-07-09
 DH003,NV01,0.3,2026-07-10,9999-12-31
 ```
 
-Lúc này bridge **tự nó là một Type 2**, và mọi truy vấn phải thêm điều kiện thời gian —
-kể cả phép kiểm khép kín ở bài A.3, giờ phải kiểm khép kín **tại mỗi thời điểm**.
+Now the bridge **is itself a Type 2**, and every query needs a time condition —
+including exercise A.3's closure check, which now has to check closure **at each point in time**.
 
-**Tầng 3 — chốt hệ số vào fact lúc nạp.** Bỏ hẳn join lúc đọc: mỗi dòng fact mang sẵn
-`nv_key` và `he_so_da_chot`. Đắt lúc ghi, nhưng báo cáo quá khứ **bất biến vĩnh viễn**, và
-không ai có cơ hội join sai.
+**Layer 3 — freeze the weight into the fact at load time.** Drop the read-time join entirely: each fact row carries
+`nv_key` and `he_so_da_chot` already. Expensive at write time, but historical reports are **permanently
+immutable**, and nobody gets a chance to join wrongly.
 
-Tầng 3 là cách các hệ thống tính hoa hồng dùng, vì lý do rất thực tế: **hoa hồng đã trả
-thì không được đổi**. Xem [Bridge table](../skills/bridge-table.md).
+Layer 3 is what commission systems use, for a very practical reason: **commission already paid
+cannot change**. See [Bridge tables](../skills/bridge-table.md).
 
 </details>
 
 ---
 
-## Bộ B — Cây phân cấp
+## Group B — Hierarchies
 
-### Bài B.1 — Dẹt cố định ba cấp: mất nhánh sâu, hở nhánh nông
+### Exercise B.1 — Flattening to a fixed three levels: losing the deep branch, gaping on the shallow one
 
-**Đề:** làm phẳng `cay_nhom_hang` thành **đúng ba cột** `cap1`, `cap2`, `cap3`, rồi chỉ
-ra mặt hàng nào bị cắt và mặt hàng nào bị hở.
+**The task:** flatten `cay_nhom_hang` into **exactly three columns** `cap1`, `cap2`, `cap3`, then point out
+which item gets cut off and which gapes.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬────────┬───────────┬───────────────────┬───────────────┬──────────────────────────┐
@@ -370,10 +369,10 @@ ra mặt hàng nào bị cắt và mặt hàng nào bị hở.
 └─────────┴────────┴───────────┴───────────────────┴───────────────┴──────────────────────────┘
 ```
 
-**Hai bệnh cùng lúc:** `SP-D` hở cấp 3, `SP-C` bị cắt mất cấp 4.
+**Two illnesses at once:** `SP-D` gapes at level 3, `SP-C` loses level 4.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with recursive duong as (
@@ -392,30 +391,30 @@ join duong d on d.nhom_id = hn.nhom_id
 order by d.cap;
 ```
 
-Đây là cách **phần lớn** kho dữ liệu làm cây phân cấp, và nó hỏng theo hai hướng ngược
-nhau:
+This is how **most** warehouses do hierarchies, and it breaks in two opposite
+directions:
 
-**Nhánh nông hơn số cấp cố định → hở.** `SP-D` chỉ có 2 cấp. Cột `cap3` để `NULL` thì
-`group by cap3` gom nó vào nhóm `NULL`; điền `'(khong co)'` thì báo cáo hiện một nhóm giả.
-Cách duy nhất đúng là **kéo giá trị cấp cha xuống** (`cap3 = 'Thiet bi ngoai vi'`) — gọi
-là *ragged fill-down*, và nó làm tổng vẫn đúng nhưng nhãn thì lặp.
+**A branch shallower than the fixed level count → a gap.** `SP-D` has only 2 levels. Leaving `cap3` as
+`NULL` makes `group by cap3` gather it into a `NULL` group; filling `'(khong co)'` makes the report show a fake group.
+The only right way is to **pull the parent level's value down** (`cap3 = 'Thiet bi ngoai vi'`) — called
+*ragged fill-down*, and it keeps the total right while repeating the labels.
 
-**Nhánh sâu hơn số cấp cố định → mất.** `SP-C` thuộc *Laptop van phong* nhưng cột chỉ tới
-*Laptop*. Doanh thu **không mất** — nó vẫn nằm trong *Laptop*. Cái mất là **khả năng
-nhìn sâu hơn**, và nó mất **im lặng**: báo cáo vẫn cộng đủ 10.215.000, chỉ là không ai
-biết còn một cấp nữa tồn tại.
+**A branch deeper than the fixed level count → loss.** `SP-C` belongs to *Laptop van phong* but the columns only reach
+*Laptop*. The revenue **isn't lost** — it's still inside *Laptop*. What's lost is **the ability
+to look deeper**, and it's lost **silently**: the report still totals 10,215,000, it's just that nobody
+knows another level exists.
 
-Cái sâu xa hơn: **số cấp là dữ liệu, không phải hằng số.** Hôm nay 4, năm sau nghiệp vụ
-thêm một cấp là phải sửa schema, sửa mọi báo cáo, và nạp lại lịch sử. Bài B.2 là lối ra.
+The deeper point: **the level count is data, not a constant.** Today it's 4; next year the business
+adds a level and you must change the schema, change every report, and reload history. Exercise B.2 is the way out.
 
 </details>
 
-### Bài B.2 — Bridge đường đi: một bảng cho mọi cấp
+### Exercise B.2 — A path bridge: one table for every level
 
-**Đề:** dựng `bridge_nhom` — mọi cặp *(tổ tiên, con cháu)* kèm khoảng cách, **có cả cặp
-tự trỏ** (khoảng cách 0).
+**The task:** build `bridge_nhom` — every *(ancestor, descendant)* pair with its distance, **including the
+self-pointing pairs** (distance 0).
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────┬────────────┬────────┐
@@ -425,10 +424,10 @@ tự trỏ** (khoảng cách 0).
 └────────┴────────────┴────────┘
 ```
 
-8 nhóm sinh ra **19 cặp** quan hệ, trong đó 8 cặp tự trỏ.
+8 groups generate **19 relationship pairs**, of which 8 are self-pointing.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table bridge_nhom as
@@ -444,32 +443,32 @@ select count(*) so_cap, count(distinct to_tien) so_to_tien,
 from bridge_nhom;
 ```
 
-Cấu trúc này có tên: **path enumeration bridge**, hay *closure table*. Nó lưu **mọi
-đường đi** trong cây, không chỉ quan hệ cha–con trực tiếp.
+This structure has a name: a **path enumeration bridge**, or *closure table*. It stores **every
+path** in the tree, not just direct parent–child relationships.
 
-Cặp tự trỏ (`khoang_cach = 0`) là chi tiết dễ quên nhất và bỏ nó là hỏng: không có nó thì
-`Man hinh` không phải tổ tiên của chính nó, nên câu *"doanh thu của Man hinh và mọi nhóm
-con"* sẽ **không tính doanh thu của chính `Man hinh`**.
+The self-pointing pair (`khoang_cach = 0`) is the most easily forgotten detail and omitting it breaks things: without it,
+`Man hinh` isn't its own ancestor, so *"revenue for Man hinh and all its child
+groups"* **won't count `Man hinh`'s own revenue**.
 
-Ba tính chất làm nó ăn đứt cách dẹt cố định:
+Three properties that make it beat fixed flattening:
 
-| | Dẹt cố định | Bridge đường đi |
+| | Fixed flattening | A path bridge |
 |---|---|---|
-| Số cấp | **đóng cứng** trong schema | không giới hạn |
-| Thêm một cấp | sửa schema + nạp lại | thêm dòng vào cây, dựng lại bridge |
-| Cây sâu không đều | hở hoặc cắt | xử lý đúng, không cần fill-down |
-| Cái giá | — | bảng lớn hơn, `join` thêm một bước |
+| Level count | **hardcoded** in the schema | unlimited |
+| Adding a level | change the schema + reload | add a row to the tree, rebuild the bridge |
+| A ragged tree | gaps or cuts | handled correctly, no fill-down needed |
+| The cost | — | a bigger table, one extra `join` step |
 
-Kích thước bridge tăng theo **độ sâu × số nút**, không phải bình phương — cây 100.000 nút
-sâu 6 cấp cho khoảng 400.000 dòng. Vẫn nhỏ so với fact.
+The bridge's size grows with **depth × node count**, not with the square — a 100,000-node tree
+6 levels deep gives about 400,000 rows. Still small next to a fact.
 
 </details>
 
-### Bài B.3 — Cộng dồn lên mọi cấp bằng bridge
+### Exercise B.3 — Rolling up to every level with the bridge
 
-**Đề:** dùng `bridge_nhom` tính doanh thu cho **mọi** nhóm, mỗi nhóm gồm cả con cháu.
+**The task:** use `bridge_nhom` to compute revenue for **every** group, each including its descendants.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────────────┬────────┬───────────┐
@@ -485,10 +484,10 @@ sâu 6 cấp cho khoảng 400.000 dòng. Vẫn nhỏ so với fact.
 └─────────┴───────────────────┴────────┴───────────┘
 ```
 
-Bảy dòng chứ không phải tám. **`N7` đi đâu?**
+Seven rows, not eight. **Where did `N7` go?**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select b.to_tien, cn.ten_nhom,
@@ -501,34 +500,34 @@ join don_hang_chi_tiet ct on ct.ma_hang = hn.ma_hang
 group by 1,2 order by 4 desc;
 ```
 
-**`N7` (Hang thanh ly) không có mặt hàng nào**, nên `inner join` loại nó. Đó là hành vi
-đúng của SQL nhưng **sai với nghiệp vụ**: báo cáo cần hiện *Hang thanh ly — 0 đồng*, chứ
-không phải giấu nó đi. Người đọc không phân biệt được "nhóm doanh thu 0" với "nhóm không
-tồn tại". Sửa bằng `left join` từ `cay_nhom_hang`.
+**`N7` (Hang thanh ly) has no items**, so the `inner join` drops it. That's correct SQL
+behaviour but **wrong for the business**: the report needs to show *Hang thanh ly — 0*, not
+hide it. A reader can't tell "a group with zero revenue" from "a group that doesn't
+exist". Fix it with a `left join` from `cay_nhom_hang`.
 
-Ba điều đọc ra từ bảng này:
+Three things to read off this table:
 
-**`N1` = 10.215.000 = toàn bộ doanh thu.** Đúng, vì mọi mặt hàng đều nằm dưới *Cong nghe*.
-Đây là phép kiểm miễn phí cho cây: **gốc phải bằng tổng**.
+**`N1` = 10,215,000 = all the revenue.** Correct, because every item sits under *Cong nghe*.
+This is a free check on the tree: **the root must equal the total**.
 
-**`N2` = `N4` = `N8` = 3.600.000.** Ba cấp liên tiếp cùng số vì chỉ có một mặt hàng
-(`SP-C`) trong nhánh đó. Nhánh một con là bình thường, không phải lỗi.
+**`N2` = `N4` = `N8` = 3,600,000.** Three consecutive levels with the same number because there's only one item
+(`SP-C`) in that branch. A single-child branch is normal, not a bug.
 
-**Các dòng KHÔNG cộng lại thành tổng.** 6.615.000 + 3.600.000 + … lớn hơn 10.215.000 rất
-nhiều, vì mỗi mặt hàng được đếm ở **mọi cấp tổ tiên của nó**. Đó là bản chất của rollup
-cây — và là lý do bảng này **không được** đưa cho công cụ BI mà không khoá lại mức xem.
+**The rows do NOT add up to the total.** 6,615,000 + 3,600,000 + … is far larger than 10,215,000,
+because each item is counted at **every one of its ancestor levels**. That's the nature of a tree
+rollup — and it's why this table **must not** be handed to a BI tool without locking the viewing level.
 
-Đây chính là [case study cộng cột luỹ kế](../case-studies/cong-cot-luy-ke.md) ở dạng
-không gian thay vì thời gian.
+This is exactly [the case study on summing a cumulative column](../case-studies/cong-cot-luy-ke.md), in
+space rather than in time.
 
 </details>
 
-### Bài B.4 — Cây tổ chức: cộng doanh thu cả nhánh dưới quyền
+### Exercise B.4 — The org tree: summing revenue for a whole reporting line
 
-**Đề:** dùng recursive CTE trên `nhan_vien.nv_quan_ly_id`, tính cho mỗi người: doanh thu
-phân bổ của **chính họ và toàn bộ cấp dưới**.
+**The task:** use a recursive CTE on `nhan_vien.nv_quan_ly_id` to compute, per person, the allocated
+revenue of **themselves and their entire reporting line**.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────┬─────────────┬──────────────────┬───────────────┐
@@ -541,10 +540,10 @@ phân bổ của **chính họ và toàn bộ cấp dưới**.
 └───────────┴─────────────┴──────────────────┴───────────────┘
 ```
 
-`Ngo Thi H` ra **10.125.000** — không phải 10.215.000. Vẫn là `DH008` của bài A.3.
+`Ngo Thi H` gives **10,125,000** — not 10,215,000. Still exercise A.3's `DH008`.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with recursive cay as (
@@ -564,88 +563,88 @@ left join phan_bo p on p.nv_id = c.duoi
 group by 1,2 order by 3 desc;
 ```
 
-Đây là **hai bridge lồng nhau**, và thứ tự làm việc quan trọng:
+This is **two nested bridges**, and the order of work matters:
 
-1. `cay` — bridge đường đi trên cây tổ chức (giống bài B.2, khác dữ liệu).
-2. `phan_bo` — gom doanh thu về từng nhân viên **trước**, đã nhân hệ số.
-3. Nối hai cái.
+1. `cay` — a path bridge over the org tree (like exercise B.2, different data).
+2. `phan_bo` — aggregate revenue per employee **first**, already weight-multiplied.
+3. Join the two.
 
-**Gom trước là bắt buộc.** Nếu join `cay` thẳng vào `nhan_vien_don` rồi mới `sum`, mỗi
-dòng phân công bị nhân lên theo số tổ tiên trong cây → phồng lần nữa, chồng lên phồng
-của bài A.1.
+**Aggregating first is mandatory.** Joining `cay` straight onto `nhan_vien_don` and only then `sum`ming multiplies each
+assignment row by the number of ancestors in the tree → inflation again, on top of exercise A.1's
+inflation.
 
-Quy tắc chung khi có nhiều quan hệ nhiều-nhiều: **gom về grain đơn trước mỗi lần, không
-bao giờ join hai bridge rồi mới gom.**
+The general rule with several many-to-many relationships: **aggregate back to a single grain each time, never
+join two bridges and only then aggregate.**
 
-Và sai số `DH008` vẫn còn — nó lan qua mọi phép tính phía sau. Một dòng seed sai làm lệch
-cả báo cáo hoa hồng của giám đốc. Đó là lý do test ở bài A.3 phải chạy **trước** mọi thứ.
+And the `DH008` error is still there — it spreads through every downstream calculation. One wrong seed row skews
+the director's whole commission report. That's why exercise A.3's test must run **before** everything else.
 
 </details>
 
-### Bài B.5 — Phát hiện vòng lặp trong cây
+### Exercise B.5 — Detecting a cycle in the tree
 
-**Đề:** không có SQL bắt buộc. `NV01` quản lý `NV02`, `NV02` quản lý `NV04`, và giả sử ai
-đó đặt `NV04` quản lý `NV01`. Chuyện gì xảy ra, và phát hiện thế nào?
+**The task:** no SQL required. `NV01` manages `NV02`, `NV02` manages `NV04`, and suppose somebody
+sets `NV04` to manage `NV01`. What happens, and how do you detect it?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Recursive CTE ở bài B.4 sẽ **chạy vô hạn** — hoặc chính xác hơn: chạy tới khi hết bộ nhớ,
-hoặc tới giới hạn đệ quy của engine. DuckDB và Postgres không tự phát hiện vòng.
+Exercise B.4's recursive CTE will **run forever** — or more precisely: until memory runs out,
+or until the engine's recursion limit. DuckDB and Postgres don't detect cycles by themselves.
 
-Hai cách chặn, và nên có **cả hai**:
+Two ways to stop it, and you should have **both**:
 
 ```sql
--- CACH 1: gioi han do sau, chan ngay luc chay
+-- WAY 1: limit the depth, blocking it at run time
 with recursive cay as (
   select nv_id goc, nv_id duoi, 0 sau from nhan_vien
   union all
   select c.goc, nv.nv_id, c.sau + 1
   from cay c join nhan_vien nv on nv.nv_quan_ly_id = c.duoi
-  where c.sau < 10)                    -- <- chan
+  where c.sau < 10)                    -- <- the block
 select * from cay;
 
--- CACH 2: mang theo duong di, bo dong nao quay lai
+-- WAY 2: carry the path along, dropping any row that loops back
 with recursive cay as (
   select nv_id goc, nv_id duoi, [nv_id] duong from nhan_vien
   union all
   select c.goc, nv.nv_id, list_append(c.duong, nv.nv_id)
   from cay c join nhan_vien nv on nv.nv_quan_ly_id = c.duoi
-  where not list_contains(c.duong, nv.nv_id))   -- <- phat hien vong
+  where not list_contains(c.duong, nv.nv_id))   -- <- cycle detection
 select * from cay;
 ```
 
-Cách 1 rẻ và luôn chặn được, nhưng **im lặng cắt cụt** cây sâu hơn 10 cấp thật. Cách 2
-đúng về ngữ nghĩa nhưng tốn hơn.
+Way 1 is cheap and always stops it, but **silently truncates** a genuinely deeper-than-10-level tree. Way 2
+is semantically correct but costs more.
 
-Và cả hai đều chỉ **chặn**, không **báo**. Phải có test riêng:
+And both only **block**, they don't **report**. You need a separate test:
 
 ```sql
--- test: khong ai la to tien cua chinh minh qua duong dai hon 0
+-- test: nobody is their own ancestor along a path longer than 0
 select goc from cay where goc = duoi and sau > 0;
 ```
 
-Vòng lặp trong cây tổ chức nghe như chuyện không thể xảy ra, nhưng nó xảy ra thật mỗi
-khi có tái cấu trúc: A tạm quản lý B trong lúc B đang là quản lý của A, rồi ai đó quên
-gỡ. Cây danh mục sản phẩm còn dễ hơn — chỉ cần một lần kéo-thả nhầm trong giao diện quản
-trị.
+A cycle in an org tree sounds impossible, but it really happens every
+time there's a restructure: A temporarily manages B while B is A's manager, and somebody forgets
+to undo it. A product-category tree is even easier — one mistaken drag-and-drop in the admin
+interface will do it.
 
-**Luật:** mọi cây tự tham chiếu phải có test không-vòng, và test đó phải chạy **trước**
-mọi recursive CTE dùng nó. Xem [Cây phân cấp](../skills/hierarchy.md).
+**The rule:** every self-referencing tree needs a no-cycle test, and that test must run **before**
+any recursive CTE that uses it. See [Hierarchies](../skills/hierarchy.md).
 
 </details>
 
 ---
 
-## Bộ C — Thực thể không đồng nhất
+## Group C — Heterogeneous entities
 
-### Bài C.1 — Đo rừng `NULL`: 63,9% ô trống
+### Exercise C.1 — Measure the `NULL` forest: 63.9% empty cells
 
-**Đề:** với `giao_dich_tai_chinh`, đếm số ô có dữ liệu trên **sáu cột biến thiên**
-(`so_tien`, `ky_han_thang`, `lai_suat`, `ma_the`, `phi_giao_dich`, `don_hang_id`), theo
-từng `loai_gd`. Rồi tính tỷ lệ ô trống toàn bảng.
+**The task:** with `giao_dich_tai_chinh`, count the populated cells across the **six varying columns**
+(`so_tien`, `ky_han_thang`, `lai_suat`, `ma_the`, `phi_giao_dich`, `don_hang_id`), by
+`loai_gd`. Then compute the table's overall empty-cell ratio.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────────┬─────────┬─────────┬────────┬──────────┬────────┬───────┬──────────┐
@@ -666,10 +665,10 @@ từng `loai_gd`. Rồi tính tỷ lệ ô trống toàn bảng.
 └───────────────────┴────────┴─────────┘
 ```
 
-**Gần hai phần ba bảng là ô trống.** Và có một ô "đáng lẽ phải đầy mà lại trống" — tìm ra.
+**Nearly two thirds of the table is empty cells.** And one cell "should be populated but isn't" — find it.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select loai_gd, count(*) so_dong,
@@ -685,31 +684,31 @@ select round(100.0 * (count(*)*6 -
 from giao_dich_tai_chinh;
 ```
 
-**Ô bất thường: `thanh_toan_the` có 4 dòng nhưng chỉ 3 `don_hang_id`.** Đó là `GD12` —
-thanh toán thẻ không gắn đơn hàng nào (ngoài hệ thống).
+**The anomalous cell: `thanh_toan_the` has 4 rows but only 3 `don_hang_id`.** That's `GD12` —
+a card payment tied to no order (outside the system).
 
-Chi tiết này quan trọng vì nó phân biệt hai loại `NULL` trông giống hệt nhau:
+This detail matters because it distinguishes two kinds of `NULL` that look identical:
 
-| Loại `NULL` | Ví dụ | Nghĩa |
+| The kind of `NULL` | Example | Meaning |
 |---|---|---|
-| **Cấu trúc** | `ky_han_thang` của `nap_tien` | thuộc tính **không áp dụng** cho loại này |
-| **Dữ liệu** | `don_hang_id` của `GD12` | thuộc tính **có áp dụng** nhưng thiếu |
+| **Structural** | `ky_han_thang` on a `nap_tien` | the attribute **doesn't apply** to this type |
+| **Data** | `don_hang_id` on `GD12` | the attribute **does apply** but is missing |
 
-`NULL` cấu trúc là hệ quả tất yếu của việc nhét nhiều loại vào một bảng — không sửa được
-bằng cách điền dữ liệu. `NULL` dữ liệu là **lỗi** hoặc **trường hợp nghiệp vụ hợp lệ**, và
-phải điều tra riêng.
+A structural `NULL` is an inevitable consequence of cramming several types into one table — no amount of
+filling in data fixes it. A data `NULL` is either **a bug** or **a legitimate business case**, and it
+must be investigated separately.
 
-Bảng một-bảng-rộng **không phân biệt được hai loại này**, và đó là khuyết điểm lớn nhất
-của nó — lớn hơn chuyện tốn chỗ. Bài C.2 và C.3 là hai lối ra.
+A one-wide-table design **can't distinguish the two**, and that's its biggest weakness —
+bigger than wasted space. Exercises C.2 and C.3 are the two ways out.
 
 </details>
 
-### Bài C.2 — Ba cách lưu, ba chi phí ô
+### Exercise C.2 — Three ways to store, three cell costs
 
-**Đề:** so ba kiến trúc — một bảng rộng (supertype), tách bốn bảng (subtype), và
-measure-type (EAV) — theo số ô cấp phát, ô có dữ liệu, ô trống.
+**The task:** compare three architectures — one wide table (supertype), four split tables (subtype), and
+measure-type (EAV) — by cells allocated, cells populated, and cells empty.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────────────────┬────────────┬──────────────┬─────────┐
@@ -721,10 +720,10 @@ measure-type (EAV) — theo số ô cấp phát, ô có dữ liệu, ô trống.
 └───────────────────────────┴────────────┴──────────────┴─────────┘
 ```
 
-EAV có **19** ô dữ liệu chứ không phải 26. Bảy ô đi đâu?
+EAV has **19** data cells rather than 26. Where did seven cells go?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table gd_eav as
@@ -738,40 +737,40 @@ union all select gd_id, ngay, khach_id, loai_gd, 'phi_giao_dich', phi_giao_dich:
   from giao_dich_tai_chinh where phi_giao_dich is not null;
 ```
 
-**Bảy ô mất đi là `ma_the` (4) và `don_hang_id` (3)** — chúng là **chuỗi**, còn cột
-`gia_tri` của EAV là `double`.
+**The seven lost cells are `ma_the` (4) and `don_hang_id` (3)** — they're **strings**, while EAV's
+`gia_tri` column is a `double`.
 
-Đó là khuyết điểm chí mạng của EAV, và nó hay bị bỏ qua khi người ta bị con số "0 ô
-trống" hấp dẫn. Ba cách chữa, cả ba đều xấu:
+That's EAV's fatal weakness, and it's easily overlooked when people are seduced by the "0 empty
+cells" figure. Three cures, all three ugly:
 
-| Cách chữa | Vấn đề |
+| The cure | The problem |
 |---|---|
-| Thêm cột `gia_tri_chu` | mỗi dòng lại có một ô trống → mất luôn ưu điểm |
-| Ép mọi thứ về chuỗi | mất kiểu, `sum()` phải `cast`, sai kiểu không ai bắt |
-| Giữ chuỗi ở bảng riêng | thành hai bảng, phức tạp hơn subtype |
+| Add a `gia_tri_chu` column | every row now has an empty cell → the advantage is gone |
+| Force everything to strings | types lost, `sum()` needs a `cast`, and a type error goes uncaught |
+| Keep strings in a separate table | now two tables, more complex than subtyping |
 
-Cho nên **EAV chỉ hợp khi mọi thuộc tính cùng kiểu** — điển hình là chỉ số đo lường
-(cảm biến, chỉ số y tế, số liệu tài chính). Có thuộc tính chuỗi trộn vào là EAV mất lợi
-thế.
+So **EAV only fits when every attribute shares a type** — typically measurement readings
+(sensors, medical indicators, financial figures). Mix in a string attribute and EAV loses its
+advantage.
 
-Bảng so sánh đầy đủ:
+The full comparison:
 
 | | Supertype | Subtype | EAV |
 |---|---|---|---|
-| Ô trống | **46 (63,9%)** | 1 | 0 |
-| Truy vấn *"tổng theo loại"* | 1 bảng, dễ | **`union` 4 bảng** | 1 bảng, cần `pivot` |
-| Thêm một loại mới | thêm cột, sửa mọi query | **thêm bảng** | **không đụng schema** |
-| Kiểu dữ liệu | đúng | đúng | **mất** |
-| Ràng buộc "loại X phải có cột Y" | không cưỡng chế được | **`NOT NULL` cưỡng chế** | không |
+| Empty cells | **46 (63.9%)** | 1 | 0 |
+| The query *"total by type"* | 1 table, easy | **`union` of 4 tables** | 1 table, needs a `pivot` |
+| Adding a new type | add a column, change every query | **add a table** | **no schema change** |
+| Data types | correct | correct | **lost** |
+| The constraint "type X must have column Y" | not enforceable | **`NOT NULL` enforces it** | no |
 
 </details>
 
-### Bài C.3 — Tách subtype, và cái giá của `union`
+### Exercise C.3 — Splitting out subtypes, and the price of `union`
 
-**Đề:** tách `giao_dich_tai_chinh` thành bốn bảng subtype, rồi viết lại câu *"tổng tiền
-theo khách"* — vốn là một dòng SQL trên bảng rộng.
+**The task:** split `giao_dich_tai_chinh` into four subtype tables, then rewrite the query *"total money
+per customer"* — which was one line of SQL on the wide table.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬───────────┬───────┐
@@ -785,7 +784,7 @@ theo khách"* — vốn là một dòng SQL trên bảng rộng.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table gd_nap_tien as
@@ -799,7 +798,7 @@ create or replace table gd_the as
   select gd_id, ngay, khach_id, so_tien, ma_the, don_hang_id
   from giao_dich_tai_chinh where loai_gd='thanh_toan_the';
 
--- cau hoi cat ngang: phai union lai
+-- the cross-cutting question: it has to be unioned back
 with tat_ca as (
   select khach_id, so_tien from gd_nap_tien
   union all select khach_id, so_tien from gd_rut_tien
@@ -809,45 +808,45 @@ select khach_id, sum(so_tien) tong_tien, count(*) so_gd
 from tat_ca group by 1 order by 2 desc;
 ```
 
-Đây là **đánh đổi thật** của subtype, và nó ngược với trực giác: tách bảng làm
-*mỗi loại* sạch hơn, nhưng làm *mọi câu hỏi cắt ngang các loại* khó hơn.
+This is subtyping's **real trade-off**, and it's counter-intuitive: splitting the tables makes
+*each type* cleaner but makes *every question crossing the types* harder.
 
 ```text
 Cau hoi trong MOT loai   ("ky han gui tiet kiem trung binh")  →  subtype THANG
 Cau hoi CAT NGANG loai   ("tong tien theo khach")             →  supertype THANG
 ```
 
-Và tỷ lệ hai loại câu hỏi này quyết định kiến trúc. Nếu 90% báo cáo là cắt ngang thì tách
-bốn bảng là tự làm khổ mình mỗi ngày để tiết kiệm 46 ô trống.
+And the ratio between those two kinds of question decides the architecture. If 90% of reports are cross-cutting, splitting into
+four tables is making your daily life harder to save 46 empty cells.
 
-**Giải pháp thực dụng mà phần lớn kho dữ liệu dùng: cả hai.**
+**The pragmatic solution most warehouses use: both.**
 
 ```sql
--- bang rong lam nguon su that, view subtype cho tung loai
+-- the wide table as the source of truth, subtype views per type
 create or replace view v_gd_tiet_kiem as
   select gd_id, ngay, khach_id, so_tien, ky_han_thang, lai_suat
   from giao_dich_tai_chinh where loai_gd = 'gui_tiet_kiem';
 ```
 
-Lưu một bảng rộng (chấp nhận `NULL` cấu trúc), rồi tạo view cho từng subtype. Câu cắt
-ngang đọc bảng gốc; câu theo loại đọc view và **không thấy cột nào không áp dụng**.
+Store one wide table (accepting structural `NULL`s), then create a view per subtype. Cross-cutting
+questions read the base table; per-type questions read the view and **see no inapplicable column**.
 
-Cái mất: view không cưỡng chế được `NOT NULL`. Bù bằng test:
+What's lost: a view can't enforce `NOT NULL`. Compensate with a test:
 
 ```sql
--- moi giao dich tiet kiem phai co ky han va lai suat
+-- every savings transaction must have a term and a rate
 select gd_id from giao_dich_tai_chinh
 where loai_gd = 'gui_tiet_kiem' and (ky_han_thang is null or lai_suat is null);
 ```
 
 </details>
 
-### Bài C.4 — Truy vấn trên dạng EAV
+### Exercise C.4 — Querying the EAV form
 
-**Đề:** với `gd_eav`, thống kê theo `thuoc_tinh`, rồi `pivot` ngược về dạng bảng rộng cho
-riêng `gui_tiet_kiem`.
+**The task:** with `gd_eav`, produce statistics by `thuoc_tinh`, then `pivot` back to the wide form for
+`gui_tiet_kiem` alone.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────┬─────────┬────────────┐
@@ -860,16 +859,16 @@ riêng `gui_tiet_kiem`.
 └───────────────┴─────────┴────────────┘
 ```
 
-Dòng `lai_suat` tổng **12,3** — con số đó có nghĩa gì không?
+The `lai_suat` row totals **12.3** — does that number mean anything?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select thuoc_tinh, count(*) so_dong, round(sum(gia_tri),1) tong
 from gd_eav group by 1 order by 1;
 
--- pivot nguoc ve dang rong
+-- pivot back to the wide form
 select gd_id, khach_id,
        max(gia_tri) filter (where thuoc_tinh='so_tien') so_tien,
        max(gia_tri) filter (where thuoc_tinh='ky_han_thang') ky_han_thang,
@@ -878,57 +877,57 @@ from gd_eav where loai_gd='gui_tiet_kiem'
 group by 1,2 order by 1;
 ```
 
-**`sum(lai_suat)` = 12,3 là số vô nghĩa** — nó cộng 5,8% với 6,5%. Lãi suất là tỷ lệ,
-non-additive, giống hệt bài toán avg-của-avg ở [bộ 5](bt-05-fact-nang-cao.md).
+**`sum(lai_suat)` = 12.3 is a meaningless number** — it adds 5.8% to 6.5%. An interest rate is a ratio,
+non-additive, exactly like the avg-of-avg problem in [set 5](bt-05-fact-nang-cao.md).
 
-Và đây là **khuyết điểm nguy hiểm nhất của EAV**, hơn cả chuyện mất kiểu dữ liệu: mọi
-thuộc tính nằm chung một cột `gia_tri`, nên `sum(gia_tri)` **luôn chạy được** dù bạn đang
-cộng tiền với lãi suất với kỳ hạn.
+And this is **EAV's most dangerous weakness**, worse even than losing data types: every
+attribute lives in one `gia_tri` column, so `sum(gia_tri)` **always runs** even when you're
+adding money to interest rates to terms.
 
-Ở dạng bảng rộng, cộng nhầm hai cột đó cần cố ý. Ở dạng EAV, quên một dòng `where
-thuoc_tinh = ...` là đủ:
+In the wide form, adding those two columns together takes deliberate effort. In EAV, forgetting one `where
+thuoc_tinh = ...` is enough:
 
 ```sql
--- TRONG NHU DUNG, thuc ra cong tien + ky han + lai suat + phi
+-- LOOKS RIGHT, actually adds money + term + rate + fee
 select khach_id, sum(gia_tri) from gd_eav group by 1;
 ```
 
-Chống lại bằng cách bắt buộc: **không bao giờ `sum(gia_tri)` mà không có `where
-thuoc_tinh`**, và thêm cột `don_vi` (`VND`, `thang`, `phan_tram`) để lỗi lộ ra khi nhóm.
+Guard against it by making it mandatory: **never `sum(gia_tri)` without a `where
+thuoc_tinh`**, and add a `don_vi` column (`VND`, `thang`, `phan_tram`) so the error surfaces when grouping.
 
-Xem [Thực thể không đồng nhất](../skills/heterogeneous-schema.md).
+See [Heterogeneous entities](../skills/heterogeneous-schema.md).
 
 </details>
 
-### Bài C.5 — Chọn cách nào
+### Exercise C.5 — Which to choose
 
-**Đề:** không có SQL. Cho ba tình huống, chọn kiến trúc và giải thích.
+**The task:** no SQL. For three situations, choose the architecture and explain.
 
-1. Bốn loại giao dịch, ổn định nhiều năm, 90% báo cáo cắt ngang các loại.
-2. Sản phẩm bảo hiểm, mỗi loại 20–40 thuộc tính riêng, mỗi quý ra loại mới.
-3. Cảm biến IoT, 200 chỉ số, chỉ số mới thêm liên tục, tất cả đều là số.
+1. Four transaction types, stable for years, 90% of reports cutting across the types.
+2. Insurance products, 20–40 attributes specific to each type, a new type every quarter.
+3. IoT sensors, 200 metrics, new metrics added constantly, all of them numeric.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**1 → Supertype (một bảng rộng).** Loại ổn định nên số cột không tăng; 90% cắt ngang nên
-`union` sẽ xuất hiện trong hầu hết truy vấn. 46 ô trống là cái giá rẻ nhất trong ba cách.
-Thêm view cho từng loại như bài C.3.
+**1 → Supertype (one wide table).** The types are stable so the column count won't grow; 90% is cross-cutting so
+`union` would appear in most queries. 46 empty cells is the cheapest price of the three.
+Add a view per type as in exercise C.3.
 
-**2 → Subtype (tách bảng).** 20–40 thuộc tính riêng × 4 loại là bảng rộng **160 cột**,
-trong đó mỗi dòng chỉ điền 1/4. Tệ hơn: mỗi quý một loại mới nghĩa là **thêm 30 cột vào
-bảng đang có** — thao tác đắt trên bảng lớn, và mọi `select *` đều rộng thêm.
+**2 → Subtype (split tables).** 20–40 specific attributes × 4 types is a **160-column** wide table
+where each row fills only a quarter. Worse: a new type each quarter means **adding 30 columns to an
+existing table** — an expensive operation on a large table, and every `select *` gets wider.
 
-Với subtype, loại mới là **bảng mới**, không đụng gì đang chạy. Đó là ưu điểm quan trọng
-nhất ở đây, chứ không phải ô trống.
+With subtypes, a new type is a **new table**, touching nothing already running. That's the most important
+advantage here, not the empty cells.
 
-**3 → EAV (measure-type).** Đây là trường hợp EAV **được thiết kế cho**: mọi giá trị cùng
-kiểu số, số lượng thuộc tính lớn và mở, thuộc tính mới không được phép làm đổi schema.
-Khuyết điểm mất kiểu ở bài C.2 không áp dụng vì không có thuộc tính chuỗi.
+**3 → EAV (measure-type).** This is the case EAV **was designed for**: every value the same
+numeric type, a large and open attribute count, and new attributes not allowed to change the schema.
+The type-loss weakness from exercise C.2 doesn't apply because there are no string attributes.
 
-Vẫn phải có `don_vi` và cấm `sum(gia_tri)` trần như bài C.4.
+You still need `don_vi` and a ban on bare `sum(gia_tri)` as in exercise C.4.
 
-**Cây quyết định rút gọn:**
+**The condensed decision tree:**
 
 ```text
 Thuoc tinh moi co lam DOI SCHEMA khong duoc chap nhan?
@@ -939,32 +938,32 @@ Thuoc tinh moi co lam DOI SCHEMA khong duoc chap nhan?
    └─ Nhieu thuoc tinh rieng (>20)               → SUBTYPE
 ```
 
-Điều cần nhớ: **cả ba đều đúng**, và chọn sai không làm số sai — nó chỉ làm mọi việc về
-sau đắt hơn. Đó là loại quyết định khó sửa nhất, vì không có triệu chứng nào báo rằng
-bạn chọn sai.
+What to remember: **all three are right**, and choosing wrong doesn't make the numbers wrong — it only makes
+everything afterwards more expensive. That's the hardest kind of decision to fix, because no symptom reports that
+you chose wrong.
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-| Số | Nghĩa | Bài |
+| The number | What it means | Exercise |
 |---|---|---|
-| 15 → 26 dòng, +72% | join bridge không nhân hệ số | A.1 |
-| 10.125.000, thiếu 90.000 | nhân hệ số rồi vẫn sai vì `DH008` | A.2 |
-| `DH008` tổng hệ số 0,9 | thủ phạm, tìm bằng `having` | A.3 |
-| 17.565.000 | doanh thu **ảnh hưởng** — cố ý không cộng được | A.5 |
-| `SP-D` hở, `SP-C` bị cắt | dẹt cố định hỏng hai đầu | B.1 |
-| 19 cặp / 8 tự trỏ | bridge đường đi cho cây | B.2 |
-| `N1` = 10.215.000 | gốc cây phải bằng tổng | B.3 |
-| 63,9% ô trống | rừng `NULL` của bảng supertype | C.1 |
-| 72 / 27 / 38 ô | supertype vs subtype vs EAV | C.2 |
-| `sum(lai_suat)` = 12,3 | EAV cho phép cộng nhầm đơn vị | C.4 |
+| 15 → 26 rows, +72% | a bridge join without the weight | A.1 |
+| 10,125,000, 90,000 short | weighted and still wrong because of `DH008` | A.2 |
+| `DH008` weights total 0.9 | the culprit, found with `having` | A.3 |
+| 17,565,000 | **influenced** revenue — deliberately unsummable | A.5 |
+| `SP-D` gapes, `SP-C` is cut | fixed flattening breaks at both ends | B.1 |
+| 19 pairs / 8 self-pointing | a path bridge for the tree | B.2 |
+| `N1` = 10,215,000 | the tree's root must equal the total | B.3 |
+| 63.9% empty cells | the supertype table's `NULL` forest | C.1 |
+| 72 / 27 / 38 cells | supertype vs subtype vs EAV | C.2 |
+| `sum(lai_suat)` = 12.3 | EAV lets you add mismatched units | C.4 |
 
 ## Related Topics
 
-- [Bài tập bộ 3 — Cột và bảng](bt-03-cot-va-bang.md) — bộ trước
-- [Bài tập bộ 5 — Fact nâng cao](bt-05-fact-nang-cao.md) — bộ tiếp theo
-- [Phụ lục seed](bt-00-seed.md) — `nhan_vien_don`, `cay_nhom_hang`, `giao_dich_tai_chinh`
-- [Kỹ năng — Data Modeling](../skills/index.md) — lý thuyết của ba kỹ thuật trên
+- [Exercise set 3 — Columns and tables](bt-03-cot-va-bang.md) — the previous set
+- [Exercise set 5 — Advanced facts](bt-05-fact-nang-cao.md) — the next set
+- [The seed appendix](bt-00-seed.md) — `nhan_vien_don`, `cay_nhom_hang`, `giao_dich_tai_chinh`
+- [Skills — Data Modeling](../skills/index.md) — the theory behind the three techniques above
