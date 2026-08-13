@@ -1,8 +1,7 @@
 ---
-title: Vận hành và consumer lag
-i18n_status: untranslated
+title: Operations and consumer lag
 sidebar_position: 5
-description: "Consumer lag là chỉ số sức khoẻ số một; đo và chẩn bằng kafka-consumer-groups."
+description: "Consumer lag is the number-one health metric; measuring and diagnosing it with kafka-consumer-groups."
 tags: [consumer-lag, operations, monitoring, partitions, reassignment]
 domain: data-engineering
 category: concept
@@ -13,13 +12,13 @@ verified_at:
 updated: 2026-08-11
 ---
 
-> **Chốt:** Consumer lag = log-end-offset − committed-offset; nó là chỉ số sức khoẻ số một của một pipeline Kafka, và `kafka-consumer-groups --describe` là chỗ đầu tiên bạn nhìn khi có gì đó chậm.
+> **Takeaway:** consumer lag = log-end-offset − committed-offset; it's the number-one health metric of a Kafka pipeline, and `kafka-consumer-groups --describe` is the first place you look when something is slow.
 
-Giả định đã nắm [topic, partition, offset](../reference/topic-partition-offset.md) và [consumer group](consumer-groups.md). Đây là cách đo sức khoẻ và chẩn khi số liệu xấu.
+Assumes you've got [topic, partition, offset](../reference/topic-partition-offset.md) and [consumer groups](consumer-groups.md). This is how to measure health and diagnose bad numbers.
 
-## Consumer lag là gì và vì sao là số một
+## What consumer lag is and why it's number one
 
-Lag định nghĩa **per-partition**, chính xác là hiệu của hai offset:
+Lag is defined **per partition**, precisely as the difference of two offsets:
 
 ```text
 lag(partition) = LEO (log-end-offset, message mới nhất broker có)
@@ -27,24 +26,24 @@ lag(partition) = LEO (log-end-offset, message mới nhất broker có)
 lag(group)     = tổng lag của mọi partition group đang giữ
 ```
 
-Lưu ý phân biệt: LEO là **offset kế tiếp sẽ ghi** (đuôi log), committed-offset là offset consumer đã **commit** — không nhất thiết bằng offset đã đọc (có thể đọc rồi mà chưa commit). Vì thế lag phản ánh tiến độ **đã xác nhận xử lý**, không phải đã đọc.
+Note the distinction: the LEO is the **offset to be written next** (the log's tail), while the committed-offset is the offset the consumer has **committed** — not necessarily the offset it has read (it may have read further without committing). So lag reflects **confirmed processing** progress, not reading progress.
 
-Lag là **số message consumer còn nợ**. Vì sao nó là chỉ số quan trọng nhất:
+Lag is **the number of messages the consumer owes**. Why it's the most important metric:
 
-- Lag ổn định quanh một mức thấp → consumer theo kịp producer. Khoẻ.
-- Lag **tăng đều** → consumer chậm hơn producer, sớm muộn cũng trễ nghiêm trọng.
-- Lag nhảy vọt → có sự cố (consumer chết, rebalance liên tục, producer burst).
+- Lag steady around a low level → the consumer keeps up with the producer. Healthy.
+- Lag **rising steadily** → the consumer is slower than the producer, and sooner or later it'll be seriously late.
+- Lag spiking → something's wrong (a dead consumer, continuous rebalancing, a producer burst).
 
-Một con số, phản ánh trực tiếp trải nghiệm downstream (dữ liệu trễ bao nhiêu). Đo được nó là đo được sức khoẻ.
+One number, directly reflecting the downstream experience (how stale the data is). Measure it and you've measured health.
 
-## Đo bằng kafka-consumer-groups
+## Measuring with kafka-consumer-groups
 
 ```bash
 kafka-consumer-groups --bootstrap-server localhost:9092 \
   --describe --group orders-consumer
 ```
 
-Output minh hoạ, chưa chạy:
+Illustrative output, not run:
 
 ```text
 # Output minh hoạ — chưa chạy (không dựng được cluster)
@@ -54,67 +53,67 @@ orders-consumer  orders   1          15100           18900           3800  consu
 orders-consumer  orders   2          15220           15225           5     consumer-1-abc    /10.0.0.11
 ```
 
-> `localhost:9092` là cổng **mặc định** phổ biến của Kafka, không phải host thật của bạn — thay bằng bootstrap server thực tế.
+> `localhost:9092` is Kafka's common **default** port, not your real host — replace it with your actual bootstrap server.
 
-Đọc từng cột:
+Reading the columns:
 
-| Cột | Nghĩa |
+| Column | Meaning |
 |---|---|
-| `CURRENT-OFFSET` | Committed-offset của group cho partition này (đã xử lý & commit tới đâu) |
-| `LOG-END-OFFSET` | LEO — đuôi log, message mới nhất broker có |
+| `CURRENT-OFFSET` | The group's committed-offset for this partition (how far it's processed & committed) |
+| `LOG-END-OFFSET` | The LEO — the log's tail, the newest message the broker has |
 | `LAG` | `LOG-END-OFFSET − CURRENT-OFFSET` |
-| `CONSUMER-ID` | Member đang giữ partition này. **Trống** = không member nào giữ (group chết hoặc chưa join) |
-| `HOST` | Host của member |
+| `CONSUMER-ID` | The member currently holding this partition. **Empty** = no member holds it (the group is dead or hasn't joined) |
+| `HOST` | The member's host |
 
-Ở ví dụ: partition 1 lag 3800 trong khi hai partition kia gần 0. Đó là **lệch tải** hoặc một partition có key nóng — không phải cả group chậm. Nhìn theo partition, không chỉ theo tổng. Nếu `CONSUMER-ID` trống mà `LAG` lớn, nghĩa là **không ai đang đọc** partition đó — báo động khác hẳn "đọc nhưng chậm".
+In the example: partition 1 has a lag of 3800 while the other two are near 0. That's **load skew** or one partition with a hot key — not the whole group being slow. Look per partition, not just at the total. If `CONSUMER-ID` is empty while `LAG` is large, it means **nobody is reading** that partition — an entirely different alarm from "reading but slowly".
 
-## Metric quan trọng qua JMX
+## The important metrics via JMX
 
-Lệnh `--describe` là ảnh chụp tay; giám sát liên tục phải qua JMX metric của broker và client:
+The `--describe` command is a manual snapshot; continuous monitoring must go through the broker's and clients' JMX metrics:
 
-| Metric | Ở đâu | Nghĩa / báo động |
+| Metric | Where | Meaning / alarm |
 |---|---|---|
-| `records-lag-max` | Consumer client | Lag lớn nhất trên các partition consumer giữ; tăng đều → consumer đuối |
-| `under-replicated-partitions` | Broker | Số partition có ISR < replication factor; lớn hơn 0 kéo dài → mất khả năng chịu lỗi |
-| `offline-partitions-count` | Controller | Partition không có leader; lớn hơn 0 là báo động đỏ, không đọc/ghi được |
-| `active-controller-count` | Broker | Tổng toàn cluster phải đúng bằng 1; khác 1 → sự cố controller |
-| `request latency` (produce/fetch p99) | Broker | Tăng vọt → broker quá tải, đĩa/mạng nghẽn |
-| `isr-shrinks-rate` / `isr-expands-rate` | Broker | ISR co giãn liên tục → replica không theo kịp |
+| `records-lag-max` | Consumer client | The largest lag across the partitions this consumer holds; a steady rise → the consumer is struggling |
+| `under-replicated-partitions` | Broker | The number of partitions with ISR < replication factor; above 0 for long → fault tolerance lost |
+| `offline-partitions-count` | Controller | Partitions with no leader; above 0 is a red alert, nothing can be read or written |
+| `active-controller-count` | Broker | The cluster-wide total must be exactly 1; anything else → a controller incident |
+| `request latency` (produce/fetch p99) | Broker | A spike → the broker is overloaded, disk/network congested |
+| `isr-shrinks-rate` / `isr-expands-rate` | Broker | The ISR shrinking/expanding continuously → replicas can't keep up |
 
-- **Under-replicated partitions**: một replica tụt hoặc broker rớt. Kéo dài → mất khả năng chịu lỗi, và với `min.insync.replicas` cao có thể **chặn cả producer** (`acks=all` không đủ replica trong ISR để xác nhận).
-- **Offline partitions**: partition không có leader — không đọc/ghi được. Báo động đỏ.
+- **Under-replicated partitions**: a replica has fallen behind or a broker dropped. Sustained → fault tolerance is lost, and with a high `min.insync.replicas` it can **block producers entirely** (`acks=all` lacking enough in-sync replicas to confirm).
+- **Offline partitions**: a partition with no leader — nothing can be read or written. A red alert.
 
-Cả hai còn xem nhanh qua `kafka-topics --describe` (so cột `Isr` với `Replicas`).
+Both can also be checked quickly with `kafka-topics --describe` (comparing the `Isr` column against `Replicas`).
 
-### Công cụ giám sát
+### Monitoring tools
 
-- **Burrow** (LinkedIn): chuyên theo dõi consumer lag, đánh giá sức khoẻ group theo **xu hướng** (không chỉ ngưỡng tuyệt đối) — hợp cho cảnh báo lag.
-- **Cruise Control** (LinkedIn): tự động cân bằng cluster — phát hiện lệch tải và sinh/chạy kế hoạch reassignment, kèm throttle. Thay việc viết `plan.json` tay.
+- **Burrow** (LinkedIn): dedicated to tracking consumer lag, evaluating group health by **trend** (not just an absolute threshold) — good for lag alerting.
+- **Cruise Control** (LinkedIn): automatic cluster balancing — it detects load skew and generates/runs a reassignment plan, with throttling included. It replaces writing `plan.json` by hand.
 
-## Bảng triệu chứng → nguyên nhân → nhìn ở đâu
+## Symptom → cause → where to look
 
-| Triệu chứng | Nguyên nhân khả dĩ | Nhìn ở đâu |
+| Symptom | Likely cause | Where to look |
 |---|---|---|
-| Lag tăng đều mọi partition | Consumer chậm hơn producer (thiếu năng lực) | `records-lag-max`, CPU consumer, downstream chậm |
-| Lag chỉ một/vài partition | Key nóng, lệch phân bố | LAG theo partition, phân bố key |
-| Lag lớn, `CONSUMER-ID` trống | Không member nào giữ partition (group chết/chưa join) | `--describe`, log consumer, số instance đang chạy |
-| Lag nhảy răng cưa | Rebalance liên tục | [rebalance liên tục](../case-studies/rebalance-lien-tuc.md), log rebalance |
-| Lag tăng đột ngột rồi hồi | Producer burst | Throughput producer theo thời gian |
-| Producer bị chặn / lỗi ghi | Under-replicated + `min.insync.replicas` | `under-replicated-partitions`, ISR |
-| Không đọc/ghi được hẳn | Offline partitions | `offline-partitions-count`, controller |
-| Fetch/produce chậm toàn cục | Broker quá tải | `request latency` p99, đĩa/mạng broker |
+| Lag rising steadily on every partition | The consumer is slower than the producer (insufficient capacity) | `records-lag-max`, consumer CPU, a slow downstream |
+| Lag on only one/a few partitions | A hot key, a skewed distribution | LAG per partition, the key distribution |
+| Large lag with an empty `CONSUMER-ID` | No member holds the partition (the group is dead/hasn't joined) | `--describe`, consumer logs, how many instances are running |
+| Lag sawtoothing | Continuous rebalancing | [continuous rebalancing](../case-studies/rebalance-lien-tuc.md), the rebalance logs |
+| Lag spiking then recovering | A producer burst | Producer throughput over time |
+| Producers blocked / write errors | Under-replicated + `min.insync.replicas` | `under-replicated-partitions`, the ISR |
+| Nothing can be read or written at all | Offline partitions | `offline-partitions-count`, the controller |
+| Fetch/produce slow across the board | The broker is overloaded | `request latency` p99, broker disk/network |
 
-## Scale consumer: bẫy số partition
+## Scaling consumers: the partition-count trap
 
-Muốn tiêu thụ nhanh hơn, thêm consumer vào group. Nhưng:
+To consume faster you add consumers to the group. But:
 
-> Số consumer hữu ích tối đa = **số partition**. Consumer thứ N+1 (N = số partition) **ngồi không** — không được gán partition nào.
+> The maximum useful consumer count = **the partition count**. Consumer N+1 (N = the partition count) **sits idle** — it's assigned no partition at all.
 
-Nếu đã có 6 partition và 6 consumer mà vẫn lag, thêm consumer thứ 7 vô ích — nó chỉ ngồi chờ, thậm chí gây thêm một rebalance khi join. Lúc đó phải **tăng số partition** trước (rồi mới scale consumer), hoặc tối ưu tốc độ xử lý mỗi consumer. Nhớ cảnh báo ở [producer tuning](producer-tuning.md): tăng số partition làm `hash(key) % N` đổi, ảnh hưởng thứ tự per-key.
+If you already have 6 partitions and 6 consumers and still have lag, adding a 7th is pointless — it just waits, and even causes one more rebalance when it joins. At that point you have to **increase the partition count** first (then scale consumers), or optimise each consumer's processing speed. Remember the warning in [producer tuning](producer-tuning.md): increasing the partition count changes `hash(key) % N` and affects per-key ordering.
 
-## Partition reassignment và throttle
+## Partition reassignment and throttling
 
-Khi thêm broker hoặc tải lệch giữa broker, di chuyển replica bằng:
+When adding brokers or when load is skewed between brokers, move replicas with:
 
 ```bash
 # 1. Sinh kế hoạch đề xuất
@@ -131,11 +130,11 @@ kafka-reassign-partitions --bootstrap-server localhost:9092 \
   --reassignment-json-file plan.json --verify
 ```
 
-Reassign **copy dữ liệu qua mạng** giữa các broker để cân dữ liệu và leadership. Không throttle thì việc copy này giành băng thông với traffic production thật — produce/fetch chậm, lag tăng. Luôn `--throttle` và làm ngoài giờ cao điểm; nhớ `--verify` để gỡ throttle sau khi xong (throttle còn treo sẽ bóp cả replication bình thường).
+A reassignment **copies data over the network** between brokers to balance data and leadership. Without throttling, that copying competes for bandwidth with real production traffic — produce/fetch slow down and lag rises. Always `--throttle` and do it outside peak hours; remember `--verify` to remove the throttle when it's done (a throttle left hanging squeezes ordinary replication too).
 
-## Sizing partition theo throughput
+## Sizing partitions by throughput
 
-Chọn số partition không phải "càng nhiều càng tốt" — nhiều partition thêm chi phí metadata, file handle, rebalance lâu hơn. Nguyên tắc sizing theo throughput mục tiêu (minh hoạ, chưa chạy):
+Choosing the partition count isn't "more is better" — many partitions add metadata cost, file handles, and longer rebalances. The sizing principle by target throughput (illustrative, not run):
 
 ```text
 # Số minh hoạ — chưa chạy
@@ -151,50 +150,50 @@ Throughput một partition
 Lấy max(12, 6) = 12, cộng dư để scale → chọn ~16–18
 ```
 
-Quy tắc thô:
+The rough rules:
 
-- `số partition ≥ max(mục tiêu/throughput-một-partition-consumer, mục tiêu/throughput-một-partition-producer)`.
-- `số partition ≥ số consumer cao điểm` bạn định chạy.
-- Chừa dư để scale — vì **tăng partition dễ, giảm thì không**, và tăng lại phá thứ tự per-key.
+- `partition count ≥ max(target/per-partition-consumer-throughput, target/per-partition-producer-throughput)`.
+- `partition count ≥ the peak consumer count` you plan to run.
+- Leave headroom to scale — because **increasing partitions is easy, decreasing isn't**, and increasing breaks per-key ordering.
 
 ## Common Mistakes
 
-| Sai | Hậu quả | Sửa |
+| Mistake | Consequence | Fix |
 |---|---|---|
-| Thêm consumer > số partition | Consumer thừa ngồi không, lag không giảm | Tăng partition trước rồi scale |
-| Chỉ nhìn tổng lag | Bỏ sót một partition nóng | Xem LAG theo từng partition |
-| Bỏ qua `CONSUMER-ID` trống | Tưởng lag do chậm, thực ra không ai đọc | Kiểm member đang giữ partition |
-| Bỏ qua under-replicated kéo dài | Mất khả năng chịu lỗi, có thể chặn producer | Canh ISR, xử lý broker rớt sớm |
-| Reassign giờ cao điểm không throttle | Đè băng thông, ảnh hưởng traffic thật | Throttle, làm ngoài giờ, `--verify` gỡ throttle |
+| Adding consumers beyond the partition count | The surplus sit idle and lag doesn't fall | Increase partitions first, then scale |
+| Only looking at total lag | Missing one hot partition | Look at LAG per partition |
+| Ignoring an empty `CONSUMER-ID` | Assuming lag means slowness when in fact nobody is reading | Check which member holds the partition |
+| Ignoring sustained under-replication | Fault tolerance lost, producers possibly blocked | Watch the ISR, deal with a dropped broker early |
+| Reassigning at peak hours without throttling | Bandwidth crushed, real traffic affected | Throttle, do it off-peak, `--verify` to remove the throttle |
 
 ## FAQ
 
 <details>
-<summary>Lag bằng 0 có phải luôn khoẻ?</summary>
+<summary>Does lag of 0 always mean healthy?</summary>
 
-Không hẳn. Lag 0 có thể vì consumer đang theo kịp, nhưng cũng có thể vì consumer chết và không có producer nào ghi thêm. Nhìn kèm throughput và `CONSUMER-ID` trong `--describe`: nếu không có consumer active, lag 0 là giả tạo.
-
-</details>
-
-<details>
-<summary>Nên đặt cảnh báo lag theo ngưỡng tuyệt đối hay theo xu hướng?</summary>
-
-Theo xu hướng đáng tin hơn. Ngưỡng tuyệt đối phụ thuộc throughput từng topic. Cảnh báo khi lag **tăng liên tục** trong một khoảng thời gian bắt được vấn đề sớm hơn là chờ chạm một con số cố định. Burrow đánh giá theo xu hướng chính vì lý do này.
+Not necessarily. Lag 0 can mean the consumer is keeping up, but it can also mean the consumer is dead and no producer is writing anything. Look at it together with throughput and `CONSUMER-ID` in `--describe`: with no active consumer, lag 0 is an illusion.
 
 </details>
 
 <details>
-<summary>committed-offset và current-offset trong --describe có phải một?</summary>
+<summary>Should lag alerts use an absolute threshold or a trend?</summary>
 
-`CURRENT-OFFSET` trong output chính là committed-offset của group — offset đã commit, không phải offset đã đọc gần nhất. Consumer có thể đã đọc xa hơn nhưng chưa commit, khi đó lag hiển thị vẫn tính theo cái đã commit.
+A trend is more reliable. An absolute threshold depends on each topic's throughput. Alerting when lag **rises continuously** over a period catches the problem earlier than waiting for it to hit a fixed number. That's exactly why Burrow evaluates by trend.
+
+</details>
+
+<details>
+<summary>Are committed-offset and current-offset in --describe the same thing?</summary>
+
+`CURRENT-OFFSET` in the output *is* the group's committed-offset — the offset committed, not the most recently read one. A consumer may have read further without committing, and the lag shown still counts against what was committed.
 
 </details>
 
 ## Related Topics
 
 - [Topic, partition, offset](../reference/topic-partition-offset.md)
-- [Consumer group và rebalance](consumer-groups.md)
+- [Consumer groups and rebalance](consumer-groups.md)
 - [Producer tuning](producer-tuning.md)
-- [Replication và durability](../reference/replication-durability.md)
-- [Case study — rebalance liên tục](../case-studies/rebalance-lien-tuc.md)
+- [Replication and durability](../reference/replication-durability.md)
+- [Case study — continuous rebalancing](../case-studies/rebalance-lien-tuc.md)
 - [Kafka index](../index.md)

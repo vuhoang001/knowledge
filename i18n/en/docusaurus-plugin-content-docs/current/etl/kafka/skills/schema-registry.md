@@ -1,8 +1,7 @@
 ---
 title: Schema Registry
-i18n_status: untranslated
 sidebar_position: 3
-description: "Hợp đồng dữ liệu giữa các team: Avro/Protobuf và luật tương thích khi đổi schema."
+description: "The data contract between teams: Avro/Protobuf and the compatibility rules for changing a schema."
 tags: [schema-registry, avro, protobuf, compatibility, data-contract]
 domain: data-engineering
 category: concept
@@ -13,27 +12,27 @@ verified_at:
 updated: 2026-08-11
 ---
 
-> **Chốt:** Message Kafka chỉ là byte; không có schema chung, producer đổi một field là consumer chết lặng lẽ. Schema Registry biến schema thành hợp đồng có luật tương thích cưỡng chế — và `BACKWARD` (mặc định) là hàng rào bạn tựa vào.
+> **Takeaway:** Kafka messages are just bytes; with no shared schema, a producer changing one field kills consumers silently. Schema Registry turns the schema into a contract with enforced compatibility rules — and `BACKWARD` (the default) is the fence you lean on.
 
-Giả định đã nắm [Kafka là gì](../reference/what-is-kafka.md) và [topic, partition, offset](../reference/topic-partition-offset.md). Đây là cách xử lý bài toán: nhiều team đọc/ghi cùng topic và schema sẽ đổi theo thời gian.
+Assumes you've got [what Kafka is](../reference/what-is-kafka.md) and [topic, partition, offset](../reference/topic-partition-offset.md). This is how to handle the problem: several teams reading/writing the same topic while the schema changes over time.
 
-## Vì sao cần
+## Why you need it
 
-Broker không hiểu nội dung message — với nó tất cả là byte. Nếu producer và consumer chỉ ngầm hiểu format:
+The broker doesn't understand message content — to it everything is bytes. If the producer and consumer only have an implicit agreement about the format:
 
-- Producer thêm một field, đổi kiểu `int` thành `string`, hay bỏ field bắt buộc.
-- Consumer parse theo format cũ → hoặc ném exception, hoặc tệ hơn, đọc rác **không báo lỗi**.
+- The producer adds a field, changes an `int` to a `string`, or drops a mandatory field.
+- The consumer parses with the old format → either it throws an exception, or worse, it reads garbage **without reporting anything**.
 
-Không có nơi nào cưỡng chế "format mới phải tương thích format cũ". Schema Registry là nơi đó.
+Nothing anywhere enforces "the new format must be compatible with the old". Schema Registry is that place.
 
-## Wire format: byte-level
+## Wire format: at the byte level
 
-Confluent Schema Registry là một service riêng lưu các phiên bản schema, gán mỗi schema một **id** toàn cục (int). Message không nhét cả schema vào payload (tốn chỗ) mà chỉ mang id ở 5 byte đầu:
+Confluent Schema Registry is a separate service storing schema versions and assigning each schema a global **id** (an int). Messages don't stuff the whole schema into the payload (wasteful) but only carry the id in the first 5 bytes:
 
 ```mermaid
 flowchart LR
-  A["byte 0<br/>magic byte<br/>0x00"] --> B["byte 1–4<br/>schema id<br/>(int, big-endian)"]
-  B --> C["byte 5..<br/>payload đã serialize<br/>(Avro/Protobuf/JSON)"]
+  A["byte 0<br/>magic byte<br/>0x00"] --> B["bytes 1–4<br/>schema id<br/>(int, big-endian)"]
+  B --> C["bytes 5..<br/>the serialized payload<br/>(Avro/Protobuf/JSON)"]
 ```
 
 ```text
@@ -43,75 +42,75 @@ flowchart LR
   1 byte      4 byte                 phần còn lại
 ```
 
-- **Magic byte `0x00`**: đánh dấu định dạng Confluent wire format. Byte khác → serializer không phải của Confluent, deserialize sẽ lỗi.
-- **Schema id (4 byte, big-endian)**: id toàn cục của schema trong Registry, **không** phải version trong subject. Cùng một schema đăng ký ở nhiều subject vẫn dùng chung một id.
-- **Payload**: với Avro là dữ liệu binary thuần, **không tự mô tả** — bắt buộc phải có schema (tra từ id) mới đọc được.
+- **Magic byte `0x00`**: marks the Confluent wire format. A different byte → the serializer isn't Confluent's, and deserialization will fail.
+- **Schema id (4 bytes, big-endian)**: the schema's global id in the Registry, **not** its version within a subject. The same schema registered under several subjects still shares one id.
+- **Payload**: with Avro this is pure binary data, **not self-describing** — you must have the schema (looked up by id) to read it.
 
-Luồng: producer đăng ký schema → Registry trả id → serializer đóng id vào 5 byte đầu. Consumer đọc id → hỏi Registry lấy đúng writer schema → deserialize (kết hợp với reader schema của chính consumer). Registry cache theo id nên không phải mỗi message một round-trip; chỉ id **mới lạ** mới gọi Registry.
+The flow: the producer registers the schema → the Registry returns an id → the serializer packs the id into the first 5 bytes. The consumer reads the id → asks the Registry for the exact writer schema → deserializes (combining it with the consumer's own reader schema). The Registry is cached by id, so it isn't a round trip per message; only an **unfamiliar** id calls the Registry.
 
-## Chọn format
+## Choosing a format
 
-| Format | Ưu | Nhược |
+| Format | Pros | Cons |
 |---|---|---|
-| **Avro** | Gọn, schema evolution mạnh, hệ sinh thái Kafka trưởng thành | Cần schema để đọc (không tự mô tả) |
-| **Protobuf** | Nhanh, đa ngôn ngữ, quen với team gRPC | Luật evolution khác Avro, cần chú ý |
-| **JSON Schema** | Người đọc được, dễ debug | To hơn, chậm hơn, ràng buộc lỏng hơn |
+| **Avro** | Compact, strong schema evolution, a mature Kafka ecosystem | Needs the schema to read (not self-describing) |
+| **Protobuf** | Fast, multi-language, familiar to gRPC teams | Different evolution rules from Avro, needs attention |
+| **JSON Schema** | Human-readable, easy to debug | Larger, slower, looser constraints |
 
-Mặc định chọn Avro nếu không có lý do khác; Protobuf nếu tổ chức đã chuẩn hoá quanh nó.
+Default to Avro absent a reason otherwise; Protobuf if the organisation has standardised around it.
 
 ## Subject naming strategies
 
-Registry kiểm tương thích theo **subject**, không theo topic trực tiếp. Chiến lược đặt tên subject quyết định "cái gì phải tương thích với cái gì".
+The Registry checks compatibility per **subject**, not directly per topic. The subject naming strategy decides "what has to be compatible with what".
 
-| Strategy | Subject = | Hệ quả | Dùng khi |
+| Strategy | Subject = | Consequence | Use when |
 |---|---|---|---|
-| **TopicNameStrategy** (mặc định) | `<topic>-value` (và `<topic>-key`) | Một topic một schema value; kiểm tương thích trong phạm vi topic | Mặc định, một loại event mỗi topic |
-| **RecordNameStrategy** | tên đầy đủ của record | Nhiều loại record cùng topic; tương thích kiểm theo **loại record** xuyên topic | Nhiều loại event trong một topic |
-| **TopicRecordNameStrategy** | `<topic>-<tên record>` | Nhiều loại record trong một topic, nhưng phạm vi tương thích bó trong topic đó | Nhiều event/topic nhưng muốn cô lập theo topic |
+| **TopicNameStrategy** (the default) | `<topic>-value` (and `<topic>-key`) | One topic, one value schema; compatibility checked within the topic | The default, one event type per topic |
+| **RecordNameStrategy** | the record's full name | Several record types in one topic; compatibility checked per **record type** across topics | Several event types in one topic |
+| **TopicRecordNameStrategy** | `<topic>-<record name>` | Several record types in one topic, but the compatibility scope is bounded to that topic | Several events per topic while isolating per topic |
 
-Đa số ca dùng mặc định TopicNameStrategy; chỉ đổi khi thực sự cần nhiều loại event trong một topic (ví dụ giữ thứ tự giữa các loại event liên quan trên cùng partition).
+Most cases use the default TopicNameStrategy; only change it when you genuinely need several event types in one topic (e.g. preserving ordering between related event types on the same partition).
 
-## Ma trận compatibility
+## The compatibility matrix
 
-Đây là phần cốt lõi. Mode quyết định thay đổi schema nào Registry chấp nhận, và **ai** (producer hay consumer) an toàn khi deploy trước.
+This is the core part. The mode decides which schema changes the Registry accepts, and **which side** (producer or consumer) is safe to deploy first.
 
-| Mode | Ai được bảo vệ | Cho phép |
+| Mode | Who's protected | Allows |
 |---|---|---|
-| `BACKWARD` (mặc định) | **Consumer mới** đọc được **dữ liệu cũ** | Thêm field **có default**, xoá field |
-| `FORWARD` | **Consumer cũ** đọc được **dữ liệu mới** | Thêm field, xoá field **có default** |
-| `FULL` | Cả hai chiều | Chỉ thêm/xoá field có default |
-| `NONE` | Không kiểm gì | Mọi thay đổi — nguy hiểm |
+| `BACKWARD` (the default) | **New consumers** reading **old data** | Adding a field **with a default**, deleting a field |
+| `FORWARD` | **Old consumers** reading **new data** | Adding a field, deleting a field **with a default** |
+| `FULL` | Both directions | Only adding/deleting fields with defaults |
+| `NONE` | No checking at all | Any change — dangerous |
 
-Biến thể `_TRANSITIVE` (ví dụ `BACKWARD_TRANSITIVE`) kiểm tương thích với **mọi** phiên bản trước, không chỉ phiên bản liền kề. Không transitive chỉ kiểm với version ngay trước — dễ lọt lỗi khi qua nhiều bậc (mỗi bậc hợp lệ nhưng v1 và v3 không còn tương thích).
+The `_TRANSITIVE` variants (e.g. `BACKWARD_TRANSITIVE`) check compatibility against **every** earlier version, not just the immediately preceding one. Non-transitive only checks against the version right before — easily letting a bug through across several steps (each step valid, but v1 and v3 no longer compatible).
 
-### Thao tác × mode: an toàn hay phá
+### Operation × mode: safe or breaking
 
-| Thao tác trên schema | `BACKWARD` | `FORWARD` | `FULL` | Deploy bên nào trước |
+| Schema operation | `BACKWARD` | `FORWARD` | `FULL` | Which side to deploy first |
 |---|---|---|---|---|
-| Thêm field **có default** | An toàn | An toàn | An toàn | (bất kỳ) |
-| Thêm field **không default** | **Phá** | An toàn | **Phá** | producer trước (nếu FORWARD) |
-| Xoá field **có default** | An toàn | An toàn | An toàn | (bất kỳ) |
-| Xoá field **không default** | An toàn | **Phá** | **Phá** | consumer trước (nếu BACKWARD) |
-| Đổi type (`int`→`string`) | **Phá** | **Phá** | **Phá** | không làm; thêm field mới |
-| Đổi tên field (không alias) | **Phá** | **Phá** | **Phá** | dùng `aliases` hoặc field mới |
-| Đổi nghĩa/đơn vị (schema y hệt) | Lọt (không bắt được) | Lọt | Lọt | Registry không cứu — đổi tên field |
+| Adding a field **with a default** | Safe | Safe | Safe | (either) |
+| Adding a field **without a default** | **Breaks** | Safe | **Breaks** | the producer first (if FORWARD) |
+| Deleting a field **with a default** | Safe | Safe | Safe | (either) |
+| Deleting a field **without a default** | Safe | **Breaks** | **Breaks** | the consumer first (if BACKWARD) |
+| Changing a type (`int`→`string`) | **Breaks** | **Breaks** | **Breaks** | don't; add a new field instead |
+| Renaming a field (no alias) | **Breaks** | **Breaks** | **Breaks** | use `aliases` or a new field |
+| Changing the meaning/unit (identical schema) | Slips through (not caught) | Slips through | Slips through | the Registry can't save you — rename the field |
 
-Quy tắc "deploy bên nào trước" gắn với ai được mode bảo vệ:
+The "which side first" rule follows from who the mode protects:
 
-- `BACKWARD` bảo vệ **consumer mới đọc dữ liệu cũ** → deploy **consumer trước**, vì trong topic vẫn còn dữ liệu format cũ mà consumer mới phải đọc được.
-- `FORWARD` bảo vệ **consumer cũ đọc dữ liệu mới** → deploy **producer trước** an toàn, vì consumer cũ còn chạy phải nuốt được dữ liệu format mới.
-- `FULL` an toàn hai chiều → thứ tự deploy không quan trọng, đổi lại evolve gò bó hơn (chỉ thêm/xoá field có default).
+- `BACKWARD` protects **new consumers reading old data** → deploy the **consumer first**, because the topic still holds old-format data the new consumer must be able to read.
+- `FORWARD` protects **old consumers reading new data** → deploying the **producer first** is safe, because the still-running old consumers must be able to swallow new-format data.
+- `FULL` is safe in both directions → deploy order doesn't matter, in exchange for more constrained evolution (only adding/deleting fields with defaults).
 
-## References: schema tham chiếu schema
+## References: schemas referencing schemas
 
-Một schema có thể **tham chiếu** schema khác thay vì lặp lại định nghĩa (ví dụ nhiều event dùng chung một record `Address`). Đăng ký `Address` thành một subject/version riêng, rồi schema `Order` khai báo một reference tới nó theo tên + subject + version.
+A schema can **reference** another schema instead of repeating its definition (e.g. several events sharing an `Address` record). You register `Address` as its own subject/version, then the `Order` schema declares a reference to it by name + subject + version.
 
-- Lợi: một định nghĩa dùng chung nhiều nơi, evolve `Address` một chỗ.
-- Bẫy: khi resolve, Registry phải kéo cả cây reference; version của schema được tham chiếu bị "ghim" — đổi `Address` không tự động cập nhật các schema đang tham chiếu version cũ.
+- The benefit: one definition shared in many places, evolving `Address` in one spot.
+- The trap: when resolving, the Registry has to pull the whole reference tree; the referenced schema's version is "pinned" — changing `Address` doesn't automatically update schemas referencing the old version.
 
-## Ví dụ evolve (minh hoạ, chưa chạy)
+## An evolution example (illustrative, not run)
 
-Thêm một field `email` có default vào schema `User`, dưới mode `BACKWARD`:
+Adding an `email` field with a default to the `User` schema, under `BACKWARD` mode:
 
 ```json
 // v1 (minh hoạ — chưa chạy)
@@ -138,55 +137,55 @@ Thêm một field `email` có default vào schema `User`, dưới mode `BACKWARD
 }
 ```
 
-Vì sao an toàn dưới `BACKWARD`: consumer dùng reader schema v2 gặp dữ liệu cũ (không có `email`) sẽ điền `default` `""` — không lỗi. Nếu bỏ `"default"` đi, Registry **từ chối** đăng ký v2 vì phá BACKWARD (consumer v2 không có gì để điền cho dữ liệu v1).
+Why it's safe under `BACKWARD`: a consumer with reader schema v2 meeting old data (with no `email`) fills in the `default` `""` — no error. Drop the `"default"` and the Registry **refuses** to register v2 because it breaks BACKWARD (a v2 consumer has nothing to fill in for v1 data).
 
 ## Trade-offs
 
-| Được | Trả giá |
+| You get | You pay |
 |---|---|
-| Bắt lỗi schema lúc deploy thay vì lúc chạy production | Thêm một service phải vận hành và HA |
-| Message gọn (chỉ mang id, không mang schema) | Consumer phụ thuộc Registry để deserialize |
-| Hợp đồng tường minh giữa team | Kỷ luật evolve; team phải hiểu compatibility mode |
+| Catching schema errors at deploy time rather than in production | Another service to operate and keep highly available |
+| Compact messages (carrying only an id, not the schema) | Consumers depend on the Registry to deserialize |
+| An explicit contract between teams | Evolution discipline; the team must understand compatibility modes |
 
 ## Common Mistakes
 
-| Sai | Hậu quả | Sửa |
+| Mistake | Consequence | Fix |
 |---|---|---|
-| Thêm field **bắt buộc** (không default) | Phá `BACKWARD`, Registry từ chối hoặc consumer cũ chết | Field mới luôn có default |
-| Đặt mode `NONE` cho "linh hoạt" | Mất toàn bộ bảo vệ, chết production sau này | Giữ ít nhất `BACKWARD` |
-| Đổi type field âm thầm | Deserialize lỗi | Thêm field mới thay vì đổi type |
-| Đổi nghĩa/đơn vị nhưng giữ schema hợp lệ | Downstream tính sai, không lỗi nào báo | Đổi tên field khi đổi nghĩa |
-| Dùng non-transitive rồi nhảy nhiều version | v1 và v3 lệch nhau dù mỗi bậc hợp lệ | Cân nhắc `_TRANSITIVE` khi evolve dài |
-| Deploy sai bên trước so với mode | Consumer/producer đọc không được dữ liệu | Khớp thứ tự deploy với mode (bảng trên) |
+| Adding a **mandatory** field (no default) | Breaks `BACKWARD`; the Registry refuses it or old consumers die | New fields always have a default |
+| Setting mode `NONE` for "flexibility" | Losing all protection, and dying in production later | Keep at least `BACKWARD` |
+| Silently changing a field's type | Deserialization errors | Add a new field instead of changing the type |
+| Changing the meaning/unit while keeping the schema valid | Downstream computes wrongly, with nothing reported | Rename the field when the meaning changes |
+| Using non-transitive and then jumping several versions | v1 and v3 diverge even though each step was valid | Consider `_TRANSITIVE` for long-running evolution |
+| Deploying the wrong side first for the mode | Consumers/producers can't read the data | Match the deploy order to the mode (the table above) |
 
 ## FAQ
 
 <details>
-<summary>BACKWARD hay FORWARD, chọn theo tiêu chí nào?</summary>
+<summary>BACKWARD or FORWARD — what's the criterion?</summary>
 
-Theo thứ tự deploy. Nếu consumer lên trước producer, consumer mới phải đọc được dữ liệu cũ còn trong topic → `BACKWARD`. Nếu producer lên trước, consumer cũ còn chạy phải đọc dữ liệu mới → `FORWARD`. Không kiểm soát được thứ tự thì `FULL`.
-
-</details>
-
-<details>
-<summary>Vì sao chỉ mang schema id chứ không nhét cả schema vào message?</summary>
-
-Schema có thể hàng KB; nhân với hàng triệu message là lãng phí khổng lồ. Mang một int 4 byte id, để consumer tra Registry (có cache) rẻ hơn nhiều.
+The deploy order. If the consumer goes up before the producer, the new consumer must be able to read the old data still in the topic → `BACKWARD`. If the producer goes first, the still-running old consumers must read the new data → `FORWARD`. If you can't control the order, `FULL`.
 
 </details>
 
 <details>
-<summary>Schema id trong message có phải là version của subject không?</summary>
+<summary>Why carry only a schema id rather than stuffing the schema into the message?</summary>
 
-Không. Id là **toàn cục** trong Registry; version là số thứ tự **trong một subject**. Cùng một schema chia sẻ giữa nhiều subject vẫn một id nhưng có thể là version khác nhau ở mỗi subject.
+A schema can be several KB; multiplied by millions of messages that's enormous waste. Carrying a 4-byte int id and letting the consumer look it up in the Registry (with a cache) is far cheaper.
+
+</details>
+
+<details>
+<summary>Is the schema id in the message the subject's version?</summary>
+
+No. The id is **global** within the Registry; the version is the sequence number **within a subject**. The same schema shared between several subjects keeps one id but may be a different version in each subject.
 
 </details>
 
 ## Related Topics
 
-- [Kafka là gì](../reference/what-is-kafka.md)
+- [What Kafka is](../reference/what-is-kafka.md)
 - [Topic, partition, offset](../reference/topic-partition-offset.md)
-- [Kafka Connect và CDC](kafka-connect-cdc.md)
-- [Consumer group và rebalance](consumer-groups.md)
+- [Kafka Connect and CDC](kafka-connect-cdc.md)
+- [Consumer groups and rebalance](consumer-groups.md)
 - [Delivery semantics](../reference/delivery-semantics.md)
 - [Kafka index](../index.md)

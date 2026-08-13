@@ -1,9 +1,8 @@
 ---
-title: Cheatsheet — Kafka
-i18n_status: untranslated
+title: Cheatsheets — Kafka
 sidebar_key: kafka-cheatsheets
 sidebar_position: 0
-description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
+description: "A quick lookup while you work, not for learning something the first time."
 tags: [cheatsheet, kafka]
 domain: data-engineering
 category: index
@@ -11,14 +10,14 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Cheatsheet — Kafka
+# Cheatsheets — Kafka
 
-Tra nhanh khi **đang làm**, không dùng để học lần đầu.
+A quick lookup **while you work**, not for learning something the first time.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [CLI và config](cli-and-config.md) | Lệnh `kafka-*` hay dùng và các config quan trọng theo nhóm | 📝 |
+| 1 | [CLI and config](cli-and-config.md) | The `kafka-*` commands you use often and the important configs by group | 📝 |
 
 ## Related Topics
 
-- [Kafka](../index.md) — chủ đề chứa thư mục này
+- [Kafka](../index.md) — the topic this directory belongs to

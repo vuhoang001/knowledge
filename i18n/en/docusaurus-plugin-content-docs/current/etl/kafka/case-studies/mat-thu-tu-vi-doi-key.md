@@ -1,8 +1,7 @@
 ---
-title: Mất thứ tự vì đổi partition key
-i18n_status: untranslated
+title: Losing ordering by changing the partition key
 sidebar_position: 1
-description: "Đổi key giữa chừng làm event cùng thực thể rơi khác partition — thứ tự vỡ."
+description: "Changing the key mid-flight puts one entity's events on different partitions — and ordering breaks."
 tags: [kafka, partition-key, ordering, producer]
 domain: data-engineering
 category: technology
@@ -13,57 +12,57 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Mất thứ tự vì đổi partition key
+# Losing ordering by changing the partition key
 
-> **Chốt:** Thứ tự chỉ được đảm bảo *trong một partition*, và key quyết định partition — đổi key giữa chừng là tự tay rải event của cùng một thực thể ra nhiều partition, thứ tự vỡ ngay.
+> **Takeaway:** ordering is only guaranteed *within one partition*, and the key decides the partition — changing the key mid-flight is scattering one entity's events across several partitions with your own hands, and ordering breaks immediately.
 
-## Nhãn
+## Label
 
-**Tình huống dựng lại** — không phải sự cố production có thật. Các con số bên dưới là **minh hoạ, chưa chạy trên cluster**, nhưng nhất quán trong nội bộ bài để lần lại được lập luận.
+**A reconstructed situation** — not a real production incident. The numbers below are **illustrative, not run on a cluster**, but internally consistent so the reasoning can be followed.
 
-## Bối cảnh
+## Context
 
-Topic `user-events` có **6 partition**. Producer ban đầu đặt `key = user_id`, nên mọi event của một user luôn rơi vào cùng một partition → consumer thấy `create` rồi mới `update`, đúng thứ tự.
+The `user-events` topic has **6 partitions**. The producer originally set `key = user_id`, so all of a user's events always landed in the same partition → consumers saw `create` and then `update`, in the right order.
 
-Một thay đổi tưởng vô hại: có người sửa producer để "phân bố đều hơn", đổi thành `key = null` (round-robin) — hoặc `key = event_type`. Từ lúc đó, hai event của cùng một `user_id` có thể rơi hai partition khác nhau.
+An apparently harmless change: someone edited the producer to "spread the load more evenly", switching to `key = null` (round-robin) — or `key = event_type`. From that moment, two events for the same `user_id` could land on two different partitions.
 
-## Triệu chứng
+## Symptoms
 
-*Số minh hoạ — chưa chạy:*
+*Illustrative numbers — not run:*
 
-- Downstream báo ~**0.3%** user có state "update trước create" — ví dụ user vừa tạo đã thấy `status=updated` mà không có bản `created` trước đó.
-- Chỉ xảy ra với user có **nhiều event sát nhau** (trong vài trăm ms); user thưa event thì không thấy.
-- `kafka-consumer-groups --describe` cho lag đều, không có partition nào tồn đọng bất thường.
+- Downstream reported ~**0.3%** of users with state "update before create" — for instance, a just-created user showing `status=updated` with no preceding `created` record.
+- It only happened for users with **several events close together** (within a few hundred ms); users with sparse events showed nothing.
+- `kafka-consumer-groups --describe` showed even lag with no partition backed up abnormally.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-1. **Nghi consumer đa luồng.** Nghĩ consumer xử lý song song nhiều thread nên đảo thứ tự. Mất thời gian ép consumer về single-thread — vẫn sai. (Vì gốc rễ nằm ở phía producer, không phải consumer.)
-2. **Nghi clock skew giữa các service.** Đi so `event_time` giữa producer và consumer, chỉnh NTP. Không liên quan — Kafka đảm bảo thứ tự theo *offset trong partition*, không theo timestamp.
+1. **Suspecting a multi-threaded consumer.** Thinking the consumer processed across several threads and so reordered things. Time was lost forcing the consumer back to single-threaded — still wrong. (Because the root cause was on the producer side, not the consumer.)
+2. **Suspecting clock skew between services.** Comparing `event_time` between producer and consumer, adjusting NTP. Irrelevant — Kafka guarantees ordering by *offset within a partition*, not by timestamp.
 
-Chỗ mất thời gian: cả hai giả thuyết đều nhìn vào phía consumer, trong khi thứ tự đã vỡ *trước khi* consumer đọc.
+Where the time went: both hypotheses looked at the consumer side, while the ordering had already broken *before* the consumer read anything.
 
-## Nguyên nhân thật
+## The real cause
 
-Thứ tự của Kafka chỉ tồn tại **bên trong một partition**. Không có khái niệm "thứ tự toàn topic". Partition được chọn bằng `hash(key) % num_partitions` (khi có key), hoặc round-robin/sticky (khi `key=null`).
+Kafka's ordering only exists **inside one partition**. There's no such thing as "ordering across a whole topic". The partition is chosen by `hash(key) % num_partitions` (when there's a key), or round-robin/sticky (when `key=null`).
 
-Đổi key từ `user_id` sang `null`/`event_type` nghĩa là hai event của cùng user không còn chung partition → consumer đọc chúng từ hai partition độc lập, không có gì ràng buộc `create` phải tới trước `update`.
+Changing the key from `user_id` to `null`/`event_type` means two events for the same user no longer share a partition → the consumer reads them from two independent partitions, with nothing forcing `create` to arrive before `update`.
 
-## Cách sửa
+## The fix
 
-1. **Cố định key theo thực thể cần giữ thứ tự.** Event của cùng một user thì `key = user_id`. Đây là hợp đồng, không phải chi tiết tối ưu — đừng đổi để "cân tải".
+1. **Fix the key to the entity whose ordering you need.** Events for the same user get `key = user_id`. This is a contract, not an optimisation detail — don't change it to "balance the load".
 
    ```properties
    # producer: key phải ổn định theo thực thể cần thứ tự
    # (đặt ở tầng ứng dụng khi build ProducerRecord, không phải config)
    ```
 
-2. **Nếu buộc phải đổi cách phân partition** (đổi số partition, đổi key): phải **drain** — dừng producer, để consumer đọc hết tồn đọng, rồi mới đổi. Đổi nóng chắc chắn có cửa sổ event cũ (partition cũ) và mới (partition mới) chồng nhau.
+2. **If you're forced to change the partitioning** (changing the partition count, changing the key): you must **drain** — stop the producer, let consumers read the backlog dry, and only then change. Changing it live is guaranteed to leave a window where old events (old partition) and new ones (new partition) overlap.
 
-3. Nếu tải lệch vì một số user quá nóng (hot key), giải bằng **tăng partition + key phức hợp** (`user_id` + bucket) chứ không bỏ key.
+3. If load is skewed because some users are too hot (a hot key), solve it with **more partitions + a composite key** (`user_id` + a bucket) rather than dropping the key.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-Kiểm ngay một `user_id` nghi vấn nằm ở mấy partition:
+Check straight away which partitions a suspect `user_id` appears in:
 
 ```bash
 # Với mỗi partition, đọc và grep user_id — nếu >1 partition có nó thì thứ tự đã vỡ
@@ -72,10 +71,10 @@ kafka-console-consumer --bootstrap-server localhost:9092 \
   --property print.partition=true | grep '"user_id":"U123"'
 ```
 
-Nếu cùng một `user_id` xuất hiện ở nhiều partition → key không ổn định. Chốt chặn: review mọi thay đổi tới logic chọn key như thay đổi schema.
+If the same `user_id` appears in several partitions → the key isn't stable. The guardrail: review every change to key-selection logic as if it were a schema change.
 
 ## Related Topics
 
-- [Topic, partition, offset](../reference/topic-partition-offset.md) — vì sao thứ tự chỉ trong một partition
-- [Producer tuning](../skills/producer-tuning.md) — key → partition, và đánh đổi khi chọn key
-- [Kafka](../index.md) — chủ đề chứa case study này
+- [Topic, partition, offset](../reference/topic-partition-offset.md) — why ordering is only within one partition
+- [Producer tuning](../skills/producer-tuning.md) — key → partition, and the trade-offs in choosing a key
+- [Kafka](../index.md) — the topic this case study belongs to

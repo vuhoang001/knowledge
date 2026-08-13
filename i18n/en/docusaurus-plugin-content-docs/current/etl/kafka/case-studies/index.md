@@ -1,9 +1,8 @@
 ---
-title: Case study — Kafka
-i18n_status: untranslated
+title: Case studies — Kafka
 sidebar_key: kafka-case-studies
 sidebar_position: 0
-description: "Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu."
+description: "Real incidents debugged to a conclusion, including the wrong hypotheses along the way."
 tags: [case-study, kafka]
 domain: data-engineering
 category: index
@@ -11,17 +10,17 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Case study — Kafka
+# Case studies — Kafka
 
-Sự cố thật hoặc tình huống dựng lại đã debug xong, kèm **giả thuyết sai lúc đầu**.
+Real incidents or reconstructed situations debugged to a conclusion, including **the wrong hypotheses along the way**.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [Mất thứ tự vì đổi key](mat-thu-tu-vi-doi-key.md) | Đổi partition key giữa chừng làm event cùng thực thể rơi khác partition | 📝 |
-| 2 | [Consumer rebalance không dứt](rebalance-lien-tuc.md) | Xử lý một message quá `max.poll.interval.ms` → bị đá khỏi group liên tục | 📝 |
-| 3 | [Mất dữ liệu với acks=1](mat-du-lieu-acks-1.md) | Leader chết trước khi follower kịp sao → message đã "gửi thành công" biến mất | 📝 |
-| 4 | [Compaction không như mong đợi](compaction-khong-nhu-mong-doi.md) | Tưởng compaction xoá ngay; bản cũ và tombstone vẫn còn rất lâu | 📝 |
+| 1 | [Losing ordering by changing the key](mat-thu-tu-vi-doi-key.md) | Changing the partition key mid-flight puts one entity's events on different partitions | 📝 |
+| 2 | [Consumer rebalancing that won't stop](rebalance-lien-tuc.md) | Processing one message beyond `max.poll.interval.ms` → kicked out of the group over and over | 📝 |
+| 3 | [Losing data with acks=1](mat-du-lieu-acks-1.md) | The leader dies before a follower copies → a "successfully sent" message vanishes | 📝 |
+| 4 | [Compaction not behaving as expected](compaction-khong-nhu-mong-doi.md) | Expecting compaction to delete immediately; old values and tombstones stay for a long time | 📝 |
 
 ## Related Topics
 
-- [Kafka](../index.md) — chủ đề chứa thư mục này
+- [Kafka](../index.md) — the topic this directory belongs to

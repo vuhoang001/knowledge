@@ -1,8 +1,7 @@
 ---
 title: Producer tuning
-i18n_status: untranslated
 sidebar_position: 1
-description: "acks, idempotence, batching, partitioner — chỉnh gì cho độ bền, cho thông lượng."
+description: "acks, idempotence, batching, the partitioner — what to tune for durability, what for throughput."
 tags: [producer, acks, idempotence, batching, partitioner]
 domain: data-engineering
 category: concept
@@ -13,78 +12,78 @@ verified_at:
 updated: 2026-08-11
 ---
 
-> **Chốt:** Chọn `acks` quyết định độ bền, `linger.ms`/`batch.size` quyết định throughput; bật `enable.idempotence=true` để retry không sinh bản trùng — và đừng bao giờ để `max.in.flight` lớn hơn 1 khi không idempotent.
+> **Takeaway:** the choice of `acks` decides durability, `linger.ms`/`batch.size` decide throughput; turn on `enable.idempotence=true` so retries don't create duplicates — and never leave `max.in.flight` above 1 without idempotence.
 
-Tài liệu này giả định bạn đã nắm [replication và durability](../reference/replication-durability.md) và [delivery semantics](../reference/delivery-semantics.md). Ở đây chỉ bàn: gặp một mục tiêu cụ thể thì xoay núm nào.
+This document assumes you've got [replication and durability](../reference/replication-durability.md) and [delivery semantics](../reference/delivery-semantics.md). Here we only discuss: given a specific goal, which knob to turn.
 
-## Đường đi của một record trong producer
+## A record's journey through the producer
 
-Trước khi chỉnh núm, phải biết record đi qua đâu — vì từng config gắn với một chặng cụ thể.
+Before tuning knobs you have to know where a record passes through — because each config attaches to a specific stage.
 
 ```mermaid
 flowchart LR
-  A["send(record)"] --> B[Serializer key/value]
-  B --> C[Partitioner: chọn partition]
-  C --> D["RecordAccumulator<br/>một deque batch<br/>cho MỖI partition"]
-  D --> E["Sender thread (nền)<br/>gom batch đã sẵn sàng"]
-  E --> F["Request tới broker<br/>(gộp nhiều partition cùng broker)"]
-  F --> G["In-flight requests<br/>chờ ack"]
-  G -->|ack| H[Callback/Future hoàn tất]
-  G -->|lỗi tạm| E
+  A["send(record)"] --> B[Key/value serializer]
+  B --> C[Partitioner: pick the partition]
+  C --> D["RecordAccumulator<br/>one deque of batches<br/>for EACH partition"]
+  D --> E["Sender thread (background)<br/>collects ready batches"]
+  E --> F["Request to the broker<br/>(coalescing partitions on the same broker)"]
+  F --> G["In-flight requests<br/>awaiting acks"]
+  G -->|ack| H[Callback/Future completes]
+  G -->|transient error| E
 ```
 
-Bốn ý rút ra từ luồng này:
+Four things to take from this flow:
 
-- **Accumulator gom theo partition.** Mỗi partition có một hàng batch riêng. `batch.size` là trần của **một** batch cho **một** partition, không phải trần toàn producer.
-- **`send()` không đồng nghĩa "đã gửi".** Nó chỉ nhét record vào accumulator rồi trả `Future` ngay. Sender thread mới là kẻ thật sự đẩy đi. Vì thế `linger.ms` là "chờ ở accumulator", không phải chờ trên đường mạng.
-- **Sender gộp nhiều partition cùng một broker vào một request.** Ít request TCP hơn số partition.
-- **`buffer.memory` là tổng bộ nhớ accumulator.** Đầy thì `send()` bị chặn tới `max.block.ms`.
+- **The accumulator batches per partition.** Each partition has its own queue of batches. `batch.size` is the ceiling on **one** batch for **one** partition, not a producer-wide ceiling.
+- **`send()` doesn't mean "sent".** It only drops the record into the accumulator and returns a `Future` immediately. The sender thread is what actually pushes it out. That's why `linger.ms` is "waiting in the accumulator", not waiting on the network.
+- **The sender coalesces several partitions on the same broker into one request.** Fewer TCP requests than partitions.
+- **`buffer.memory` is the accumulator's total memory.** When it's full, `send()` blocks for up to `max.block.ms`.
 
-## Bảng config producer đầy đủ
+## The full producer config table
 
-| Config | Mặc định | Làm gì | Khi nào đổi |
+| Config | Default | What it does | When to change it |
 |---|---|---|---|
-| `acks` | `all` (bản mới) | Số replica xác nhận trước khi coi là ghi xong | `0`/`1` chỉ khi chấp nhận mất để đổi throughput/latency |
-| `enable.idempotence` | `true` (bản mới) | Gán PID + sequence để broker khử bản trùng do retry | Hầu như luôn để `true`; tắt chỉ khi broker cũ không hỗ trợ |
-| `retries` | `2147483647` | Số lần thử lại khi lỗi tạm | Hiếm khi đổi; giới hạn thực tế là `delivery.timeout.ms` |
-| `delivery.timeout.ms` | `120000` | Trần tổng thời gian từ `send()` tới thành công/bỏ (gồm cả retry) | Tăng nếu broker hay chậm; đây là núm "bỏ cuộc" thật sự, không phải `retries` |
-| `request.timeout.ms` | `30000` | Chờ tối đa cho **một** request tới broker trước khi coi là fail (rồi retry) | Tăng khi mạng/broker chậm; phải nhỏ hơn `delivery.timeout.ms` |
-| `linger.ms` | `0` | Chờ tối đa để gom thêm record vào batch trước khi gửi | Tăng 5–20 để batch to hơn, throughput cao hơn |
-| `batch.size` | `16384` (16 KB) | Trần một batch mỗi partition, byte | Tăng khi record nhỏ và nhiều; là trần, không phải mục tiêu |
-| `buffer.memory` | `33554432` (32 MB) | Tổng bộ nhớ cho accumulator | Tăng khi producer nhanh mà broker/mạng chậm, để không chặn `send()` |
-| `max.block.ms` | `60000` | `send()` chặn tối đa bao lâu khi buffer đầy hoặc metadata chưa có | Giảm nếu muốn fail nhanh thay vì treo |
-| `max.in.flight.requests.per.connection` | `5` | Số request chưa ack cho phép song song trên một connection | Ép `1` nếu cần thứ tự mà KHÔNG bật idempotence |
-| `compression.type` | `none` | Nén batch: `none`/`lz4`/`zstd`/`snappy`/`gzip` | Bật `lz4`/`zstd` để giảm mạng và tăng dung lượng batch hiệu dụng |
+| `acks` | `all` (newer versions) | How many replicas confirm before the write counts as done | `0`/`1` only when you accept loss in exchange for throughput/latency |
+| `enable.idempotence` | `true` (newer versions) | Attaches a PID + sequence so the broker deduplicates retries | Almost always leave it `true`; only turn it off for an old broker that doesn't support it |
+| `retries` | `2147483647` | The number of attempts on a transient error | Rarely changed; the real limit is `delivery.timeout.ms` |
+| `delivery.timeout.ms` | `120000` | The ceiling on total time from `send()` to success/giving up (retries included) | Increase it if the broker is often slow; this is the real "give up" knob, not `retries` |
+| `request.timeout.ms` | `30000` | The maximum wait for **one** request to the broker before treating it as failed (then retrying) | Increase it when the network/broker is slow; it must be below `delivery.timeout.ms` |
+| `linger.ms` | `0` | The maximum wait to gather more records into a batch before sending | Raise it to 5–20 for bigger batches and higher throughput |
+| `batch.size` | `16384` (16 KB) | The ceiling on one batch per partition, in bytes | Increase it when records are small and numerous; it's a ceiling, not a target |
+| `buffer.memory` | `33554432` (32 MB) | Total memory for the accumulator | Increase it when the producer is fast and the broker/network slow, to avoid blocking `send()` |
+| `max.block.ms` | `60000` | How long `send()` blocks at most when the buffer is full or metadata isn't available | Lower it if you'd rather fail fast than hang |
+| `max.in.flight.requests.per.connection` | `5` | The number of unacked requests allowed concurrently on one connection | Force it to `1` if you need ordering WITHOUT idempotence |
+| `compression.type` | `none` | Batch compression: `none`/`lz4`/`zstd`/`snappy`/`gzip` | Turn on `lz4`/`zstd` to cut network use and increase the effective batch capacity |
 
-> Cột "Mặc định" ghi giá trị **mặc định** của client chính thức; bản Kafka cũ có thể khác — kiểm bằng doc đúng version, đừng bịa.
+> The "Default" column gives the **default** for the official client; older Kafka versions may differ — check the docs for your exact version, don't invent them.
 
-## Gặp tình huống → chỉnh gì
+## Situation → what to tune
 
-### Muốn không mất message → `acks`
+### You want no lost messages → `acks`
 
-`acks` là số replica phải xác nhận trước khi producer coi là ghi thành công.
+`acks` is the number of replicas that must confirm before the producer treats the write as successful.
 
-| `acks` | Ý nghĩa | Rủi ro |
+| `acks` | Meaning | The risk |
 |---|---|---|
-| `0` | Bắn xong quên luôn, không chờ ack | Mất ngay khi broker rớt hoặc mạng lỗi. Chỉ dùng cho metric/log chấp nhận mất |
-| `1` | Leader ghi xong là xong | Mất nếu leader chết trước khi follower kịp sao chép — xem [case study mất dữ liệu acks=1](../case-studies/mat-du-lieu-acks-1.md) |
-| `all` (`-1`) | Chờ đủ replica trong ISR xác nhận | Bền nhất. Phải đi kèm `min.insync.replicas` ở broker/topic mới có nghĩa |
+| `0` | Fire and forget, no waiting for an ack | Lost the moment a broker drops or the network fails. Only for metrics/logs where loss is acceptable |
+| `1` | The leader having written is enough | Lost if the leader dies before a follower copies it — see the [acks=1 data-loss case study](../case-studies/mat-du-lieu-acks-1.md) |
+| `all` (`-1`) | Wait for every replica in the ISR to confirm | The most durable. Only meaningful when paired with `min.insync.replicas` at the broker/topic |
 
-Bẫy phổ biến: đặt `acks=all` nhưng để `min.insync.replicas=1`. Lúc đó "all" chỉ còn một replica trong ISR, độ bền tụt về ngang `acks=1` mà không ai báo. Muốn bền thật thì `acks=all` + `min.insync.replicas=2` (với replication factor 3).
+The common trap: setting `acks=all` while leaving `min.insync.replicas=1`. Then "all" is just one replica in the ISR, and durability drops to the level of `acks=1` with nobody reporting it. For real durability you want `acks=all` + `min.insync.replicas=2` (with replication factor 3).
 
-### Muốn retry không sinh bản trùng → idempotence
+### You want retries not to create duplicates → idempotence
 
 ```properties
 enable.idempotence=true
 ```
 
-Ở các bản Kafka mới đây, đây là **mặc định**. Khi bật, mỗi producer có một PID (Producer ID) và mỗi message trên mỗi partition mang một sequence number tăng dần. Broker nhớ sequence cuối đã ghi cho từng `(PID, partition)`:
+In recent Kafka versions this is the **default**. When enabled, each producer has a PID (Producer ID) and each message on each partition carries an incrementing sequence number. The broker remembers the last sequence written for each `(PID, partition)`:
 
-- Sequence đúng bằng "cái tiếp theo mong đợi" → ghi.
-- Sequence **trùng** cái đã ghi (do retry sau timeout) → broker bỏ qua, trả về như đã thành công. Không sinh bản đôi.
-- Sequence **nhảy cóc** (thiếu ở giữa) → broker ném `OutOfOrderSequenceException`, buộc xử lý tường minh thay vì âm thầm mất thứ tự.
+- The sequence is exactly "the next one expected" → write it.
+- The sequence **duplicates** one already written (a retry after a timeout) → the broker skips it and returns as if it succeeded. No duplicate created.
+- The sequence **jumps** (something missing in between) → the broker throws `OutOfOrderSequenceException`, forcing explicit handling instead of silently losing ordering.
 
-Idempotence ràng buộc ba thứ, và producer sẽ tự set hoặc báo lỗi nếu bạn chỉnh ngược:
+Idempotence constrains three things, and the producer will either set them itself or error out if you configure the opposite:
 
 ```properties
 enable.idempotence=true
@@ -93,16 +92,16 @@ max.in.flight.requests.per.connection=5    # tối đa 5 để vẫn giữ thứ
 retries=2147483647                         # >0, thường để rất lớn
 ```
 
-Lưu ý: idempotence chỉ chống trùng **trong một session của một producer**, không phải exactly-once đầu-cuối. Muốn exactly-once qua nhiều topic/partition cần transaction (`transactional.id` + `initTransactions`), nằm ngoài phạm vi note này.
+Note: idempotence only prevents duplicates **within one producer session**, not end-to-end exactly-once. Exactly-once across several topics/partitions needs transactions (`transactional.id` + `initTransactions`), which is outside this note's scope.
 
 ## Idempotence ↔ ordering ↔ max.in.flight
 
-`max.in.flight.requests.per.connection` là số request chưa được ack mà producer cho phép gửi song song trên một connection. Đây là chỗ ba khái niệm giao nhau, và cũng là chỗ dễ mất thứ tự âm thầm nhất.
+`max.in.flight.requests.per.connection` is the number of unacked requests the producer allows to be in flight concurrently on one connection. This is where three concepts intersect, and also the easiest place to lose ordering silently.
 
-- **Không idempotent + `max.in.flight` lớn hơn 1**: nếu request 1 fail và được retry trong khi request 2 (gửi sau) đã thành công, thứ tự trên partition đảo — message sau nằm trước message trước. Không lỗi nào báo.
-- **Idempotent bật**: broker dùng sequence number để phát hiện gap và từ chối batch sai thứ tự, buộc client gửi lại đúng trình tự. Nên `max.in.flight` tới 5 vẫn an toàn về thứ tự.
+- **Not idempotent + `max.in.flight` above 1**: if request 1 fails and gets retried while request 2 (sent later) has already succeeded, the ordering on the partition inverts — the later message ends up before the earlier one. Nothing reports an error.
+- **Idempotence on**: the broker uses sequence numbers to detect gaps and reject out-of-order batches, forcing the client to resend in the right sequence. So `max.in.flight` up to 5 is still safe for ordering.
 
-Kịch bản đảo thứ tự cụ thể (minh hoạ, chưa chạy), producer **không** idempotent, `max.in.flight=2`:
+A concrete reordering scenario (illustrative, not run), with a **non**-idempotent producer and `max.in.flight=2`:
 
 ```text
 t0  gửi batch A (msg 1,2)  và batch B (msg 3,4)  song song
@@ -112,24 +111,24 @@ t3  broker ghi A → 1,2  ĐỨNG SAU 3,4
      partition log: [3,4,1,2]   ← thứ tự vỡ, không exception
 ```
 
-Kết luận: nếu vì lý do nào đó không bật idempotence mà vẫn cần thứ tự, phải ép `max.in.flight.requests.per.connection=1` — trả giá throughput.
+The conclusion: if for some reason you don't enable idempotence but still need ordering, you must force `max.in.flight.requests.per.connection=1` — and pay for it in throughput.
 
-## Batching: linger.ms và batch.size
+## Batching: linger.ms and batch.size
 
-Producer gom message thành batch theo partition. Hai núm chính:
+The producer gathers messages into batches per partition. The two main knobs:
 
 ```properties
 linger.ms=10          # chờ tối đa 10ms gom thêm message trước khi gửi
 batch.size=32768      # kích thước batch tối đa mỗi partition, byte (mặc định 16384)
 ```
 
-- `linger.ms=0` (mặc định) gửi ngay khi sender rảnh — độ trễ thấp nhất, batch nhỏ, throughput kém.
-- Tăng `linger.ms` lên 5–20ms cho phép gom batch lớn hơn: ít request hơn, nén tốt hơn, throughput cao hơn, đổi lại thêm vài ms độ trễ. Đây là đánh đổi trung tâm.
-- `batch.size` là trần, không phải mục tiêu. Nếu message tới nhanh, batch đầy trước khi hết `linger.ms` và gửi luôn.
+- `linger.ms=0` (the default) sends as soon as the sender is free — the lowest latency, small batches, poor throughput.
+- Raising `linger.ms` to 5–20ms allows larger batches: fewer requests, better compression, higher throughput, in exchange for a few extra ms of latency. This is the central trade-off.
+- `batch.size` is a ceiling, not a target. If messages arrive fast, the batch fills before `linger.ms` elapses and is sent right away.
 
-### Sizing bằng ví dụ số (minh hoạ, chưa chạy)
+### Sizing with a numeric example (illustrative, not run)
 
-Giả sử mỗi record ~1 KB, muốn nhắm batch ~32 KB để nén và request hiệu quả:
+Suppose each record is ~1 KB and you're aiming at ~32 KB batches for efficient compression and requests:
 
 ```text
 # Số minh hoạ — chưa chạy
@@ -143,91 +142,91 @@ Thời gian gom đủ 32:  32 / 10.000  ≈  3,2 ms
     muốn batch to lại thì phải tăng linger.ms, đổi latency lấy throughput
 ```
 
-Rút ra: `linger.ms` chỉ "cắn" khi traffic **thấp hơn** tốc độ làm đầy batch. Traffic cao thì batch đầy trước, `linger.ms` gần như vô hiệu — tăng nó lúc đó chỉ hại latency.
+The takeaway: `linger.ms` only "bites" when traffic is **lower** than the rate that fills a batch. At high traffic the batch fills first and `linger.ms` is nearly irrelevant — raising it then only hurts latency.
 
-## Compression: CPU vs mạng vs dung lượng batch
+## Compression: CPU vs network vs batch capacity
 
-Nén xảy ra ở producer, trên nguyên **batch** (không phải từng message), và broker thường lưu nguyên trạng nén đó — consumer mới giải nén. Vì nén cả batch nên batch càng to, tỉ lệ nén càng tốt (nhiều dữ liệu lặp hơn để khai thác).
+Compression happens at the producer, over a whole **batch** (not per message), and the broker usually stores it compressed exactly as received — the consumer decompresses. Because the whole batch is compressed, bigger batches compress better (more repeated data to exploit).
 
-| `compression.type` | CPU producer | Tỉ lệ nén | Ghi chú |
+| `compression.type` | Producer CPU | Compression ratio | Notes |
 |---|---|---|---|
-| `none` | 0 | 1× | Latency thấp nhất, tốn mạng nhất |
-| `lz4` | Thấp | Trung bình | Cân bằng tốt, mặc định thực dụng cho nhiều ca |
-| `snappy` | Thấp | Trung bình-thấp | Rất nhẹ CPU, nén vừa |
-| `zstd` | Trung bình | Cao | Tỉ lệ nén tốt nhất nhóm, CPU chấp nhận được — tốt khi mạng là nút cổ chai |
-| `gzip` | Cao | Cao | Nén mạnh nhưng ngốn CPU, ít khi đáng so với zstd |
+| `none` | 0 | 1× | The lowest latency, the highest network use |
+| `lz4` | Low | Medium | A good balance, a pragmatic default for many cases |
+| `snappy` | Low | Medium-low | Very light on CPU, moderate compression |
+| `zstd` | Medium | High | The best ratio of the group at acceptable CPU — good when the network is the bottleneck |
+| `gzip` | High | High | Strong compression but CPU-hungry, rarely worth it over zstd |
 
-Đánh đổi ba chiều:
+A three-way trade-off:
 
-- **Mạng là nút cổ chai** → `zstd` (nén mạnh, giảm byte trên dây).
-- **CPU producer eo hẹp** → `lz4`/`snappy`.
-- **Latency là trên hết, mạng dư** → `none`.
+- **The network is the bottleneck** → `zstd` (strong compression, fewer bytes on the wire).
+- **Producer CPU is tight** → `lz4`/`snappy`.
+- **Latency above all, network to spare** → `none`.
 
-Bẫy: nén hiệu quả cần batch đủ to. Nén với `linger.ms=0` và record lẻ tẻ thì tỉ lệ nén kém mà vẫn tốn CPU — nén và batching nên đi cùng nhau.
+The trap: effective compression needs sufficiently large batches. Compressing with `linger.ms=0` and sporadic records gives a poor ratio while still burning CPU — compression and batching belong together.
 
-## Partitioner: cùng key vào cùng partition
+## The partitioner: the same key to the same partition
 
-Partitioner quyết định message đi partition nào:
+The partitioner decides which partition a message goes to:
 
-- **Có key**: `partition = hash(key) % số_partition`. Cùng key → cùng partition → giữ thứ tự cho key đó. Đây là cơ chế bạn dựa vào để bảo toàn thứ tự per-key.
-- **Key null**: bản mới dùng **sticky partitioner** — dồn vào một partition tới khi batch đầy rồi mới đổi, để batch to hơn thay vì rải đều từng message. Kết quả: throughput cao hơn round-robin cũ mà vẫn cân bằng dài hạn.
+- **With a key**: `partition = hash(key) % partition_count`. Same key → same partition → ordering preserved for that key. This is the mechanism you rely on for per-key ordering.
+- **Key null**: newer versions use a **sticky partitioner** — piling into one partition until the batch is full and only then switching, so batches are bigger rather than being spread message by message. The result: higher throughput than the old round-robin while still balancing over the long run.
 
-Bẫy chết người: **đổi số partition của topic làm `hash(key) % N` đổi kết quả**, key cũ có thể nhảy sang partition khác và thứ tự lịch sử vỡ. Xem [case study mất thứ tự vì đổi key](../case-studies/mat-thu-tu-vi-doi-key.md). Với dữ liệu cần thứ tự per-key, coi số partition gần như bất biến.
+The deadly trap: **changing a topic's partition count changes the result of `hash(key) % N`**, so an old key can jump to a different partition and historical ordering breaks. See the [case study on losing ordering by changing the key](../case-studies/mat-thu-tu-vi-doi-key.md). For data that needs per-key ordering, treat the partition count as effectively immutable.
 
-## Bảng "muốn X → chỉnh Y"
+## The "want X → tune Y" table
 
-| Muốn | Chỉnh |
+| Want | Tune |
 |---|---|
-| Không mất message | `acks=all` + `min.insync.replicas=2` |
-| Retry không sinh trùng | `enable.idempotence=true` (kéo theo `acks=all`, `retries>0`, `max.in.flight` tối đa 5) |
-| Throughput cao | tăng `linger.ms` (5–20), tăng `batch.size`, bật `compression.type=lz4/zstd` |
-| Độ trễ thấp nhất | `linger.ms=0`, không nén |
-| Không treo khi buffer đầy | giảm `max.block.ms`, hoặc tăng `buffer.memory` |
-| Không bỏ cuộc quá sớm khi broker chậm | tăng `delivery.timeout.ms` (và `request.timeout.ms` con nhỏ hơn) |
-| Giữ thứ tự per-key | gửi có key + giữ nguyên số partition |
-| Giữ thứ tự khi KHÔNG idempotent | `max.in.flight.requests.per.connection=1` |
+| No lost messages | `acks=all` + `min.insync.replicas=2` |
+| Retries without duplicates | `enable.idempotence=true` (which pulls in `acks=all`, `retries>0`, `max.in.flight` at most 5) |
+| High throughput | raise `linger.ms` (5–20), raise `batch.size`, turn on `compression.type=lz4/zstd` |
+| The lowest latency | `linger.ms=0`, no compression |
+| No hanging when the buffer is full | lower `max.block.ms`, or raise `buffer.memory` |
+| Not giving up too early on a slow broker | raise `delivery.timeout.ms` (with `request.timeout.ms` smaller inside it) |
+| Per-key ordering | send with a key + keep the partition count unchanged |
+| Ordering WITHOUT idempotence | `max.in.flight.requests.per.connection=1` |
 
 ## Common Mistakes
 
-| Sai | Hậu quả | Sửa |
+| Mistake | Consequence | Fix |
 |---|---|---|
-| `acks=all` nhưng `min.insync.replicas=1` | Độ bền thật chỉ ngang `acks=1` | Đặt `min.insync.replicas=2` |
-| Tắt idempotence, để `max.in.flight=5` | Đảo thứ tự khi retry | Bật idempotence, hoặc ép `max.in.flight=1` |
-| Tăng `linger.ms` rất cao để "nhanh hơn" | Độ trễ end-to-end phình ra | Giữ 5–20ms là đủ cho phần lớn ca |
-| Chỉnh `retries` nhỏ để "fail nhanh" | Vô nghĩa — `delivery.timeout.ms` mới là trần thật | Chỉnh `delivery.timeout.ms` |
-| Nén nhưng `linger.ms=0`, record lẻ tẻ | Tốn CPU, tỉ lệ nén kém | Nén đi kèm batching |
-| Đổi số partition trên topic có key | Vỡ thứ tự per-key lịch sử | Cố định số partition khi cần thứ tự |
+| `acks=all` but `min.insync.replicas=1` | Real durability is only the level of `acks=1` | Set `min.insync.replicas=2` |
+| Idempotence off with `max.in.flight=5` | Reordering on retry | Turn idempotence on, or force `max.in.flight=1` |
+| Raising `linger.ms` very high to be "faster" | End-to-end latency balloons | 5–20ms is enough for most cases |
+| Setting `retries` low to "fail fast" | Meaningless — `delivery.timeout.ms` is the real ceiling | Tune `delivery.timeout.ms` |
+| Compressing with `linger.ms=0` and sporadic records | Wasted CPU, a poor ratio | Pair compression with batching |
+| Changing the partition count on a keyed topic | Historical per-key ordering breaks | Fix the partition count when ordering matters |
 
 ## FAQ
 
 <details>
-<summary>Đặt retries=0 cho "sạch" có nên không?</summary>
+<summary>Should I set retries=0 to keep things "clean"?</summary>
 
-Không. `retries=0` biến mọi lỗi tạm thời (leader election, timeout mạng) thành mất message. Cứ để retries lớn và bật idempotence để retry không trùng. Núm để "bỏ cuộc" đúng nghĩa là `delivery.timeout.ms`, không phải `retries`.
-
-</details>
-
-<details>
-<summary>batch.size to hơn thì luôn nhanh hơn?</summary>
-
-Không tuyến tính. Batch quá to tốn bộ nhớ buffer và có thể tăng độ trễ nếu `linger.ms` cũng cao. Núm điều tiết thực sự cho độ trễ là `linger.ms`; `batch.size` chỉ là trần.
+No. `retries=0` turns every transient error (a leader election, a network timeout) into a lost message. Leave retries high and turn on idempotence so retries don't duplicate. The knob that genuinely means "give up" is `delivery.timeout.ms`, not `retries`.
 
 </details>
 
 <details>
-<summary>send() trả về Future rồi mà message vẫn mất được không?</summary>
+<summary>Is a bigger batch.size always faster?</summary>
 
-Có. `Future` chỉ nghĩa "đã vào accumulator", chưa phải "đã ghi ở broker". Muốn biết ghi thật hay chưa phải chờ callback/`.get()` thành công. Với `acks=0` thì callback thành công cũng không đảm bảo bền.
+Not linearly. Batches that are too large consume buffer memory and can increase latency if `linger.ms` is also high. The real latency dial is `linger.ms`; `batch.size` is only a ceiling.
+
+</details>
+
+<details>
+<summary>Can a message still be lost after send() returned a Future?</summary>
+
+Yes. The `Future` only means "it's in the accumulator", not "it's written at the broker". To know whether it was really written you have to wait for the callback/`.get()` to succeed. And with `acks=0`, even a successful callback doesn't guarantee durability.
 
 </details>
 
 ## Related Topics
 
-- [Replication và durability](../reference/replication-durability.md)
+- [Replication and durability](../reference/replication-durability.md)
 - [Delivery semantics](../reference/delivery-semantics.md)
 - [Topic, partition, offset](../reference/topic-partition-offset.md)
-- [Consumer group và rebalance](consumer-groups.md)
-- [Vận hành và consumer lag](operations-lag.md)
-- [Case study — mất dữ liệu acks=1](../case-studies/mat-du-lieu-acks-1.md)
-- [Case study — mất thứ tự vì đổi key](../case-studies/mat-thu-tu-vi-doi-key.md)
+- [Consumer groups and rebalance](consumer-groups.md)
+- [Operations and consumer lag](operations-lag.md)
+- [Case study — losing data with acks=1](../case-studies/mat-du-lieu-acks-1.md)
+- [Case study — losing ordering by changing the key](../case-studies/mat-thu-tu-vi-doi-key.md)
 - [Kafka index](../index.md)

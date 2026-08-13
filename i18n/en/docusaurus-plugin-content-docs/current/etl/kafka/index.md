@@ -1,7 +1,6 @@
 ---
 title: Apache Kafka
-i18n_status: untranslated
-description: Kafka là một cái log, không phải hàng đợi — message không biến mất khi đọc xong.
+description: Kafka is a log, not a queue — messages don't vanish once they've been read.
 tags: [kafka, streaming, message-bus, cdc]
 domain: data-engineering
 category: technology
@@ -13,90 +12,89 @@ updated: 2026-08-11
 ---
 # Kafka
 
-**Kafka là một cái log ghi-thêm (append-only), không phải hàng đợi.** Message không
-biến mất khi đọc xong — consumer tự giữ vị trí đọc (`offset`) của mình. Đó là khác biệt
-gốc so với RabbitMQ, và là lý do nhiều consumer group đọc được cùng một dữ liệu một cách
-độc lập. Hiểu sai chỗ này thì mọi thứ sau sai theo: sẽ đi tìm "message bị ai lấy mất"
-trong khi nó vẫn nằm nguyên trên đĩa.
+**Kafka is an append-only log, not a queue.** Messages don't vanish once they've been read — each
+consumer holds its own reading position (`offset`). That's the root difference from RabbitMQ, and the
+reason several consumer groups can read the same data independently. Misunderstand this point and
+everything after it goes wrong: you'll go looking for "who took my message" while it's still sitting on disk.
 
-> **Nhãn kiểm chứng.** Kho này bắt output phải là **chạy thật**. Kafka cần một cluster
-> nên phần lớn output trong nhóm `reference/`/`skills/` là **số minh hoạ — chưa chạy**,
-> có dán nhãn ngay cạnh. Chỉ [bài tập](tutorials/kafka-lab.md) dựng broker thật bằng
-> Docker mới có output đã chạy. `verified_at` để trống cho tới khi chủ repo chạy tay.
+> **A note on verification.** This knowledge base requires output to be **really run**. Kafka needs a cluster,
+> so most of the output in the `reference/`/`skills/` groups is **illustrative numbers — not run**,
+> labelled as such right next to it. Only the [exercises](tutorials/kafka-lab.md), which stand up a real broker
+> with Docker, have output that's actually been run. `verified_at` stays empty until the repo owner runs it by hand.
 
-## Mục lục — các component của Kafka
+## Contents — Kafka's components
 
-| # | Component | Trả lời câu hỏi | Trạng thái |
+| # | Component | The question it answers | Status |
 |---|---|---|---|
-| 01 | [Kafka là gì](reference/what-is-kafka.md) | Log vs queue, khi nào cần và khi nào không | 📝 |
-| 02 | [Topic, partition, offset](reference/topic-partition-offset.md) | Đơn vị song song, thứ tự đảm bảo tới đâu | 📝 |
-| 03 | [Replication và độ bền](reference/replication-durability.md) | Leader/follower, ISR, `min.insync.replicas` | 📝 |
-| 04 | [Retention và compaction](reference/retention-compaction.md) | Xoá theo thời gian vs giữ bản mới nhất mỗi key | 📝 |
-| 05 | [Delivery semantics](reference/delivery-semantics.md) | At-most/at-least/exactly-once; idempotence, transaction | 📝 |
+| 01 | [What Kafka is](reference/what-is-kafka.md) | Log vs queue, when you need it and when you don't | 📝 |
+| 02 | [Topic, partition, offset](reference/topic-partition-offset.md) | The unit of parallelism, how far ordering is guaranteed | 📝 |
+| 03 | [Replication and durability](reference/replication-durability.md) | Leader/follower, ISR, `min.insync.replicas` | 📝 |
+| 04 | [Retention and compaction](reference/retention-compaction.md) | Deleting by time vs keeping the latest per key | 📝 |
+| 05 | [Delivery semantics](reference/delivery-semantics.md) | At-most/at-least/exactly-once; idempotence, transactions | 📝 |
 | 06 | [Producer tuning](skills/producer-tuning.md) | `acks`, batching, key → partition, idempotence | 📝 |
-| 07 | [Consumer group và rebalance](skills/consumer-groups.md) | Rebalance, `auto.offset.reset`, commit offset | 📝 |
-| 08 | [Schema Registry](skills/schema-registry.md) | Avro/Protobuf, tương thích ngược khi đổi schema | 📝 |
-| 09 | [Kafka Connect và CDC](skills/kafka-connect-cdc.md) | Debezium — bắt thay đổi từ database | 📝 |
-| 10 | [Vận hành và lag](skills/operations-lag.md) | Lag, `kafka-consumer-groups`, cân partition | 📝 |
-| — | [Cheatsheet: CLI và config](cheatsheets/cli-and-config.md) | Tra nhanh lệnh và config khi đang làm | 📝 |
-| — | [Bài tập: Docker](tutorials/kafka-lab.md) | Chạy thật: produce, consume, rebalance, compaction | 📝 |
+| 07 | [Consumer groups and rebalance](skills/consumer-groups.md) | Rebalance, `auto.offset.reset`, committing offsets | 📝 |
+| 08 | [Schema Registry](skills/schema-registry.md) | Avro/Protobuf, backward compatibility when the schema changes | 📝 |
+| 09 | [Kafka Connect and CDC](skills/kafka-connect-cdc.md) | Debezium — capturing changes from a database | 📝 |
+| 10 | [Operations and lag](skills/operations-lag.md) | Lag, `kafka-consumer-groups`, balancing partitions | 📝 |
+| — | [Cheatsheet: CLI and config](cheatsheets/cli-and-config.md) | Quick lookup for commands and config while you work | 📝 |
+| — | [Exercises: Docker](tutorials/kafka-lab.md) | Really run: produce, consume, rebalance, compaction | 📝 |
 
-Ký hiệu: ✅ đã chạy tay · 📝 lý thuyết, output minh hoạ · 🟡 mới có khung · ⬜ chưa viết
+Symbols: ✅ run by hand · 📝 theory, illustrative output · 🟡 outline only · ⬜ not written
 
-## Bản đồ khái niệm
+## Concept map
 
-| Khái niệm | Là gì | Khi nào chạm tới |
+| Concept | What it is | When you touch it |
 |---|---|---|
-| topic | Một luồng message có tên, chia thành partition | Đơn vị tổ chức dữ liệu |
-| partition | Một log có thứ tự — đơn vị song song **và** đơn vị thứ tự | Muốn scale hoặc muốn giữ thứ tự |
-| offset | Số thứ tự của một message trong partition; consumer tự giữ | Đọc lại, tua, đo lag |
-| producer | Bên ghi; chọn partition qua key, chọn độ bền qua `acks` | Đưa dữ liệu vào |
-| consumer group | Nhóm consumer chia nhau các partition của topic | Đọc song song, chịu lỗi |
-| replication factor | Mỗi partition có mấy bản; leader phục vụ, follower sao | Chịu lỗi broker |
-| ISR | Tập replica đang bắt kịp leader | Quyết định message được coi là "bền" |
-| retention | Giữ message bao lâu / bao nhiêu byte rồi xoá theo thời gian | Log không phình vô hạn |
-| log compaction | Giữ **bản mới nhất mỗi key**, không xoá theo thời gian | Topic dạng "trạng thái hiện tại" (CDC) |
-| Schema Registry | Kho schema Avro/Protobuf; ràng buộc tương thích | Nhiều team đọc chung một topic |
-| Kafka Connect | Framework kéo/đẩy dữ liệu không cần code; Debezium cho CDC | Nối database ↔ Kafka |
-| consumer lag | Khoảng cách giữa offset mới nhất và offset đã đọc | Chỉ số sức khoẻ số một |
+| topic | A named stream of messages, split into partitions | The unit of data organisation |
+| partition | An ordered log — the unit of parallelism **and** the unit of ordering | When you want to scale or to preserve ordering |
+| offset | A message's sequence number within a partition; held by the consumer | Re-reading, rewinding, measuring lag |
+| producer | The writing side; picks the partition via the key, picks durability via `acks` | Getting data in |
+| consumer group | A set of consumers dividing a topic's partitions among themselves | Reading in parallel, fault tolerance |
+| replication factor | How many copies each partition has; the leader serves, followers copy | Surviving a broker failure |
+| ISR | The set of replicas currently keeping up with the leader | Decides when a message counts as "durable" |
+| retention | How long / how many bytes to keep before deleting by time | Keeping the log from growing without bound |
+| log compaction | Keep **the latest value per key**, don't delete by time | "Current state" topics (CDC) |
+| Schema Registry | A store of Avro/Protobuf schemas; enforces compatibility | Several teams reading the same topic |
+| Kafka Connect | A framework for pulling/pushing data with no code; Debezium for CDC | Connecting database ↔ Kafka |
+| consumer lag | The gap between the latest offset and the offset read | The number-one health metric |
 
-## Lộ trình
+## Learning path
 
-- [ ] **Hiểu** — giải thích được vì sao Kafka là log chứ không phải queue, và thứ tự chỉ được đảm bảo trong một partition
-- [ ] **Chạy được** — dựng broker Docker, produce/consume, thấy một consumer group **rebalance** tận mắt ([bài tập](tutorials/kafka-lab.md))
-- [ ] **Sửa được** — đọc được consumer lag, chẩn được rebalance liên tục, chọn đúng `acks` cho yêu cầu độ bền
-- [ ] **Thiết kế được** — chọn số partition, chọn key, chọn retention vs compaction cho một use case thật và bảo vệ được lựa chọn
+- [ ] **Understand** — be able to explain why Kafka is a log rather than a queue, and that ordering is only guaranteed within one partition
+- [ ] **Run it** — stand up a Docker broker, produce/consume, and see a consumer group **rebalance** with your own eyes ([exercises](tutorials/kafka-lab.md))
+- [ ] **Fix it** — read consumer lag, diagnose continuous rebalancing, choose the right `acks` for a durability requirement
+- [ ] **Design it** — choose the partition count, the key, and retention vs compaction for a real use case, and defend the choice
 
-## Nguyên tắc
+## Principles
 
-Đọc hết docs mà chưa từng để một consumer group **rebalance** thì chưa biết gì về Kafka.
-Ba câu phải thuộc:
+Read all the docs without ever letting a consumer group **rebalance** and you know nothing about Kafka.
+Three sentences you must know by heart:
 
-1. **Thứ tự chỉ trong một partition.** Cần thứ tự theo một thực thể thì message của thực
-   thể đó phải cùng một key → cùng một partition.
-2. **`acks=all` + `min.insync.replicas=2` mới là bền.** `acks=1` mất dữ liệu khi leader
-   chết đúng lúc.
-3. **Consumer giữ offset, không phải broker.** Đọc lại quá khứ là chuyện bình thường.
+1. **Ordering only within one partition.** If you need ordering per entity, that entity's messages must
+   share one key → the same partition.
+2. **`acks=all` + `min.insync.replicas=2` is what durable means.** `acks=1` loses data when the leader dies
+   at the wrong moment.
+3. **The consumer holds the offset, not the broker.** Re-reading the past is entirely normal.
 
-## Sai lầm hay gặp
+## Common mistakes
 
-Chi tiết ở [`case-studies/`](case-studies/index.md).
+Details in [`case-studies/`](case-studies/index.md).
 
-| Sự cố | Bài học |
+| Incident | Lesson |
 |---|---|
-| [Mất thứ tự vì đổi key](case-studies/mat-thu-tu-vi-doi-key.md) | Thứ tự gắn với partition, partition gắn với key |
-| [Rebalance không dứt](case-studies/rebalance-lien-tuc.md) | Xử lý lâu hơn `max.poll.interval.ms` là bị đá khỏi group |
-| [Mất dữ liệu với acks=1](case-studies/mat-du-lieu-acks-1.md) | "Gửi thành công" với `acks=1` không có nghĩa là bền |
-| [Compaction không như mong đợi](case-studies/compaction-khong-nhu-mong-doi.md) | Compaction là quá trình nền, không phải xoá tức thì |
+| [Losing ordering by changing the key](case-studies/mat-thu-tu-vi-doi-key.md) | Ordering is tied to the partition, the partition is tied to the key |
+| [Rebalancing that never ends](case-studies/rebalance-lien-tuc.md) | Processing for longer than `max.poll.interval.ms` gets you kicked out of the group |
+| [Losing data with acks=1](case-studies/mat-du-lieu-acks-1.md) | "Sent successfully" with `acks=1` doesn't mean durable |
+| [Compaction not behaving as expected](case-studies/compaction-khong-nhu-mong-doi.md) | Compaction is a background process, not an immediate delete |
 
 ## Related Topics
 
-- [Flink](../flink/index.md) — engine đọc Kafka và xử lý stream có state
-- [Schema Registry](skills/schema-registry.md) — hợp đồng dữ liệu giữa các team
-- [Iceberg](../../storage/iceberg/index.md) — đích Kafka thường chảy vào qua Flink
-- [Data Engineering](../../index.md) — vị trí của Kafka trong đường đi của dữ liệu
+- [Flink](../flink/index.md) — the engine that reads Kafka and does stateful stream processing
+- [Schema Registry](skills/schema-registry.md) — the data contract between teams
+- [Iceberg](../../storage/iceberg/index.md) — where Kafka usually flows to, via Flink
+- [Data Engineering](../../index.md) — where Kafka sits on the data's journey
 
-## Nguồn
+## Sources
 
-- [ ] Kafka: The Definitive Guide (Confluent) — chương log, replication, exactly-once
-- [ ] Tài liệu chính thức kafka.apache.org — phần *Design* đọc trước phần *Configuration*
+- [ ] Kafka: The Definitive Guide (Confluent) — the chapters on the log, replication, exactly-once
+- [ ] The official kafka.apache.org docs — read *Design* before *Configuration*

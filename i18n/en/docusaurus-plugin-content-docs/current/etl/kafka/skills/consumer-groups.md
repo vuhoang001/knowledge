@@ -1,8 +1,7 @@
 ---
-title: Consumer group và rebalance
-i18n_status: untranslated
+title: Consumer groups and rebalance
 sidebar_position: 2
-description: "Rebalance, commit offset, và vì sao xử lý chậm làm consumer bị đá khỏi group."
+description: "Rebalancing, committing offsets, and why slow processing gets a consumer kicked out of the group."
 tags: [consumer-group, rebalance, offset-commit, assignor, poll-loop]
 domain: data-engineering
 category: concept
@@ -13,144 +12,144 @@ verified_at:
 updated: 2026-08-11
 ---
 
-> **Chốt:** Group chia partition cho các member; rebalance là lúc chia lại — và nếu vòng poll của bạn xử lý lâu hơn `max.poll.interval.ms`, coordinator tưởng bạn chết, đá bạn ra và cả group rebalance.
+> **Takeaway:** a group divides partitions among its members; a rebalance is the redivision — and if your poll loop takes longer than `max.poll.interval.ms` to process, the coordinator thinks you've died, kicks you out, and the whole group rebalances.
 
-Giả định đã nắm [topic, partition, offset](../reference/topic-partition-offset.md) và [delivery semantics](../reference/delivery-semantics.md). Ở đây bàn cách một group chia việc và các bẫy commit.
+Assumes you've got [topic, partition, offset](../reference/topic-partition-offset.md) and [delivery semantics](../reference/delivery-semantics.md). Here we discuss how a group divides work and the offset-commit traps.
 
-## Group chia partition thế nào
+## How a group divides partitions
 
-Mỗi consumer group có một **group coordinator** (một broker) theo dõi thành viên. Coordinator gán mỗi partition cho đúng **một** member trong group. Suy ra ngay:
+Each consumer group has a **group coordinator** (a broker) tracking its members. The coordinator assigns each partition to exactly **one** member of the group. Which immediately implies:
 
-- Nhiều consumer trong cùng group đọc song song các partition khác nhau.
-- Số consumer hữu ích tối đa = số partition. Consumer thứ N+1 (N = số partition) ngồi không.
-- Hai group khác nhau đọc độc lập cùng topic — mỗi group có offset riêng.
+- Several consumers in the same group read different partitions in parallel.
+- The maximum useful consumer count = the partition count. Consumer N+1 (N = the partition count) sits idle.
+- Two different groups read the same topic independently — each group has its own offsets.
 
-### Coordinator được chọn thế nào
+### How the coordinator is chosen
 
-Coordinator không phải chọn ngẫu nhiên: nó là **leader của partition** chứa offset của group này trong topic nội bộ `__consumer_offsets`. Cụ thể `partition = hash(group.id) % số_partition của __consumer_offsets`; broker giữ leader partition đó làm coordinator. Vì thế mọi member cùng `group.id` luôn tìm về cùng một coordinator, và khi broker đó chết, coordinator chuyển sang broker giữ replica mới lên leader.
+The coordinator isn't picked at random: it's the **leader of the partition** holding this group's offsets in the internal `__consumer_offsets` topic. Specifically `partition = hash(group.id) % the partition count of __consumer_offsets`; the broker leading that partition becomes the coordinator. So every member with the same `group.id` always finds the same coordinator, and when that broker dies the coordinator moves to whichever broker's replica becomes the new leader.
 
-## Giao thức rebalance mức bước
+## The rebalance protocol step by step
 
-Rebalance không phải một hành động nguyên khối — nó là một trình tự request/response giữa member và coordinator:
+A rebalance isn't one monolithic action — it's a request/response sequence between the members and the coordinator:
 
 ```mermaid
 sequenceDiagram
-  participant M as Member (mỗi consumer)
+  participant M as Member (each consumer)
   participant C as Group Coordinator
-  participant L as Group Leader (một member)
-  M->>C: JoinGroup (metadata, assignor hỗ trợ)
-  C->>C: Chọn 1 member làm leader,<br/>cấp generation id mới
-  C-->>L: JoinGroup response (danh sách toàn bộ member)
-  C-->>M: JoinGroup response (chỉ generation id)
-  L->>L: Chạy assignor → tính assignment cho MỌI member
-  L->>C: SyncGroup (assignment của tất cả)
-  M->>C: SyncGroup (rỗng)
-  C-->>M: SyncGroup response (partition của riêng member)
-  C-->>L: SyncGroup response (partition của leader)
+  participant L as Group Leader (one member)
+  M->>C: JoinGroup (metadata, supported assignors)
+  C->>C: Pick 1 member as the leader,<br/>issue a new generation id
+  C-->>L: JoinGroup response (the full member list)
+  C-->>M: JoinGroup response (the generation id only)
+  L->>L: Run the assignor → compute the assignment for EVERY member
+  L->>C: SyncGroup (everyone's assignment)
+  M->>C: SyncGroup (empty)
+  C-->>M: SyncGroup response (that member's own partitions)
+  C-->>L: SyncGroup response (the leader's partitions)
 ```
 
-Các mảnh quan trọng:
+The important pieces:
 
-- **JoinGroup**: mọi member đăng ký với coordinator. Coordinator gom lại, chọn **một** member làm **group leader** (thường member join đầu), và cấp một **generation id** mới.
-- **Leader tính assignment, không phải coordinator.** Coordinator chỉ chuyển tiếp. Điều này cho phép chiến lược assign chạy client-side, dễ thay bằng assignor tuỳ biến.
-- **SyncGroup**: leader gửi bảng assignment đầy đủ lên coordinator; coordinator phát cho từng member đúng phần của nó.
-- **Generation id** là con số version của lần rebalance. Request mang generation cũ bị coordinator từ chối (`ILLEGAL_GENERATION`) — cơ chế này chặn một member "lạc hậu" commit đè lên assignment mới.
+- **JoinGroup**: every member registers with the coordinator. The coordinator gathers them, picks **one** member as the **group leader** (usually the first to join), and issues a new **generation id**.
+- **The leader computes the assignment, not the coordinator.** The coordinator only relays. This lets the assignment strategy run client-side, easily swapped for a custom assignor.
+- **SyncGroup**: the leader sends the full assignment table to the coordinator; the coordinator hands each member exactly its own part.
+- **The generation id** is the rebalance's version number. A request carrying an old generation is refused by the coordinator (`ILLEGAL_GENERATION`) — this mechanism stops a "stale" member committing over the new assignment.
 
 ## eager vs cooperative
 
 ```mermaid
 flowchart TB
   subgraph Eager["Eager (stop-the-world)"]
-    E1[Rebalance kích hoạt] --> E2[MỌI member nhả HẾT partition]
-    E2 --> E3[Cả group NGỪNG tiêu thụ]
-    E3 --> E4[Nhận assignment mới] --> E5[Chạy lại]
+    E1[Rebalance triggered] --> E2[EVERY member releases ALL partitions]
+    E2 --> E3[The whole group STOPS consuming]
+    E3 --> E4[Receive the new assignment] --> E5[Resume]
   end
   subgraph Coop["Cooperative (incremental, KIP-429)"]
-    C1[Rebalance kích hoạt] --> C2[Tính assignment mới]
-    C2 --> C3["Chỉ thu hồi partition CẦN chuyển chủ"]
-    C3 --> C4["Partition không đổi: giữ nguyên, VẪN xử lý"]
-    C4 --> C5[Vòng 2: cấp partition đã thu về cho chủ mới]
+    C1[Rebalance triggered] --> C2[Compute the new assignment]
+    C2 --> C3["Revoke ONLY the partitions that must change owner"]
+    C3 --> C4["Unchanged partitions: kept, STILL being processed"]
+    C4 --> C5[Round 2: hand the revoked partitions to their new owners]
   end
 ```
 
-- **Eager (stop-the-world)**: mọi member nhả hết partition, rồi nhận lại assignment mới. Trong lúc đó cả group ngừng tiêu thụ. Đơn giản nhưng đau — group càng lớn, khoảng ngừng càng dài.
-- **Cooperative / incremental** (KIP-429): rebalance chạy hai vòng. Vòng 1 chỉ **thu hồi** những partition cần đổi chủ; member giữ nguyên phần không đổi và **tiếp tục xử lý**. Vòng 2 mới cấp phần vừa thu về cho chủ mới. Không stop-the-world. Bật qua assignor `cooperative-sticky`.
+- **Eager (stop-the-world)**: every member releases all its partitions, then gets a new assignment back. Meanwhile the whole group stops consuming. Simple but painful — the bigger the group, the longer the stoppage.
+- **Cooperative / incremental** (KIP-429): the rebalance runs in two rounds. Round 1 only **revokes** the partitions that must change owner; a member keeps its unchanged part and **carries on processing**. Only round 2 hands the revoked part to its new owner. No stop-the-world. Enabled via the `cooperative-sticky` assignor.
 
-### Partition assignor
+### Partition assignors
 
 ```properties
 partition.assignment.strategy=org.apache.kafka.clients.consumer.CooperativeStickyAssignor
 ```
 
-| Assignor | Cách chia | Ghi chú |
+| Assignor | How it divides | Notes |
 |---|---|---|
-| `range` | Theo dải partition mỗi topic | Mặc định cũ; dễ lệch tải khi nhiều topic |
-| `roundrobin` | Rải đều toàn bộ partition | Cân hơn range |
-| `sticky` | Cân bằng nhưng cố giữ assignment cũ | Giảm xáo trộn khi rebalance |
-| `cooperative-sticky` | sticky + incremental rebalance | Khuyến nghị cho hầu hết ca mới |
+| `range` | By partition range per topic | The old default; easily unbalanced with many topics |
+| `roundrobin` | Spreads all partitions evenly | More balanced than range |
+| `sticky` | Balanced, but tries to keep the old assignment | Less churn on a rebalance |
+| `cooperative-sticky` | sticky + incremental rebalancing | Recommended for most new cases |
 
 ## session.timeout vs max.poll.interval
 
-Đây là điểm nhầm lẫn hay gặp nhất. Có **hai** cơ chế "còn sống" tách biệt, kiểm bởi hai luồng khác nhau:
+This is the most commonly confused point. There are **two** separate liveness mechanisms, checked by two different threads:
 
 ```mermaid
 flowchart LR
-  subgraph BG["Heartbeat thread (nền)"]
-    H1[Gửi heartbeat mỗi<br/>heartbeat.interval.ms] --> H2{Coordinator thấy<br/>heartbeat trong<br/>session.timeout.ms?}
-    H2 -->|Không| H3[Coi member CHẾT]
+  subgraph BG["Heartbeat thread (background)"]
+    H1[Sends a heartbeat every<br/>heartbeat.interval.ms] --> H2{Coordinator sees a<br/>heartbeat within<br/>session.timeout.ms?}
+    H2 -->|No| H3[Treats the member as DEAD]
   end
   subgraph FG["Application thread"]
-    P1[poll → xử lý → poll ...] --> P2{Khoảng giữa 2 poll<br/>< max.poll.interval.ms?}
-    P2 -->|Không| P3[Member tự rời group<br/>→ rebalance]
+    P1[poll → process → poll ...] --> P2{Gap between two polls<br/>< max.poll.interval.ms?}
+    P2 -->|No| P3[The member leaves the group itself<br/>→ rebalance]
   end
 ```
 
-| Config | Mặc định | Ai kiểm | Vượt thì | Khi nào đổi |
+| Config | Default | Who checks it | Exceeding it means | When to change it |
 |---|---|---|---|---|
-| `session.timeout.ms` | `45000` | Heartbeat thread nền | Không heartbeat trong khoảng này → coordinator coi là chết | Tăng nếu GC pause dài hay mạng chập chờn |
-| `heartbeat.interval.ms` | `3000` | Nhịp gửi heartbeat | (không "vượt") | Giữ ~1/3 `session.timeout.ms` |
-| `max.poll.interval.ms` | `300000` | Khoảng giữa hai lần `poll()` | Xử lý một batch lâu hơn → coi là chết → rebalance | Tăng nếu mỗi batch thực sự cần lâu |
-| `max.poll.records` | `500` | Số record mỗi `poll()` | Batch to → xử lý một vòng lâu hơn | Giảm khi mỗi record xử lý nặng |
+| `session.timeout.ms` | `45000` | The background heartbeat thread | No heartbeat in this window → the coordinator treats it as dead | Increase it for long GC pauses or a flaky network |
+| `heartbeat.interval.ms` | `3000` | The heartbeat send interval | (nothing to "exceed") | Keep it at ~1/3 of `session.timeout.ms` |
+| `max.poll.interval.ms` | `300000` | The gap between two `poll()` calls | Processing a batch takes longer → treated as dead → rebalance | Increase it if a batch genuinely needs that long |
+| `max.poll.records` | `500` | The records per `poll()` | A bigger batch → one loop takes longer | Lower it when each record is heavy to process |
 
-Heartbeat chạy ở thread nền nên một consumer đang xử lý vẫn "sống" theo `session.timeout.ms`. Cái giết bạn là **`max.poll.interval.ms`**: nếu xử lý một batch mất lâu hơn nó, bạn không gọi `poll()` kịp, coordinator kết luận bạn treo và khởi động rebalance — dù thread nền vẫn heartbeat đều.
+The heartbeat runs on a background thread, so a consumer busy processing is still "alive" as far as `session.timeout.ms` is concerned. What kills you is **`max.poll.interval.ms`**: if processing a batch takes longer than that, you don't call `poll()` in time, the coordinator concludes you're stuck and starts a rebalance — even though the background thread is still heartbeating steadily.
 
-Sửa khi bị đá vì xử lý lâu:
+The fixes when you're kicked out for slow processing:
 
-- Giảm `max.poll.records` để mỗi vòng poll xử lý ít hơn.
-- Tăng `max.poll.interval.ms` nếu mỗi batch thực sự cần lâu.
-- Đẩy xử lý nặng sang thread/queue khác, giữ vòng poll ngắn.
+- Lower `max.poll.records` so each poll loop processes less.
+- Raise `max.poll.interval.ms` if a batch genuinely needs that long.
+- Push the heavy processing onto another thread/queue and keep the poll loop short.
 
-## Rebalance xảy ra khi nào
+## When a rebalance happens
 
-Rebalance là quá trình gán lại partition cho member. Kích hoạt khi:
+A rebalance is the process of reassigning partitions to members. It's triggered when:
 
-- Một member join (scale up, hoặc member vừa restart).
-- Một member leave (crash, hoặc rời chủ động).
-- Một member bị coi là chết (không heartbeat quá `session.timeout.ms`, hoặc vượt `max.poll.interval.ms`).
-- Số partition của topic thay đổi.
+- A member joins (scaling up, or a member just restarted).
+- A member leaves (a crash, or leaving deliberately).
+- A member is treated as dead (no heartbeat for longer than `session.timeout.ms`, or exceeding `max.poll.interval.ms`).
+- A topic's partition count changes.
 
-Nếu rebalance lặp liên tục, throughput sập vì group cứ dừng để chia lại. Xem [case study rebalance liên tục](../case-studies/rebalance-lien-tuc.md).
+If rebalances repeat continuously, throughput collapses because the group keeps stopping to redivide. See the [continuous rebalancing case study](../case-studies/rebalance-lien-tuc.md).
 
-## Static membership giảm rebalance
+## Static membership reduces rebalancing
 
 ```properties
 group.instance.id=consumer-app-1   # ID cố định cho member này
 ```
 
-Với static membership, một member restart nhanh (deploy, crash rồi lên lại) trong `session.timeout.ms` **không** kích hoạt rebalance — khi member quay lại với đúng `group.instance.id`, coordinator nhận ra nó là instance cũ và trả nguyên assignment mà không đụng tới các member khác. Rất hữu ích cho môi trường hay rolling-restart.
+With static membership, a member restarting quickly (a deploy, or a crash-and-return) within `session.timeout.ms` does **not** trigger a rebalance — when the member comes back with the same `group.instance.id`, the coordinator recognises it as the same instance and returns its assignment intact without touching the other members. Very useful in environments that roll-restart often.
 
-Đánh đổi: nếu member chết **thật** (không lên lại), coordinator vẫn giữ chỗ cho nó tới hết `session.timeout.ms` mới chia lại — nghĩa là các partition của nó "đứng hình" lâu hơn so với dynamic membership.
+The trade-off: if the member **really** dies (and doesn't come back), the coordinator still holds its place until `session.timeout.ms` expires before redividing — meaning its partitions are "frozen" longer than with dynamic membership.
 
-## Commit offset: bẫy mất vs trùng
+## Committing offsets: the loss vs duplicate trap
 
-Offset đã commit đánh dấu "đã xử lý tới đây", lưu trong topic nội bộ `__consumer_offsets`. Thứ tự giữa commit và xử lý quyết định bạn nghiêng về mất hay trùng.
+A committed offset marks "processed up to here", stored in the internal `__consumer_offsets` topic. The order between committing and processing decides whether you lean towards loss or duplication.
 
 ```properties
 enable.auto.commit=true            # tự commit theo chu kỳ
 auto.commit.interval.ms=5000       # mỗi 5s
 ```
 
-Auto-commit tiện nhưng commit theo **thời gian**, không theo tiến độ xử lý thật — commit ở đầu `poll()` kế tiếp, gồm cả những message bạn poll về nhưng chưa chắc đã xử lý xong. Với xử lý cần chắc chắn, tắt và commit tay:
+Auto-commit is convenient but commits on a **timer**, not on real processing progress — it commits at the start of the next `poll()`, including messages you polled but may not have finished processing. For processing that must be certain, turn it off and commit manually:
 
 ```java
 // commit SAU khi xử lý xong batch → at-least-once (có thể trùng khi crash giữa chừng)
@@ -159,58 +158,58 @@ process(records);
 consumer.commitSync();   // chỉ commit khi process xong
 ```
 
-| Thứ tự | Kết quả nếu crash giữa chừng | Ngữ nghĩa |
+| Order | The result if you crash mid-way | Semantics |
 |---|---|---|
-| Commit **trước** khi xử lý | **Mất** — offset đã tiến, message chưa xử lý không đọc lại | at-most-once |
-| Commit **sau** khi xử lý | **Trùng** — đọc lại từ offset cũ, xử lý message đã xử lý → cần consumer idempotent | at-least-once |
+| Commit **before** processing | **Loss** — the offset has advanced, and an unprocessed message is never re-read | at-most-once |
+| Commit **after** processing | **Duplication** — re-reading from the old offset reprocesses already-processed messages → you need an idempotent consumer | at-least-once |
 
-`commitSync` chặn và retry cho chắc; `commitAsync` nhanh hơn nhưng không retry. Mẫu thường dùng: `commitAsync` trong vòng lặp (nhanh, thỉnh thoảng lỡ một commit cũng được vì commit sau đè lên), và một `commitSync` cuối trong `finally` khi đóng để chắc chắn không mất commit chót.
+`commitSync` blocks and retries for certainty; `commitAsync` is faster but doesn't retry. The common pattern: `commitAsync` inside the loop (fast, and occasionally missing a commit is fine because a later commit overwrites it), plus a final `commitSync` in `finally` on close so the last commit isn't lost.
 
 ### auto.offset.reset
 
-Khi group chưa có offset đã lưu (lần đầu, hoặc offset hết hạn/bị xoá):
+When a group has no stored offset (the first time, or the offset expired/was deleted):
 
 ```properties
 auto.offset.reset=latest      # earliest | latest | none
 ```
 
-- `earliest`: đọc từ đầu topic — dùng khi cần xử lý toàn bộ lịch sử.
-- `latest` (mặc định): chỉ đọc message mới từ lúc join. Bẫy kinh điển: group mới với `latest` **bỏ qua toàn bộ dữ liệu đã có** — nếu bạn tưởng nó sẽ đọc lại lịch sử thì hụt.
-- `none`: ném lỗi nếu không có offset — buộc bạn xử lý tường minh.
+- `earliest`: read from the start of the topic — use it when you need to process the full history.
+- `latest` (the default): only read messages new since joining. The classic trap: a new group with `latest` **skips all the existing data** — if you expected it to read the history, you come up short.
+- `none`: throw an error if there's no offset — forcing you to handle it explicitly.
 
-Lưu ý: `auto.offset.reset` **chỉ** áp dụng khi không có committed offset. Nhóm đang chạy có offset thì config này vô can.
+Note: `auto.offset.reset` **only** applies when there's no committed offset. For a running group with offsets, this config is irrelevant.
 
 ## Common Mistakes
 
-| Sai | Hậu quả | Sửa |
+| Mistake | Consequence | Fix |
 |---|---|---|
-| Commit trước khi xử lý | Mất message khi crash | Commit sau, làm consumer idempotent |
-| Xử lý nặng ngay trong vòng poll | Vượt `max.poll.interval.ms` → rebalance | Giảm `max.poll.records` hoặc tách thread |
-| Auto-commit với xử lý phải chắc chắn | Mất âm thầm | Tắt auto, `commitSync` sau xử lý |
-| Group mới, `latest`, tưởng đọc lịch sử | Bỏ qua toàn bộ dữ liệu cũ | Đặt `earliest` khi cần lịch sử |
-| Thêm consumer > số partition | Consumer thừa ngồi không | Tăng số partition trước, rồi mới scale |
-| Rolling-restart mà không static membership | Mỗi restart một rebalance | Đặt `group.instance.id` |
+| Committing before processing | Messages lost on a crash | Commit afterwards, make the consumer idempotent |
+| Heavy processing right inside the poll loop | Exceeding `max.poll.interval.ms` → a rebalance | Lower `max.poll.records` or split off a thread |
+| Auto-commit with processing that must be certain | Silent loss | Turn auto off, `commitSync` after processing |
+| A new group with `latest`, expecting the history | All the old data skipped | Set `earliest` when you need the history |
+| Adding consumers beyond the partition count | The surplus consumers sit idle | Increase the partition count first, then scale |
+| Rolling-restart without static membership | A rebalance per restart | Set `group.instance.id` |
 
 ## FAQ
 
 <details>
-<summary>Session timeout và max.poll.interval khác nhau chỗ nào?</summary>
+<summary>What's the difference between session timeout and max.poll.interval?</summary>
 
-`session.timeout.ms` do heartbeat thread nền kiểm — consumer đang xử lý vẫn heartbeat, vẫn "sống". `max.poll.interval.ms` kiểm khoảng giữa hai lần gọi `poll()` — xử lý lâu, không poll kịp, thì dù heartbeat đều bạn vẫn bị coi là chết.
-
-</details>
-
-<details>
-<summary>Cooperative-sticky có nhược điểm gì không?</summary>
-
-Rebalance có thể cần nhiều hơn một vòng để hội tụ so với eager một-phát. Đổi lại không stop-the-world, tổng thời gian gián đoạn nhỏ hơn nhiều — với đa số workload là đáng. Lưu ý: chuyển từ eager sang cooperative cần rolling upgrade đúng cách vì hai kiểu không tương thích trực tiếp trong một group.
+`session.timeout.ms` is checked by the background heartbeat thread — a consumer busy processing still heartbeats and is still "alive". `max.poll.interval.ms` checks the gap between two `poll()` calls — process for too long, fail to poll in time, and you're treated as dead even with steady heartbeats.
 
 </details>
 
 <details>
-<summary>Generation id để làm gì?</summary>
+<summary>Does cooperative-sticky have any downside?</summary>
 
-Nó là version của lần rebalance. Nếu một member chậm (GC pause) commit với generation cũ sau khi group đã rebalance, coordinator từ chối (`ILLEGAL_GENERATION`) thay vì để nó commit đè lên assignment mới — chặn một lớp lỗi âm thầm.
+A rebalance may need more than one round to converge, versus eager's single shot. In exchange there's no stop-the-world and the total disruption is far shorter — worth it for most workloads. Note: moving from eager to cooperative needs a proper rolling upgrade, because the two styles aren't directly compatible within one group.
+
+</details>
+
+<details>
+<summary>What is the generation id for?</summary>
+
+It's the rebalance's version. If a slow member (a GC pause) commits with an old generation after the group has rebalanced, the coordinator refuses it (`ILLEGAL_GENERATION`) rather than letting it commit over the new assignment — blocking a whole class of silent bug.
 
 </details>
 
@@ -219,6 +218,6 @@ Nó là version của lần rebalance. Nếu một member chậm (GC pause) comm
 - [Topic, partition, offset](../reference/topic-partition-offset.md)
 - [Delivery semantics](../reference/delivery-semantics.md)
 - [Producer tuning](producer-tuning.md)
-- [Vận hành và consumer lag](operations-lag.md)
-- [Case study — rebalance liên tục](../case-studies/rebalance-lien-tuc.md)
+- [Operations and consumer lag](operations-lag.md)
+- [Case study — continuous rebalancing](../case-studies/rebalance-lien-tuc.md)
 - [Kafka index](../index.md)

@@ -1,8 +1,7 @@
 ---
 title: Topic, partition, offset
-i18n_status: untranslated
 sidebar_position: 2
-description: "Partition là đơn vị song song VÀ đơn vị thứ tự — và trên đĩa nó là nhiều segment + sparse index dịch offset ra vị trí byte."
+description: "A partition is the unit of parallelism AND the unit of ordering — and on disk it's several segments plus a sparse index translating offsets into byte positions."
 tags: [partition, offset, topic, ordering, murmur2, segment, high-watermark, sticky-partitioner]
 domain: data-engineering
 category: concept
@@ -15,24 +14,24 @@ updated: 2026-08-11
 
 # Topic, partition, offset
 
-> **Chốt:** Partition vừa là **đơn vị song song** vừa là **đơn vị thứ tự** — Kafka chỉ đảm bảo ordering *trong một partition*, không bao giờ xuyên partition. Trên đĩa một partition là chuỗi segment với sparse index dịch offset ra vị trí byte; muốn giữ thứ tự theo thực thể thì dùng key, và tăng partition sẽ phá ánh xạ key→partition một cách âm thầm.
+> **Takeaway:** a partition is both the **unit of parallelism** and the **unit of ordering** — Kafka only guarantees ordering *within one partition*, never across partitions. On disk a partition is a chain of segments with a sparse index translating offsets into byte positions; to preserve ordering per entity you use a key, and increasing the partition count silently breaks the key→partition mapping.
 
-Đây là mô hình nền của Kafka và cũng là nơi phần lớn lỗi "sao thứ tự loạn hết" bắt nguồn. Hiểu ba khái niệm này đúng là hiểu 80% Kafka.
+This is Kafka's foundational model and also where most "why is the ordering all over the place" bugs come from. Understand these three concepts correctly and you understand 80% of Kafka.
 
-## Topic chia thành partition
+## A topic splits into partitions
 
-Một **topic** là tên logic của luồng dữ liệu. Về vật lý, topic chia thành nhiều **partition**, mỗi partition là **một log có thứ tự, append-only** nằm trên một broker (và các replica của nó). Producer ghi vào cuối partition; mỗi bản ghi nhận một **offset** — số nguyên tăng đơn điệu, duy nhất trong partition đó.
+A **topic** is the logical name of a data stream. Physically the topic splits into several **partitions**, each partition being **one ordered, append-only log** living on a broker (and its replicas). Producers write to the end of a partition; each record gets an **offset** — a monotonically increasing integer, unique within that partition.
 
-Vì mỗi partition là một log độc lập:
+Because each partition is an independent log:
 
-- **Song song**: N partition cho phép tới N consumer trong một group xử lý song song. Đây là cách Kafka scale throughput.
-- **Thứ tự**: Kafka **chỉ** đảm bảo thứ tự đọc đúng thứ tự ghi **trong cùng một partition**. Hai message ở hai partition khác nhau — không có bảo đảm nào về ai đến trước.
+- **Parallelism**: N partitions allow up to N consumers in a group to process in parallel. This is how Kafka scales throughput.
+- **Ordering**: Kafka **only** guarantees that reads follow write order **within the same partition**. Two messages in two different partitions — no guarantee at all about which came first.
 
-Nói cách khác: **song song và thứ tự là cùng một trục.** Muốn nhiều song song hơn thì thêm partition, nhưng càng nhiều partition thì "đơn vị thứ tự" càng nhỏ.
+Put differently: **parallelism and ordering are the same axis.** For more parallelism you add partitions, but the more partitions you have, the smaller the "unit of ordering" becomes.
 
-## Partition trên đĩa: segment, base offset, sparse index
+## A partition on disk: segments, base offset, sparse index
 
-Một partition **không** phải một file khổng lồ. Nó là một thư mục chứa chuỗi **segment**, mỗi segment gồm ba file cùng tên (tên = base offset của segment):
+A partition is **not** one enormous file. It's a directory holding a chain of **segments**, each segment consisting of three files with the same name (the name = the segment's base offset):
 
 ```text
 topic-orders-3/                     ← partition 3 của topic "orders"
@@ -45,78 +44,78 @@ topic-orders-3/                     ← partition 3 của topic "orders"
 └── ...
 ```
 
-- **base offset**: offset của record đầu tiên trong segment, cũng là tên file. Nhìn tên file là biết segment chứa khoảng offset nào.
-- **`.log`**: chứa record batch nối tiếp nhau.
-- **`.index`** (offset index): ánh xạ **thưa** `offset tương đối → vị trí byte`. "Thưa" nghĩa là **không** ghi mọi offset, chỉ ghi một entry sau mỗi `index.interval.bytes` (mặc định 4096 byte) dữ liệu. Đổi lại index nhỏ, giữ trong page cache.
-- **`.timeindex`**: ánh xạ thưa `timestamp → offset`, phục vụ tìm theo thời gian (`offsetsForTimes`, "đọc từ 2 giờ trước").
+- **base offset**: the offset of the first record in the segment, and also the file name. Looking at the name tells you which offset range the segment covers.
+- **`.log`**: holds record batches one after another.
+- **`.index`** (the offset index): a **sparse** `relative offset → byte position` mapping. "Sparse" means it does **not** record every offset, only one entry per `index.interval.bytes` (4096 bytes by default) of data. In exchange the index is small and stays in the page cache.
+- **`.timeindex`**: a sparse `timestamp → offset` mapping, serving time-based lookup (`offsetsForTimes`, "read from two hours ago").
 
-### Tra một offset qua sparse index
+### Looking up an offset through the sparse index
 
-Consumer muốn đọc offset 368500 (giả sử nằm trong segment base 368120). Cơ chế:
+A consumer wants to read offset 368500 (say it's in the segment with base 368120). The mechanism:
 
-1. **Chọn segment** bằng tìm nhị phân trên tên file (base offset): 368500 nằm giữa segment base 368120 và segment kế tiếp → dùng segment 368120.
-2. Trong `.index` của segment đó, tìm nhị phân entry gần nhất **không vượt quá** offset tương đối `368500 - 368120 = 380`. Sparse index không có entry cho đúng 380; nó có, ví dụ, entry cho offset tương đối 352 → vị trí byte 16480.
-3. **Nhảy tới byte 16480** trong `.log` rồi **quét tuần tự** từ đó tới khi gặp offset 368500. Vì đoạn quét chỉ dài tối đa `index.interval.bytes`, chi phí bị chặn nhỏ.
+1. **Pick the segment** by binary search over the file names (base offsets): 368500 falls between segment base 368120 and the next one → use segment 368120.
+2. In that segment's `.index`, binary-search for the nearest entry **not exceeding** the relative offset `368500 - 368120 = 380`. The sparse index has no entry for exactly 380; it has, say, an entry for relative offset 352 → byte position 16480.
+3. **Jump to byte 16480** in the `.log` and **scan sequentially** from there until it reaches offset 368500. Because that scan is at most `index.interval.bytes` long, the cost is tightly bounded.
 
-Đó là mẹo hay: index thưa cho lookup **gần như** O(log n) mà tốn rất ít RAM/đĩa; phần "gần như" là đoạn quét tuyến tính ngắn cuối cùng.
+That's the neat trick: a sparse index gives **near** O(log n) lookup while costing very little RAM/disk; the "near" is that short final linear scan.
 
-### Active segment vs segment đã đóng, và rolling
+### Active segment vs closed segments, and rolling
 
-- **Active segment**: segment cuối, nơi mọi ghi mới append. Chỉ có một active segment mỗi partition tại một thời điểm.
-- **Segment đã đóng**: các segment trước, bất biến (immutable) — chỉ đọc, ứng viên cho retention/compaction.
+- **Active segment**: the last segment, where all new writes append. There's only one active segment per partition at a time.
+- **Closed segments**: the earlier ones, immutable — read-only, and candidates for retention/compaction.
 
-Segment active bị **đóng (roll)** và mở segment mới khi:
+The active segment gets **closed (rolled)** and a new one opened when:
 
-| Điều kiện | Config | Mặc định phổ biến |
+| Condition | Config | Common default |
 |---|---|---|
-| Segment đủ lớn | `segment.bytes` | 1 GiB |
-| Segment đủ già | `segment.ms` | 7 ngày |
+| The segment is big enough | `segment.bytes` | 1 GiB |
+| The segment is old enough | `segment.ms` | 7 days |
 
-Retention (xoá theo `retention.ms`/`retention.bytes`) và compaction chỉ tác động lên **segment đã đóng** — active segment không bao giờ bị xoá/nén. Đây là lý do đôi khi thấy "dữ liệu quá retention mà chưa mất": nó vẫn còn trong active segment chưa roll.
+Retention (deleting by `retention.ms`/`retention.bytes`) and compaction only act on **closed segments** — the active segment is never deleted or compacted. This is why you sometimes see "data past retention that hasn't disappeared": it's still in an active segment that hasn't rolled.
 
-## Các loại offset: không chỉ có một con số
+## Kinds of offset: not just one number
 
-Nói "offset" một cách chung chung sẽ giấu đi vài offset quan trọng đồng thời tồn tại cho một partition:
+Saying "offset" loosely hides several important offsets that exist simultaneously for one partition:
 
-| Offset | Ý nghĩa | Ai quan tâm |
+| Offset | Meaning | Who cares |
 |---|---|---|
-| **Log-end offset (LEO)** | Offset của record kế tiếp sẽ được ghi (cuối log của leader) | Producer |
-| **High-watermark (HW)** | Offset cao nhất đã được **replicate đủ tới mọi ISR** — consumer `read_uncommitted` chỉ đọc được **dưới** HW | Consumer, durability |
-| **Last-stable-offset (LSO)** | Offset cao nhất mà **mọi transaction dưới nó đã kết thúc** (commit/abort) — consumer `read_committed` chỉ đọc tới LSO | Consumer transactional |
-| **Committed offset** | Vị trí một **consumer group** đã xử lý xong (lưu ở `__consumer_offsets`) | Resume, lag |
+| **Log-end offset (LEO)** | The offset of the next record to be written (the end of the leader's log) | Producers |
+| **High-watermark (HW)** | The highest offset **replicated to every ISR** — a `read_uncommitted` consumer can only read **below** the HW | Consumers, durability |
+| **Last-stable-offset (LSO)** | The highest offset where **every transaction below it has ended** (committed/aborted) — a `read_committed` consumer only reads up to the LSO | Transactional consumers |
+| **Committed offset** | The position a **consumer group** has finished processing (stored in `__consumer_offsets`) | Resuming, lag |
 
-Điểm cốt lõi: **consumer thường không đọc được tới tận LEO.** Với `read_uncommitted` nó bị chặn ở HW (record chưa replicate đủ thì chưa "hiện ra"); với `read_committed` nó bị chặn ở LSO (record trong transaction chưa commit thì chưa hiện ra). Xem [Delivery semantics](delivery-semantics.md) cho LSO và transaction.
+The core point: **a consumer usually cannot read all the way to the LEO.** With `read_uncommitted` it's capped at the HW (a record not yet sufficiently replicated hasn't "appeared" yet); with `read_committed` it's capped at the LSO (a record in an uncommitted transaction hasn't appeared yet). See [Delivery semantics](delivery-semantics.md) for the LSO and transactions.
 
-**Leader epoch**: mỗi lần một partition đổi leader, epoch tăng. Follower dùng leader epoch để phát hiện và cắt bỏ (truncate) đúng những record "ma" nếu nó từng theo một leader cũ bị mất — chống log divergence khi leader nhảy qua lại. Đây là cái thay thế cho cơ chế truncate theo HW cũ vốn có edge case mất dữ liệu.
+**Leader epoch**: every time a partition changes leader, the epoch increments. Followers use the leader epoch to detect and truncate exactly the "ghost" records if they once followed an old leader that was lost — preventing log divergence when leadership bounces around. This replaces the older HW-based truncation mechanism, which had data-loss edge cases.
 
-## Offset không phải bộ đếm message
+## An offset isn't a message counter
 
-Một điểm hay nhầm: nếu topic là **compacted**, bản cũ của một key bị nén đi để lại **lỗ offset** (offset 5 tồn tại, offset 6 bị nén mất, offset 7 tồn tại). Offset vẫn luôn **tăng đơn điệu** nhưng **không liên tục**. Đừng giả định `offset = số message đã xử lý` hay `lag = số message còn lại` một cách tuyệt đối với compacted topic.
+An easy mistake: if a topic is **compacted**, old values of a key get compacted away leaving **offset gaps** (offset 5 exists, offset 6 is compacted away, offset 7 exists). Offsets are still always **monotonically increasing** but **not contiguous**. Don't assume `offset = number of messages processed` or `lag = number of messages remaining` absolutely on a compacted topic.
 
-## `__consumer_offsets`: nơi committed offset sống
+## `__consumer_offsets`: where committed offsets live
 
-Committed offset của mọi consumer group được lưu trong một **topic nội bộ compacted** tên `__consumer_offsets` (mặc định 50 partition). Nó là compacted vì ta chỉ cần **bản mới nhất** cho mỗi `(group, topic, partition)`:
+Every consumer group's committed offsets are stored in a **compacted internal topic** named `__consumer_offsets` (50 partitions by default). It's compacted because we only need the **latest** value per `(group, topic, partition)`:
 
 ```text
 key   = (group.id, topic, partition)
 value = committed offset + metadata (leader epoch, timestamp, ...)
 ```
 
-Compaction giữ lại record mới nhất mỗi key → topic này không phình vô hạn dù group commit liên tục. Vì committed offset là dữ liệu Kafka bình thường trong một topic, nó cũng được replicate và chịu lỗi như mọi topic khác — không cần store ngoài. (Đây là lý do offset từng được lưu ở ZooKeeper thời xưa nay đã chuyển vào chính Kafka.)
+Compaction keeps the latest record per key → this topic doesn't grow without bound even when groups commit continuously. Because committed offsets are ordinary Kafka data in a topic, they're replicated and fault-tolerant like any other topic — no external store needed. (This is why offsets, once stored in ZooKeeper, have moved into Kafka itself.)
 
-## Key quyết định partition
+## The key decides the partition
 
-Khi producer gửi message có **key**, Kafka chọn partition qua hash của key (mặc định thuật toán **murmur2**):
+When a producer sends a message with a **key**, Kafka picks the partition by hashing the key (the default algorithm is **murmur2**):
 
 ```text
 partition = murmur2(key) % số_partition        # hành vi partitioner mặc định
 ```
 
-Chính xác hơn: `toPositive(murmur2(serialized_key)) % numPartitions`. `toPositive` để bỏ dấu âm. Điểm mấu chốt: **cùng key → cùng partition → giữ thứ tự theo thực thể đó.** Ví dụ dùng `user_id` làm key thì mọi event của một user rơi vào cùng partition, đảm bảo xử lý đúng thứ tự cho user đó — dù toàn topic thứ tự tổng thể không được đảm bảo.
+More precisely: `toPositive(murmur2(serialized_key)) % numPartitions`. `toPositive` strips the sign. The crucial point: **same key → same partition → ordering preserved per entity.** For example, using `user_id` as the key puts all of a user's events in the same partition, guaranteeing they're processed in order for that user — even though ordering across the whole topic isn't guaranteed.
 
-### Ví dụ số: 6 key hash vào 3 partition
+### A numeric example: 6 keys hashing into 3 partitions
 
-Số minh hoạ — chưa chạy (giá trị hash là bịa để minh hoạ cơ chế, không phải output murmur2 thật):
+Illustrative numbers — not run (the hash values are invented to illustrate the mechanism, not real murmur2 output):
 
 ```text
 numPartitions = 3
@@ -130,15 +129,15 @@ key        murmur2(key) (minh hoạ)   % 3   → partition
 "user-6"   9982110043                 → 1     p1     ← lệch: p1 nhận 3, p2 nhận 1
 ```
 
-Hai điều rút ra: (1) mọi event của "user-1" **luôn** vào p0 → thứ tự theo user-1 được giữ; (2) phân phối **không** đều tuyệt đối — với ít key có thể lệch (hotspot). Với hàng triệu key phân phối đều dần, nhưng nếu vài key "nóng" (một seller khổng lồ) thì partition chứa nó thành hotspot dù hash đều.
+Two things to take away: (1) every "user-1" event **always** goes to p0 → ordering for user-1 is preserved; (2) the distribution is **not** perfectly even — with few keys it can skew (a hotspot). With millions of keys it evens out, but if a few keys are "hot" (one enormous seller) the partition holding it becomes a hotspot even with an even hash.
 
-### Key = null → sticky partitioner (KIP-480)
+### Key = null → the sticky partitioner (KIP-480)
 
-Nếu **key = null**: partitioner mặc định (Kafka mới, KIP-480) dùng **sticky partitioning** — gom một loạt message vào **cùng một partition** cho tới khi batch hiện tại đầy/đóng (`batch.size` hoặc `linger.ms`), rồi mới **đổi ngẫu nhiên** sang partition khác. Trước KIP-480 là round-robin **từng message** → mỗi partition nhận batch nhỏ, nhiều request, throughput kém.
+If the **key is null**: the default partitioner (in newer Kafka, KIP-480) uses **sticky partitioning** — it gathers a run of messages into **one partition** until the current batch is full/closed (`batch.size` or `linger.ms`), and only then **switches randomly** to another partition. Before KIP-480 it was round-robin **per message** → each partition got small batches, many requests, poor throughput.
 
-Sticky partitioner đổi lấy: **batch đầy hơn → ít request hơn → throughput cao hơn và latency thấp hơn** ở tải vừa. Cái mất: không có key để neo → **không bảo đảm thứ tự theo thực thể**. Về lâu dài phân phối vẫn đều giữa các partition vì mỗi lần chuyển là ngẫu nhiên.
+What the sticky partitioner buys: **fuller batches → fewer requests → higher throughput and lower latency** at moderate load. What it loses: no key to anchor on → **no ordering guarantee per entity**. Over the long run the distribution across partitions is still even, because each switch is random.
 
-## Sơ đồ: topic → partitions → segments
+## Diagram: topic → partitions → segments
 
 ```mermaid
 flowchart TD
@@ -146,8 +145,8 @@ flowchart TD
   T --> P1
   T --> P2
 
-  subgraph P0["Partition 0 (thư mục trên đĩa)"]
-    P0S0[".log base=0 (đóng)"]
+  subgraph P0["Partition 0 (a directory on disk)"]
+    P0S0[".log base=0 (closed)"]
     P0S1[".log base=368120 (active)"]
     P0IDX[".index / .timeindex (sparse)"]
   end
@@ -161,74 +160,74 @@ flowchart TD
   K["record key = user_id"] -->|"murmur2(key) % 3"| P1
 ```
 
-## Cái bẫy lớn: tăng số partition phá ánh xạ key→partition
+## The big trap: increasing the partition count breaks the key→partition mapping
 
-Bạn **tăng** được số partition của topic (không giảm được). Nhưng `murmur2(key) % N` phụ thuộc `N`. Đổi `N` → cùng một key có thể ánh xạ sang partition khác. Dữ liệu **cũ** vẫn nằm ở partition cũ, dữ liệu **mới** cùng key rơi sang partition mới → **thứ tự theo key bị phá vỡ tại thời điểm reshard**.
+You **can** increase a topic's partition count (you can't decrease it). But `murmur2(key) % N` depends on `N`. Change `N` → the same key may map to a different partition. The **old** data stays in the old partition and **new** data with the same key lands in a new one → **ordering by key breaks at the moment of the reshard**.
 
-Ví dụ: với 3 partition, `user-42` luôn vào p1. Tăng lên 4 partition, `murmur2(user-42) % 4` có thể ra p3. Các event cũ của user-42 nằm ở p1, event mới ở p3 → consumer xử lý p1 và p3 độc lập, thứ tự tổng thể của user-42 **vỡ** ngay tại thời điểm tăng partition. Không có lỗi nào báo. Xem [case study mất thứ tự vì đổi key](../case-studies/mat-thu-tu-vi-doi-key.md).
+For example: with 3 partitions, `user-42` always goes to p1. Increase to 4 partitions and `murmur2(user-42) % 4` may give p3. user-42's old events are in p1, its new ones in p3 → consumers process p1 and p3 independently, and user-42's overall ordering **breaks** right at the moment the partition count changed. Nothing reports an error. See the [case study on losing ordering by changing the key](../case-studies/mat-thu-tu-vi-doi-key.md).
 
-### Hướng migrate khi buộc phải "reshard"
+### How to migrate when you're forced to "reshard"
 
-Vì tăng partition tại chỗ phá ngữ nghĩa, cách an toàn không phải sửa topic cũ mà là **tạo topic mới với số partition đúng rồi chuyển qua**:
+Because increasing partitions in place breaks the semantics, the safe approach isn't to change the old topic but to **create a new topic with the right partition count and move over**:
 
-1. **Tạo topic mới** `orders-v2` với số partition mục tiêu.
-2. **Dual-write** (một khoảng): producer ghi cả `orders` và `orders-v2`, hoặc **replay** toàn bộ `orders` sang `orders-v2` bằng một job copy (MirrorMaker/Kafka Streams/Connect) — giữ nguyên key để ánh xạ mới nhất quán.
-3. Để consumer bắt kịp `orders-v2` tới điểm cắt.
-4. **Cutover**: chuyển consumer sang `orders-v2`, ngừng ghi `orders`, sau đó retire.
+1. **Create the new topic** `orders-v2` with the target partition count.
+2. **Dual-write** (for a period): the producer writes to both `orders` and `orders-v2`, or **replay** all of `orders` into `orders-v2` with a copy job (MirrorMaker/Kafka Streams/Connect) — preserving the keys so the new mapping is consistent.
+3. Let consumers catch up on `orders-v2` to the cutoff point.
+4. **Cutover**: switch consumers to `orders-v2`, stop writing to `orders`, then retire it.
 
-Chấp nhận: trong giai đoạn replay/dual-write, thứ tự tuyệt đối theo key giữa cũ và mới cần được xử lý cẩn thận (thường replay có thứ tự theo partition cũ rồi để consumer idempotent). Đây là lý do **sizing partition đủ từ đầu** rẻ hơn nhiều so với reshard về sau.
+Accept that: during the replay/dual-write period, absolute ordering by key between old and new needs careful handling (usually you replay in old-partition order and make consumers idempotent). This is why **sizing partitions adequately from the start** is far cheaper than resharding later.
 
-## Chọn số partition
+## Choosing the partition count
 
-| Được (nhiều partition) | Mất | Đổi lấy |
+| You get (more partitions) | You lose | In exchange for |
 |---|---|---|
-| Song song cao hơn, throughput lớn | Nhiều file/segment hơn → overhead I/O, mở file, page cache tản | Chi phí vận hành |
-| Nhiều consumer trong group | Rebalance chậm hơn khi có nhiều partition | Thời gian phục hồi |
-| — | "Đơn vị thứ tự" nhỏ đi (thứ tự tổng thể càng khó) | Ordering |
-| — | Tăng sau này phá ánh xạ key→partition | Tính bất biến |
-| — | Mỗi partition thêm metadata ở controller | Áp lực metadata cluster |
+| More parallelism, greater throughput | More files/segments → I/O overhead, open files, page cache spread thin | Operating cost |
+| More consumers in a group | Slower rebalancing with many partitions | Recovery time |
+| — | A smaller "unit of ordering" (overall ordering gets harder) | Ordering |
+| — | Increasing it later breaks the key→partition mapping | Immutability |
+| — | Each partition adds metadata at the controller | Cluster metadata pressure |
 
-Quy tắc thực dụng: chọn đủ partition cho throughput đỉnh **dự kiến trong vòng đời topic** ngay từ đầu, vì tăng về sau tốn kém về mặt ngữ nghĩa. Ước lượng thô: `partitions ≈ max(throughput_mong_muốn / throughput_1_consumer, throughput_mong_muốn / throughput_1_partition)`. Đừng chọn 100 partition cho topic 10 msg/s — mỗi partition là file, replica, overhead.
+The pragmatic rule: choose enough partitions for the peak throughput you **expect over the topic's lifetime** from the start, because increasing it later is semantically expensive. A rough estimate: `partitions ≈ max(desired_throughput / throughput_per_consumer, desired_throughput / throughput_per_partition)`. Don't pick 100 partitions for a 10 msg/s topic — each partition is files, replicas, overhead.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả | Phòng bằng |
+| Mistake | Consequence | Prevented by |
 |---|---|---|
-| Mong thứ tự toàn topic | Xử lý sai thứ tự xuyên partition | Chấp nhận ordering chỉ trong partition; dùng key |
-| Key = null nhưng cần thứ tự theo thực thể | Message cùng thực thể rải nhiều partition | Đặt key theo thực thể (`user_id`, `order_id`) |
-| Tăng partition trên topic đang dùng key | Thứ tự theo key vỡ ngầm, không báo lỗi | Sizing đủ từ đầu; nếu buộc phải tăng, tạo topic mới + replay/dual-write |
-| Giả định offset = số message | Đếm sai với compacted topic (lỗ offset) | Coi offset là vị trí, không phải bộ đếm |
-| Tưởng consumer đọc được tới LEO | Ngạc nhiên vì record mới "chưa hiện" | Nhớ HW (read_uncommitted) và LSO (read_committed) chặn đọc |
-| Ít key nhưng nhiều partition, mong đều | Hotspot vào vài partition, phần còn lại rảnh | Kiểm phân phối key; cân nhắc số partition theo cardinality key |
+| Expecting ordering across a whole topic | Processing out of order across partitions | Accepting that ordering is only within a partition; using keys |
+| Key = null but ordering per entity is needed | An entity's messages scatter across partitions | Setting the key per entity (`user_id`, `order_id`) |
+| Increasing partitions on a topic that uses keys | Ordering by key silently breaks, with no error | Sizing adequately from the start; if forced to increase, create a new topic + replay/dual-write |
+| Assuming offset = message count | Miscounting on a compacted topic (offset gaps) | Treating an offset as a position, not a counter |
+| Thinking a consumer can read up to the LEO | Surprise that a new record "hasn't appeared" | Remembering the HW (read_uncommitted) and LSO (read_committed) cap reads |
+| Few keys but many partitions, expecting evenness | A hotspot on a few partitions while the rest idle | Checking the key distribution; sizing partitions against key cardinality |
 
 ## FAQ
 
 <details>
-<summary>Số consumer trong một group nên bằng số partition?</summary>
+<summary>Should the number of consumers in a group equal the number of partitions?</summary>
 
-Tối đa hữu ích = số partition. Nhiều consumer hơn partition thì số dư ngồi không (mỗi partition chỉ được một consumer trong group phục vụ). Ít hơn thì một consumer ôm nhiều partition — vẫn chạy, chỉ ít song song hơn.
-
-</details>
-
-<details>
-<summary>Custom partitioner có được không?</summary>
-
-Được, viết partitioner riêng để kiểm soát ánh xạ (ví dụ giữ ổn định khi thêm partition, hoặc tránh hotspot). Nhưng phần lớn trường hợp murmur2 mặc định là đủ, và tự viết dễ tạo hotspot nếu phân phối lệch.
+The useful maximum = the partition count. More consumers than partitions and the surplus sit idle (each partition is served by only one consumer in the group). Fewer, and one consumer holds several partitions — it still works, just with less parallelism.
 
 </details>
 
 <details>
-<summary>Vì sao đọc theo offset lại nhanh dù log có hàng tỷ record?</summary>
+<summary>Can I write a custom partitioner?</summary>
 
-Nhờ sparse index. Kafka tìm nhị phân segment theo base offset (tên file), rồi tìm nhị phân trong `.index` để nhảy tới một vị trí byte gần đúng, rồi quét tuyến tính một đoạn ngắn (tối đa `index.interval.bytes`) tới đúng offset. Index thưa nên nhỏ, nằm gọn trong page cache — tra offset gần như O(log n) mà tốn rất ít RAM.
+Yes, write your own partitioner to control the mapping (e.g. keeping it stable when partitions are added, or avoiding hotspots). But in most cases the default murmur2 is enough, and rolling your own easily creates hotspots if the distribution skews.
+
+</details>
+
+<details>
+<summary>Why is reading by offset fast even with billions of records in the log?</summary>
+
+Thanks to the sparse index. Kafka binary-searches the segments by base offset (the file name), then binary-searches the `.index` to jump to an approximate byte position, then linearly scans a short stretch (at most `index.interval.bytes`) to the exact offset. Because the index is sparse it's small and fits comfortably in the page cache — offset lookup is near O(log n) at very little RAM cost.
 
 </details>
 
 ## Related Topics
 
-- [Kafka là gì](what-is-kafka.md) — log vs queue, segment, page cache, zero-copy
-- [Replication và độ bền](replication-durability.md) — mỗi partition có leader/follower, ISR, high-watermark
+- [What Kafka is](what-is-kafka.md) — log vs queue, segments, page cache, zero-copy
+- [Replication and durability](replication-durability.md) — each partition's leader/follower, ISR, high-watermark
 - [Delivery semantics](delivery-semantics.md) — last-stable-offset, read_committed, PID + sequence
-- [mất thứ tự vì đổi key](../case-studies/mat-thu-tu-vi-doi-key.md) — bẫy key→partition thực tế
-- [Consumer groups](../skills/consumer-groups.md) — rebalance, gán partition
-- [Kafka](../index.md) — chủ đề tổng
+- [Losing ordering by changing the key](../case-studies/mat-thu-tu-vi-doi-key.md) — the key→partition trap in practice
+- [Consumer groups](../skills/consumer-groups.md) — rebalancing, partition assignment
+- [Kafka](../index.md) — the parent topic

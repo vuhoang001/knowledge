@@ -1,9 +1,8 @@
 ---
-title: Kỹ năng — Kafka
-i18n_status: untranslated
+title: Skills — Kafka
 sidebar_key: kafka-skills
 sidebar_position: 0
-description: "Đã nắm reference rồi, giờ gặp tình huống X thì xử lý ra sao."
+description: "You've got the reference; now, faced with situation X, what do you do."
 tags: [skills, kafka]
 domain: data-engineering
 category: index
@@ -11,19 +10,19 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Kỹ năng — Kafka
+# Skills — Kafka
 
-Mỗi file giả định phần [`reference/`](../reference/index.md) đã nắm, và xử lý **một
-tình huống cụ thể**.
+Each file assumes the [`reference/`](../reference/index.md) section is understood, and handles **one
+specific situation**.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [Producer tuning](producer-tuning.md) | `acks`, batching, partitioner, idempotence — chỉnh gì cho việc gì | 📝 |
-| 2 | [Consumer group và rebalance](consumer-groups.md) | Commit offset, `auto.offset.reset`, rebalance không dừng | 📝 |
-| 3 | [Schema Registry](schema-registry.md) | Avro/Protobuf, tương thích khi đổi schema | 📝 |
-| 4 | [Kafka Connect và CDC](kafka-connect-cdc.md) | Debezium bắt thay đổi từ database, không cần code | 📝 |
-| 5 | [Vận hành và lag](operations-lag.md) | Đo lag, cân partition, đọc `kafka-consumer-groups` | 📝 |
+| 1 | [Producer tuning](producer-tuning.md) | `acks`, batching, the partitioner, idempotence — what to tune for what | 📝 |
+| 2 | [Consumer groups and rebalance](consumer-groups.md) | Committing offsets, `auto.offset.reset`, rebalancing that won't stop | 📝 |
+| 3 | [Schema Registry](schema-registry.md) | Avro/Protobuf, compatibility when the schema changes | 📝 |
+| 4 | [Kafka Connect and CDC](kafka-connect-cdc.md) | Debezium capturing database changes with no code | 📝 |
+| 5 | [Operations and lag](operations-lag.md) | Measuring lag, balancing partitions, reading `kafka-consumer-groups` | 📝 |
 
 ## Related Topics
 
-- [Kafka](../index.md) — chủ đề chứa thư mục này
+- [Kafka](../index.md) — the topic this directory belongs to

@@ -1,8 +1,7 @@
 ---
-title: Lab Kafka trên Docker
-i18n_status: untranslated
+title: Kafka lab on Docker
 sidebar_position: 1
-description: "Dựng cluster 3 broker KRaft bằng Docker: sticky partitioner, key, rebalance, compaction, acks — output thật."
+description: "Standing up a 3-broker KRaft cluster with Docker: the sticky partitioner, keys, rebalancing, compaction, acks — with real output."
 tags: [kafka, docker, kraft, lab, tutorial]
 domain: data-engineering
 category: technology
@@ -13,55 +12,55 @@ verified_at:
 updated: 2026-08-12
 ---
 
-# Lab Kafka trên Docker
+# Kafka lab on Docker
 
-> **Chốt:** Ba broker là con số tối thiểu để học Kafka cho ra hồn — một broker không dựng
-> nổi ISR, không thấy được `min.insync.replicas` chặn ghi, tức là bỏ mất đúng phần quan
-> trọng nhất.
+> **Takeaway:** three brokers is the minimum number to learn Kafka properly — one broker can't
+> form an ISR and can't show you `min.insync.replicas` blocking a write, which means missing
+> exactly the most important part.
 
-**Chạy trong thư mục lab NGOÀI repo** (`~/Documents/learn-lab/kafka`), **KHÔNG tạo file nào
-trong repo này.** Repo knowledge chỉ chứa `.md`; code lab sống ở `~/Documents/learn-lab/`.
+**Run this in a lab directory OUTSIDE the repo** (`~/Documents/learn-lab/kafka`), **creating no
+files inside this repo.** The knowledge repo only holds `.md`; lab code lives in `~/Documents/learn-lab/`.
 
 ```bash
 mkdir -p ~/Documents/learn-lab/kafka && cd ~/Documents/learn-lab/kafka
 ```
 
-> **Output trong bài này là thật**, lấy từ lần chạy ngày 12/08/2026 trên
-> `apache/kafka:4.3.1`, cluster 3 broker KRaft. Trường `verified_at` vẫn để trống cho tới
-> khi chủ repo tự tay chạy lại — xem luật cứng #1.
+> **The output in this document is real**, taken from a run on 2026-08-12 on
+> `apache/kafka:4.3.1`, a 3-broker KRaft cluster. The `verified_at` field stays empty until
+> the repo owner runs it again by hand — see hard rule #1.
 
-## Cái bẫy số một: script không nằm trên PATH
+## Trap number one: the scripts aren't on the PATH
 
-Image `apache/kafka` **không** đặt các script `kafka-*.sh` lên `PATH`. Gõ tên trần sẽ nhận:
+The `apache/kafka` image does **not** put the `kafka-*.sh` scripts on the `PATH`. Typing a bare name gets you:
 
 ```
 OCI runtime exec failed: exec failed: unable to start container process:
 exec: "kafka-topics.sh": executable file not found in $PATH
 ```
 
-Mọi lệnh trong bài đều dùng đường dẫn đầy đủ `/opt/kafka/bin/`. Đây là chi tiết môi trường,
-khác nhau giữa các image (`bitnami/kafka` lại có sẵn trên PATH) — đừng chép lệnh từ blog
-mà không kiểm.
+Every command in this document uses the full `/opt/kafka/bin/` path. This is an environment detail
+that differs between images (`bitnami/kafka` does have them on the PATH) — don't copy commands from
+a blog without checking.
 
-## Bài 0 — Dựng cluster 3 broker KRaft
+## Exercise 0 — Standing up a 3-broker KRaft cluster
 
-Từ Kafka 4.x **không còn ZooKeeper**. Mỗi node dưới đây vừa là broker vừa là controller
-(*combined mode*), dùng ba loại listener: `INTERNAL` cho broker nói với nhau, `CONTROLLER`
-cho bầu leader metadata, `EXTERNAL` cho truy cập từ host.
+From Kafka 4.x there's **no more ZooKeeper**. Each node below is both a broker and a controller
+(*combined mode*), using three kinds of listener: `INTERNAL` for brokers talking to each other, `CONTROLLER`
+for electing the metadata leader, `EXTERNAL` for access from the host.
 
-`CLUSTER_ID` phải **sinh thật**, và ba node phải dùng **chung một giá trị**:
+`CLUSTER_ID` must be **genuinely generated**, and all three nodes must use **the same value**:
 
 ```bash
 docker run --rm apache/kafka:4.3.1 /opt/kafka/bin/kafka-storage.sh random-uuid
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 skE65zILTdG_Jvi8bxfWHA
 ```
 
-Tạo `docker-compose.yml` (thay `CLUSTER_ID` bằng giá trị bạn vừa sinh):
+Create `docker-compose.yml` (replacing `CLUSTER_ID` with the value you just generated):
 
 ```yaml
 x-kafka-common: &kafka-common
@@ -123,12 +122,12 @@ volumes:
   kafka-3-data:
 ```
 
-Hai chi tiết cố ý:
+Two deliberate details:
 
-- **`KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"`** — gõ sai tên topic thì báo lỗi ngay, thay
-  vì âm thầm tạo một topic ma rồi ngồi tự hỏi sao không có dữ liệu.
-- **`KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0`** — rebalance ngay, không đợi gom thêm
-  consumer. Chỉ hợp cho lab; production để mặc định (3000) tránh rebalance dồn dập lúc khởi động.
+- **`KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"`** — mistype a topic name and you get an error immediately,
+  instead of silently creating a ghost topic and then wondering why there's no data.
+- **`KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0`** — rebalance immediately, without waiting to gather more
+  consumers. Only suitable for a lab; leave production at the default (3000) to avoid a rebalance storm at startup.
 
 ```bash
 docker compose up -d
@@ -136,7 +135,7 @@ docker exec kafka-1 /opt/kafka/bin/kafka-metadata-quorum.sh \
   --bootstrap-server kafka-1:19092 describe --status
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 ClusterId:              skE65zILTdG_Jvi8bxfWHA
@@ -149,9 +148,9 @@ CurrentVoters:          [{"id": 1, ...}, {"id": 2, ...}, {"id": 3, ...}]
 CurrentObservers:       []
 ```
 
-Đủ 3 voter, `MaxFollowerLag: 0` — quorum khoẻ. Cluster lên trong **2 giây**.
+All 3 voters present, `MaxFollowerLag: 0` — a healthy quorum. The cluster came up in **2 seconds**.
 
-## Bài 1 — Replica nằm đâu, ai làm leader
+## Exercise 1 — Where the replicas are, and who's the leader
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19092 \
@@ -161,7 +160,7 @@ docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19
   --describe --topic demo
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 Topic: demo  PartitionCount: 3  ReplicationFactor: 3  Configs: min.insync.replicas=1
@@ -170,22 +169,22 @@ Topic: demo  PartitionCount: 3  ReplicationFactor: 3  Configs: min.insync.replic
   Topic: demo  Partition: 2  Leader: 3  Replicas: 3,1,2  Isr: 3,1,2  Elr:   LastKnownElr:
 ```
 
-Đọc từng cột:
+Reading the columns:
 
-| Cột | Nghĩa | Vì sao đáng nhìn |
+| Column | Meaning | Why it's worth looking at |
 |---|---|---|
-| `Leader` | Broker phục vụ **mọi** ghi và **mọi** đọc của partition đó | Rải đều 1/2/3 — dồn cả ba vào một broker thì broker đó gánh 100% traffic |
-| `Replicas` | Danh sách bản sao, **phần tử đầu là preferred leader** | Broker chết rồi sống lại, Kafka muốn trả quyền leader về cho nó |
-| `Isr` | Replica đang bắt kịp leader | **Dòng nhìn đầu tiên khi nghi có sự cố** — ISR co lại là dấu hiệu bệnh sớm nhất |
-| `Elr` | *Eligible Leader Replicas*, mới có ở Kafka 4.x | Replica đủ điều kiện lên leader khi mất sạch ISR; rỗng = khoẻ |
-| `min.insync.replicas=1` | Mặc định | **Cấu hình nguy hiểm** — bài 6 sẽ cho thấy vì sao |
+| `Leader` | The broker serving **all** writes and **all** reads for that partition | Spread evenly across 1/2/3 — pile all three onto one broker and it carries 100% of the traffic |
+| `Replicas` | The list of copies, **the first element being the preferred leader** | When a broker dies and comes back, Kafka wants to return leadership to it |
+| `Isr` | The replicas currently keeping up with the leader | **The first line to look at when you suspect trouble** — a shrinking ISR is the earliest sign of illness |
+| `Elr` | *Eligible Leader Replicas*, new in Kafka 4.x | Replicas eligible to become leader when the whole ISR is lost; empty = healthy |
+| `min.insync.replicas=1` | The default | **A dangerous configuration** — exercise 6 shows why |
 
-Luật rút ra: **ghi và đọc đều chỉ qua leader**, follower chỉ kéo dữ liệu về cho giống. Cho
-đọc follower thì ghi xong đọc lại ngay có thể không thấy cái mình vừa ghi.
+The rule to take away: **both writes and reads go only through the leader**, and followers merely pull the data
+to match. Allow follower reads and a read straight after a write may not see what you just wrote.
 
-## Bài 2 — Không key thì KHÔNG phải round-robin
+## Exercise 2 — Without a key it is NOT round-robin
 
-Đây là chỗ gần như mọi tài liệu tiếng Việt (và bản cũ của chính file này) viết sai.
+This is the point almost every Vietnamese-language document (and an earlier version of this very file) gets wrong.
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19092 \
@@ -198,7 +197,7 @@ docker exec kafka-1 /opt/kafka/bin/kafka-get-offsets.sh \
   --bootstrap-server kafka-1:19092 --topic t-sticky --time latest
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 t-sticky:0:0
@@ -206,27 +205,27 @@ t-sticky:1:0
 t-sticky:2:6
 ```
 
-Round-robin từng message thì phải là `2 / 2 / 2`. Thực tế **cả 6 vào chung một partition,
-hai partition kia rỗng tuyệt đối**.
+Per-message round-robin would have to be `2 / 2 / 2`. In reality **all 6 went into one partition,
+with the other two absolutely empty**.
 
-Từ Kafka 2.4 (KIP-480) producer dùng **sticky partitioner**: dính vào một partition cho tới
-khi batch đầy hoặc hết `linger.ms`, gửi cả cụm đi, rồi mới đổi partition cho batch sau.
-Round-robin ở mức **batch**, không phải mức message. Lý do thực dụng: round-robin từng
-message với 3 partition = 3 batch nhỏ = 3 request mạng; dính một partition = 1 batch to =
-1 request.
+Since Kafka 2.4 (KIP-480) the producer uses a **sticky partitioner**: it sticks to one partition until
+the batch is full or `linger.ms` expires, sends the whole cluster of messages, and only then switches
+partition for the next batch. Round-robin at the **batch** level, not the message level. The pragmatic reason:
+per-message round-robin with 3 partitions = 3 small batches = 3 network requests; sticking to one partition = 1 big
+batch = 1 request.
 
-Chạy lại lệnh trên vài lần: partition được chọn **khác nhau mỗi lần** — trong lần chạy này
-nó rơi vào partition 2, lần trước trên topic khác lại là partition 1. Ngẫu nhiên, không cố định.
+Run the command above a few times: the partition chosen is **different each time** — in this run it
+landed on partition 2, while an earlier run on a different topic gave partition 1. Random, not fixed.
 
-**Bài học:** test vài chục message rồi kết luận *"dữ liệu phân bố đều"* là kết luận **sai**.
+**The lesson:** testing a few dozen messages and concluding *"the data is evenly distributed"* is a **wrong** conclusion.
 
-## Bài 3 — Có key thì tất định
+## Exercise 3 — With a key it's deterministic
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19092 \
   --create --topic t-keys --partitions 3 --replication-factor 3
 
-# gửi cùng 9 key HAI lần, giá trị khác nhau
+# send the same 9 keys TWICE, with different values
 printf 'k1:v\nk2:v\nk3:v\nk4:v\nk5:v\nk6:v\nk7:v\nk8:v\nk9:v\n' | docker exec -i kafka-1 \
   /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka-1:19092 --topic t-keys \
   --property parse.key=true --property key.separator=:
@@ -242,7 +241,7 @@ docker exec kafka-1 /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server 
   | grep '^Partition' | awk '{print $2"\t"$3"\t-> "$1}' | sort
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 k1  lan2  -> Partition:2      k4  lan2  -> Partition:1      k7  lan2  -> Partition:1
@@ -253,33 +252,33 @@ k3  lan2  -> Partition:1      k6  lan2  -> Partition:1      k9  lan2  -> Partiti
 k3  v     -> Partition:1      k6  v     -> Partition:1      k9  v     -> Partition:2
 ```
 
-**9/9 lặp lại chính xác** — đó là `murmur2(key) % số_partition`, không có ngẫu nhiên. Chạy
-trên một topic hoàn toàn mới cũng ra kết quả y hệt, vì hash chỉ phụ thuộc **key** và **số
-partition**, không phụ thuộc topic.
+**9 out of 9 repeat exactly** — that's `murmur2(key) % partition_count`, with no randomness. Running it
+on a completely new topic gives identical results, because the hash depends only on the **key** and the
+**partition count**, not on the topic.
 
-Để ý phân bố: **p0 có 2 key, p1 có 4, p2 có 3**. Hash chỉ hứa *tất định*, **không hứa
-*cân bằng*** với số key nhỏ. Một key nóng chiếm 40% lưu lượng thì partition đó thành điểm
-nghẽn, và Kafka không cứu được — nó buộc phải tôn trọng luật "cùng key cùng partition".
+Note the distribution: **p0 has 2 keys, p1 has 4, p2 has 3**. The hash only promises to be *deterministic*, it
+**does not promise to be *balanced*** with a small number of keys. One hot key taking 40% of the traffic makes
+that partition a bottleneck, and Kafka can't save you — it's obliged to honour the "same key, same partition" rule.
 
-**Cái bẫy chết người:** mẫu số là *số partition*. Thêm partition ⇒ ánh xạ đổi hết ⇒ thứ tự
-theo key **gãy vĩnh viễn**, không sửa ngược được. Xem
-[case study mất thứ tự vì đổi key](../case-studies/mat-thu-tu-vi-doi-key.md).
+**The deadly trap:** the modulus is the *partition count*. Add a partition ⇒ the whole mapping changes ⇒ ordering
+by key **breaks permanently**, irreversibly. See the
+[case study on losing ordering by changing the key](../case-studies/mat-thu-tu-vi-doi-key.md).
 
-## Bài 4 — Consumer group và rebalance
+## Exercise 4 — Consumer groups and rebalancing
 
-Cần **3 terminal**. Terminal A và B chạy consumer cùng group `g1`, terminal C quan sát.
+You need **3 terminals**. Terminals A and B run consumers in the same group `g1`, terminal C observes.
 
 ```bash
-# Terminal A và B — chạy CÙNG lệnh này, cùng --group g1
+# Terminals A and B — run THIS SAME command, with the same --group g1
 docker exec -it kafka-1 /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server kafka-1:19092 --topic demo --group g1 --property print.partition=true
 
-# Terminal C — xem group chia partition thế nào
+# Terminal C — see how the group divides the partitions
 docker exec kafka-1 /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server kafka-1:19092 --describe --group g1
 ```
 
-**Kết quả** — khi mới có **một** consumer, nó ôm cả 3 partition:
+**Result** — with only **one** consumer, it holds all 3 partitions:
 
 ```
 GROUP  TOPIC  PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG  CONSUMER-ID
@@ -288,7 +287,7 @@ g1     demo   1          12              12              0    console-consumer-5
 g1     demo   2          0               0               0    console-consumer-5e1b35cd-...
 ```
 
-**Kết quả** — sau khi bật consumer thứ hai, partition 2 **chuyển chủ** sang `...90bf879f`:
+**Result** — after starting a second consumer, partition 2 **changes owner** to `...90bf879f`:
 
 ```
 g1     demo   0          0               0               0    console-consumer-5e1b35cd-...
@@ -296,24 +295,24 @@ g1     demo   1          12              12              0    console-consumer-5
 g1     demo   2          0               0               0    console-consumer-90bf879f-...
 ```
 
-Ctrl-C consumer thứ hai, đợi ~5 giây rồi chạy lại `--describe`: partition quay về consumer
-còn lại. Đó là **rebalance**.
+Ctrl-C the second consumer, wait ~5 seconds and run `--describe` again: the partition returns to the remaining
+consumer. That's a **rebalance**.
 
-### Consumer chạy mà không in gì ra?
+### The consumer runs but prints nothing?
 
-Không phải treo. **`--from-beginning` chỉ có tác dụng khi group CHƯA TỪNG commit offset.**
-Group đã có vị trí lưu thì cờ đó bị bỏ qua, consumer nhảy thẳng tới cuối log và ngồi đợi
-message mới. Cách chữa: gửi thêm message, hoặc tua group về đầu (bài 7).
+It isn't stuck. **`--from-beginning` only takes effect when the group has NEVER committed an offset.**
+Once the group has a stored position, that flag is ignored, the consumer jumps straight to the end of the log
+and waits for new messages. The fix: send more messages, or rewind the group to the start (exercise 7).
 
-### Luật cốt lõi
+### The core rule
 
-Trong **một** consumer group, một partition chỉ thuộc về **đúng một** consumer. Suy ra
-**số consumer hữu ích tối đa = số partition** — consumer thứ 4 trên topic 3 partition sẽ
-ngồi không. Muốn scale thêm phải thêm partition, mà thêm partition thì gãy ánh xạ key ở
-bài 3. Hai ràng buộc này dính nhau, phải quyết **trước khi** lên production. Xem
-[case study rebalance liên tục](../case-studies/rebalance-lien-tuc.md).
+Within **one** consumer group, a partition belongs to **exactly one** consumer. Which implies
+**the maximum useful consumer count = the partition count** — a 4th consumer on a 3-partition topic will
+sit idle. To scale further you have to add partitions, and adding partitions breaks the key mapping from
+exercise 3. These two constraints are joined at the hip and must be decided **before** you go to production. See the
+[continuous rebalancing case study](../case-studies/rebalance-lien-tuc.md).
 
-## Bài 5 — Compaction giữ bản mới nhất mỗi key
+## Exercise 5 — Compaction keeps the latest value per key
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19092 \
@@ -330,7 +329,7 @@ docker exec kafka-1 /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server 
   --property print.key=true --property print.offset=true
 ```
 
-**Kết quả** — đọc **ngay** sau khi gửi, cả ba bản của `k1` vẫn còn:
+**Result** — reading **immediately** after sending, all three values of `k1` are still there:
 
 ```
 Offset:0  k1  v1
@@ -339,7 +338,7 @@ Offset:2  k1  v3
 Offset:3  k2  w1
 ```
 
-Gửi thêm để segment đang ghi đóng lại, đợi ~30 giây cho log cleaner chạy:
+Send more so the segment being written closes, then wait ~30 seconds for the log cleaner to run:
 
 ```bash
 printf 'k3:z1\nk4:z2\nk1:v4\n' | docker exec -i kafka-1 \
@@ -348,7 +347,7 @@ printf 'k3:z1\nk4:z2\nk1:v4\n' | docker exec -i kafka-1 \
 sleep 30
 ```
 
-**Kết quả** — đọc lại:
+**Result** — reading again:
 
 ```
 Offset:2  k1  v3
@@ -358,22 +357,22 @@ Offset:5  k4  z2
 Offset:6  k1  v4
 ```
 
-Hai điều quan trọng, cả hai đều hay làm người ta hoảng:
+Two important things, both of which tend to alarm people:
 
-1. **Offset 0 và 1 biến mất** — `k1:v1` và `k1:v2` đã bị dọn. Log compacted có **lỗ hổng
-   offset**; offset vẫn tăng đơn điệu nhưng **không còn liên tục**. Code nào giả định
-   `offset + 1` là message kế tiếp sẽ sai.
-2. **`k1` vẫn xuất hiện HAI lần** (offset 2 và offset 6). Compaction chỉ hứa *"bản mới nhất
-   của mỗi key sẽ không bị xoá"*, **không hứa** *"mỗi key chỉ còn đúng một bản"*. Segment
-   đang ghi không bao giờ được compact, nên bản mới luôn nằm ngoài tầm dọn dẹp.
+1. **Offsets 0 and 1 have vanished** — `k1:v1` and `k1:v2` were cleaned up. A compacted log has **offset
+   gaps**; offsets still increase monotonically but are **no longer contiguous**. Any code assuming
+   `offset + 1` is the next message will be wrong.
+2. **`k1` still appears TWICE** (offset 2 and offset 6). Compaction only promises *"the latest value of
+   each key will not be deleted"*, it **does not promise** *"each key has exactly one value left"*. The
+   segment being written is never compacted, so the newest value is always out of the cleaner's reach.
 
-Hệ quả cho người viết consumer: đọc topic compacted phải **lấy bản có offset lớn nhất cho
-mỗi key**, không được giả định gặp key nào là giá trị cuối. Chi tiết ở
-[case study compaction không như mong đợi](../case-studies/compaction-khong-nhu-mong-doi.md).
+The consequence for whoever writes the consumer: reading a compacted topic must **take the value with the largest
+offset for each key**, never assuming the first occurrence of a key is its final value. The details are in the
+[case study on compaction not behaving as expected](../case-studies/compaction-khong-nhu-mong-doi.md).
 
-## Bài 6 — `acks` và `min.insync.replicas`
+## Exercise 6 — `acks` and `min.insync.replicas`
 
-Bài quan trọng nhất, và là lý do phải dựng 3 broker.
+The most important exercise, and the reason you had to stand up 3 brokers.
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19092 \
@@ -381,13 +380,13 @@ docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19
   --config min.insync.replicas=3
 ```
 
-**Kết quả** — lúc khoẻ, ISR đủ 3:
+**Result** — while healthy, the ISR has all 3:
 
 ```
 Topic: dur2  Partition: 0  Leader: 2  Replicas: 2,3,1  Isr: 2,3,1  Elr:   LastKnownElr:
 ```
 
-Ghi một message lúc khoẻ (console producer mặc định `acks=all`):
+Write a message while healthy (the console producer defaults to `acks=all`):
 
 ```bash
 printf 'msg-khoe\n' | docker exec -i kafka-1 \
@@ -397,9 +396,9 @@ docker exec kafka-1 /opt/kafka/bin/kafka-get-offsets.sh \
   --bootstrap-server kafka-1:19092 --topic dur2 --time latest
 ```
 
-**Kết quả:** `dur2:0:1` — vào bình thường.
+**Result:** `dur2:0:1` — it went in normally.
 
-### Giết một broker
+### Kill one broker
 
 ```bash
 docker stop kafka-3
@@ -408,27 +407,27 @@ docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19
   --describe --topic dur2
 ```
 
-**Kết quả** — ISR co từ 3 xuống 2, broker 3 rơi vào `Elr`:
+**Result** — the ISR shrinks from 3 to 2, and broker 3 falls into `Elr`:
 
 ```
 Topic: dur2  Partition: 0  Leader: 2  Replicas: 2,3,1  Isr: 2,1  Elr: 3  LastKnownElr:
 ```
 
-### Ghi với `acks=all` khi ISR thiếu
+### Writing with `acks=all` while the ISR is short
 
 ```bash
 printf 'msg-acks-all-luc-yeu\n' | docker exec -i kafka-1 \
   /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka-1:19092 --topic dur2
 ```
 
-**Kết quả** — bị chặn thẳng, retry ba lần rồi bỏ:
+**Result** — blocked outright, three retries and then given up:
 
 ```
 WARN [Producer clientId=console-producer] Got error produce response ... on topic-partition
 dur2-0, retrying (2 attempts left). Error: NOT_ENOUGH_REPLICAS
 ```
 
-Log broker nói rõ nguyên nhân:
+The broker log states the cause plainly:
 
 ```
 ERROR [ReplicaManager broker=1] Error processing append operation on partition dur2-0
@@ -436,9 +435,9 @@ org.apache.kafka.common.errors.NotEnoughReplicasException: The size of the curre
 is insufficient to satisfy the min.isr requirement of 3 for partition dur2-0
 ```
 
-Offset đứng yên `dur2:0:1`. **Message này không bao giờ tồn tại** — producer biết mình thất bại.
+The offset stays at `dur2:0:1`. **That message never exists** — the producer knows it failed.
 
-### Ghi với `acks=1` trong cùng hoàn cảnh
+### Writing with `acks=1` in the same circumstances
 
 ```bash
 printf 'msg-acks-1-luc-yeu\n' | docker exec -i kafka-1 \
@@ -446,25 +445,25 @@ printf 'msg-acks-1-luc-yeu\n' | docker exec -i kafka-1 \
   --request-required-acks 1
 ```
 
-**Kết quả** — producer **không báo lỗi gì**, coi như thành công. Nhưng offset vẫn `dur2:0:1`
-và consumer chỉ đọc được:
+**Result** — the producer reports **no error at all**, treating it as a success. But the offset is still `dur2:0:1`
+and the consumer can only read:
 
 ```
 Offset:0  msg-khoe
 ```
 
-Message vừa ghi **không đọc được**. Nó đã nằm trong log của leader nhưng *high watermark*
-chưa nhích, vì ISR (2) chưa đạt `min.insync.replicas` (3) — mà consumer chỉ được đọc tới
+The message just written **can't be read**. It's in the leader's log but the *high watermark* hasn't
+moved, because the ISR (2) doesn't meet `min.insync.replicas` (3) — and a consumer may only read up to the
 high watermark.
 
-### Bật lại broker
+### Bring the broker back
 
 ```bash
 docker start kafka-3
 sleep 25
 ```
 
-**Kết quả** — ISR về 3, high watermark nhảy `1 → 2`, message ẩn hiện ra:
+**Result** — the ISR returns to 3, the high watermark jumps `1 → 2`, and the hidden message appears:
 
 ```
 Topic: dur2  Partition: 0  Leader: 2  Replicas: 2,3,1  Isr: 1,2,3  Elr:   LastKnownElr:
@@ -473,28 +472,28 @@ Offset:0  msg-khoe
 Offset:1  msg-acks-1-luc-yeu
 ```
 
-`msg-acks-all-luc-yeu` **không bao giờ xuất hiện** — đúng như thiết kế.
+`msg-acks-all-luc-yeu` **never appears** — exactly as designed.
 
-### Rút ra
+### The takeaway
 
 | | `acks=all` | `acks=1` |
 |---|---|---|
-| Khi ISR thiếu | **Từ chối**, producer nhận `NOT_ENOUGH_REPLICAS` | **Nhận**, producer tưởng thành công |
-| Ứng dụng biết mình mất dữ liệu? | **Có** — retry hoặc báo lỗi được | **Không** — im lặng đi tiếp |
-| Dữ liệu sống nếu leader chết ngay sau đó? | Có, đã nằm trên ≥ `min.isr` bản | **Không đảm bảo** |
+| When the ISR is short | **Refuses**, the producer gets `NOT_ENOUGH_REPLICAS` | **Accepts**, the producer thinks it succeeded |
+| Does the application know it lost data? | **Yes** — it can retry or report an error | **No** — it moves on in silence |
+| Does the data survive if the leader dies right after? | Yes, it's on ≥ `min.isr` copies | **No guarantee** |
 
-`acks=1` không phải "nhanh hơn một chút". Nó là **đánh đổi lấy sự im lặng**: bạn mất khả
-năng biết mình vừa mất dữ liệu. Xem
-[case study mất dữ liệu với acks=1](../case-studies/mat-du-lieu-acks-1.md).
+`acks=1` isn't "slightly faster". It's **trading correctness for silence**: you lose the ability to know
+you just lost data. See the
+[case study on losing data with acks=1](../case-studies/mat-du-lieu-acks-1.md).
 
-Đôi `acks=all` + `min.insync.replicas=2` (với RF=3) là cấu hình bền đúng: chịu được **một**
-broker chết mà vẫn ghi được, và không bao giờ nhận ghi khi chỉ còn một bản.
+The pair `acks=all` + `min.insync.replicas=2` (with RF=3) is the correct durable configuration: it survives
+**one** broker dying while still accepting writes, and never accepts a write when only one copy remains.
 
-> **Chưa chạy:** thí nghiệm giết **leader** ngay sau khi ghi bằng `acks=1` để chứng minh
-> dữ liệu **mất hẳn** (chứ không chỉ tạm ẩn) chưa làm trong lần này — nó cần khống chế
-> thời điểm follower fetch. Trong lab trên, leader không chết nên dữ liệu vẫn còn.
+> **Not run:** the experiment of killing the **leader** right after writing with `acks=1` to prove the
+> data is **lost outright** (not merely temporarily hidden) wasn't done this time — it requires controlling
+> the moment the followers fetch. In the lab above the leader didn't die, so the data was still there.
 
-## Bài 7 — Đo lag và tua offset
+## Exercise 7 — Measuring lag and rewinding offsets
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19092 \
@@ -503,7 +502,7 @@ docker exec kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-1:19
 seq 1 100 | docker exec -i kafka-1 /opt/kafka/bin/kafka-console-producer.sh \
   --bootstrap-server kafka-1:19092 --topic t-lag
 
-# cho group đọc đúng 10 message rồi dừng
+# let the group read exactly 10 messages then stop
 docker exec kafka-1 /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka-1:19092 \
   --topic t-lag --group g-lag --max-messages 10 --from-beginning
 
@@ -511,24 +510,25 @@ docker exec kafka-1 /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server kafka-1:19092 --describe --group g-lag
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 GROUP  TOPIC  PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG  CONSUMER-ID
 g-lag  t-lag  0          10              100             90   -
 ```
 
-`LAG = LOG-END-OFFSET − CURRENT-OFFSET = 90` — số message còn nợ. Đây là **chỉ số sức khoẻ
-số một**: lag tăng đều nghĩa là consumer xử lý chậm hơn tốc độ ghi, sớm muộn cũng vỡ.
+`LAG = LOG-END-OFFSET − CURRENT-OFFSET = 90` — the number of messages owed. This is **the number-one
+health metric**: steadily rising lag means the consumer is processing slower than the write rate, and it
+will break sooner or later.
 
-Tua về đầu log:
+Rewind to the start of the log:
 
 ```bash
 docker exec kafka-1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka-1:19092 \
   --group g-lag --topic t-lag --reset-offsets --to-earliest --execute
 ```
 
-**Kết quả:**
+**Result:**
 
 ```
 GROUP  TOPIC  PARTITION  NEW-OFFSET
@@ -538,45 +538,45 @@ GROUP  TOPIC  PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG
 g-lag  t-lag  0          0               100             100
 ```
 
-Nếu group còn consumer đang chạy, lệnh này **từ chối**:
+If the group still has a running consumer, this command **refuses**:
 
 ```
 Error: Assignments can only be reset if the group 'g1' is inactive,
 but the current state is Stable
 ```
 
-Kafka cấm tua offset dưới chân một consumer đang chạy. Tắt hết consumer rồi tua lại.
+Kafka forbids rewinding offsets out from under a running consumer. Stop every consumer and rewind again.
 
-Đổi `--execute` thành `--dry-run` để xem trước mà không đổi gì. Đọc lại quá khứ là chuyện
-**bình thường** với Kafka — sửa bug xong tua lại xử lý từ đầu, dựng service mới đọc lại
-toàn bộ lịch sử. Với hàng đợi thì không tưởng.
+Change `--execute` to `--dry-run` to preview without changing anything. Re-reading the past is **normal**
+with Kafka — fix a bug, rewind and reprocess from the start; stand up a new service and read the whole
+history. With a queue that would be unthinkable.
 
-## Phụ lục — cảnh báo deprecated ở Kafka 4.3.1
+## Appendix — deprecation warnings in Kafka 4.3.1
 
-Các lệnh trên in cảnh báo, **không phải lỗi**, nhưng nên biết để đổi dần:
+The commands above print warnings, **not errors**, but you should know them to migrate gradually:
 
-| Đang dùng | Sẽ bị bỏ, thay bằng |
+| Currently using | Will be dropped, replaced by |
 |---|---|
 | `--property` (console consumer) | `--formatter-property` |
 | `--property` (console producer) | `--reader-property` |
 | `--producer-property` | `--command-property` |
 
-Riêng `--producer-property acks=1` **không có tác dụng** với console producer — phải dùng
-cờ riêng `--request-required-acks 1`. Đây là chỗ dễ mất cả buổi để tưởng rằng `acks=1`
-cũng bị `min.insync.replicas` chặn.
+Note that `--producer-property acks=1` has **no effect** on the console producer — you must use the
+dedicated `--request-required-acks 1` flag. This is the place where you can easily lose half a day
+assuming `acks=1` is also blocked by `min.insync.replicas`.
 
-## Dọn dẹp
+## Cleanup
 
 ```bash
 cd ~/Documents/learn-lab/kafka
-docker compose down -v   # -v xoá luôn volume dữ liệu
+docker compose down -v   # -v also removes the data volumes
 ```
 
 ## Related Topics
 
-- [Consumer group và rebalance](../skills/consumer-groups.md) — lý thuyết cho bài 4
-- [Retention và compaction](../reference/retention-compaction.md) — lý thuyết cho bài 5
-- [Replication và độ bền](../reference/replication-durability.md) — lý thuyết cho bài 6
-- [Delivery semantics](../reference/delivery-semantics.md) — `acks`, idempotence, transaction
-- [Kafka CLI và config](../cheatsheets/cli-and-config.md) — tra nhanh các lệnh dùng trong lab
-- [Kafka](../index.md) — chủ đề chứa bài tập này
+- [Consumer groups and rebalance](../skills/consumer-groups.md) — the theory for exercise 4
+- [Retention and compaction](../reference/retention-compaction.md) — the theory for exercise 5
+- [Replication and durability](../reference/replication-durability.md) — the theory for exercise 6
+- [Delivery semantics](../reference/delivery-semantics.md) — `acks`, idempotence, transactions
+- [Kafka CLI and config](../cheatsheets/cli-and-config.md) — a quick lookup for the commands used in the lab
+- [Kafka](../index.md) — the topic these exercises belong to

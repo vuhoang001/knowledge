@@ -1,9 +1,8 @@
 ---
-title: Bài tập — Kafka
-i18n_status: untranslated
+title: Exercises — Kafka
 sidebar_key: kafka-tutorials
 sidebar_position: 0
-description: "Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học."
+description: "Really run, with boxes to paste output into. If you couldn't run it, you haven't learnt it."
 tags: [tutorial, kafka]
 domain: data-engineering
 category: index
@@ -11,14 +10,14 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Bài tập — Kafka
+# Exercises — Kafka
 
-Chạy thật bằng Docker, **dán output vào ô Kết quả**. Đọc hiểu không tính.
+Really run with Docker, **pasting the output into the Result box**. Reading and understanding doesn't count.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [Lab Kafka trên Docker](kafka-lab.md) | Dựng 1 broker, produce/consume, xem rebalance và compaction tận mắt | 📝 |
+| 1 | [Kafka lab on Docker](kafka-lab.md) | Stand up 1 broker, produce/consume, see rebalancing and compaction with your own eyes | 📝 |
 
 ## Related Topics
 
-- [Kafka](../index.md) — chủ đề chứa thư mục này
+- [Kafka](../index.md) — the topic this directory belongs to

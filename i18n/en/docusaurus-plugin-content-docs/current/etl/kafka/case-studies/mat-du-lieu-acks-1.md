@@ -1,8 +1,7 @@
 ---
-title: Mất dữ liệu với acks=1
-i18n_status: untranslated
+title: Losing data with acks=1
 sidebar_position: 3
-description: "Leader chết trước khi follower kịp sao chép — message đã báo thành công biến mất."
+description: "The leader dies before a follower copies — and a message reported as successful vanishes."
 tags: [kafka, acks, durability, replication, isr]
 domain: data-engineering
 category: technology
@@ -13,77 +12,77 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Mất dữ liệu với acks=1
+# Losing data with acks=1
 
-> **Chốt:** Với `acks=1`, producer coi là "thành công" ngay khi *leader* nhận — nếu leader chết trước khi follower kịp replicate, follower lên leader và message đó biến mất, dù producer đã báo OK.
+> **Takeaway:** with `acks=1`, the producer counts it a "success" the moment the *leader* receives it — if the leader dies before a follower has replicated, that follower becomes leader and the message vanishes, even though the producer reported OK.
 
-## Nhãn
+## Label
 
-**Tình huống dựng lại** — số liệu là **minh hoạ, chưa chạy trên cluster**, nhưng nhất quán trong bài.
+**A reconstructed situation** — the figures are **illustrative, not run on a cluster**, but internally consistent.
 
-## Bối cảnh
+## Context
 
-Topic `payments` có `replication.factor=3`. Producer cấu hình `acks=1` (mặc định lịch sử của nhiều client cũ). Ứng dụng đọc `RecordMetadata` trả về, log "gửi thành công" và coi như xong.
+The `payments` topic has `replication.factor=3`. The producer is configured with `acks=1` (the historical default of many older clients). The application reads the returned `RecordMetadata`, logs "sent successfully" and considers it done.
 
-Trong một lần bảo trì / lỗi phần cứng, broker đang là **leader** của một vài partition bị restart đúng lúc tải cao.
+During one maintenance window / hardware fault, the broker that was **leader** of a few partitions restarted exactly at high load.
 
-## Triệu chứng
+## Symptoms
 
-*Số minh hoạ — chưa chạy:*
+*Illustrative numbers — not run:*
 
-- Đối soát cuối ngày: **producer log gửi 1.000.000 record**, consumer chỉ đọc được **999.987**. Lệch **13 record**.
-- Toàn bộ 13 record lệch có timestamp nằm trong **cửa sổ ~2 giây quanh một lần leader election** (thấy trong controller log).
-- Không có lỗi nào phía producer — mọi record đều nhận `RecordMetadata`, không exception.
+- The end-of-day reconciliation: **the producer logged 1,000,000 records sent**, while the consumer only read **999,987**. A gap of **13 records**.
+- All 13 missing records have timestamps inside a **~2 second window around one leader election** (visible in the controller log).
+- No error on the producer side — every record got a `RecordMetadata`, with no exception.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-1. **Nghi producer không gửi.** Rà lại: producer có `RecordMetadata` cho cả 13 record → *đã* gửi và *đã* được leader nhận. Loại.
-2. **Nghi consumer bỏ sót.** Reset offset đọc lại từ đầu partition — vẫn không có 13 record đó trên đĩa. Không phải consumer.
-3. **Nghi retention xoá mất.** Kiểm `retention.ms` — dữ liệu mới vài giờ, chưa tới hạn xoá. Loại.
+1. **Suspecting the producer never sent them.** On review: the producer had `RecordMetadata` for all 13 records → they *were* sent and *were* received by the leader. Ruled out.
+2. **Suspecting the consumer skipped them.** Resetting the offset to re-read the partition from the start — those 13 records still weren't on disk. Not the consumer.
+3. **Suspecting retention deleted them.** Checking `retention.ms` — the data was hours old, nowhere near the deletion deadline. Ruled out.
 
-Chỗ mất thời gian: cả ba giả thuyết giả định "message có trên broker". Sự thật là nó **chưa bao giờ được ghi bền** — leader nhận rồi chết trước khi ai sao chép.
+Where the time went: all three hypotheses assumed "the message is on the broker". The truth is it was **never durably written** — the leader received it and died before anybody copied it.
 
-## Nguyên nhân thật
+## The real cause
 
-`acks=1` chỉ chờ **leader** ghi vào log của nó, *không* chờ follower. Chuỗi mất dữ liệu:
+`acks=1` only waits for the **leader** to write to its own log, *not* for the followers. The data-loss chain:
 
-1. Producer gửi → leader ghi vào log → trả ack. Producer báo thành công.
-2. Leader crash **trước khi** follower kéo bản sao đó.
-3. Một follower (chưa có message đó) lên làm leader.
-4. Message không tồn tại ở leader mới → mất vĩnh viễn.
+1. The producer sends → the leader writes to its log → returns an ack. The producer reports success.
+2. The leader crashes **before** any follower pulls that copy.
+3. A follower (which doesn't have the message) becomes the leader.
+4. The message doesn't exist on the new leader → lost permanently.
 
-`replication.factor=3` **không cứu** được, vì `acks=1` không đợi replicate. Độ bền do `acks` quyết định, không phải chỉ do số replica.
+`replication.factor=3` **doesn't save** you, because `acks=1` doesn't wait for replication. Durability is decided by `acks`, not by the replica count alone.
 
-## Cách sửa
+## The fix
 
-1. **Producer chờ đủ replica trong ISR xác nhận:**
+1. **Have the producer wait for enough in-sync replicas to confirm:**
 
    ```properties
    acks=all
    enable.idempotence=true
    ```
 
-2. **Topic/broker bắt buộc tối thiểu 2 replica bắt kịp:**
+2. **Have the topic/broker require at least 2 caught-up replicas:**
 
    ```properties
    min.insync.replicas=2
    ```
 
-   Với `acks=all` + `min.insync.replicas=2`: ghi chỉ thành công khi ít nhất 2 replica có message. Leader chết thì replica còn lại (đã có message) lên leader — không mất.
+   With `acks=all` + `min.insync.replicas=2`: a write only succeeds when at least 2 replicas hold the message. If the leader dies, the remaining replica (which has the message) becomes leader — nothing lost.
 
-3. **Cấm bầu leader từ replica lạc hậu:**
+3. **Forbid electing a leader from a stale replica:**
 
    ```properties
    unclean.leader.election.enable=false
    ```
 
-   Ngăn một follower *ngoài* ISR (thiếu dữ liệu) được lên leader — đó là con đường mất dữ liệu còn lại.
+   This stops a follower *outside* the ISR (missing data) from becoming leader — the remaining route to data loss.
 
-Đánh đổi: `acks=all` tăng latency ghi và, khi số replica sống tụt dưới `min.insync.replicas`, producer sẽ **fail** (`NotEnoughReplicas`) thay vì âm thầm mất — đây là hành vi *đúng* cho dữ liệu quan trọng.
+The trade-off: `acks=all` increases write latency and, when the live replica count drops below `min.insync.replicas`, the producer will **fail** (`NotEnoughReplicas`) rather than silently lose data — which is the *correct* behaviour for important data.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-Đối soát **đếm gửi vs nhận quanh mỗi lần leader election**:
+Reconcile the **sent vs received counts around each leader election**:
 
 ```bash
 # xem lịch sử đổi leader; nếu số lệch producer/consumer bám sát các mốc này → nghi acks
@@ -91,10 +90,10 @@ kafka-topics --bootstrap-server localhost:9092 --describe --topic payments
 # so Leader vs Replicas vs Isr: Isr co lại đúng lúc mất dữ liệu là dấu hiệu
 ```
 
-Cảnh báo sớm nhất: alert khi `min.insync.replicas` không đạt, và kiểm mọi topic quan trọng đang chạy `acks=1`.
+The earliest warning: alert when `min.insync.replicas` isn't met, and audit every important topic still running `acks=1`.
 
 ## Related Topics
 
-- [Replication và độ bền](../reference/replication-durability.md) — ISR, `min.insync.replicas`, vì sao `acks` quyết định độ bền
-- [Producer tuning](../skills/producer-tuning.md) — chọn `acks`, `enable.idempotence`
-- [Kafka](../index.md) — chủ đề chứa case study này
+- [Replication and durability](../reference/replication-durability.md) — the ISR, `min.insync.replicas`, why `acks` decides durability
+- [Producer tuning](../skills/producer-tuning.md) — choosing `acks`, `enable.idempotence`
+- [Kafka](../index.md) — the topic this case study belongs to
