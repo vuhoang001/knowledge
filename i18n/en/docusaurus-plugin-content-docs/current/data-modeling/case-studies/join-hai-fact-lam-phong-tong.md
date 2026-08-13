@@ -1,8 +1,7 @@
 ---
-title: Doanh thu phồng 67% vì join hai bảng fact
-i18n_status: untranslated
+title: Revenue 67% inflated by joining two fact tables
 sidebar_position: 2
-description: Đối chiếu đơn hàng với thanh toán bằng một câu join — tổng nhảy từ 1,5 lên 2,5 triệu. Kèm ba dạng fan trap, header-detail và chasm trap.
+description: Reconciling orders against payments with one join — the total jumps from 1.5 to 2.5 million. With the three fan-trap forms, header-detail and the chasm trap.
 tags: [case-study, fact, grain, fan-trap, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,17 +12,17 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Doanh thu phồng 67% vì join hai bảng fact
+# Revenue 67% inflated by joining two fact tables
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. **Mọi con số chạy thật trên
+> **A reconstructed situation**, not an incident encountered here. **Every number was really run on
 > DuckDB.**
 
-> **Chốt:** Hai fact khác grain join trực tiếp là **nhân bản dòng**. Bên "một" bị lặp
-> theo số dòng của bên "nhiều", và mọi `sum()` trên bên đó phồng lên.
+> **Takeaway:** joining two facts of different grain directly **duplicates rows**. The "one" side repeats
+> once per row on the "many" side, and every `sum()` over that side inflates.
 
-## Bối cảnh
+## Context
 
-Cần báo cáo *"đơn hàng nào đã thu đủ tiền chưa"*. Có hai bảng fact:
+You need a report on *"which orders have been fully paid"*. There are two fact tables:
 
 ```sql
 CREATE TABLE fct_don_hang AS SELECT * FROM (VALUES
@@ -38,7 +37,7 @@ CREATE TABLE fct_thanh_toan AS SELECT * FROM (VALUES
  AS t(ma_don, ma_tt, so_tien);            -- grain: MỘT LẦN THANH TOÁN
 ```
 
-Tổng thật, kiểm riêng từng bảng:
+The real totals, checked per table:
 
 ```text
 ┌──────────┬─────────┐
@@ -48,11 +47,11 @@ Tổng thật, kiểm riêng từng bảng:
 └──────────┴─────────┘
 ```
 
-Khớp. Cả hai bên đều đúng.
+Matching. Both sides are correct.
 
-## Triệu chứng
+## Symptoms
 
-Câu join nghe hoàn toàn hợp lý:
+The join sounds entirely reasonable:
 
 ```sql
 SELECT sum(d.thanh_tien) AS tong_don_hang, sum(t.so_tien) AS tong_thanh_toan
@@ -67,24 +66,24 @@ FROM fct_don_hang d JOIN fct_thanh_toan t USING (ma_don);
 └───────────────────┴─────────────────┘
 ```
 
-**Doanh thu 1.500.000 thành 2.500.000** — phồng 67%. Trong khi tổng thanh toán vẫn đúng.
+**Revenue of 1,500,000 becomes 2,500,000** — 67% inflated. While the payment total stays correct.
 
-Điều làm nó khó chịu: *một* trong hai cột đúng. Nếu cả hai cùng sai thì đã nghi ngay.
+What makes it irritating: *one* of the two columns is right. Had both been wrong, it would have been suspected immediately.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Vì sao nghĩ vậy | Thực tế |
+| Suspected | Why | The reality |
 |---|---|---|
-| Dữ liệu thanh toán bị nhân bản | Tổng đơn hàng phồng | Không — tổng thanh toán vẫn đúng 1,5tr |
-| Có đơn hàng trùng trong nguồn | Số cao hơn dự kiến | `count(distinct ma_don)` = 2, đúng |
-| `JOIN` sai điều kiện | Phản xạ đầu tiên | `ma_don` đúng là khoá nối |
-| Sai kiểu dữ liệu tiền | Hay gặp | Không liên quan |
+| The payment data is duplicated | The order total inflated | No — the payment total is still exactly 1.5m |
+| There are duplicate orders in the source | The number is higher than expected | `count(distinct ma_don)` = 2, correct |
+| The `JOIN` condition is wrong | The first reflex | `ma_don` really is the joining key |
+| A wrong money data type | Common enough | Irrelevant |
 
-Mất thời gian vì đi tìm **dữ liệu bẩn**. Dữ liệu sạch hoàn toàn — **câu query** mới sai.
+The time goes looking for **dirty data**. The data is entirely clean — the **query** is what's wrong.
 
-## Nguyên nhân thật
+## The real cause
 
-Bung câu join ra để nhìn từng dòng:
+Expand the join to see the individual rows:
 
 ```text
 ma_don | thanh_tien | ma_tt | so_tien
@@ -93,32 +92,32 @@ DH001  |  1000000   | TT-2  | 600000    ← 1.000.000 xuất hiện lần 2
 DH002  |   500000   | TT-3  | 500000
 ```
 
-`DH001` có **hai** lần thanh toán, nên dòng đơn hàng của nó bị lặp **hai** lần. `sum()`
-cộng 1.000.000 hai lần → 2.000.000, cộng thêm 500.000 → 2.500.000.
+`DH001` has **two** payments, so its order row repeats **twice**. `sum()`
+adds 1,000,000 twice → 2,000,000, plus 500,000 → 2,500,000.
 
-Đây là **fan trap**: join một-nhiều rồi cộng ở phía "một".
+This is a **fan trap**: a one-to-many join followed by summing on the "one" side.
 
-Gốc rễ là [grain](../reference/grain.md): `fct_don_hang` có grain *một đơn*,
-`fct_thanh_toan` có grain *một lần thanh toán*. Chúng **không cùng grain**, nên không
-join trực tiếp được.
+The root is [grain](../reference/grain.md): `fct_don_hang` has the grain *one order* while
+`fct_thanh_toan` has the grain *one payment*. They're **not at the same grain**, so they can't be
+joined directly.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique` trên `ma_don` của `fct_don_hang` | ✅ xanh |
-| `unique` trên `ma_tt` của `fct_thanh_toan` | ✅ xanh |
-| `relationships` thanh toán → đơn hàng | ✅ xanh |
-| `not_null` mọi cột | ✅ xanh |
+| `unique` on `fct_don_hang`'s `ma_don` | ✅ green |
+| `unique` on `fct_thanh_toan`'s `ma_tt` | ✅ green |
+| `relationships` payments → orders | ✅ green |
+| `not_null` on every column | ✅ green |
 
-Cả hai **bảng** đều hoàn hảo. Lỗi nằm ở **câu query đọc chúng** — mà test dbt chỉ kiểm
-bảng, không kiểm query của người dùng cuối.
+Both **tables** are perfect. The bug is in **the query reading them** — and dbt tests only check
+tables, not end users' queries.
 
-Đây là lý do bảng mart phải được dựng sẵn đúng cách, thay vì để mỗi người tự join.
+This is why a mart table must be pre-built correctly rather than left for everybody to join themselves.
 
-## Cách sửa
+## The fix
 
-**Cộng về cùng grain trước, rồi mới ghép:**
+**Aggregate to the same grain first, then combine:**
 
 ```sql
 WITH tt AS (
@@ -137,23 +136,23 @@ FROM fct_don_hang d JOIN tt USING (ma_don);
 └───────────────┴─────────────────┘
 ```
 
-Đúng cả hai. Nguyên tắc: **gộp bên "nhiều" về grain của bên "một" trước khi join.**
+Both correct. The principle: **aggregate the "many" side to the "one" side's grain before joining.**
 
-Cách thứ hai, khi cần so nhiều chiều: cộng riêng mỗi fact về **cùng một mức**, rồi ghép
-theo dimension chung — gọi là *drill-across*, xem
-[Conformed dimension](../skills/conformed-dimension.md).
+A second approach, when you need several dimensions: aggregate each fact separately to **the same
+level** and then combine on the shared dimension — called *drilling across*, see
+[Conformed dimensions](../skills/conformed-dimension.md).
 
-## Ba dạng, nhận ra để tránh
+## The three forms, recognised so you can avoid them
 
-Ca ở trên là dạng 1. Hai dạng còn lại cùng gốc nhưng triệu chứng khác nhau.
+The case above is form 1. The other two share the root cause but present differently.
 
-### Dạng 1 — Fan trap: một-nhiều, cộng ở phía "một"
+### Form 1 — the fan trap: one-to-many, summing on the "one" side
 
-Đã trình bày ở trên. Đặc điểm: **chỉ một trong hai cột sai**, nên dễ bị bỏ qua.
+Presented above. The characteristic: **only one of the two columns is wrong**, so it's easily missed.
 
-### Dạng 2 — Header ↔ detail: dạng hay gặp nhất thực tế
+### Form 2 — header ↔ detail: the commonest form in practice
 
-Đơn hàng có phí ship ở mức **đơn**, và các dòng hàng ở mức **dòng**:
+An order has a shipping fee at the **order** level and line items at the **line** level:
 
 ```sql
 CREATE TABLE fct_don  AS SELECT * FROM (VALUES
@@ -164,7 +163,7 @@ CREATE TABLE fct_dong AS SELECT * FROM (VALUES
  ('DH2','SP-A',400000)) AS t(ma_don, ma_hang, thanh_tien);     -- grain: MỘT DÒNG
 ```
 
-Phí ship thật: **80.000**. Join rồi cộng:
+The real shipping fee: **80,000**. Join and sum:
 
 ```text
 ┌──────────────┬───────────────┐
@@ -174,19 +173,19 @@ Phí ship thật: **80.000**. Join rồi cộng:
 └──────────────┴───────────────┘
 ```
 
-`DH1` có 3 dòng hàng nên phí ship 30.000 bị cộng **ba lần**. Tiền hàng thì đúng, vì nó
-vốn ở grain dòng.
+`DH1` has 3 line items, so its 30,000 shipping fee is added **three times**. The goods amount is right, because it
+was already at line grain.
 
-Đây là dạng nguy hiểm nhất trong thực tế vì **hai bảng trông như phải join với nhau** —
-chúng cùng mô tả một đơn hàng. Nhưng chúng ở hai grain khác nhau.
+This is the most dangerous form in practice because **the two tables look like they ought to be joined** —
+they both describe the same order. But they're at two different grains.
 
-**Cách sửa:** không nhét phí ship vào cùng báo cáo với chi tiết hàng. Hoặc phân bổ phí
-ship về mức dòng (theo tỷ trọng tiền hàng) — cùng ý tưởng với
-[hệ số của bridge table](../skills/bridge-table.md).
+**The fix:** don't put the shipping fee in the same report as the item detail. Or allocate the shipping
+fee down to line level (weighted by goods amount) — the same idea as
+[the bridge table's factor](../skills/bridge-table.md).
 
-### Dạng 3 — Chasm trap: hai fact **không liên quan**, nối qua dimension chung
+### Form 3 — the chasm trap: two **unrelated** facts connected through a shared dimension
 
-Dạng tệ nhất, và cũng khó nhận ra nhất.
+The worst form, and the hardest to spot.
 
 ```sql
 CREATE TABLE fct_ban    AS SELECT * FROM (VALUES
@@ -196,10 +195,10 @@ CREATE TABLE fct_ho_tro AS SELECT * FROM (VALUES
  ('KH1',1),('KH1',1),('KH1',1),('KH2',1))       AS t(ma_khach, ticket);
 ```
 
-Hai fact này **không có quan hệ gì với nhau** — một cái ghi giao dịch bán, một cái ghi
-ticket hỗ trợ. Chúng chỉ tình cờ cùng tham chiếu `dim_khach_hang`.
+These two facts have **no relationship at all** — one records sales transactions, the other support
+tickets. They merely happen to both reference `dim_khach_hang`.
 
-Giá trị thật: doanh thu **3.500.000**, ticket **4**.
+The real values: revenue **3,500,000**, tickets **4**.
 
 ```sql
 SELECT sum(b.doanh_thu), sum(h.ticket), count(*) AS so_dong_sau_join
@@ -214,18 +213,18 @@ FROM dim_kh k JOIN fct_ban b USING (ma_khach) JOIN fct_ho_tro h USING (ma_khach)
 └───────────────┴────────────┴──────────────────┘
 ```
 
-**Cả hai cột đều sai.** `KH1` có 2 dòng bán × 3 dòng hỗ trợ = **6 dòng tích Descartes**.
+**Both columns are wrong.** `KH1` has 2 sales rows × 3 support rows = **6 Cartesian rows**.
 
-Khác biệt then chốt so với fan trap:
+The key difference from a fan trap:
 
 | | Fan trap | Chasm trap |
 |---|---|---|
-| Quan hệ hai fact | có (một-nhiều) | **không có** |
-| Số cột bị sai | một | **cả hai** |
-| Số dòng sau join | tổng | **tích** |
-| Dễ nhận ra | vừa | **khó** — vì một cột sai thì còn nghi, hai cột cùng sai thì tưởng dữ liệu bẩn |
+| Relationship between the facts | yes (one-to-many) | **none** |
+| Columns affected | one | **both** |
+| Rows after the join | a sum | **a product** |
+| Easy to spot | moderately | **hard** — one wrong column raises suspicion, two wrong columns look like dirty data |
 
-**Cách sửa** — cộng riêng từng fact về mức khách, rồi mới ghép:
+**The fix** — aggregate each fact to customer level separately, then combine:
 
 ```sql
 WITH b AS (SELECT ma_khach, sum(doanh_thu) AS doanh_thu FROM fct_ban    GROUP BY 1),
@@ -242,23 +241,23 @@ FROM b FULL OUTER JOIN h USING (ma_khach);
 └───────────┴────────┘
 ```
 
-`FULL OUTER JOIN` chứ không `JOIN`: khách chỉ mua mà chưa từng gọi hỗ trợ, hoặc ngược
-lại, vẫn phải xuất hiện. Đây chính là **drill-across** — xem
-[Conformed dimension](../skills/conformed-dimension.md).
+`FULL OUTER JOIN` rather than `JOIN`: a customer who only bought and never called support, or vice
+versa, must still appear. This is precisely **drilling across** — see
+[Conformed dimensions](../skills/conformed-dimension.md).
 
-### Luật chung cho cả ba dạng
+### The general rule for all three forms
 
-> **Không bao giờ đặt hai bảng `fct_` trong cùng một `FROM` mà chưa gộp.**
-> Cộng mỗi fact về cùng một mức trước, rồi mới ghép theo dimension chung.
+> **Never put two `fct_` tables in the same `FROM` without aggregating first.**
+> Aggregate each fact to the same level, and only then combine on the shared dimension.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Câu query có **hai bảng tên bắt đầu bằng `fct_`** trong cùng một `FROM` — dấu hiệu
-   mạnh nhất, đúng cho cả ba dạng.
-2. Có `sum()` trên cột của bảng ở phía "một" của quan hệ một-nhiều.
-3. Tổng ra **lớn hơn** kỳ vọng nhưng là bội số kỳ lạ, không tròn.
+1. The query has **two tables whose names start with `fct_`** in one `FROM` — the strongest
+   sign, valid for all three forms.
+2. There's a `sum()` over a column from the table on the "one" side of a one-to-many relationship.
+3. The total comes out **larger** than expected but at an odd, non-round multiple.
 
-**Phép thử rẻ nhất:** đếm số dòng trước và sau join. Tăng lên là đã nhân bản.
+**The cheapest test:** count the rows before and after the join. An increase means duplication happened.
 
 ```sql
 SELECT (SELECT count(*) FROM fct_don_hang) AS truoc,
@@ -267,7 +266,7 @@ SELECT (SELECT count(*) FROM fct_don_hang) AS truoc,
 
 ## Related Topics
 
-- [Grain](../reference/grain.md) — gốc rễ: hai fact khác grain
-- [Fact và Dimension](../reference/fact-and-dimension.md) — vì sao không join fact với fact
-- [Conformed dimension](../skills/conformed-dimension.md) — drill-across, cách ghép đúng
-- [Bridge table](../skills/bridge-table.md) — nhân bản có chủ ý, và hệ số phân bổ để sửa
+- [Grain](../reference/grain.md) — the root: two facts of different grain
+- [Facts and dimensions](../reference/fact-and-dimension.md) — why you don't join a fact to a fact
+- [Conformed dimensions](../skills/conformed-dimension.md) — drilling across, the correct way to combine
+- [Bridge tables](../skills/bridge-table.md) — deliberate duplication, and the allocation factor that fixes it

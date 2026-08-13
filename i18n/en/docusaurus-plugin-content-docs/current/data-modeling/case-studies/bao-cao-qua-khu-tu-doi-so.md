@@ -1,8 +1,7 @@
 ---
-title: Báo cáo tháng 1 tự đổi số vào tháng 4
-i18n_status: untranslated
+title: The January report changing its numbers in April
 sidebar_position: 1
-description: Cùng một báo cáo, cùng một kỳ đã đóng sổ, chạy lại ra số khác — vì dimension là Type 1.
+description: The same report over the same closed period, re-run and giving different numbers — because the dimension is Type 1.
 tags: [case-study, scd, data-modeling, as-was]
 domain: data-engineering
 category: concept
@@ -13,17 +12,17 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Báo cáo tháng 1 tự đổi số vào tháng 4
+# The January report changing its numbers in April
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Nhưng **mọi con số dưới đây
-> chạy thật trên DuckDB** — bạn dán lại là ra y hệt.
+> **A reconstructed situation**, not an incident encountered here. But **every number below
+> was really run on DuckDB** — paste it back and you get exactly the same.
 
-> **Chốt:** Dimension Type 1 làm báo cáo về **quá khứ đã đóng sổ** thay đổi theo thời
-> điểm chạy. Không exception, không test đỏ, không log. Nó giống hệt có người sửa số.
+> **Takeaway:** a Type 1 dimension makes a report about a **closed past** change with when you run
+> it. No exception, no red test, no log. It looks exactly like somebody editing the numbers.
 
-## Bối cảnh
+## Context
 
-Mart doanh thu theo khu vực. `dim_khach_hang` là Type 1 — cập nhật thì **ghi đè**.
+A revenue-by-region mart. `dim_khach_hang` is Type 1 — an update **overwrites**.
 
 ```sql
 CREATE TABLE fct_don AS SELECT * FROM (VALUES
@@ -36,7 +35,7 @@ CREATE TABLE dim_t1 AS SELECT * FROM (VALUES
  ('KH001','Miền Bắc'),('KH002','Miền Nam')) AS t(khach_id, khu_vuc);
 ```
 
-Báo cáo doanh thu tháng 1, chạy vào **tháng 2**:
+The January revenue report, run in **February**:
 
 ```sql
 SELECT d.khu_vuc, sum(f.thanh_tien) AS doanh_thu
@@ -54,17 +53,17 @@ GROUP BY 1 ORDER BY 1;
 └──────────┴───────────┘
 ```
 
-Sếp duyệt. Tháng 1 đóng sổ.
+The boss signs it off. January is closed.
 
-## Triệu chứng
+## Symptoms
 
-Ngày 15/03, `KH001` chuyển vào Nam. Nhân viên sửa hồ sơ — đúng nghiệp vụ, không ai sai.
+On 15 March, `KH001` moves south. A staff member updates the record — correct business practice, nobody at fault.
 
 ```sql
 UPDATE dim_t1 SET khu_vuc = 'Miền Nam' WHERE khach_id = 'KH001';
 ```
 
-Tháng 4, chạy lại **đúng báo cáo đó, đúng kỳ đó**:
+In April, re-running **exactly that report over exactly that period**:
 
 ```text
 ┌──────────┬───────────┐
@@ -74,55 +73,55 @@ Tháng 4, chạy lại **đúng báo cáo đó, đúng kỳ đó**:
 └──────────┴───────────┘
 ```
 
-**Miền Bắc biến mất khỏi báo cáo tháng 1.** Miền Nam từ 3.000.000 thành 8.000.000.
+**The North has vanished from the January report.** The South went from 3,000,000 to 8,000,000.
 
-Không có đơn hàng nào mới. Tháng 1 không đổi một dòng nào trong fact.
+There are no new orders. Not one January row in the fact changed.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-Thứ tự người ta thường nghi, và vì sao đều sai:
+The order people usually suspect things in, and why each is wrong:
 
-| Nghi | Kiểm bằng | Kết quả |
+| Suspected | Checked by | The result |
 |---|---|---|
-| Có đơn hàng mới của tháng 1 nạp muộn | `count(*)` fact trong kỳ | Không đổi |
-| Có ai sửa `fct_don` | so số dòng và tổng | Không đổi |
-| Bộ lọc ngày sai | đọc lại `where` | Đúng |
-| Pipeline chạy lỗi | log dbt | Xanh hết |
+| A late-loaded January order | `count(*)` on the fact in the period | Unchanged |
+| Somebody edited `fct_don` | Comparing the row count and total | Unchanged |
+| A wrong date filter | Re-reading the `where` | Correct |
+| The pipeline failed | The dbt log | All green |
 
-Mất thời gian vì mọi nghi ngờ đều hướng vào **fact**. Fact không hề đổi — **dimension**
-mới là chỗ đổi, và không ai nghĩ dimension ảnh hưởng tới quá khứ.
+The time goes because every suspicion points at the **fact**. The fact didn't change — the **dimension**
+is where the change was, and nobody thinks a dimension affects the past.
 
-## Nguyên nhân thật
+## The real cause
 
-Báo cáo lọc theo `f.ngay` — **thời điểm bán**. Nhưng `khu_vuc` lấy từ dimension ở
-**trạng thái hiện tại**. Câu query đang trộn hai mốc thời gian khác nhau.
+The report filters on `f.ngay` — **the moment of sale**. But `khu_vuc` comes from the dimension in
+**its current state**. The query is mixing two different points in time.
 
-Nói cách khác: query hỏi *"doanh thu tháng 1"* nhưng vô tình trả lời *"doanh thu tháng 1,
-gom theo khu vực **hôm nay**"*.
+Put differently: the query asks *"January revenue"* but inadvertently answers *"January revenue,
+grouped by **today's** region"*.
 
-Với Type 1, "khu vực hôm nay" là thứ duy nhất tồn tại — giá trị cũ đã bị ghi đè, không có
-cách nào lấy lại.
+With Type 1, "today's region" is the only thing that exists — the old value was overwritten with no
+way to recover it.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique` trên `khach_id` | ✅ xanh |
-| `not_null` mọi cột | ✅ xanh |
-| `relationships` fact → dim | ✅ xanh |
-| Số dòng fact | ✅ không đổi |
-| Tổng doanh thu toàn hệ thống | ✅ vẫn 10.000.000 |
+| `unique` on `khach_id` | ✅ green |
+| `not_null` on every column | ✅ green |
+| `relationships` fact → dim | ✅ green |
+| The fact's row count | ✅ unchanged |
+| Total system-wide revenue | ✅ still 10,000,000 |
 
-**Tổng đúng, chi tiết sai.** Tiền không mất đi đâu — nó chỉ chuyển từ nhóm này sang nhóm
-khác. Không có bất biến nào bị phá, nên không test dựng sẵn nào chạm tới.
+**The total is right, the detail is wrong.** No money went missing — it just moved from one group to
+another. No invariant was broken, so no ready-made test touches it.
 
-Chiều duy nhất bắt được là **accuracy** — đối chiếu với một bản chốt sổ đã lưu ngoài hệ
-thống. Xem [sáu chiều chất lượng](../../data-quality/six-dimensions.md).
+The only dimension that catches it is **accuracy** — reconciling against a signed-off copy stored outside the
+system. See [the six quality dimensions](../../data-quality/six-dimensions.md).
 
-## Cách sửa
+## The fix
 
-Chuyển `khu_vuc` sang [SCD](../skills/scd.md) Type 2, và fact giữ **surrogate key của
-phiên bản đúng tại thời điểm bán**:
+Move `khu_vuc` to [SCD](../skills/scd.md) Type 2, and have the fact hold **the surrogate key of the
+version correct at the moment of sale**:
 
 ```sql
 -- dim Type 2
@@ -136,7 +135,7 @@ FROM fct_don f JOIN dim_scd2 d USING (khach_sk)
 WHERE f.ngay < DATE '2026-02-01' GROUP BY 1;
 ```
 
-Gán `khach_sk` đúng lúc nạp fact (*dimension lookup*):
+Assign `khach_sk` when loading the fact (a *dimension lookup*):
 
 ```sql
 JOIN dim_scd2 d
@@ -145,23 +144,23 @@ JOIN dim_scd2 d
   AND f.ngay <  d.valid_to
 ```
 
-Bây giờ `DH001` khoá cứng vào phiên bản Miền Bắc. Chạy lại sau bao lâu cũng ra 5.000.000.
+Now `DH001` is locked to the North version. Re-run it whenever and it gives 5,000,000.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-Nếu chưa gặp sự cố, ba dấu hiệu cho biết bạn đang có rủi ro này:
+If you haven't hit the incident yet, three signs tell you you're exposed to it:
 
-1. Fact join dimension bằng **mã nghiệp vụ** (`khach_id`) chứ không phải surrogate key.
-2. Dimension không có cột `valid_from` / `valid_to`.
-3. Chưa ai hỏi *"cột này cần as-was hay as-is"* — nghĩa là câu hỏi đó chưa được đặt ra,
-   và mặc định đang là as-is.
+1. The fact joins the dimension by a **business code** (`khach_id`) rather than a surrogate key.
+2. The dimension has no `valid_from` / `valid_to` columns.
+3. Nobody has asked *"does this column need as-was or as-is"* — meaning the question was never raised,
+   and as-is is the default.
 
-**Phép thử một câu:** *"Chạy lại báo cáo quý trước vào năm sau, có ra đúng số cũ không?"*
-Không trả lời chắc chắn được thì đang có rủi ro.
+**The one-sentence test:** *"Re-running last quarter's report next year, will it give the same old numbers?"*
+If you can't answer with confidence, you're exposed.
 
 ## Related Topics
 
-- [SCD](../skills/scd.md) — Type 1 vs Type 2, và khi nào chọn cái nào
-- [Phát hiện thay đổi cho SCD 2](../skills/scd-change-detection.md) — dựng Type 2 thế nào
-- [Surrogate key](../reference/surrogate-key.md) — vì sao fact phải giữ SK
-- [Sáu chiều chất lượng](../../data-quality/six-dimensions.md) — chiều *accuracy*
+- [SCD](../skills/scd.md) — Type 1 vs Type 2, and when to choose which
+- [Change detection for SCD 2](../skills/scd-change-detection.md) — how to build Type 2
+- [Surrogate keys](../reference/surrogate-key.md) — why the fact must hold the SK
+- [The six quality dimensions](../../data-quality/six-dimensions.md) — the *accuracy* dimension
