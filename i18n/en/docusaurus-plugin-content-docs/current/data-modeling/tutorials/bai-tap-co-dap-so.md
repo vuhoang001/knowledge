@@ -1,8 +1,7 @@
 ---
-title: "26 bài tập có đáp số — tự viết, tự chấm"
-i18n_status: untranslated
+title: "26 exercises with answers — write them yourself, mark them yourself"
 sidebar_position: 8
-description: "Mỗi bài có đề, đáp số phải ra, và lời giải giấu đi. Viết SQL của bạn trước, so số, rồi mới mở lời giải."
+description: "Each exercise has a task, the number it must produce, and a hidden solution. Write your SQL first, compare the number, and only then open the solution."
 tags: [tutorial, bai-tap, grain, scd, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,39 +12,39 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# 26 bài tập có đáp số — tự viết, tự chấm
+# 26 exercises with answers — write them yourself, mark them yourself
 
-> **Chốt:** bảy lab kia là **chẩn đoán** — tôi bày sẵn bẫy rồi giải thích. File này ngược
-> lại: **bạn viết, đáp số cho trước, tự biết đúng sai mà không cần hỏi ai**.
+> **Takeaway:** the seven labs are **diagnostic** — I lay the trap out and then explain it. This file is the
+> reverse: **you write, the answer is given up front, and you know whether you're right without asking anybody**.
 
-## Cách dùng
+## How to use it
 
-Mỗi bài có ba phần:
+Each exercise has three parts:
 
-1. **Đề** — việc phải làm
-2. **Đáp số phải ra** — con số chính xác; trùng thì bạn đúng
-3. **Lời giải** — giấu trong `<details>`, **chỉ mở sau khi đã thử**
+1. **The task** — what to do
+2. **The answer it must produce** — the exact number; matching it means you're right
+3. **The solution** — hidden in a `<details>`, **open it only after trying**
 
-Mở lời giải trước khi viết là đọc, không phải luyện. Sai vài lần rồi mới đúng thì nhớ
-được sáu tháng; đọc lời giải thì quên sau sáu phút.
+Opening the solution before writing is reading, not practising. Getting it wrong a few times before getting it right sticks
+for six months; reading the solution is forgotten in six minutes.
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Dữ liệu và mốc đối chiếu ở [trang bài tập](index.md#dữ-liệu-dùng-chung-cho-lab-27).
-**10 đơn · 15 dòng · 10.215.000 · phí ship 400.000.**
+The data and the reconciliation benchmarks are on [the exercises page](index.md#the-data-shared-by-labs-27).
+**10 orders · 15 lines · 10,215,000 · shipping fees 400,000.**
 
 ---
 
-## Bộ 1 — Grain và fact/dimension
+## Set 1 — Grain and fact/dimension
 
-### Bài 1.1 — Chứng minh grain bằng SQL, không bằng lời
+### Exercise 1.1 — Prove the grain with SQL, not with words
 
-**Đề:** viết **một** câu trả về ba số: số dòng, số `don_hang_id` phân biệt, số khoá tổ
-hợp phân biệt — cộng một cột boolean kết luận grain có đúng không.
+**The task:** write **one** statement returning three numbers: the row count, the count of distinct `don_hang_id`, and the count of distinct
+composite keys — plus a boolean column concluding whether the grain is right.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌─────────┬────────┬─────────────┬────────────┐
@@ -56,7 +55,7 @@ hợp phân biệt — cộng một cột boolean kết luận grain có đúng 
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select count(*) so_dong,
@@ -66,16 +65,16 @@ select count(*) so_dong,
 from don_hang_chi_tiet;
 ```
 
-`so_don` = 10 ≠ 15 chứng minh `don_hang_id` **không** phải khoá. Đặt `unique` lên nó là
-test sai, không phải dữ liệu sai — xem [Grain](../reference/grain.md).
+`so_don` = 10 ≠ 15 proves `don_hang_id` is **not** a key. Declaring `unique` on it is a
+wrong test, not wrong data — see [Grain](../reference/grain.md).
 
 </details>
 
-### Bài 1.2 — Đơn nào nhiều dòng nhất
+### Exercise 1.2 — Which order has the most lines
 
-**Đề:** ba đơn có nhiều dòng hàng nhất, kèm giá trị đơn.
+**The task:** the three orders with the most goods lines, plus each order's value.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌─────────────┬─────────┬─────────┐
@@ -88,23 +87,23 @@ test sai, không phải dữ liệu sai — xem [Grain](../reference/grain.md).
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select don_hang_id, count(*) so_dong, sum(so_luong*don_gia) gia_tri
 from don_hang_chi_tiet group by 1 order by 2 desc, 1 limit 3;
 ```
 
-`DH003` ba dòng — nhớ con số này, nó là thủ phạm của mọi bài phồng số về sau.
+`DH003` has three lines — remember that number, it's the culprit in every inflation exercise later on.
 
 </details>
 
-### Bài 1.3 — Giỏ hàng trung bình, và cái bẫy mẫu số
+### Exercise 1.3 — The average basket, and the denominator trap
 
-**Đề:** tính giá trị trung bình **một đơn hàng**. Rồi tính lại bằng `count(*)` thay vì
-`count(distinct ...)` và so hai số.
+**The task:** compute the average value of **one order**. Then recompute it with `count(*)` instead of
+`count(distinct ...)` and compare the two numbers.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌───────────┬────────┬─────────────┬─────────┬────────────────────┐
@@ -115,7 +114,7 @@ from don_hang_chi_tiet group by 1 order by 2 desc, 1 limit 3;
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select sum(so_luong*don_gia) doanh_thu,
@@ -126,18 +125,18 @@ select sum(so_luong*don_gia) doanh_thu,
 from don_hang_chi_tiet;
 ```
 
-**1.021.500 hay 681.000?** Grain là *dòng đơn*, nên `count(*)` đếm dòng chứ không đếm
-đơn. Đây chính là lý do [degenerate dimension](../skills/degenerate-dimension.md) phải ở
-lại trong fact — không có `don_hang_id` thì không tính được số đơn.
+**1,021,500 or 681,000?** The grain is *the order line*, so `count(*)` counts lines, not
+orders. This is exactly why a [degenerate dimension](../skills/degenerate-dimension.md) must stay
+in the fact — without `don_hang_id` you can't count orders.
 
 </details>
 
-### Bài 1.4 — Đếm đơn theo trạng thái: `count(*)` sai ở đâu
+### Exercise 1.4 — Counting orders by status: where `count(*)` goes wrong
 
-**Đề:** join `don_hang` với `don_hang_chi_tiet`, đếm số đơn theo trạng thái bằng **cả
-hai** cách và đặt cạnh nhau.
+**The task:** join `don_hang` to `don_hang_chi_tiet`, count orders by status **both**
+ways, and put them side by side.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌────────────┬─────────┬──────────┐
@@ -150,7 +149,7 @@ hai** cách và đặt cạnh nhau.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select h.trang_thai, count(*) dem_sao, count(distinct h.don_hang_id) dem_dung
@@ -158,17 +157,17 @@ from don_hang h join don_hang_chi_tiet ct using (don_hang_id)
 group by 1 order by 3 desc;
 ```
 
-`hoan_thanh` phồng từ 6 lên **11** vì các đơn hoàn thành là những đơn nhiều dòng nhất.
-Hai nhóm kia không lệch — nên nếu chỉ nhìn `dang_giao` và `moi` thì bạn kết luận query
-đúng. Lỗi chỉ hiện ở nhóm bạn không kiểm.
+`hoan_thanh` inflates from 6 to **11** because the completed orders are the ones with the most lines.
+The other two groups don't diverge — so if you only look at `dang_giao` and `moi` you conclude the query is
+right. The bug appears only in the group you don't check.
 
 </details>
 
-### Bài 1.5 — Doanh thu theo khách, không được phồng
+### Exercise 1.5 — Revenue by customer, with no inflation
 
-**Đề:** doanh thu và số đơn theo từng khách.
+**The task:** revenue and order count per customer.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌──────────┬───────────┬────────┐
@@ -181,10 +180,10 @@ Hai nhóm kia không lệch — nên nếu chỉ nhìn `dang_giao` và `moi` th�
 └──────────┴───────────┴────────┘
 ```
 
-Tổng bốn dòng = **10.215.000**. Không khớp là join của bạn đang nhân bản.
+The four rows total **10,215,000**. Not matching means your join is replicating.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select h.khach_id, sum(ct.so_luong*ct.don_gia) doanh_thu,
@@ -193,23 +192,23 @@ from don_hang h join don_hang_chi_tiet ct using (don_hang_id)
 group by 1 order by 2 desc;
 ```
 
-Join `don_hang` (grain đơn) với `chi_tiet` (grain dòng) **an toàn cho cột tiền**, vì tiền
-nằm ở grain mịn. Nó chỉ hỏng khi bạn cộng cột thuộc grain thô — xem bài 4.1.
+Joining `don_hang` (order grain) to `chi_tiet` (line grain) is **safe for the money column**, because the money
+sits at the fine grain. It only breaks when you sum a column belonging to the coarse grain — see exercise 4.1.
 
 </details>
 
 ---
 
-## Bộ 2 — Dimension
+## Set 2 — Dimensions
 
-### Bài 2.1 — Dựng `dim_ngay` có dòng `-1`
+### Exercise 2.1 — Build a `dim_ngay` with a `-1` row
 
-**Đề:** sinh lịch từ 01/07/2026, 62 ngày, cộng một dòng `-1` cho mốc *chưa xảy ra*.
+**The task:** generate a calendar from 01/07/2026, 62 days, plus a `-1` row for the *hasn't happened* milestone.
 
-**Đáp số:** `63` dòng, trong đó `1` dòng có `ngay_key = -1`.
+**The answer:** `63` rows, of which `1` has `ngay_key = -1`.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table dim_ngay as
@@ -220,16 +219,16 @@ from lich
 union all select -1, null, null, null;
 ```
 
-Dòng `-1` phải tồn tại **trước** khi nạp fact — nếu chưa có, ETL buộc phải để `NULL` ở
-cột khoá và `JOIN` sẽ ném dòng. Xem [date dimension](../reference/date-dimension.md).
+The `-1` row must exist **before** the fact is loaded — without it, the ETL is forced to leave `NULL` in the
+key column and the `JOIN` throws the row away. See [the date dimension](../reference/date-dimension.md).
 
 </details>
 
-### Bài 2.2 — Ngày làm việc tháng 7
+### Exercise 2.2 — Working days in July
 
-**Đề:** tháng 7/2026 có bao nhiêu ngày, bao nhiêu là ngày làm việc?
+**The task:** how many days does July 2026 have, and how many are working days?
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌─────────┬───────────────┐
@@ -239,12 +238,12 @@ cột khoá và `JOIN` sẽ ném dòng. Xem [date dimension](../reference/date-d
 └─────────┴───────────────┘
 ```
 
-### Bài 2.3 — Hai mẫu số, hai kết luận
+### Exercise 2.3 — Two denominators, two conclusions
 
-**Đề:** doanh thu trung bình mỗi ngày tháng 7 — tính hai lần, một lần chia cho số ngày
-lịch, một lần chia cho số ngày làm việc.
+**The task:** average revenue per day in July — computed twice, once divided by the calendar day count
+and once by the working day count.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌──────────┬──────────────────┬──────────────────┐
@@ -255,7 +254,7 @@ lịch, một lần chia cho số ngày làm việc.
 ```
 
 <details>
-<summary>Lời giải và vì sao nó quan trọng</summary>
+<summary>The solution, and why it matters</summary>
 
 ```sql
 select sum(ct.so_luong*ct.don_gia) tong,
@@ -266,20 +265,20 @@ select sum(ct.so_luong*ct.don_gia) tong,
 from don_hang_chi_tiet ct join dim_ngay d on d.ngay = ct.ngay;
 ```
 
-**329.516 hay 444.130?** Chênh **35%**, và cả hai đều "đúng" — chỉ khác mẫu số. Đem so
-tháng có nhiều ngày lễ với tháng thường bằng cột đầu thì tháng lễ luôn trông tệ.
+**329,516 or 444,130?** A gap of **35%**, and both are "right" — only the denominator differs. Compare a month
+with many public holidays against an ordinary month using the first column and the holiday month always looks bad.
 
-Không có `dim_ngay` thì con số 444.130 **không tồn tại**, và cũng không ai biết là nó
-thiếu.
+Without `dim_ngay` the number 444,130 **doesn't exist**, and nobody even knows it's
+missing.
 
 </details>
 
-### Bài 2.4 — Đơn chưa giao rơi vào đâu
+### Exercise 2.4 — Where do the undelivered orders land
 
-**Đề:** doanh thu theo `ngay_giao_key`, dùng `coalesce(..., -1)`. Nhóm `-1` gồm bao nhiêu
-dòng và bao nhiêu tiền?
+**The task:** revenue by `ngay_giao_key`, using `coalesce(..., -1)`. How many rows and how much money are in the
+`-1` group?
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌───────────────┬─────────┬───────────┐
@@ -292,7 +291,7 @@ dòng và bao nhiêu tiền?
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select coalesce(cast(strftime(h.ngay_giao,'%Y%m%d') as integer), -1) ngay_giao_key,
@@ -301,44 +300,44 @@ from don_hang h join don_hang_chi_tiet ct using (don_hang_id)
 group by 1 order by 1;
 ```
 
-**1.770.000 — 17,3% doanh thu** nằm ở nhóm *chưa giao*. Bỏ `coalesce` đi thì `JOIN` với
-`dim_ngay` sẽ nuốt sạch chúng, và báo cáo trông hoàn toàn bình thường. Xem
-[case study một nửa số đơn biến mất](../case-studies/don-dang-giao-bien-mat.md).
+**1,770,000 — 17.3% of revenue** sits in the *not yet delivered* group. Drop the `coalesce` and the `JOIN` to
+`dim_ngay` swallows them all, and the report looks perfectly normal. See
+[the case study on half the orders vanishing](../case-studies/don-dang-giao-bien-mat.md).
 
 </details>
 
 ---
 
-## Bộ 3 — SCD
+## Set 3 — SCD
 
-Cần `scd_khach_hang` từ [lab SCD](scd-bang-dbt-snapshot.md).
+You need `scd_khach_hang` from [the SCD lab](scd-bang-dbt-snapshot.md).
 
-### Bài 3.1 — Grain của snapshot
+### Exercise 3.1 — The snapshot's grain
 
-**Đề:** snapshot có bao nhiêu dòng, ứng với bao nhiêu khách? Khách nào có nhiều hơn một
-phiên bản?
+**The task:** how many rows does the snapshot have, for how many customers? Which customer has more than one
+version?
 
-**Đáp số:** `5` dòng / `4` khách. `C1` có `2` phiên bản.
+**The answer:** `5` rows / `4` customers. `C1` has `2` versions.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select count(*) so_dong, count(distinct khach_id) so_khach from scd_khach_hang;
 select khach_id, count(*) so_phien_ban from scd_khach_hang group by 1 having count(*) > 1;
 ```
 
-Grain là *một phiên bản của một khách* — nên `unique(khach_id)` phải FAIL, và đó là fail
-đúng.
+The grain is *one version of one customer* — so `unique(khach_id)` must FAIL, and that's the right
+failure.
 
 </details>
 
-### Bài 3.2 — As-was và as-is: cùng số tiền, khác kết luận
+### Exercise 3.2 — As-was and as-is: the same money, a different conclusion
 
-**Đề:** doanh thu của riêng `C1`, tính hai lần — theo khu vực **lúc mua** và theo khu vực
-**hiện tại**.
+**The task:** revenue for `C1` alone, computed twice — by the region **at purchase time** and by the
+**current** region.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌──────────────────┬──────────┬─────────┐
@@ -350,13 +349,13 @@ Grain là *một phiên bản của một khách* — nên `unique(khach_id)` ph
 ```
 
 <details>
-<summary>Lời giải và điểm mấu chốt</summary>
+<summary>The solution and the crux</summary>
 
 ```sql
--- as-is: ban hien tai
+-- as-is: the current version
 join scd_khach_hang d on d.khach_id = h.khach_id and d.dbt_valid_to is null
 
--- as-was: phien ban co hieu luc tai ngay dat (kem backfill ban dau tien)
+-- as-was: the version in effect at the order date (with the first version backfilled)
 with d as (select *, dbt_valid_from = min(dbt_valid_from) over (partition by khach_id) la_ban_dau
            from scd_khach_hang)
 join d on d.khach_id = h.khach_id
@@ -364,22 +363,22 @@ join d on d.khach_id = h.khach_id
  and h.ngay_dat <  coalesce(d.dbt_valid_to, timestamp '9999-12-31')
 ```
 
-**Số tiền y hệt — 2.745.000. Chỉ khu vực đổi.**
+**Identical money — 2,745,000. Only the region changes.**
 
-Đó là điều làm lớp lỗi này nguy hiểm nhất: mọi test đối soát **tổng** đều xanh, vì không
-đồng nào mất. Tiền chỉ bị gán sai chiều. Muốn bắt được thì phải có một test *as-was*
-riêng: doanh thu tháng 7 của `C1` phải nằm ở Miền Bắc.
+That's what makes this class of bug the most dangerous: every **total**-reconciliation test is green, because not a
+dong is lost. The money is merely assigned to the wrong dimension member. To catch it you need a separate *as-was*
+test: `C1`'s July revenue must sit in the North.
 
 </details>
 
-### Bài 3.3 — Kiểm khoảng hiệu lực
+### Exercise 3.3 — Check the validity intervals
 
-**Đề:** viết query phát hiện khoảng chồng lấn trong snapshot.
+**The task:** write a query detecting overlapping intervals in the snapshot.
 
-**Đáp số:** `0` khoảng chồng lấn.
+**The answer:** `0` overlapping intervals.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with x as (select khach_id, dbt_valid_to,
@@ -388,21 +387,21 @@ with x as (select khach_id, dbt_valid_to,
 select count(*) so_khoang_chong_lan from x where ke is not null and ke <> dbt_valid_to;
 ```
 
-Câu này bắt **cả hai** lỗi bằng một lần quét: `ke > dbt_valid_to` là khoảng hở (fact rơi
-vào đó mất dòng), `ke < dbt_valid_to` là chồng lấn (nhân đôi dòng).
+This statement catches **both** bugs in one scan: `ke > dbt_valid_to` is a gap (a fact landing
+in it loses its row), `ke < dbt_valid_to` is an overlap (doubling rows).
 
 </details>
 
 ---
 
-## Bộ 4 — Fact nâng cao
+## Set 4 — Advanced facts
 
-### Bài 4.1 — Phân bổ phí ship theo mặt hàng
+### Exercise 4.1 — Allocate the shipping fee by item
 
-**Đề:** phân bổ `phi_ship` (cấp đơn) về từng dòng theo tỷ trọng tiền hàng, rồi gộp theo
-mặt hàng. Tính cả tỷ lệ phí ship trên doanh thu.
+**The task:** allocate `phi_ship` (order level) onto each line in proportion to the goods amount, then aggregate by
+item. Also compute the shipping fee as a share of revenue.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌─────────┬───────────┬──────────────────┬───────────┐
@@ -416,7 +415,7 @@ mặt hàng. Tính cả tỷ lệ phí ship trên doanh thu.
 ```
 
 <details>
-<summary>Lời giải — và cái nhìn ra được</summary>
+<summary>The solution — and the insight it yields</summary>
 
 ```sql
 with pb as (
@@ -429,20 +428,20 @@ select ma_hang, sum(tien_hang) tien_hang, round(sum(phi),0) phi_ship_phan_bo,
 from pb group by 1 order by 3 desc;
 ```
 
-**`SP-D` gánh phí ship 11,36% doanh thu** — gấp gần 5 lần `SP-C` (2,4%). Đây là kết luận
-nghiệp vụ **không tồn tại** nếu phí ship còn nằm ở cấp đơn: chuột không dây giá rẻ nhưng
-tốn ship tương đương hàng đắt.
+**`SP-D` carries shipping fees worth 11.36% of its revenue** — nearly 5× `SP-C`'s (2.4%). This is a business
+conclusion that **doesn't exist** while the shipping fee still sits at order level: a cheap wireless mouse that
+costs as much to ship as an expensive item.
 
-Lưu ý cửa sổ `over (partition by ct.don_hang_id)` nằm **trong CTE**, không lồng trong
-`sum()` — DuckDB (và mọi engine) cấm gọi window bên trong aggregate.
+Note that the `over (partition by ct.don_hang_id)` window sits **inside the CTE**, not nested in
+`sum()` — DuckDB (and every engine) forbids calling a window inside an aggregate.
 
 </details>
 
-### Bài 4.2 — YTD tính lúc đọc
+### Exercise 4.2 — YTD computed at read time
 
-**Đề:** doanh thu theo ngày, kèm cột luỹ kế — **không** lưu cột đó vào bảng.
+**The task:** revenue by day, plus a cumulative column — **without** storing that column in the table.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌────────────┬─────────┬──────────┐
@@ -457,7 +456,7 @@ Lưu ý cửa sổ `over (partition by ct.don_hang_id)` nằm **trong CTE**, kh�
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select ngay, sum(so_luong*don_gia) dt,
@@ -465,21 +464,21 @@ select ngay, sum(so_luong*don_gia) dt,
 from don_hang_chi_tiet group by ngay order by ngay;
 ```
 
-`sum(sum(...)) over (...)` trông lạ nhưng đúng: `sum()` bên trong là aggregate của
-`GROUP BY`, `sum() over` bên ngoài chạy **sau** khi gộp.
+`sum(sum(...)) over (...)` looks odd but is right: the inner `sum()` is the `GROUP BY`
+aggregate, and the outer `sum() over` runs **after** the grouping.
 
-Dòng cuối bằng đúng tổng — đó là cách kiểm nhanh. Và vì cột này **không nằm trong bảng**,
-không ai kéo nhầm nó vào ô tổng để phồng 3,38 lần như
-[lab fact nâng cao](lab-fact-nang-cao.md) bài 3.
+The last row equals the total exactly — that's the quick check. And because this column **isn't in the table**,
+nobody can drag it into a total cell by mistake and inflate 3.38× as in
+[the advanced fact lab](lab-fact-nang-cao.md), exercise 3.
 
 </details>
 
-### Bài 4.3 — Bảng tổng hợp: lưu gì để trung bình vẫn đúng
+### Exercise 4.3 — A summary table: what to store so the average stays right
 
-**Đề:** dựng `agg_ngay` lưu `sum` và `count`. Từ đó tính trung bình mỗi dòng hai cách —
-đúng và sai — rồi so.
+**The task:** build `agg_ngay` storing `sum` and `count`. From it, compute the average per row two ways —
+right and wrong — then compare.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌───────────┬─────────┬──────────┬────────────────────┐
@@ -490,7 +489,7 @@ không ai kéo nhầm nó vào ô tổng để phồng 3,38 lần như
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with agg as (select ngay, sum(so_luong*don_gia) dt, count(*) n
@@ -501,22 +500,22 @@ select sum(dt) doanh_thu, sum(n) so_dong,
 from agg;
 ```
 
-Lệch **5,7%**. `avg(dt/n)` cho mỗi **ngày** trọng số bằng nhau, bất kể ngày đó có 4 dòng
-hay 2 dòng. Luật: bảng tổng hợp **chỉ lưu số cộng được**, chia lúc đọc. Xem
-[aggregate fact table](../skills/aggregate-fact-table.md).
+A gap of **5.7%**. `avg(dt/n)` gives each **day** equal weight, whether that day had 4 lines
+or 2. The rule: a summary table **stores only summable numbers**, dividing at read time. See
+[aggregate fact tables](../skills/aggregate-fact-table.md).
 
 </details>
 
 ---
 
-## Bộ 5 — Tích hợp
+## Set 5 — Integration
 
-### Bài 5.1 — Tỷ lệ trả hàng theo mặt hàng
+### Exercise 5.1 — Return rate by item
 
-**Đề:** `tra_hang` chỉ có `don_hang_id`, không có `ma_hang`. Phân bổ giá trị trả về từng
-mặt hàng theo tỷ trọng, rồi tính tỷ lệ trả trên doanh thu.
+**The task:** `tra_hang` has only `don_hang_id`, no `ma_hang`. Allocate the returned value onto each
+item proportionally, then compute returns as a share of revenue.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌─────────┬───────────┬─────────────┬───────────────┐
@@ -530,7 +529,7 @@ mặt hàng theo tỷ trọng, rồi tính tỷ lệ trả trên doanh thu.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with pb as (
@@ -548,24 +547,24 @@ from ban full join tra on ban.ma_hang = tra.ma_hang
 order by 4 desc nulls last;
 ```
 
-**`SP-C` bị trả 30,8%** — gần một phần ba doanh thu. Đó là tín hiệu chất lượng sản phẩm,
-và nó chỉ hiện ra khi ghép hai fact qua một dimension chung
+**`SP-C` is returned at 30.8%** — nearly a third of its revenue. That's a product-quality signal,
+and it only appears when you combine two facts through a shared dimension
 ([drill-across](../skills/conformed-dimension.md)).
 
-Chú ý `FULL JOIN` + `coalesce` + `nullif` — ba thứ bắt buộc ở lượt ghép, thiếu cái nào
-cũng mất nhóm hoặc chia cho 0.
+Note the `FULL JOIN` + `coalesce` + `nullif` — three things mandatory in the combining pass; miss any one
+and you lose a group or divide by 0.
 
 </details>
 
-### Bài 5.2 — Đối soát conformed fact khép kín
+### Exercise 5.2 — The closed-loop conformed-fact reconciliation
 
-**Đề:** viết một câu chứng minh `tong_tien_khach_tra − doanh_thu_thuan` được giải thích
-**hoàn toàn** bởi `phi_ship`.
+**The task:** write one statement proving that `tong_tien_khach_tra − doanh_thu_thuan` is explained
+**entirely** by `phi_ship`.
 
-**Đáp số:** `0`.
+**The answer:** `0`.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with ban as (select don_hang_id, sum(so_luong*don_gia) tien_hang
@@ -574,29 +573,29 @@ select sum(b.tien_hang + h.phi_ship) - sum(b.tien_hang) - sum(h.phi_ship) con_la
 from ban b join don_hang h using (don_hang_id);
 ```
 
-Bằng 0 **không thể xảy ra tình cờ**. Đặt câu này thành test là biến cuộc tranh cãi "hai
-đội ra hai số" thành một phép trừ trong CI. Xem
+Being 0 **cannot happen by accident**. Making this statement a test turns the "two teams, two numbers"
+argument into a subtraction in CI. See
 [conformed facts](../skills/conformed-facts.md).
 
 </details>
 
 ---
 
-## Bộ 6 — Vận hành
+## Set 6 — Operations
 
-### Bài 6.1 — Phát hiện nạp trùng khi *chưa biết* lô nào sai
+### Exercise 6.1 — Detect a duplicate load when you *don't yet know* which batch is wrong
 
-Dựng tình huống:
+Set up the situation:
 
 ```sql
 create or replace table fct_audit as select *, 1 audit_sk from don_hang_chi_tiet;
 insert into fct_audit select *, 3 from don_hang_chi_tiet where don_hang_id in ('DH001','DH003');
 ```
 
-**Đề:** giả sử bạn **không** biết `audit_sk = 3` là lô thừa. Viết query tìm ra đơn nào có
-số bản ghi nhiều hơn thực tế.
+**The task:** suppose you **don't** know `audit_sk = 3` is the surplus batch. Write a query finding which orders have
+more records than they should.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌─────────────┬────────────┐
@@ -607,10 +606,10 @@ số bản ghi nhiều hơn thực tế.
 └─────────────┴────────────┘
 ```
 
-`DH001` thật có 2 dòng, `DH003` có 3 — cả hai đang gấp đôi.
+`DH001` really has 2 lines and `DH003` has 3 — both are doubled.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select don_hang_id, count(*) so_ban_ghi
@@ -620,17 +619,17 @@ having count(*) > (select count(*) from don_hang_chi_tiet ct
 order by 1;
 ```
 
-Query này **chỉ chạy được vì còn bảng nguồn để đối chiếu**. Trong production, nguồn
-thường đã bị ghi đè — đó là lý do phải có `audit_sk` **trước** khi sự cố xảy ra, chứ
-không phải điều tra sau. Xem [audit dimension](../skills/audit-dimension.md).
+This query **only works because the source table is still there to reconcile against**. In production the source
+has usually been overwritten — which is why you need `audit_sk` **before** the incident happens, rather
+than investigating afterwards. See [audit dimensions](../skills/audit-dimension.md).
 
 </details>
 
-### Bài 6.2 — Xoá đúng, không xoá thừa
+### Exercise 6.2 — Delete exactly the right rows, no more
 
-**Đề:** xoá lô thừa rồi chứng minh kho đã về đúng.
+**The task:** delete the surplus batch, then prove the warehouse is back to correct.
 
-**Đáp số:**
+**The answer:**
 
 ```text
 ┌──────────────┬───────────┐
@@ -641,44 +640,44 @@ không phải điều tra sau. Xem [audit dimension](../skills/audit-dimension.m
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 delete from fct_audit where audit_sk = 3;
 select count(*) dong_con_lai, sum(so_luong*don_gia) doanh_thu from fct_audit;
 ```
 
-**Một câu lệnh, đúng 5 dòng.** So với cách xoá theo khoảng ngày ở
-[lab vận hành](lab-van-hanh.md) bài 2 — xoá 10 dòng, một nửa là dòng tốt.
+**One statement, exactly 5 rows.** Compare with deleting by date range in
+[the operations lab](lab-van-hanh.md), exercise 2 — 10 rows deleted, half of them good ones.
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-Sau khi làm hết, tự kiểm bằng bảng này. Số nào lệch thì quay lại bài tương ứng.
+Once you've done them all, self-check with this table. Any number that's off, go back to the matching exercise.
 
-| Con số | Giá trị | Bài |
+| The number | Value | Exercise |
 |---|---|---|
-| Grain `don_hang_chi_tiet` | `(don_hang_id, dong)` — 15 dòng / 10 đơn | 1.1 |
-| Giỏ hàng trung bình | 1.021.500 (không phải 681.000) | 1.3 |
-| Đơn `hoan_thanh` | 6 (không phải 11) | 1.4 |
-| Ngày làm việc tháng 7 | 23 / 31 | 2.2 |
-| TB mỗi ngày làm việc | 444.130 (không phải 329.516) | 2.3 |
-| Doanh thu chưa giao | 1.770.000 — **17,3%** | 2.4 |
-| `C1` as-was vs as-is | cùng 2.745.000, khác vùng | 3.2 |
-| `SP-D` gánh phí ship | **11,36%** doanh thu | 4.1 |
-| TB mỗi dòng | 681.000 (không phải 642.500) | 4.3 |
-| `SP-C` tỷ lệ trả hàng | **30,8%** | 5.1 |
-| Đối soát conformed fact | 0 | 5.2 |
+| `don_hang_chi_tiet` grain | `(don_hang_id, dong)` — 15 lines / 10 orders | 1.1 |
+| Average basket | 1,021,500 (not 681,000) | 1.3 |
+| `hoan_thanh` orders | 6 (not 11) | 1.4 |
+| Working days in July | 23 / 31 | 2.2 |
+| Average per working day | 444,130 (not 329,516) | 2.3 |
+| Undelivered revenue | 1,770,000 — **17.3%** | 2.4 |
+| `C1` as-was vs as-is | both 2,745,000, different regions | 3.2 |
+| Shipping fee carried by `SP-D` | **11.36%** of revenue | 4.1 |
+| Average per line | 681,000 (not 642,500) | 4.3 |
+| `SP-C` return rate | **30.8%** | 5.1 |
+| Conformed-fact reconciliation | 0 | 5.2 |
 
 ## Related Topics
 
-- [Bảy lab chẩn đoán](index.md) — bày sẵn bẫy rồi giải thích; file này ngược lại
-- [Grain](../reference/grain.md) · [Fact và Dimension](../reference/fact-and-dimension.md) — bộ 1
-- [Date dimension](../reference/date-dimension.md) · [NULL trong fact và dimension](../skills/null-handling.md) — bộ 2
-- [SCD](../skills/scd.md) · [Dữ liệu về muộn](../skills/late-arriving.md) — bộ 3
-- [Header/line và phân bổ fact](../skills/allocated-facts.md) · [Aggregate fact table](../skills/aggregate-fact-table.md) — bộ 4
-- [Conformed dimension](../skills/conformed-dimension.md) · [Conformed facts](../skills/conformed-facts.md) — bộ 5
-- [Audit dimension](../skills/audit-dimension.md) — bộ 6
+- [The seven diagnostic labs](index.md) — traps laid out and then explained; this file is the reverse
+- [Grain](../reference/grain.md) · [Facts and dimensions](../reference/fact-and-dimension.md) — set 1
+- [The date dimension](../reference/date-dimension.md) · [NULLs in facts and dimensions](../skills/null-handling.md) — set 2
+- [SCD](../skills/scd.md) · [Late-arriving data](../skills/late-arriving.md) — set 3
+- [Header/line and allocating facts](../skills/allocated-facts.md) · [Aggregate fact tables](../skills/aggregate-fact-table.md) — set 4
+- [Conformed dimensions](../skills/conformed-dimension.md) · [Conformed facts](../skills/conformed-facts.md) — set 5
+- [Audit dimensions](../skills/audit-dimension.md) — set 6
