@@ -1,8 +1,7 @@
 ---
-title: "Bài tập bộ 6 — Tích hợp: conformed dimension, conformed facts, bus matrix, đa tiền tệ"
-i18n_status: untranslated
+title: "Exercise set 6 — Integration: conformed dimensions, conformed facts, the bus matrix, multiple currencies"
 sidebar_position: 15
-description: "18 bài tự viết: join tên nhóm trả 0 dòng vì dấu tiếng Việt, drill-across đúng cách, join hai fact vừa mất vừa phồng, và 2/7 đơn ngoại tệ bốc hơi."
+description: "18 exercises to write yourself: a group-name join returning 0 rows because of Vietnamese diacritics, drill-across done right, joining two facts losing and inflating at once, and 2 of 7 foreign-currency orders evaporating."
 tags: [tutorial, bai-tap, conformed-dimension, conformed-facts, bus-architecture, multi-currency-uom, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,41 +12,41 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bài tập bộ 6 — Tích hợp
+# Exercise set 6 — Integration
 
-> **Chốt:** năm bộ trước dựng **một** mô hình cho đúng. Bộ này hỏi câu khó hơn — **hai mô
-> hình dựng riêng có ghép được không, và ghép rồi thì hai con số có so được với nhau
-> không.** Hai câu đó khác nhau, và câu thứ hai mới là câu giết người.
+> **Takeaway:** the five earlier sets build **one** model correctly. This set asks a harder question — **can two
+> models built separately be joined, and once joined, can the two numbers be compared with each
+> other.** Those are two different questions, and the second is the killer.
 
-## Kỹ thuật được luyện trong bộ này
+## Techniques practised in this set
 
-| # | Kỹ thuật | Tài liệu gốc | Số bài |
+| # | Technique | Source document | Exercises |
 |---|---|---|---|
-| 1 | Conformed dimension | [Conformed dimension](../skills/conformed-dimension.md) | 5 |
+| 1 | Conformed dimensions | [Conformed dimensions](../skills/conformed-dimension.md) | 5 |
 | 2 | Conformed facts | [Conformed facts](../skills/conformed-facts.md) | 4 |
-| 3 | Bus architecture và bus matrix | [Bus architecture](../reference/bus-architecture.md) | 4 |
-| 4 | Nhiều tiền tệ và đơn vị đo | [Nhiều tiền tệ và đơn vị đo](../skills/multi-currency-uom.md) | 5 |
+| 3 | Bus architecture and the bus matrix | [Bus architecture](../reference/bus-architecture.md) | 4 |
+| 4 | Several currencies and units of measure | [Several currencies and units of measure](../skills/multi-currency-uom.md) | 5 |
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Bộ này dùng `hang_hoa` ⟷ `cay_nhom_hang` (**hai cách viết cùng một tên nhóm**),
-`don_hang` ⟷ `tra_hang` (hai fact khác grain), và `don_hang_ngoai_te` ⟷ `ty_gia`
-(**thiếu một ngày, thiếu một đồng tiền**). Xem [phụ lục seed](bt-00-seed.md).
+This set uses `hang_hoa` ⟷ `cay_nhom_hang` (**two spellings of the same group name**),
+`don_hang` ⟷ `tra_hang` (two facts at different grains), and `don_hang_ngoai_te` ⟷ `ty_gia`
+(**one day missing, one currency missing**). See [the seed appendix](bt-00-seed.md).
 
 ---
 
-## Bộ A — Conformed dimension
+## Group A — Conformed dimensions
 
-### Bài A.1 — Join trả 0 dòng, không lỗi nào
+### Exercise A.1 — A join returning 0 rows, with no error
 
-**Đề:** join `hang_hoa` với `cay_nhom_hang` bằng tên nhóm. Đếm kết quả, và đếm số nhóm
-phân biệt ở mỗi bên.
+**The task:** join `hang_hoa` to `cay_nhom_hang` by group name. Count the result, and count the distinct
+groups on each side.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────┬──────────────────┬─────────────┐
@@ -57,10 +56,10 @@ phân biệt ở mỗi bên.
 └───────────────┴──────────────────┴─────────────┘
 ```
 
-**0 dòng.** Cả hai bảng đều có dữ liệu, join không lỗi, kết quả rỗng.
+**0 rows.** Both tables have data, the join raises nothing, the result is empty.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select count(*) from hang_hoa hh
@@ -69,26 +68,26 @@ select (select count(*) from hang_hoa hh
        (select count(*) from cay_nhom_hang) so_nhom_cay;
 ```
 
-Đây là **hình dạng chuẩn của lỗi conformance**, và ba tính chất của nó làm nó nguy hiểm
-hơn mọi lỗi đã gặp:
+This is **the canonical shape of a conformance bug**, and three of its properties make it more
+dangerous than anything met so far:
 
-1. **Không có lỗi nào được ném ra.** SQL hợp lệ, kiểu dữ liệu khớp, join chạy xong.
-2. **`0` là một câu trả lời hợp lý.** "Không có mặt hàng nào thuộc nhóm đã phân loại" —
-   nghe có thể tin được.
-3. **Nó chỉ lộ ra khi có người đối chiếu với một nguồn khác.**
+1. **No error is thrown.** Valid SQL, matching types, the join completes.
+2. **`0` is a plausible answer.** "No item belongs to a classified group" —
+   that's believable.
+3. **It only surfaces when somebody reconciles against another source.**
 
-So với các lỗi trước: phồng số thì tổng lệch nên có cơ hội bị bắt; mất dòng thì `count`
-tụt. Ở đây **không có gì để so** — trừ khi bạn chủ động đi tìm.
+Compared with earlier bugs: inflation makes the total wrong so it has a chance of being caught; lost rows make a `count`
+drop. Here **there's nothing to compare against** — unless you go looking.
 
-Bài A.2 tìm nguyên nhân.
+Exercise A.2 finds the cause.
 
 </details>
 
-### Bài A.2 — *"Màn hình"* không phải *"Man hinh"*
+### Exercise A.2 — *"Màn hình"* isn't *"Man hinh"*
 
-**Đề:** chỉ ra chính xác vì sao join hỏng, bằng cách bỏ dấu rồi so lại.
+**The task:** show exactly why the join breaks, by stripping the diacritics and comparing again.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────────┬───────────────┬─────────────────────┐
@@ -100,10 +99,10 @@ Bài A.2 tìm nguyên nhân.
 └────────────────┴───────────────┴─────────────────────┘
 ```
 
-Cả ba nhóm khớp **sau khi bỏ dấu**. Hai hệ thống, hai quy ước viết, cùng một thực thể.
+All three groups match **once the diacritics are stripped**. Two systems, two writing conventions, one entity.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select hh.nhom ten_o_hang_hoa, cn.ten_nhom ten_o_cay,
@@ -113,55 +112,55 @@ left join cay_nhom_hang cn on strip_accents(hh.nhom) = cn.ten_nhom
 order by 1;
 ```
 
-**Đừng sửa bằng `strip_accents` trong câu join.** Nó chữa triệu chứng và tạo ra ba vấn
-đề mới:
+**Don't fix it with `strip_accents` in the join.** That treats the symptom and creates three new
+problems:
 
-- Phải nhớ dùng nó ở **mọi** truy vấn, mãi mãi. Quên một chỗ là lỗi quay lại.
-- Không có index nào dùng được → mọi join thành full scan.
-- Nó không xử lý được các biến thể khác: `"Màn Hình"`, `"MÀN HÌNH"`, `"Man hinh "` (thừa
-  dấu cách), `"Màn hình LCD"`.
+- You have to remember to use it in **every** query, forever. Forget once and the bug returns.
+- No index can be used → every join becomes a full scan.
+- It doesn't handle other variants: `"Màn Hình"`, `"MÀN HÌNH"`, `"Man hinh "` (a trailing
+  space), `"Màn hình LCD"`.
 
-Cách chữa đúng là **conform ở tầng khoá, không ở tầng nhãn**:
+The right cure is to **conform at the key level, not at the label level**:
 
 ```sql
--- 1. hai he thong join bang MA, khong bang TEN
+-- 1. the two systems join by CODE, not by NAME
 select ... from hang_hoa hh
-join hang_hoa_nhom hn using (ma_hang)         -- <- anh xa bang ma
+join hang_hoa_nhom hn using (ma_hang)         -- <- mapping by code
 join cay_nhom_hang cn on cn.nhom_id = hn.nhom_id;
 
--- 2. bo cot nhan trung lap khoi hang_hoa
+-- 2. drop the duplicated label column from hang_hoa
 alter table hang_hoa drop column nhom;
 ```
 
-Bảng `hang_hoa_nhom` chính là **conformed dimension key mapping**, và bước 2 quan trọng
-ngang bước 1: chừng nào `hang_hoa.nhom` còn tồn tại thì còn có người join bằng nó.
+The `hang_hoa_nhom` table is precisely the **conformed dimension key mapping**, and step 2 matters as
+much as step 1: as long as `hang_hoa.nhom` exists, somebody will join by it.
 
-**Luật:** nhãn để **đọc**, mã để **join**. Hai hệ thống chỉ conform khi chúng dùng chung
-**mã**; dùng chung nhãn là ảo giác conform, và nó vỡ vào ngày ai đó sửa chính tả.
+**The rule:** labels are for **reading**, codes are for **joining**. Two systems only conform when they share
+**codes**; sharing labels is the illusion of conformance, and it shatters the day somebody fixes a spelling.
 
-Xem [case study hai mart không ghép được](../case-studies/hai-mart-khong-ghep-duoc.md).
+See [the case study on two marts that can't be joined](../case-studies/hai-mart-khong-ghep-duoc.md).
 
 </details>
 
-### Bài A.3 — Test bắt lỗi conformance trước khi nó lan
+### Exercise A.3 — Tests catching a conformance bug before it spreads
 
-**Đề:** viết ba test phát hiện dimension không conform.
+**The task:** write three tests detecting a non-conformed dimension.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- 1. MO COI: co ma nao trong bang anh xa khong ton tai o dim goc
+-- 1. ORPHANS: any code in the mapping table absent from the source dim
 select hn.nhom_id from hang_hoa_nhom hn
 left join cay_nhom_hang cn on cn.nhom_id = hn.nhom_id
 where cn.nhom_id is null;
 
--- 2. PHU KIN: co mat hang nao chua duoc gan nhom
+-- 2. COVERAGE: any item not yet assigned a group
 select hh.ma_hang from hang_hoa hh
 left join hang_hoa_nhom hn using (ma_hang)
 where hn.ma_hang is null;
 
--- 3. NHAN LECH: cung ma nhung khac nhan giua hai nguon
+-- 3. LABEL DRIFT: the same code with different labels across the two sources
 select cn.nhom_id, cn.ten_nhom ten_chuan, hh.nhom ten_o_nguon_khac
 from cay_nhom_hang cn
 join hang_hoa_nhom hn on hn.nhom_id = cn.nhom_id
@@ -170,19 +169,19 @@ where strip_accents(hh.nhom) is distinct from cn.ten_nhom
   and hh.nhom is not null;
 ```
 
-Ba test bắt ba giai đoạn khác nhau của cùng một bệnh:
+The three tests catch three different stages of the same illness:
 
-| Test | Bắt gì | Nếu bỏ qua |
+| Test | What it catches | If skipped |
 |---|---|---|
-| Mồ côi | mã trỏ tới dòng không tồn tại | join mất dòng |
-| Phủ kín | thực thể chưa được ánh xạ | báo cáo thiếu nhóm |
-| Nhãn lệch | **conformance đang trôi** | hai báo cáo hai nhãn |
+| Orphans | a code pointing at a non-existent row | the join loses rows |
+| Coverage | an entity not yet mapped | the report is missing a group |
+| Label drift | **conformance drifting** | two reports, two labels |
 
-Test 3 là quan trọng nhất và hay bị bỏ nhất, vì nó bắt lỗi **trước khi** nó gây hậu quả.
-Mã vẫn khớp nên mọi join vẫn chạy; chỉ có nhãn bắt đầu lệch. Đến khi ai đó join bằng nhãn
-thì đã muộn.
+Test 3 is the most important and the most often skipped, because it catches the bug **before** it causes damage.
+The codes still match so every join still runs; only the labels start to drift. By the time somebody joins by label
+it's too late.
 
-Trong dbt, cả ba là `relationships` test và `singular test`:
+In dbt, all three are a `relationships` test plus singular tests:
 
 ```yaml
 models:
@@ -197,71 +196,71 @@ models:
         tests: [not_null, unique]
 ```
 
-Test `relationships` của dbt chính là test 1. Hai test còn lại phải tự viết.
+dbt's `relationships` test is exactly test 1. The other two you write yourself.
 
 </details>
 
-### Bài A.4 — Conformed nghĩa là gì cho chính xác
+### Exercise A.4 — What conformed means, precisely
 
-**Đề:** không có SQL. Hai mart đều có `dim_khach`. Điều kiện nào để gọi là conformed?
+**The task:** no SQL. Two marts both have a `dim_khach`. What conditions make them conformed?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**Conformed không có nghĩa là "giống hệt nhau".** Nó có nghĩa là **một cái là tập con
-đúng của cái kia, ở phần chung**.
+**Conformed doesn't mean "identical".** It means **one is a correct subset of the other, in the
+shared part**.
 
-Ba điều kiện, xếp theo thứ tự bắt buộc:
+Three conditions, in order of how mandatory they are:
 
-**1. Cùng khoá, cùng nghĩa.** `khach_key = 1001` phải là **cùng một khách** ở cả hai
-mart. Đây là điều kiện tuyệt đối — thiếu nó thì mọi thứ khác vô nghĩa.
+**1. The same key, the same meaning.** `khach_key = 1001` must be **the same customer** in both
+marts. This is absolute — without it everything else is meaningless.
 
-**2. Thuộc tính chung phải cùng giá trị và cùng nhãn.** Nếu cả hai có `khu_vuc`, giá trị
-phải giống nhau, và cách viết cũng phải giống nhau (bài A.2).
+**2. Shared attributes must have the same values and the same labels.** If both have `khu_vuc`, the values
+must be the same, and so must the spelling (exercise A.2).
 
-**3. Được phép có thuộc tính riêng.** Mart marketing có `phan_khuc_quang_cao`, mart bán
-hàng không có — **vẫn conformed**. Đó là ý nghĩa của *shrunken dimension*.
+**3. Type-specific attributes are allowed.** The marketing mart has `phan_khuc_quang_cao`, the sales
+mart doesn't — **still conformed**. That's what a *shrunken dimension* means.
 
-Cái **không** phải điều kiện:
+What is **not** a condition:
 
-| Hiểu nhầm | Thực tế |
+| The misunderstanding | The reality |
 |---|---|
-| "Phải cùng số dòng" | mart vùng chỉ chứa khách vùng đó — vẫn conformed |
-| "Phải cùng số cột" | thuộc tính riêng được phép |
-| "Phải cùng một bảng vật lý" | copy được, miễn sinh từ **một nguồn** |
-| "Phải cùng độ tươi" | được lệch, nhưng **phải biết là đang lệch** |
+| "They must have the same row count" | a regional mart holds only that region's customers — still conformed |
+| "They must have the same column count" | specific attributes are allowed |
+| "They must be the same physical table" | copies are fine, as long as they derive from **one source** |
+| "They must have the same freshness" | they may differ, but **you must know they differ** |
 
-Dòng cuối là cái bẫy thực tế nhất: hai mart cùng conform về cấu trúc nhưng một cái nạp
-lúc 2h, một cái lúc 6h. Báo cáo chạy lúc 4h cho hai con số khác nhau, và **không có gì
-sai trong thiết kế** — sai ở chỗ không ai công bố độ tươi.
+The last row is the most practical trap: two marts conforming structurally, but one loaded
+at 02:00 and the other at 06:00. A report run at 04:00 gives two different numbers, and **nothing
+is wrong with the design** — what's wrong is that nobody published the freshness.
 
-Cách kiểm rẻ nhất: thêm `nap_luc` vào mọi dimension và **bắt buộc hiện nó trên báo cáo**.
+The cheapest check: add `nap_luc` to every dimension and **require it to be shown on the report**.
 
 </details>
 
-### Bài A.5 — Ai sở hữu conformed dimension
+### Exercise A.5 — Who owns a conformed dimension
 
-**Đề:** không có SQL. Ba đội cùng cần `dim_khach`. Ai dựng, ai sửa?
+**The task:** no SQL. Three teams all need `dim_khach`. Who builds it, who changes it?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**Một đội sở hữu, các đội khác dùng.** Không có cách nào khác hoạt động được — và đây là
-vấn đề tổ chức, không phải vấn đề kỹ thuật.
+**One team owns it, the others use it.** Nothing else works — and this is an
+organisational problem, not a technical one.
 
-Ba mô hình thường gặp, và kết cục của mỗi cái:
+Three common models, and each one's outcome:
 
-| Mô hình | Cách làm | Kết cục |
+| The model | How it works | The outcome |
 |---|---|---|
-| **Mỗi đội tự dựng** | ai cần thì tự làm | 3 `dim_khach` lệch nhau trong 6 tháng |
-| **Đội trung tâm sở hữu** | một đội dựng, các đội đăng ký | chậm, nhưng **conform thật** |
-| **Liên bang có hợp đồng** | một đội sở hữu, hợp đồng schema công khai | cân bằng nhất |
+| **Each team builds its own** | whoever needs it makes it | 3 divergent `dim_khach` within 6 months |
+| **A central team owns it** | one team builds it, the others subscribe | slow, but **genuinely conformed** |
+| **Federated with a contract** | one team owns it, with a public schema contract | the best balance |
 
-Mô hình 1 là mặc định khi **không ai quyết định gì** — và nó luôn thắng nếu không có
-người chủ động chặn. Đó chính là
-[case study mỗi mart một dim khách](../case-studies/moi-mart-mot-dim-khach.md).
+Model 1 is the default when **nobody decides anything** — and it always wins unless somebody actively
+blocks it. That's precisely
+[the case study on a customer dim per mart](../case-studies/moi-mart-mot-dim-khach.md).
 
-Với mô hình 3, "hợp đồng" phải nói rõ bốn thứ:
+With model 3, the "contract" must state four things clearly:
 
 ```yaml
 # contracts/dim_khach.yml
@@ -275,22 +274,22 @@ thuoc_tinh_cam_doi:        # doi thi phai bao truoc 1 sprint
   - khu_vuc
 ```
 
-Và điều quan trọng nhất, thường bị quên: **đội sở hữu phải có nghĩa vụ trả lời** khi đội
-khác cần thêm thuộc tính. Sở hữu mà không phục vụ thì các đội khác sẽ tự dựng bản riêng —
-và bạn quay về mô hình 1, chỉ là chậm hơn.
+And the most important thing, usually forgotten: **the owning team must be obliged to respond** when another
+team needs an extra attribute. Ownership without service means the other teams build their own copies —
+and you're back to model 1, just slower.
 
 </details>
 
 ---
 
-## Bộ B — Conformed facts
+## Group B — Conformed facts
 
-### Bài B.1 — Drill-across: gom trước, ghép sau
+### Exercise B.1 — Drill-across: aggregate first, combine after
 
-**Đề:** ghép `don_hang` (bán hàng) với `tra_hang` (trả hàng) theo khách, tính tỷ lệ trả
-hàng. Hai fact **khác grain**.
+**The task:** combine `don_hang` (sales) with `tra_hang` (returns) by customer, computing the return
+rate. The two facts are at **different grains**.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬───────────┬─────────────┬────────────┬───────────┐
@@ -303,11 +302,11 @@ hàng. Hai fact **khác grain**.
 └──────────┴───────────┴─────────────┴────────────┴───────────┘
 ```
 
-Cột `doanh_thu` cộng lại = **10.215.000**, cột `gia_tri_tra` = **1.500.000**. Cả hai khớp
-tổng gốc.
+The `doanh_thu` column totals **10,215,000**, and `gia_tri_tra` totals **1,500,000**. Both match
+the original totals.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with ban as (
@@ -326,27 +325,27 @@ from ban b full join tra r using (khach_id)
 order by 1;
 ```
 
-Đây là **drill-across**, và ba chi tiết quyết định nó đúng:
+This is **drill-across**, and three details decide whether it's right:
 
-**1. Gom mỗi fact về grain chung TRƯỚC khi ghép.** Hai CTE `ban` và `tra` đều gom về
-grain *một khách*. Chỉ khi hai bên cùng grain mới được ghép.
+**1. Aggregate each fact to the shared grain BEFORE combining.** Both the `ban` and `tra` CTEs aggregate to
+the grain *one customer*. Only once both sides share a grain may you combine them.
 
-**2. `full join`, không phải `inner join`.** `C3` không trả hàng lần nào. `inner join`
-là mất `C3` khỏi báo cáo — và báo cáo "tỷ lệ trả hàng theo khách" mà thiếu khách có tỷ lệ
-0% thì mọi trung bình đều sai.
+**2. `full join`, not `inner join`.** `C3` never returned anything. An `inner join`
+loses `C3` from the report — and a "return rate by customer" report missing the customers at
+0% makes every average wrong.
 
-**3. `nullif(...,0)` ở mẫu số.** Khách có trả hàng nhưng doanh thu 0 (đơn quà tặng) sẽ
-làm chia cho 0. `nullif` biến nó thành `NULL` thay vì lỗi.
+**3. `nullif(...,0)` in the denominator.** A customer with returns but zero revenue (a gift order) would
+cause division by zero. `nullif` turns it into `NULL` instead of an error.
 
-So sánh với cách sai ở bài B.2 để thấy vì sao ba chi tiết này không phải chuyện nhỏ.
+Compare with the wrong way in exercise B.2 to see why these three details aren't trivia.
 
 </details>
 
-### Bài B.2 — Join thẳng hai fact: vừa mất vừa phồng
+### Exercise B.2 — Joining two facts directly: losing and inflating at once
 
-**Đề:** join thẳng `don_hang_chi_tiet` với `tra_hang`, đo cả hai phía.
+**The task:** join `don_hang_chi_tiet` straight to `tra_hang`, and measure both sides.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────────┬────────────────┬──────────┬────────────────────┐
@@ -356,10 +355,10 @@ So sánh với cách sai ở bài B.2 để thấy vì sao ba chi tiết này kh
 └────────────────┴────────────────┴──────────┴────────────────────┘
 ```
 
-**Doanh thu MẤT 34%, giá trị trả PHỒNG 120% — trong cùng một câu truy vấn.**
+**Revenue LOSES 34%, returned value INFLATES 120% — in the same query.**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select sum(so_luong*don_gia) from don_hang_chi_tiet) doanh_thu_that,
@@ -370,57 +369,57 @@ select (select sum(so_luong*don_gia) from don_hang_chi_tiet) doanh_thu_that,
         from don_hang_chi_tiet ct join tra_hang t using (don_hang_id)) tra_neu_join_thang;
 ```
 
-Hai lỗi ngược chiều, cùng lúc:
+Two errors in opposite directions, at once:
 
-**Mất 34% doanh thu** — `inner join` loại 7 đơn không có lần trả nào. Chỉ 3 đơn (`DH003`,
-`DH005`, `DH010`) sống sót.
+**34% of revenue lost** — the `inner join` drops the 7 orders with no returns. Only 3 orders (`DH003`,
+`DH005`, `DH010`) survive.
 
-**Phồng 120% giá trị trả** — `DH003` có **2 lần trả** và **3 dòng hàng** → 6 dòng kết
-quả, nên mỗi lần trả bị đếm 3 lần.
+**120% inflation in returned value** — `DH003` has **2 returns** and **3 goods lines** → 6 result
+rows, so each return is counted 3 times.
 
-Đây là điều làm join thẳng hai fact nguy hiểm hơn mọi lỗi khác trong loạt bài này: **hai
-lỗi che nhau**. Người kiểm tra nhìn tổng thấy "gần đúng" và không nghi ngờ, vì một lỗi
-kéo xuống còn lỗi kia đẩy lên.
+This is what makes joining two facts directly more dangerous than any other bug in this series: **the two
+errors mask each other**. A reviewer looks at the total, sees "about right" and doesn't suspect anything, because one
+error pulls down while the other pushes up.
 
-**Luật tuyệt đối: không bao giờ join hai fact table trực tiếp.** Luôn:
+**The absolute rule: never join two fact tables directly.** Always:
 
 ```text
 1. Gom moi fact ve grain chung        (bang cac dimension chung)
 2. Ghep bang FULL JOIN tren grain do
 ```
 
-Ngoại lệ duy nhất: hai fact **cùng grain chính xác** và có quan hệ 1:1 — nhưng khi đó
-chúng nên là một bảng.
+The only exception: two facts at **exactly the same grain** with a 1:1 relationship — but then
+they ought to be one table.
 
-Xem [case study join hai fact làm phồng tổng](../case-studies/join-hai-fact-lam-phong-tong.md).
+See [the case study on joining two facts inflating the total](../case-studies/join-hai-fact-lam-phong-tong.md).
 
 </details>
 
-### Bài B.3 — Ghép được không có nghĩa là so được
+### Exercise B.3 — Joinable doesn't mean comparable
 
-**Đề:** không có SQL. Hai fact đã conform về dimension và ghép được. Còn điều kiện gì để
-hai **số đo** so sánh được với nhau?
+**The task:** no SQL. Two facts already conform on their dimensions and can be joined. What further conditions make
+the two **measures** comparable with each other?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Đây là phần mà bus matrix **không** đảm bảo. Conformed *dimension* cho phép **ghép**;
-conformed *facts* cho phép **so sánh**. Bốn điều kiện:
+This is the part the bus matrix does **not** guarantee. Conformed *dimensions* allow **joining**;
+conformed *facts* allow **comparing**. Four conditions:
 
-**1. Cùng định nghĩa nghiệp vụ.** `doanh_thu` của bán hàng có gồm phí ship không? Có trừ
-chiết khấu không? `gia_tri_tra` có gồm phí ship hoàn lại không? Hai định nghĩa lệch là
-tỷ lệ trả hàng sai mà **không cách nào phát hiện từ dữ liệu**.
+**1. The same business definition.** Does sales' `doanh_thu` include the shipping fee? Does it subtract
+discounts? Does `gia_tri_tra` include refunded shipping? Two divergent definitions make the return rate
+wrong with **no way to detect it from the data**.
 
-**2. Cùng đơn vị.** Cả hai là VND chưa thuế, hay một cái đã thuế? Bộ D là toàn bộ bài này.
+**2. The same unit.** Are both pre-tax VND, or is one post-tax? Group D is entirely about this.
 
-**3. Cùng cách xử lý ngoại lệ.** Đơn huỷ có tính vào doanh thu không? Trả hàng của đơn
-huỷ tính thế nào?
+**3. The same handling of edge cases.** Do cancelled orders count towards revenue? How does a return on a
+cancelled order count?
 
-**4. Cùng mốc thời gian.** Bán hàng tính theo `ngay_dat`, trả hàng theo `ngay_tra` — tỷ
-lệ trả tháng 7 gồm cả hàng bán tháng 6 trả trong tháng 7. Đó có thể là ý muốn, nhưng
-**phải là ý muốn có ý thức**.
+**4. The same time anchor.** Sales counts by `ngay_dat`, returns by `ngay_tra` — so July's return
+rate includes goods sold in June and returned in July. That may be the intent, but
+**it must be a conscious intent**.
 
-Cách cưỡng chế duy nhất hoạt động: **cùng tên thì cùng nghĩa, khác nghĩa thì khác tên**.
+The only enforcement that works: **the same name means the same thing, a different meaning means a different name**.
 
 ```text
 doanh_thu_gop          = tien hang, chua tru gi
@@ -428,20 +427,20 @@ doanh_thu_thuan        = tru chiet khau va tra hang
 doanh_thu_co_phi_ship  = cong phi ship
 ```
 
-Ba cột, ba tên, không ai nhầm. Đối lập với việc cả ba đều tên `doanh_thu` ở ba mart khác
-nhau — lúc đó cuộc họp đối soát sẽ kéo dài vài buổi và không ai sai.
+Three columns, three names, nobody confused. As opposed to all three being called `doanh_thu` in three different
+marts — in which case the reconciliation meeting runs for several sessions and nobody is wrong.
 
-Xem [Conformed facts](../skills/conformed-facts.md) và
-[case study hai phòng hai doanh thu](../case-studies/hai-phong-hai-doanh-thu.md).
+See [Conformed facts](../skills/conformed-facts.md) and
+[the case study on two departments, two revenue numbers](../case-studies/hai-phong-hai-doanh-thu.md).
 
 </details>
 
-### Bài B.4 — Đối soát khép kín giữa hai fact
+### Exercise B.4 — The closed-loop reconciliation between two facts
 
-**Đề:** viết phép kiểm chứng minh drill-across ở bài B.1 không làm mất hay phồng số nào.
+**The task:** write a check proving exercise B.1's drill-across neither lost nor inflated any number.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with ban as (select h.khach_id, sum(ct.so_luong*ct.don_gia) doanh_thu
@@ -461,19 +460,19 @@ select sum(doanh_thu) tu_ghep_doanh_thu,
 from ghep;
 ```
 
-Cột `khep_kin` phải là `true`. Đây là **phép kiểm bắt buộc cho mọi drill-across**, và lý
-do nó bắt buộc: bài B.2 cho thấy sai lệch có thể xảy ra ở **cả hai chiều cùng lúc**, nên
-kiểm một chiều là không đủ.
+The `khep_kin` column must be `true`. This is **the mandatory check for every drill-across**, and the
+reason it's mandatory: exercise B.2 showed the divergence can happen in **both directions at once**, so
+checking one direction isn't enough.
 
-Ba biến thể cần nhớ:
+Three variants to remember:
 
-| Kiểm gì | Bắt lỗi |
+| What you check | The bug it catches |
 |---|---|
-| Tổng mỗi số đo **sau ghép** = tổng gốc | phồng hoặc mất do join |
-| Số dòng sau ghép = số phần tử **hợp** của hai bên | `inner join` thay vì `full join` |
-| Không có `NULL` ở cột khoá ghép | khoá không conform |
+| Each measure's total **after combining** = the original total | inflation or loss from the join |
+| The row count after combining = the size of the **union** of the two sides | `inner join` instead of `full join` |
+| No `NULL` in the combining key column | a non-conformed key |
 
-Với dbt, viết thành một test so sánh hai `ref()`:
+In dbt, write it as a test comparing two `ref()`s:
 
 ```sql
 -- tests/drill_across_khep_kin.sql
@@ -483,20 +482,20 @@ from {{ ref('rpt_ban_va_tra') }}
 having sum(doanh_thu) <> (select sum(tien_hang) from {{ ref('fct_ban_hang') }})
 ```
 
-Test kiểu này phải chạy **trên bảng báo cáo cuối**, không chỉ trên fact. Fact đúng mà
-báo cáo sai là chuyện thường xuyên nhất.
+This kind of test must run **on the final report table**, not only on the fact. A correct fact with an
+incorrect report is the most frequent situation of all.
 
 </details>
 
 ---
 
-## Bộ C — Bus architecture và bus matrix
+## Group C — Bus architecture and the bus matrix
 
-### Bài C.1 — Bus matrix đo được bằng SQL
+### Exercise C.1 — A bus matrix you can measure with SQL
 
-**Đề:** dựng bus matrix cho sáu quy trình × năm dimension, dạng bảng `true`/`false`.
+**The task:** build a bus matrix for six processes × five dimensions, as a `true`/`false` table.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬──────────┬───────────┬──────────┬─────────┬─────────────┐
@@ -512,7 +511,7 @@ báo cáo sai là chuyện thường xuyên nhất.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'Ban hang' quy_trinh, true dim_ngay, true dim_khach, true dim_hang,
@@ -524,30 +523,30 @@ union all select 'Su kien web',  true, true,  true,  false, false
 union all select 'Don ngoai te', true, true,  false, false, true;
 ```
 
-Ba thứ đọc ra ngay, và mỗi thứ là một quyết định kiến trúc:
+Three things you read off immediately, each of them an architectural decision:
 
-**Cột `dim_ngay` toàn `true`.** Nó là conformed dimension quan trọng nhất — dựng một lần,
-dùng chung, và **không mart nào được có bản riêng**. Nếu có hai `dim_ngay` với hai định
-nghĩa quý tài chính thì mọi báo cáo theo quý đều phải hỏi "quý của ai".
+**The `dim_ngay` column is all `true`.** It's the most important conformed dimension — build it once,
+share it, and **no mart may have its own copy**. With two `dim_ngay` carrying two definitions
+of the fiscal quarter, every quarterly report has to ask "whose quarter".
 
-**`dim_hang` vắng ở "Trả hàng".** Đây không phải lựa chọn thiết kế — nó là **lỗ hổng dữ
-liệu nguồn**: `tra_hang` chỉ ghi ở cấp đơn, không ghi mặt hàng nào bị trả. Bus matrix làm
-lỗ hổng đó lộ ra **trước khi** có người hỏi "tỷ lệ trả hàng theo mặt hàng".
+**`dim_hang` is absent from "Tra hang".** This isn't a design choice — it's a **gap in the source
+data**: `tra_hang` only records at order level, never which item was returned. The bus matrix makes
+that gap visible **before** somebody asks for "return rate by item".
 
-**`dim_tien_te` chỉ có một `true`.** Dimension chỉ một quy trình dùng thì **chưa cần
-conform** — không có gì để ghép nó với. Đầu tư công sức conform nó lúc này là sớm.
+**`dim_tien_te` has only one `true`.** A dimension used by only one process **doesn't need
+conforming yet** — there's nothing to join it with. Investing effort to conform it now is premature.
 
-Bus matrix không phải sơ đồ trang trí. Nó là **kế hoạch xây dựng**: mỗi ô `true` là một
-khoá ngoại phải tồn tại, và mỗi cột nhiều `true` là một dimension phải conform trước
-tiên.
+A bus matrix isn't a decorative diagram. It's a **construction plan**: every `true` cell is a
+foreign key that must exist, and every column with many `true`s is a dimension that must conform
+first.
 
 </details>
 
-### Bài C.2 — Đọc ra cặp quy trình nào drill-across được
+### Exercise C.2 — Reading off which pairs of processes can drill across
 
-**Đề:** từ bus matrix, xác định cặp quy trình nào ghép được và theo trục nào.
+**The task:** from the bus matrix, determine which pairs of processes can be combined and along which axes.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────────────────┬──────────────────────┬────────────────┐
@@ -562,12 +561,12 @@ tiên.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Đọc từ bus matrix: hai quy trình ghép được theo **giao** của các dimension chúng cùng có.
+Read from the bus matrix: two processes can be combined along the **intersection** of the dimensions they share.
 
 ```sql
--- kiem "Ban hang / Su kien web" ghep duoc theo 3 truc
+-- check that "Ban hang / Su kien web" combines along 3 axes
 with ban as (select h.khach_id, ct.ma_hang, h.ngay_dat ngay,
                     sum(ct.so_luong*ct.don_gia) doanh_thu
              from don_hang h join don_hang_chi_tiet ct using (don_hang_id)
@@ -581,77 +580,77 @@ from ban b full join xem x using (khach_id, ma_hang, ngay)
 order by 3 desc limit 5;
 ```
 
-Hai điều quan trọng hơn bảng trên:
+Two things matter more than the table above:
 
-**Số trục chung quyết định câu hỏi trả lời được.** "Bán hàng / Sự kiện web" chung 3 trục
-nên hỏi được *"khách này xem sản phẩm này bao nhiêu lần trước khi mua"*. "Trả hàng / Tồn
-kho" chỉ chung `ngay` nên chỉ hỏi được *"ngày nào trả nhiều mà tồn cũng cao"* — thô hơn
-nhiều.
+**The number of shared axes decides which questions are answerable.** "Ban hang / Su kien web" share 3 axes
+so you can ask *"how many times did this customer view this product before buying"*. "Tra hang / Ton
+kho" share only `ngay` so you can only ask *"which day had both high returns and high stock"* — far
+coarser.
 
-**Chung `dim_ngay` là mức tối thiểu, và nó luôn có.** Nên câu "hai quy trình có ghép được
-không" gần như luôn là "có". Câu đúng phải là **"ghép được ở mức chi tiết nào"**, và bảng
-trên trả lời đúng câu đó.
+**Sharing `dim_ngay` is the minimum, and it's always there.** So "can these two processes be
+combined" is nearly always "yes". The right question is **"at what level of detail can they be combined"**, and the table
+above answers exactly that.
 
-Và ghép được vẫn chưa phải so được — đó là bộ B.
+And being joinable still isn't being comparable — that's group B.
 
 </details>
 
-### Bài C.3 — Value chain: thứ tự dựng
+### Exercise C.3 — The value chain: the order to build in
 
-**Đề:** không có SQL. Sáu quy trình nên dựng theo thứ tự nào?
+**The task:** no SQL. In what order should the six processes be built?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Xếp theo **value chain** — dòng chảy giá trị qua doanh nghiệp:
+Arranged by **value chain** — the flow of value through the business:
 
 ```text
 Ton kho  →  Su kien web  →  Ban hang  →  Giao hang  →  Tra hang
    (co hang)   (khach xem)   (chot don)   (van chuyen)  (hoan)
 ```
 
-Nhưng **không** dựng theo thứ tự đó. Thứ tự dựng theo ba tiêu chí, xếp giảm dần:
+But **don't** build in that order. The build order follows three criteria, in descending priority:
 
-**1. Quy trình nào có nhiều dimension nhất → dựng trước.** *Bán hàng* dùng cả 4 dimension.
-Dựng nó là conform luôn 4 dimension, và mọi quy trình sau chỉ việc dùng lại. Dựng *Tồn
-kho* trước thì chỉ conform được 2, rồi vẫn phải conform thêm 2 nữa.
+**1. Whichever process has the most dimensions → build it first.** *Ban hang* uses all 4 dimensions.
+Building it conforms all 4 at once, and every later process just reuses them. Building *Ton
+kho* first conforms only 2, and you still have to conform 2 more afterwards.
 
-**2. Quy trình nào nghiệp vụ đau nhất → ưu tiên.** Kho dữ liệu không có người dùng thì
-chết, dù thiết kế đẹp.
+**2. Whichever process hurts the business most → prioritise.** A warehouse with no users
+dies, however beautiful the design.
 
-**3. Quy trình nào dữ liệu nguồn sẵn sàng nhất → làm sớm.** *Sự kiện web* 43 dòng/5 ngày
-là nguồn lớn nhất và bẩn nhất — để sau.
+**3. Whichever process has the readiest source data → do it early.** *Su kien web* at 43 rows/5 days
+is the largest and dirtiest source — leave it for later.
 
-Thứ tự đề xuất: **Bán hàng → Trả hàng → Giao hàng → Tồn kho → Sự kiện web → Đơn ngoại tệ**.
+The proposed order: **Ban hang → Tra hang → Giao hang → Ton kho → Su kien web → Don ngoai te**.
 
-Cái **không** được làm: dựng cả sáu song song bởi sáu đội. Đó là cách chắc chắn nhất để
-có sáu `dim_khach` khác nhau — và conform sau khi đã có sáu bản thì đắt gấp nhiều lần
-conform ngay từ đầu.
+What you must **not** do: build all six in parallel with six teams. That's the surest way to get
+six different `dim_khach` — and conforming after six versions exist costs many times more than
+conforming from the start.
 
-**Bus matrix chính là công cụ để tránh chuyện đó**: nó cho phép dựng **từng quy trình
-một** mà vẫn đảm bảo ghép lại được, vì mỗi quy trình mới chỉ được dùng dimension đã
-conform hoặc phải conform dimension mới của nó.
+**The bus matrix is precisely the tool for avoiding that**: it lets you build **one process at a
+time** while still guaranteeing they can be combined, because each new process may only use dimensions already
+conformed, or must conform its own new one.
 
-Xem [Bus architecture](../reference/bus-architecture.md).
+See [Bus architecture](../reference/bus-architecture.md).
 
 </details>
 
-### Bài C.4 — Ô `true` mới xuất hiện
+### Exercise C.4 — A new `true` cell appears
 
-**Đề:** không có SQL. Nghiệp vụ yêu cầu *"tỷ lệ trả hàng theo mặt hàng"* — tức ô
-`Tra hang × dim_hang` phải thành `true`. Làm gì?
+**The task:** no SQL. The business asks for *"return rate by item"* — meaning the
+`Tra hang × dim_hang` cell must become `true`. What do you do?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Ô đó `false` vì **dữ liệu nguồn không có**, không phải vì mô hình thiếu. Nên không có
-cách nào sửa bằng SQL. Bốn lựa chọn, xếp theo mức độ trung thực:
+That cell is `false` because **the source data doesn't have it**, not because the model is lacking. So there's no
+way to fix it in SQL. Four options, ordered by honesty:
 
-**1. Sửa hệ thống nguồn** — thêm chi tiết mặt hàng vào phiếu trả. Đúng nhất, chậm nhất,
-và **không có dữ liệu quá khứ**. Từ ngày sửa trở đi mới có.
+**1. Fix the source system** — add item detail to the return slip. The most correct, the slowest,
+and **with no historical data**. Only from the day of the fix onwards.
 
-**2. Phân bổ theo tỷ trọng đơn** — chia `gia_tri_tra` xuống mặt hàng theo tỷ lệ tiền hàng
-trong đơn, đúng kỹ thuật của [bộ 5 bài A.1](bt-05-fact-nang-cao.md):
+**2. Allocate by order proportion** — divide `gia_tri_tra` down to the items in proportion to the goods amount
+in the order, exactly the technique of [set 5, exercise A.1](bt-05-fact-nang-cao.md):
 
 ```sql
 select ct.ma_hang,
@@ -660,35 +659,35 @@ select ct.ma_hang,
 from tra_hang t join don_hang_chi_tiet ct using (don_hang_id) group by 1;
 ```
 
-Con số này là **ước tính**, và phải mang tên nói rõ điều đó: `tra_uoc_tinh` chứ không
-phải `gia_tri_tra`. Nếu khách trả đúng cái laptop 900.000 trong đơn `DH003`, phân bổ vẫn
-rải đều cho cả bàn phím — sai hoàn toàn ở mức mặt hàng.
+This number is an **estimate**, and must carry a name that says so: `tra_uoc_tinh`, not
+`gia_tri_tra`. If a customer returned exactly the 900,000 laptop in order `DH003`, the allocation still
+spreads it evenly across the keyboard too — entirely wrong at item level.
 
-**3. Chấp nhận không trả lời được**, và nói rõ vì sao. Lựa chọn này bị đánh giá thấp:
-"chúng tôi không có dữ liệu này, đây là cách để có" trung thực hơn một con số ước tính
-mà sáu tháng sau không ai nhớ là ước tính.
+**3. Accept that it's unanswerable**, and say why. This option is undervalued:
+"we don't have this data, here's how to get it" is more honest than an estimated number
+that nobody remembers is an estimate six months later.
 
-**4. Kết hợp 1 + 3** — trả lời "chưa có, đang sửa nguồn, từ tháng sau sẽ có", và trong
-lúc chờ thì cung cấp số ở mức đơn.
+**4. Combine 1 + 3** — answer "not yet, we're fixing the source, it'll be there from next month", and while
+waiting, provide the number at order level.
 
-**Điều cấm:** dựng số phân bổ ở lựa chọn 2 rồi đặt tên như số thật. Đó là cách một con số
-ước tính trở thành "sự thật" trong toàn công ty, và không ai truy được nguồn gốc.
+**What's forbidden:** producing the allocated number from option 2 and naming it as if it were real. That's how an
+estimated number becomes "the truth" across a whole company, with nobody able to trace its origin.
 
-Bus matrix có giá trị ở đây vì nó **ghi lại ô đó là `false` từ đầu** — nên khi có người
-hỏi, câu trả lời sẵn sàng ngay, không phải điều tra.
+The bus matrix earns its keep here because it **recorded that cell as `false` from the start** — so when somebody
+asks, the answer is ready immediately, with no investigation.
 
 </details>
 
 ---
 
-## Bộ D — Nhiều tiền tệ và đơn vị đo
+## Group D — Several currencies and units of measure
 
-### Bài D.1 — Ba cách join tỷ giá, ba số đơn
+### Exercise D.1 — Three ways to join the rate table, three order counts
 
-**Đề:** đếm số đơn ngoại tệ còn lại sau khi join tỷ giá, theo hai cách: join bằng
-`(ngay, tien_te)`, và join theo **khoảng hiệu lực có thêm dòng `VND` = 1**.
+**The task:** count the foreign-currency orders surviving a rate join, two ways: joining on
+`(ngay, tien_te)`, and joining by **validity interval with an added `VND` = 1 row**.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬──────────────┬────────────────────┐
@@ -698,10 +697,10 @@ hỏi, câu trả lời sẵn sàng ngay, không phải điều tra.
 └─────────┴──────────────┴────────────────────┘
 ```
 
-**5 trên 7 — mất 28,6%.** Hai đơn mất vì hai lý do khác nhau.
+**5 out of 7 — losing 28.6%.** Two orders lost for two different reasons.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tg as (
@@ -709,7 +708,7 @@ with tg as (
          coalesce((lead(ngay) over (partition by tien_te order by ngay) - interval 1 day)::date,
                   date '9999-12-31') hieu_luc_den, ty_gia
   from ty_gia
-  union all select 'VND', date '2000-01-01', date '9999-12-31', 1)   -- <- dong quan trong nhat
+  union all select 'VND', date '2000-01-01', date '9999-12-31', 1)   -- <- the most important row
 select (select count(*) from don_hang_ngoai_te) don_goc,
        (select count(*) from don_hang_ngoai_te d
           join ty_gia t on t.ngay = d.ngay_dat and t.tien_te = d.tien_te) c1_join_bang,
@@ -718,28 +717,29 @@ select (select count(*) from don_hang_ngoai_te) don_goc,
                  and d.ngay_dat between tg.hieu_luc_tu and tg.hieu_luc_den) c2_timespan_co_VND;
 ```
 
-Hai đơn mất, hai nguyên nhân:
+Two orders lost, two causes:
 
-**`DN03` (EUR, 04/07)** — bảng `ty_gia` **không có dòng EUR ngày 04/07**. Chữa bằng
-khoảng hiệu lực: tỷ giá 03/07 có hiệu lực tới hết 04/07.
+**`DN03` (EUR, 04/07)** — the `ty_gia` table **has no EUR row for 04/07**. Cured with
+validity intervals: the 03/07 rate stays in effect through 04/07.
 
-**`DN07` (VND, 1.500.000)** — **đồng tiền gốc không nằm trong bảng tỷ giá**. Đây là lỗi
-kinh điển và rất dễ bỏ sót, vì nó nghe hiển nhiên: "VND thì cần tỷ giá làm gì".
+**`DN07` (VND, 1,500,000)** — **the base currency isn't in the rate table**. This is the
+classic bug and very easily missed, because it sounds obvious: "why would VND need a rate".
 
-Cần, vì mọi đơn phải đi qua **cùng một** đường quy đổi. Không có dòng `VND = 1` thì phải
-viết `case when tien_te='VND' then so_tien else so_tien*ty_gia end` ở **mọi** truy vấn,
-và ai đó sẽ quên.
+It does, because every order must travel the **same** conversion path. Without a `VND = 1` row you have to
+write `case when tien_te='VND' then so_tien else so_tien*ty_gia end` in **every** query,
+and somebody will forget.
 
-**Luật:** bảng tỷ giá phải chứa **đồng tiền báo cáo với tỷ giá 1**, có hiệu lực từ trước
-mọi dữ liệu tới `9999-12-31`. Một dòng, và nó xoá bỏ cả một lớp lỗi.
+**The rule:** the rate table must contain **the reporting currency at rate 1**, in effect from before
+all data through `9999-12-31`. One row, and it eliminates an entire class of bug.
 
 </details>
 
-### Bài D.2 — Chốt cả số gốc lẫn số quy đổi
+### Exercise D.2 — Freeze both the original and the converted amount
 
-**Đề:** dựng fact ngoại tệ giữ **cả ba**: số tiền gốc, tỷ giá đã dùng, và số quy đổi.
+**The task:** build a foreign-currency fact holding **all three**: the original amount, the rate used, and the
+converted amount.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬─────────┬─────────────┬────────┬─────────────┐
@@ -755,10 +755,10 @@ mọi dữ liệu tới `9999-12-31`. Một dòng, và nó xoá bỏ cả một 
 └──────────────┴─────────┴─────────────┴────────┴─────────────┘
 ```
 
-Tổng quy đổi = **41.350.500 VND**, đủ 7 đơn.
+The converted total = **41,350,500 VND**, all 7 orders present.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tg as (
@@ -774,30 +774,30 @@ join tg on tg.tien_te = d.tien_te and d.ngay_dat between tg.hieu_luc_tu and tg.h
 order by 1;
 ```
 
-**Ba cột, không phải một.** Mỗi cột phục vụ một mục đích không thay thế được:
+**Three columns, not one.** Each serves a purpose the others can't:
 
-| Cột | Dùng cho | Mất nó thì |
+| Column | Used for | Losing it means |
 |---|---|---|
-| `so_tien_goc` | đối soát với hệ thống nguồn, khách hàng | không đối soát được |
-| `ty_gia` | **truy vết** — vì sao ra con số này | không giải thích được |
-| `so_tien_vnd` | cộng, báo cáo tổng | phải quy đổi lúc đọc |
+| `so_tien_goc` | reconciling with the source system and the customer | you can't reconcile |
+| `ty_gia` | **traceability** — why this number came out | you can't explain it |
+| `so_tien_vnd` | summing, reporting totals | you must convert at read time |
 
-Cột `ty_gia` là cột hay bị bỏ nhất và cần nhất. Không có nó, khi có người hỏi *"vì sao
-đơn này ra 8.310.000"*, bạn phải đi tra lại bảng tỷ giá — mà bảng tỷ giá có thể đã được
-sửa (nguồn gửi lại, hiệu chỉnh cuối tháng). Lúc đó **không tái lập được** con số cũ.
+The `ty_gia` column is the most often dropped and the most needed. Without it, when somebody asks *"why did
+this order come out as 8,310,000"*, you have to go back to the rate table — and the rate table may have been
+edited (the source resent it, a month-end adjustment). At that point the old number is **not reproducible**.
 
-**Luật: quy đổi lúc nạp, không lúc đọc.** Quy đổi lúc đọc nghĩa là báo cáo hôm nay và
-báo cáo hôm qua cho số khác nhau vì tỷ giá đã cập nhật — đúng
-[case study doanh thu đổi theo tỷ giá](../case-studies/doanh-thu-doi-theo-ty-gia.md).
+**The rule: convert at load time, not at read time.** Converting at read time means today's report and
+yesterday's report give different numbers because the rate has been updated — exactly
+[the case study on revenue moving with the exchange rate](../case-studies/doanh-thu-doi-theo-ty-gia.md).
 
 </details>
 
-### Bài D.3 — Tỷ giá nào: lúc giao dịch hay cuối kỳ
+### Exercise D.3 — Which rate: at the transaction or at period end
 
-**Đề:** tính tổng quy đổi **hai cách** — theo tỷ giá ngày giao dịch, và theo tỷ giá ngày
-10/07 — rồi so.
+**The task:** compute the converted total **two ways** — at the transaction-date rate, and at the
+10/07 rate — then compare.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬──────────┬──────────────┬─────────────────────┬────────┐
@@ -809,10 +809,10 @@ báo cáo hôm qua cho số khác nhau vì tỷ giá đã cập nhật — đún
 └─────────┴──────────┴──────────────┴─────────────────────┴────────┘
 ```
 
-Chênh **265.000 VND** trên 41,35 triệu — 0,64%. Nhỏ, nhưng nó **không phải sai số**.
+A gap of **265,000 VND** on 41.35 million — 0.64%. Small, but it **isn't an error**.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tg as (
@@ -832,54 +832,54 @@ join cuoi_ky ck on ck.tien_te = d.tien_te
 group by 1 order by 1;
 ```
 
-Cả hai số đều đúng, cho hai câu hỏi khác nhau — và **kế toán dùng cả hai, có tên riêng**:
+Both numbers are right, for two different questions — and **accounting uses both, each with its own name**:
 
-| Cách | Tên | Trả lời |
+| The method | The name | It answers |
 |---|---|---|
-| Tỷ giá **ngày giao dịch** | *transaction rate* | "lúc bán, đơn này đáng bao nhiêu VND" |
-| Tỷ giá **cuối kỳ** | *closing rate* | "hôm nay, khoản này đáng bao nhiêu VND" |
-| Chênh lệch | **lãi/lỗ tỷ giá** | tác động của biến động tỷ giá |
+| The **transaction-date** rate | *transaction rate* | "at the time of sale, what was this order worth in VND" |
+| The **period-end** rate | *closing rate* | "today, what is this balance worth in VND" |
+| The difference | **an FX gain/loss** | the impact of exchange-rate movement |
 
-Cột `chenh` = 265.000 **không phải sai số cần sửa** — nó là **lãi tỷ giá**, một con số có
-ý nghĩa kế toán và phải được báo cáo riêng.
+The `chenh` column at 265,000 is **not an error to fix** — it's an **FX gain**, a number with
+accounting meaning that must be reported separately.
 
-Đó là lý do fact phải giữ `so_tien_goc` và `ty_gia` (bài D.2): có hai cột đó thì tính
-được **cả hai** cách bất cứ lúc nào. Chỉ giữ `so_tien_vnd` là mất vĩnh viễn khả năng
-tính lại theo tỷ giá khác.
+That's why the fact must keep `so_tien_goc` and `ty_gia` (exercise D.2): with those two columns you can compute
+**both** methods at any time. Keeping only `so_tien_vnd` permanently loses the ability to
+recompute at another rate.
 
-Với kỳ báo cáo dài, còn cách thứ ba: **tỷ giá bình quân kỳ**. Ba cách, và chọn cái nào là
-chính sách kế toán — phải hỏi, không được đoán.
+For long reporting periods there's a third method: **the period average rate**. Three methods, and which to choose is
+accounting policy — you must ask, not guess.
 
 </details>
 
-### Bài D.4 — Đơn vị đo: cùng bài toán, khác vẻ ngoài
+### Exercise D.4 — Units of measure: the same problem in different clothes
 
-**Đề:** không có SQL bắt buộc. `so_luong` của `SP-A` (bàn phím) và `SP-C` (laptop) đều là
-"cái". Nhưng nếu nguồn gửi một số theo **thùng 10 cái**, chuyện gì xảy ra?
+**The task:** no SQL required. `so_luong` for `SP-A` (a keyboard) and `SP-C` (a laptop) are both in
+"units". But what happens if the source sends one figure in **boxes of 10**?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
-select sum(so_luong) tong_so_luong from don_hang_chi_tiet;   -- 43 "cai"?
+select sum(so_luong) tong_so_luong from don_hang_chi_tiet;   -- 43 "units"?
 ```
 
-Con số 43 chỉ có nghĩa nếu **mọi dòng cùng đơn vị**. Một dòng ghi theo thùng là 43 trở
-thành số vô nghĩa — và **không có gì trong dữ liệu chỉ ra điều đó**.
+The number 43 only means something if **every row shares a unit**. One row recorded in boxes makes 43
+a meaningless number — and **nothing in the data indicates it**.
 
-Đây là **cùng một bài toán với tiền tệ**, chỉ khác vẻ ngoài:
+This is **the same problem as currencies**, only dressed differently:
 
-| | Tiền tệ | Đơn vị đo |
+| | Currencies | Units of measure |
 |---|---|---|
-| Số gốc | `so_tien` + `tien_te` | `so_luong` + `don_vi` |
-| Hệ số quy đổi | tỷ giá, **đổi theo ngày** | hệ số, **thường cố định** |
-| Số chuẩn hoá | `so_tien_vnd` | `so_luong_cai` |
-| Bẫy | thiếu tỷ giá một ngày | **thiếu cột `don_vi`** |
+| The original figure | `so_tien` + `tien_te` | `so_luong` + `don_vi` |
+| The conversion factor | a rate, **changing daily** | a factor, **usually fixed** |
+| The normalised figure | `so_tien_vnd` | `so_luong_cai` |
+| The trap | a rate missing for one day | **the `don_vi` column missing entirely** |
 
-Bẫy của đơn vị đo **tệ hơn** bẫy tiền tệ ở một điểm: tiền tệ thường có cột `tien_te` nên
-lỗi lộ ra khi join; đơn vị đo thường **không có cột nào cả**, vì "ai cũng biết là cái".
+The unit-of-measure trap is **worse** than the currency trap in one respect: currencies usually have a `tien_te` column so the
+bug surfaces at the join; units of measure usually have **no column at all**, because "everyone knows it's units".
 
-Cấu trúc đúng, giống hệt bài D.2:
+The right structure, exactly like exercise D.2:
 
 ```sql
 create or replace table fct_ban_hang as
@@ -888,77 +888,77 @@ select ..., so_luong so_luong_goc, don_vi_goc, he_so_quy_doi,
 from ...;
 ```
 
-Và với sản phẩm bán theo nhiều đơn vị (cân, mét, lít), hệ số quy đổi là **thuộc tính của
-mặt hàng**, nằm trong `dim_hang_hoa` — không phải hằng số trong code.
+And for a product sold in several units (by weight, metre, litre), the conversion factor is an **attribute of the
+item**, living in `dim_hang_hoa` — not a constant in the code.
 
-**Cái bẫy cuối, khó nhất:** hệ số quy đổi **có thể đổi theo thời gian** (nhà sản xuất đổi
-quy cách đóng gói từ 10 sang 12 cái/thùng). Lúc đó nó cần khoảng hiệu lực, y hệt tỷ giá —
-và bài toán đơn vị đo trở thành **đúng** bài toán tiền tệ, không còn khác gì.
+**The last and hardest trap:** the conversion factor **can change over time** (a manufacturer changes
+the packaging from 10 to 12 per box). At that point it needs validity intervals, exactly like a rate —
+and the unit-of-measure problem becomes **precisely** the currency problem, with no difference left.
 
 </details>
 
-### Bài D.5 — Ba test cho mọi fact đa tiền tệ
+### Exercise D.5 — Three tests for every multi-currency fact
 
-**Đề:** viết ba test bảo vệ fact có quy đổi.
+**The task:** write three tests protecting a fact that carries conversions.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- 1. KHONG DONG NAO THIEU TY GIA
+-- 1. NO ROW MISSING A RATE
 select don_ngoai_id, tien_te, ngay_dat from fct_ngoai_te where ty_gia is null;
 
--- 2. QUY DOI DUNG: so_tien_vnd phai bang so_tien_goc * ty_gia
+-- 2. THE CONVERSION IS RIGHT: so_tien_vnd must equal so_tien_goc * ty_gia
 select don_ngoai_id, so_tien_goc, ty_gia, so_tien_vnd,
        so_tien_goc * ty_gia du_kien
 from fct_ngoai_te
 where abs(so_tien_vnd - so_tien_goc * ty_gia) > 1;
 
--- 3. TY GIA TRONG NGUONG HOP LY: bat loi don vi (nghin dong vs dong)
+-- 3. THE RATE IS IN A PLAUSIBLE RANGE: catches unit errors (thousands vs units)
 select tien_te, min(ty_gia) nho_nhat, max(ty_gia) lon_nhat,
        round(max(ty_gia)*1.0/min(ty_gia), 2) bien_dong
 from fct_ngoai_te group by 1
 having max(ty_gia)*1.0/min(ty_gia) > 1.5;
 ```
 
-Test 3 là test đáng giá nhất và ít người viết nhất. Nó bắt loại lỗi mà hai test kia không
-thấy: **nguồn đổi đơn vị**.
+Test 3 is the most valuable and the least often written. It catches the kind of bug the other two don't
+see: **the source changing units**.
 
-Nếu một hôm nguồn gửi tỷ giá USD là `25,4` thay vì `25400` (đổi từ VND sang nghìn VND),
-thì:
+If one day the source sends the USD rate as `25.4` instead of `25400` (switching from VND to thousands of VND),
+then:
 
-- Test 1 qua — `ty_gia` không `NULL`.
-- Test 2 qua — `so_tien_vnd = so_tien_goc * 25,4`, khớp phép nhân.
-- **Doanh thu tụt 1000 lần**, và không test nào chặn.
+- Test 1 passes — `ty_gia` isn't `NULL`.
+- Test 2 passes — `so_tien_vnd = so_tien_goc * 25.4`, the multiplication matches.
+- **Revenue drops 1000×**, and no test blocks it.
 
-Test 3 bắt được vì biên độ `max/min` nhảy vọt. Ngưỡng `1.5` là ví dụ — phải đặt theo biến
-động thật của từng đồng tiền, và với đồng tiền ổn định thì ngưỡng nên chặt hơn nhiều
+Test 3 catches it because the `max/min` spread jumps. The `1.5` threshold is an example — it must be set from each
+currency's real volatility, and for a stable currency the threshold should be far tighter
 (`1.1`).
 
-Nguyên tắc chung, dùng được cho mọi số đo có hệ số nhân: **test cả giá trị lẫn *độ lớn*.**
-Kiểm tra công thức đúng là chưa đủ — phải kiểm tra kết quả nằm trong khoảng người ta
-mong đợi. Xem [Nhiều tiền tệ và đơn vị đo](../skills/multi-currency-uom.md).
+The general principle, applicable to any measure with a multiplier: **test the value and the *magnitude*.**
+Checking that the formula is right isn't enough — you must check the result falls in the range people
+expect. See [Several currencies and units of measure](../skills/multi-currency-uom.md).
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-| Số | Nghĩa | Bài |
+| The number | What it means | Exercise |
 |---|---|---|
-| **0 dòng** | *"Màn hình"* ≠ *"Man hinh"* — join bằng nhãn | A.1, A.2 |
-| 16,4 / 24,2 / 0,0 / 9,1 % | drill-across đúng: gom trước, `full join` sau | B.1 |
-| 6.750.000 (−34%) và 3.300.000 (+120%) | join thẳng hai fact: mất và phồng cùng lúc | B.2 |
-| `dim_ngay` toàn `true` | conformed dimension quan trọng nhất | C.1 |
-| `Tra hang × dim_hang` = `false` | lỗ hổng dữ liệu nguồn, không phải lỗi mô hình | C.1, C.4 |
-| 5 / 7 đơn (−28,6%) | thiếu tỷ giá một ngày + thiếu dòng `VND` = 1 | D.1 |
-| 41.350.500 VND | tổng quy đổi đủ 7 đơn | D.2 |
-| chênh 265.000 | **lãi tỷ giá**, không phải sai số | D.3 |
+| **0 rows** | *"Màn hình"* ≠ *"Man hinh"* — joining by label | A.1, A.2 |
+| 16.4 / 24.2 / 0.0 / 9.1 % | drill-across done right: aggregate first, then `full join` | B.1 |
+| 6,750,000 (−34%) and 3,300,000 (+120%) | joining two facts directly: losing and inflating at once | B.2 |
+| `dim_ngay` all `true` | the most important conformed dimension | C.1 |
+| `Tra hang × dim_hang` = `false` | a source-data gap, not a model bug | C.1, C.4 |
+| 5 / 7 orders (−28.6%) | one day's rate missing + no `VND` = 1 row | D.1 |
+| 41,350,500 VND | the converted total with all 7 orders | D.2 |
+| a gap of 265,000 | an **FX gain**, not an error | D.3 |
 
 ## Related Topics
 
-- [Bài tập bộ 5 — Fact nâng cao](bt-05-fact-nang-cao.md) — bộ trước
-- [Bài tập bộ 7 — Vận hành](bt-07-van-hanh.md) — bộ cuối
-- [Lab tích hợp](lab-tich-hop.md) — bản chẩn đoán của cùng chủ đề
-- [Kỹ năng — Data Modeling](../skills/index.md) — lý thuyết của bốn kỹ thuật trên
+- [Exercise set 5 — Advanced facts](bt-05-fact-nang-cao.md) — the previous set
+- [Exercise set 7 — Operations](bt-07-van-hanh.md) — the final set
+- [The integration lab](lab-tich-hop.md) — the diagnostic version of the same subject
+- [Skills — Data Modeling](../skills/index.md) — the theory behind the four techniques above
