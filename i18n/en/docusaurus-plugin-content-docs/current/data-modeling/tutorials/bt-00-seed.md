@@ -1,8 +1,7 @@
 ---
-title: "Phụ lục seed — mười bảng cho bộ bài tập"
-i18n_status: untranslated
+title: "Seed appendix — ten tables for the exercise sets"
 sidebar_position: 9
-description: "Nội dung đầy đủ mười seed CSV mới, kèm bẫy cố ý của từng bảng và kỹ thuật nó phục vụ."
+description: "The full contents of ten new CSV seeds, with each table's deliberate trap and the technique it serves."
 tags: [tutorial, seed, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Phụ lục seed — mười bảng cho bộ bài tập
+# Seed appendix — ten tables for the exercise sets
 
-> **Chốt:** năm seed cũ đủ để dạy grain và SCD, nhưng không đủ để dạy bridge, cây phân
-> cấp, đa tiền tệ hay thực thể không đồng nhất. Mười bảng dưới đây bù đúng phần thiếu —
-> và **không bảng nào làm đổi bốn số mốc gốc**.
+> **Takeaway:** the five original seeds suffice to teach grain and SCD, but not bridges, hierarchies,
+> multiple currencies or heterogeneous entities. The ten tables below fill exactly that gap —
+> and **not one of them changes the four baseline numbers**.
 
-## Bốn số mốc không được đổi
+## The four baseline numbers that must not change
 
 ```text
 10 don · 15 dong · doanh thu 10.215.000 · phi ship 400.000
 ```
 
-Kiểm bất cứ lúc nào:
+Check them at any time:
 
 ```sql
 select count(distinct don_hang_id) so_don,
@@ -43,9 +42,9 @@ from don_hang;
 └────────┴─────────┴───────────┴──────────┘
 ```
 
-Lệch một trong bốn số là seed đã bị sửa — `dbt seed --full-refresh` để về gốc.
+Any of the four being off means a seed has been edited — `dbt seed --full-refresh` returns to the original.
 
-## Nạp toàn bộ
+## Load everything
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
@@ -55,28 +54,28 @@ cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 Done. PASS=15 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=15
 ```
 
-Mười lăm seed = năm bảng cũ + mười bảng dưới đây.
+Fifteen seeds = the five original tables + the ten below.
 
-## Bảng tra: bảng nào dạy kỹ thuật nào
+## Lookup: which table teaches which technique
 
-| Seed | Dòng | Kỹ thuật chính | Bẫy cố ý |
+| Seed | Rows | Main technique | The deliberate trap |
 |---|---|---|---|
-| `nhan_vien` | 4 | role-playing, cây tự tham chiếu | `NV04` không có quản lý → `NULL` |
-| `nhan_vien_don` | 17 | bridge table | `DH008` tổng hệ số **0,9** |
-| `cay_nhom_hang` | 8 | hierarchy sâu không đều | hai gốc; sâu 1→4 |
-| `hang_hoa_nhom` | 4 | hierarchy, snowflake | `SP-D` treo ở cấp 2 |
-| `khach_hang_lich_su` | 20 | SCD, phát hiện thay đổi, mini-dim | ba kiểu `updated_at` nói dối |
-| `ty_gia` | 19 | đa tiền tệ | **thiếu EUR ngày 04/07** |
-| `don_hang_ngoai_te` | 7 | đa tiền tệ | `DN07` là `VND`, không có trong `ty_gia` |
-| `kho_hang` | 20 | semi-additive, periodic snapshot | `SP-B` từ 04/07 lệch **+1**, lan sang 05/07 |
-| `su_kien_web` | 43 | factless, real-time, behavior | ngày 05/07 **cắt lúc 10:00** |
-| `giao_dich_tai_chinh` | 12 | thực thể không đồng nhất | mỗi loại điền cột khác nhau |
+| `nhan_vien` | 4 | role-playing, a self-referencing tree | `NV04` has no manager → `NULL` |
+| `nhan_vien_don` | 17 | bridge table | `DH008`'s weights total **0.9** |
+| `cay_nhom_hang` | 8 | a ragged deep hierarchy | two roots; depth 1→4 |
+| `hang_hoa_nhom` | 4 | hierarchy, snowflake | `SP-D` hangs at level 2 |
+| `khach_hang_lich_su` | 20 | SCD, change detection, mini-dim | three ways `updated_at` lies |
+| `ty_gia` | 19 | multiple currencies | **EUR missing for 04/07** |
+| `don_hang_ngoai_te` | 7 | multiple currencies | `DN07` is `VND`, absent from `ty_gia` |
+| `kho_hang` | 20 | semi-additive, periodic snapshot | `SP-B` from 04/07 is **+1** off, spreading to 05/07 |
+| `su_kien_web` | 43 | factless, real-time, behaviour | 05/07 **cut off at 10:00** |
+| `giao_dich_tai_chinh` | 12 | heterogeneous entities | each type fills different columns |
 
 ---
 
 ## `nhan_vien.csv`
 
-Dimension nhân viên, có khoá tự tham chiếu `nv_quan_ly_id` — dùng cho bài cây tổ chức.
+An employee dimension with a self-referencing key `nv_quan_ly_id` — used for the org-tree exercises.
 
 ```csv
 nv_id,ho_ten,phong_ban,cap_bac,nv_quan_ly_id
@@ -86,12 +85,12 @@ NV03,Bui Van G,Ho tro,Nhan vien,NV04
 NV04,Ngo Thi H,Kinh doanh,Giam doc,
 ```
 
-**Bẫy:** `NV04` có `nv_quan_ly_id` rỗng. Recursive CTE lấy neo `where nv_quan_ly_id is null`
-thì chạy đúng; lấy neo `where cap_bac = 'Giam doc'` thì hỏng ngay khi có giám đốc thứ hai.
+**The trap:** `NV04` has an empty `nv_quan_ly_id`. A recursive CTE anchored on `where nv_quan_ly_id is null`
+runs correctly; one anchored on `where cap_bac = 'Giam doc'` breaks the moment there's a second director.
 
 ## `nhan_vien_don.csv`
 
-Bridge nhiều-nhiều: một đơn có thể do nhiều nhân viên cùng chốt, mỗi người một hệ số.
+A many-to-many bridge: one order can be closed by several employees, each with a weight.
 
 ```csv
 don_hang_id,nv_id,vai_tro,he_so
@@ -114,15 +113,15 @@ DH010,NV02,ho_tro,0.3
 DH010,NV04,ho_tro,0.4
 ```
 
-**Bẫy:** `DH008` có hệ số **0,5 + 0,4 = 0,9**. Chín đơn kia khép kín ở 1,0. Nhân hệ số
-rồi cộng lại sẽ **thiếu 10% giá trị của DH008** — và không có gì báo lỗi. Đây là bài
-"kiểm hệ số khép kín" của bộ 4.
+**The trap:** `DH008`'s weights are **0.5 + 0.4 = 0.9**. The other nine orders close at 1.0. Multiplying by the weight
+and summing will **lose 10% of DH008's value** — and nothing reports an error. This is set 4's
+"check the weights close" exercise.
 
-17 dòng cho 10 đơn cũng là bằng chứng `don_hang_id` **không** phải khoá của bảng này.
+17 rows for 10 orders is also proof that `don_hang_id` is **not** this table's key.
 
 ## `cay_nhom_hang.csv`
 
-Cây phân cấp nhóm hàng, kiểu cha–con.
+A product-group hierarchy, in parent–child form.
 
 ```csv
 nhom_id,ten_nhom,nhom_cha_id
@@ -136,7 +135,7 @@ N7,Hang thanh ly,
 N8,Laptop van phong,N4
 ```
 
-Hình cây:
+The tree shape:
 
 ```text
 N1 Cong nghe
@@ -149,13 +148,13 @@ N1 Cong nghe
 N7 Hang thanh ly                     cap 1, goc rieng
 ```
 
-**Hai bẫy:** cây có **hai gốc** (`N1` và `N7`) — neo recursive sai là mất nguyên nhánh;
-và độ sâu chạy từ 1 tới 4 — dẹt cố định ba cấp là hỏng.
+**Two traps:** the tree has **two roots** (`N1` and `N7`) — a wrong recursive anchor loses a whole branch;
+and the depth runs from 1 to 4 — flattening to a fixed three levels breaks.
 
 ## `hang_hoa_nhom.csv`
 
-Nối mặt hàng vào cây. Tách riêng khỏi `hang_hoa` để cột `nhom` dẹt cũ vẫn còn, phục vụ
-bài so sánh.
+Attaches items to the tree. Kept separate from `hang_hoa` so the old flat `nhom` column survives, for the
+comparison exercises.
 
 ```csv
 ma_hang,nhom_id
@@ -165,16 +164,16 @@ SP-C,N8
 SP-D,N3
 ```
 
-**Bẫy:** `SP-D` treo ở **cấp 2**, trong khi `SP-C` ở cấp 4. Cây ragged đúng nghĩa.
+**The trap:** `SP-D` hangs at **level 2** while `SP-C` is at level 4. A ragged tree in the proper sense.
 
-**Bẫy thứ hai, nặng hơn:** `hang_hoa.nhom` ghi *"Màn hình"* **có dấu**, còn
-`cay_nhom_hang.ten_nhom` ghi *"Man hinh"* **không dấu**. Join hai bảng bằng tên nhóm trả
-**0 dòng**, không lỗi. Đó là bài conformed dimension của bộ 6.
+**The second, heavier trap:** `hang_hoa.nhom` writes *"Màn hình"* **with diacritics**, while
+`cay_nhom_hang.ten_nhom` writes *"Man hinh"* **without**. Joining the two tables by group name returns
+**0 rows**, no error. That's set 6's conformed-dimension exercise.
 
 ## `khach_hang_lich_su.csv`
 
-Bản trích khách hàng **mỗi ngày một lần**, 4 khách × 5 ngày. Đây là nguồn để tự dựng SCD
-Type 2 mà không cần `dbt snapshot`.
+A **once-daily** customer extract, 4 customers × 5 days. This is the source for building SCD
+Type 2 yourself without `dbt snapshot`.
 
 ```csv
 ngay_trich,khach_id,ho_ten,khu_vuc,hang,nhom_tuoi,khoang_thu_nhap,diem_tin_dung,updated_at
@@ -200,22 +199,22 @@ ngay_trich,khach_id,ho_ten,khu_vuc,hang,nhom_tuoi,khoang_thu_nhap,diem_tin_dung,
 2026-07-05,C4,Pham Thi D,Mien Bac,Kim cuong,25-34,tren-30tr,840,2026-06-20
 ```
 
-Đây là bảng nhiều bẫy nhất trong kho. **Ba kiểu `updated_at` nói dối**, mỗi kiểu hỏng
-một cách khác nhau:
+This is the trappiest table in the whole repo. **Three ways `updated_at` lies**, each breaking
+something different:
 
-| Khách | Chuyện xảy ra | `updated_at` | Hỏng cái gì |
+| Customer | What happened | `updated_at` | What it breaks |
 |---|---|---|---|
-| `C1` | 03/07 `khu_vuc` **đổi thật** `Mien Bac`→`Mien Nam` | **không nhích** | tin `updated_at` → **bỏ sót** thay đổi |
-| `C2` | 03/07 **không cột nào đổi** | **nhích** lên `2026-07-03` | tin `updated_at` → sinh **phiên bản thừa** |
-| `C4` | `diem_tin_dung` đổi **mỗi ngày** | đứng yên từ 20/06 | tin cột → dim phình **5×** vì một cột |
-| `C3` | 04/07 `hang` `Bac`→`Vang` | nhích đúng | trường hợp duy nhất chạy êm |
+| `C1` | On 03/07 `khu_vuc` **really changed** `Mien Bac`→`Mien Nam` | **doesn't move** | trusting `updated_at` → **missing** the change |
+| `C2` | On 03/07 **no column changed** | **moves** to `2026-07-03` | trusting `updated_at` → a **surplus version** |
+| `C4` | `diem_tin_dung` changes **every day** | frozen since 20/06 | trusting the column → the dim bloats **5×** over one column |
+| `C3` | On 04/07 `hang` `Bac`→`Vang` | moves correctly | the only case that runs smoothly |
 
-Hai cột `nhom_tuoi` và `khoang_thu_nhap` là nguyên liệu mini-dimension;
-`diem_tin_dung` là số đo trá hình.
+The two columns `nhom_tuoi` and `khoang_thu_nhap` are mini-dimension material;
+`diem_tin_dung` is a measure in disguise.
 
 ## `ty_gia.csv`
 
-Tỷ giá theo ngày, hai đồng tiền.
+Daily exchange rates, two currencies.
 
 ```csv
 ngay,tien_te,ty_gia
@@ -240,13 +239,13 @@ ngay,tien_te,ty_gia
 2026-07-10,EUR,27950
 ```
 
-**Bẫy:** **không có dòng `EUR` ngày `2026-07-04`** — 19 dòng chứ không phải 20. `inner join`
-theo `(ngay, tien_te)` sẽ **nuốt lặng** đơn `DN03`. Cách chữa là as-of join lấy tỷ giá
-gần nhất trước đó, không phải join bằng.
+**The trap:** there's **no `EUR` row for `2026-07-04`** — 19 rows rather than 20. An `inner join`
+on `(ngay, tien_te)` will **silently swallow** order `DN03`. The cure is an as-of join taking the nearest
+preceding rate, not an equality join.
 
 ## `don_hang_ngoai_te.csv`
 
-Đơn hàng ghi bằng ngoại tệ, tách khỏi `don_hang` để bốn số mốc không đổi.
+Orders denominated in foreign currency, kept separate from `don_hang` so the four baseline numbers don't change.
 
 ```csv
 don_ngoai_id,khach_id,ngay_dat,tien_te,so_tien
@@ -259,13 +258,13 @@ DN06,C2,2026-07-09,EUR,180
 DN07,C3,2026-07-03,VND,1500000
 ```
 
-**Hai bẫy:** `DN03` rơi đúng ngày thiếu tỷ giá EUR; `DN07` ghi bằng `VND` — **đồng tiền
-gốc không có trong `ty_gia`**, nên inner join làm mất nốt dòng này. Đúng là 2 trong 7
-đơn bốc hơi, tức **28,6%** doanh thu ngoại tệ.
+**Two traps:** `DN03` falls exactly on the day the EUR rate is missing; and `DN07` is denominated in `VND` — **a base
+currency absent from `ty_gia`** — so an inner join loses that row too. That's 2 of 7
+orders evaporating, i.e. **28.6%** of foreign-currency revenue.
 
 ## `kho_hang.csv`
 
-Periodic snapshot: tồn cuối ngày của từng mặt hàng, kèm giá vốn.
+A periodic snapshot: each item's end-of-day stock, with cost of goods.
 
 ```csv
 ngay,ma_hang,ton_cuoi_ngay,gia_von
@@ -291,21 +290,21 @@ ngay,ma_hang,ton_cuoi_ngay,gia_von
 2026-07-05,SP-D,193,30000
 ```
 
-Tồn đầu kỳ 01/07: `SP-A` 100 · `SP-B` 50 · `SP-C` 20 · `SP-D` 200.
+Opening stock on 01/07: `SP-A` 100 · `SP-B` 50 · `SP-C` 20 · `SP-D` 200.
 
-**Bẫy:** tồn giảm **khớp đúng** số bán ra ở mọi dòng, trừ `SP-B` ngày 04/07 — phải là 40
-nhưng ghi 41.
+**The trap:** the stock decrease **matches** the quantity sold on every row except `SP-B` on 04/07 — it should be 40
+but reads 41.
 
-Đối soát sẽ báo **hai** dòng lệch chứ không phải một: 04/07 và 05/07, vì sai số cộng dồn
-sang ngày sau. Một nguyên nhân, hai triệu chứng. Bài của bộ 7 là tìm ra **dòng đầu tiên**
-lệch — sửa nó là hai triệu chứng cùng biến mất.
+Reconciliation will report **two** divergent rows, not one: 04/07 and 05/07, because the error carries
+into the following day. One cause, two symptoms. Set 7's exercise is finding the **first** divergent
+row — fixing it makes both symptoms disappear at once.
 
-Bảng này còn là ví dụ semi-additive chuẩn: cộng theo mặt hàng thì đúng, cộng theo ngày
-thì ra số vô nghĩa.
+This table is also a textbook semi-additive example: summing across items is right, summing across days
+gives a meaningless number.
 
 ## `su_kien_web.csv`
 
-Factless fact — 43 sự kiện, không cột tiền nào.
+A factless fact — 43 events, no money column at all.
 
 ```csv
 su_kien_id,khach_id,thoi_diem,loai_su_kien,ma_hang,don_hang_id
@@ -354,18 +353,18 @@ E042,C4,2026-07-05 09:30:00,thanh_toan,,DH010
 E043,C1,2026-07-05 09:50:00,xem,SP-C,
 ```
 
-Số sự kiện theo ngày: 01/07 **8** · 02/07 **11** · 03/07 **8** · 04/07 **9** · 05/07 **7**.
+Events per day: 01/07 **8** · 02/07 **11** · 03/07 **8** · 04/07 **9** · 05/07 **7**.
 
-**Bẫy:** ngày 05/07 **cắt lúc 10:00** — nó là "hôm nay", chưa đầy. Nhưng nó vẫn được đếm
-là một ngày đủ, nên mọi phép `avg` theo ngày đều bị nó kéo xuống. Đó là bài real-time
-fact của bộ 7.
+**The trap:** 05/07 is **cut off at 10:00** — it's "today", not yet full. But it's still counted
+as a complete day, so every per-day `avg` gets dragged down by it. That's set 7's real-time
+fact exercise.
 
-`ma_hang` chỉ có ở `xem`/`them_gio`, `don_hang_id` chỉ có ở `thanh_toan` — không dòng
-nào có cả hai.
+`ma_hang` appears only on `xem`/`them_gio`, `don_hang_id` only on `thanh_toan` — no row
+has both.
 
 ## `giao_dich_tai_chinh.csv`
 
-Bốn loại giao dịch trong một bảng, mỗi loại điền một bộ cột khác nhau.
+Four transaction types in one table, each filling a different set of columns.
 
 ```csv
 gd_id,ngay,khach_id,loai_gd,so_tien,ky_han_thang,lai_suat,ma_the,phi_giao_dich,don_hang_id
@@ -383,23 +382,23 @@ GD11,2026-07-06,C1,rut_tien,2000000,,,,44000,
 GD12,2026-07-06,C3,thanh_toan_the,900000,,,THE-5566,,
 ```
 
-Cột nào thuộc loại nào:
+Which column belongs to which type:
 
-| `loai_gd` | Cột được điền | Cột luôn rỗng |
+| `loai_gd` | Columns filled | Always empty |
 |---|---|---|
 | `nap_tien` | `so_tien` | `ky_han_thang`, `lai_suat`, `ma_the`, `phi_giao_dich` |
 | `rut_tien` | `so_tien`, `phi_giao_dich` | `ky_han_thang`, `lai_suat`, `ma_the` |
 | `gui_tiet_kiem` | `so_tien`, `ky_han_thang`, `lai_suat` | `ma_the`, `phi_giao_dich` |
 | `thanh_toan_the` | `so_tien`, `ma_the`, `don_hang_id` | `ky_han_thang`, `lai_suat`, `phi_giao_dich` |
 
-**Bẫy:** `GD12` là `thanh_toan_the` nhưng **không có `don_hang_id`** — thanh toán ngoài
-hệ thống đơn hàng. Ai giả định "mọi thanh toán thẻ đều khớp một đơn" sẽ mất dòng này khi
+**The trap:** `GD12` is a `thanh_toan_the` with **no `don_hang_id`** — a payment outside the
+order system. Anybody assuming "every card payment matches an order" loses this row on an
 inner join.
 
-Đây là bài supertype/subtype của bộ 4: giữ một bảng rừng `NULL`, hay tách bốn bảng, hay
-dùng measure type.
+This is set 4's supertype/subtype exercise: keep one table full of `NULL`, split into four tables, or
+use a measure type.
 
 ## Related Topics
 
-- [Bài tập — Data Modeling](index.md) — mục lục bộ bài tập
-- [Bài tập bộ 1 — Nền tảng](bt-01-nen-tang.md) — bộ đầu tiên dùng các bảng này
+- [Exercises — Data Modeling](index.md) — the exercise sets' index
+- [Exercise set 1 — Foundations](bt-01-nen-tang.md) — the first set using these tables
