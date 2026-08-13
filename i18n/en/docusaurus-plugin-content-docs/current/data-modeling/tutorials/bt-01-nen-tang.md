@@ -1,8 +1,7 @@
 ---
-title: "Bài tập bộ 1 — Nền tảng: grain, fact/dim, surrogate key, star/OBT"
-i18n_status: untranslated
+title: "Exercise set 1 — Foundations: grain, fact/dim, surrogate keys, star/OBT"
 sidebar_position: 10
-description: "23 bài tự viết cho 5 kỹ thuật nền: khai grain 7 bảng, phân loại số đo, sinh surrogate key, so star với OBT, chạy đủ quy trình 4 bước."
+description: "23 exercises to write yourself across 5 foundational techniques: declaring the grain of 7 tables, classifying measures, generating surrogate keys, comparing star with OBT, running the full four-step process."
 tags: [tutorial, bai-tap, grain, fact-and-dimension, surrogate-key, star-schema, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,34 +12,34 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bài tập bộ 1 — Nền tảng
+# Exercise set 1 — Foundations
 
-> **Chốt:** năm kỹ thuật trong bộ này là thứ mọi bài sau đều giả định bạn đã có. Không
-> khai được grain thì mọi con số phía sau đều là số may rủi.
+> **Takeaway:** the five techniques in this set are what every later exercise assumes you already have. If you
+> can't declare the grain, every number downstream is a matter of luck.
 
-## Kỹ thuật được luyện trong bộ này
+## Techniques practised in this set
 
-| # | Kỹ thuật | Tài liệu gốc | Số bài |
+| # | Technique | Source document | Exercises |
 |---|---|---|---|
 | 1 | Grain | [Grain](../reference/grain.md) | 5 |
-| 2 | Fact và Dimension | [Fact và Dimension](../reference/fact-and-dimension.md) | 5 |
-| 3 | Surrogate key | [Surrogate key và Natural key](../reference/surrogate-key.md) | 5 |
-| 4 | Star / Snowflake / OBT | [Star, Snowflake và One Big Table](../reference/star-snowflake-obt.md) | 4 |
-| 5 | Quy trình thiết kế 4 bước | [Quy trình thiết kế 4 bước](../reference/design-process.md) | 4 |
+| 2 | Facts and dimensions | [Facts and dimensions](../reference/fact-and-dimension.md) | 5 |
+| 3 | Surrogate keys | [Surrogate keys and natural keys](../reference/surrogate-key.md) | 5 |
+| 4 | Star / Snowflake / OBT | [Star, Snowflake and One Big Table](../reference/star-snowflake-obt.md) | 4 |
+| 5 | The four-step design process | [The four-step design process](../reference/design-process.md) | 4 |
 
-## Cách dùng
+## How to use it
 
-Mỗi bài có ba phần: **Đề** → **Đáp số phải ra** → **Lời giải** giấu trong `<details>`.
+Each exercise has three parts: **the task** → **the answer it must produce** → **the solution**, hidden in a `<details>`.
 
-Viết SQL của bạn trước. So số. Trùng thì mở lời giải để đối chiếu cách làm; lệch thì
-sửa cho tới khi trùng. **Mở lời giải trước khi thử là đọc, không phải luyện.**
+Write your SQL first. Compare the numbers. If they match, open the solution to compare approaches; if they don't,
+fix it until they do. **Opening the solution before trying is reading, not practising.**
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Dữ liệu: [seed dùng chung](index.md#dữ-liệu-dùng-chung-cho-lab-27) cộng mười bảng mới ở
-[phụ lục seed](bt-00-seed.md). Bốn số mốc không đổi:
+The data: [the shared seeds](index.md#the-data-shared-by-labs-27) plus the ten new tables in
+[the seed appendix](bt-00-seed.md). The four baseline numbers don't change:
 
 ```text
 10 don · 15 dong · doanh thu 10.215.000 · phi ship 400.000
@@ -48,19 +47,19 @@ Dữ liệu: [seed dùng chung](index.md#dữ-liệu-dùng-chung-cho-lab-27) c�
 
 ---
 
-## Bộ A — Grain
+## Group A — Grain
 
-### Bài A.1 — Khai grain cho cả bảy bảng, và chứng minh
+### Exercise A.1 — Declare the grain for all seven tables, and prove it
 
-**Đề:** viết **một** câu duy nhất trả về, cho mỗi bảng: số dòng, số khoá tổ hợp phân
-biệt, và cột boolean kết luận grain đã khai có đúng không. Bảy bảng: `don_hang`,
+**The task:** write **one** statement returning, for each table: the row count, the count of distinct composite
+keys, and a boolean column concluding whether the declared grain is right. The seven tables: `don_hang`,
 `don_hang_chi_tiet`, `nhan_vien_don`, `kho_hang`, `ty_gia`, `khach_hang_lich_su`,
 `su_kien_web`.
 
-Trước khi viết SQL, tự khai grain bằng lời cho từng bảng — **một dòng của bảng này đại
-diện cho cái gì**. Rồi mới dịch câu đó thành `count(distinct ...)`.
+Before writing SQL, declare each table's grain in words — **what does one row of this table
+represent**. Only then translate that sentence into `count(distinct ...)`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────────────┬─────────┬─────────┬────────────┐
@@ -76,11 +75,11 @@ diện cho cái gì**. Rồi mới dịch câu đó thành `count(distinct ...)`
 └────────────────────┴─────────┴─────────┴────────────┘
 ```
 
-Cả bảy cột `grain_dung` phải là `true`. Cái nào `false` nghĩa là **grain bạn khai sai**,
-không phải dữ liệu sai.
+All seven `grain_dung` columns must be `true`. Any `false` means **the grain you declared is wrong**,
+not that the data is wrong.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'don_hang' bang, count(*) so_dong, count(distinct don_hang_id) so_khoa,
@@ -100,27 +99,27 @@ union all select 'su_kien_web', count(*), count(distinct su_kien_id),
 order by 1;
 ```
 
-Grain bằng lời, đối chiếu với khoá:
+The grain in words, against the key:
 
-| Bảng | Một dòng là | Khoá |
+| Table | One row is | The key |
 |---|---|---|
-| `don_hang` | một đơn hàng | `don_hang_id` |
-| `don_hang_chi_tiet` | một dòng hàng trong một đơn | `(don_hang_id, dong)` |
-| `nhan_vien_don` | một nhân viên tham gia một đơn | `(don_hang_id, nv_id)` |
-| `kho_hang` | tồn cuối ngày của một mặt hàng | `(ngay, ma_hang)` |
-| `ty_gia` | tỷ giá của một đồng tiền một ngày | `(ngay, tien_te)` |
-| `khach_hang_lich_su` | ảnh chụp một khách một ngày | `(ngay_trich, khach_id)` |
-| `su_kien_web` | một sự kiện | `su_kien_id` |
+| `don_hang` | one order | `don_hang_id` |
+| `don_hang_chi_tiet` | one goods line within one order | `(don_hang_id, dong)` |
+| `nhan_vien_don` | one employee's participation in one order | `(don_hang_id, nv_id)` |
+| `kho_hang` | one item's end-of-day stock | `(ngay, ma_hang)` |
+| `ty_gia` | one currency's rate on one day | `(ngay, tien_te)` |
+| `khach_hang_lich_su` | one snapshot of one customer on one day | `(ngay_trich, khach_id)` |
+| `su_kien_web` | one event | `su_kien_id` |
 
-**Câu quan trọng nhất:** ba bảng có khoá tổ hợp gồm một cột thời gian
-(`kho_hang`, `ty_gia`, `khach_hang_lich_su`). Đó là dấu hiệu bảng **snapshot** — cùng
-một thực thể lặp lại mỗi kỳ. Cộng thẳng qua các kỳ là sai, xem bài A.4.
+**The most important sentence:** three tables have a composite key including a time column
+(`kho_hang`, `ty_gia`, `khach_hang_lich_su`). That's the signature of a **snapshot** table — the same
+entity repeating each period. Summing straight across periods is wrong, see exercise A.4.
 
 </details>
 
-### Bài A.2 — Khoá tưởng duy nhất mà không phải
+### Exercise A.2 — A key that looks unique but isn't
 
-**Đề:** với năm ứng viên khoá dưới đây, viết một câu kiểm xem cái nào thật sự duy nhất:
+**The task:** for the five candidate keys below, write one statement checking which is genuinely unique:
 
 ```text
 su_kien_web (khach_id, thoi_diem)
@@ -130,7 +129,7 @@ kho_hang (ma_hang)
 khach_hang_lich_su (khach_id)
 ```
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────────────────────────┬─────────┬─────────┬──────────┐
@@ -144,11 +143,11 @@ khach_hang_lich_su (khach_id)
 └──────────────────────────────────┴─────────┴─────────┴──────────┘
 ```
 
-**Chỉ một trong năm là duy nhất.** Bốn cái còn lại là bốn kiểu bội khác nhau — gọi tên
-được cả bốn kiểu thì bạn đã hiểu grain.
+**Only one of the five is unique.** The other four are four different kinds of multiplicity — being able to name
+all four means you understand grain.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'su_kien_web (khach_id,thoi_diem)' ung_vien, count(*) so_dong,
@@ -165,27 +164,27 @@ union all select 'khach_hang_lich_su (khach_id)', count(*), count(distinct khach
 order by 1;
 ```
 
-Bốn kiểu bội, bốn hậu quả khác nhau:
+Four kinds of multiplicity, four different consequences:
 
-| Ứng viên | Bội theo | Nếu join bằng nó |
+| The candidate | Multiplied by | If you join by it |
 |---|---|---|
-| `tra_hang (don_hang_id)` | `DH003` bị trả **2 lần** | nhân đôi dòng đơn hàng |
-| `nhan_vien_don (don_hang_id)` | 1 đơn tới **3 nhân viên** | nhân bản doanh thu theo NV |
-| `kho_hang (ma_hang)` | mỗi mặt hàng **5 ngày** | nhân 5 — xem bài A.3 |
-| `khach_hang_lich_su (khach_id)` | mỗi khách **5 bản chụp** | nhân 5 lịch sử khách |
+| `tra_hang (don_hang_id)` | `DH003` returned **twice** | order rows double |
+| `nhan_vien_don (don_hang_id)` | 1 order across **3 employees** | revenue replicated per employee |
+| `kho_hang (ma_hang)` | each item across **5 days** | ×5 — see exercise A.3 |
+| `khach_hang_lich_su (khach_id)` | each customer with **5 snapshots** | customer history ×5 |
 
-`su_kien_web (khach_id, thoi_diem)` duy nhất là **may**, không phải thiết kế: dữ liệu
-này chưa có hai sự kiện trùng giây. Đó chính là lý do bảng vẫn phải có `su_kien_id` —
-đừng dựa vào timestamp làm khoá.
+`su_kien_web (khach_id, thoi_diem)` being unique is **luck**, not design: this data
+happens to have no two events in the same second. That's exactly why the table still needs `su_kien_id` —
+don't rely on a timestamp as a key.
 
 </details>
 
-### Bài A.3 — Trộn grain: nhân đúng 5 lần
+### Exercise A.3 — Mixing grains: multiplied exactly 5×
 
-**Đề:** ai đó cần *"doanh thu kèm tồn kho"* nên join `don_hang_chi_tiet` với `kho_hang`
-bằng `ma_hang`. Đo thiệt hại: số dòng trước/sau và doanh thu trước/sau.
+**The task:** somebody needs *"revenue with stock levels"* so they join `don_hang_chi_tiet` to `kho_hang`
+by `ma_hang`. Measure the damage: rows before/after and revenue before/after.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬──────────┬──────────┬────────────┐
@@ -195,10 +194,10 @@ bằng `ma_hang`. Đo thiệt hại: số dòng trước/sau và doanh thu trư�
 └──────────┴──────────┴──────────┴────────────┘
 ```
 
-Đúng **5 lần**. Tự trả lời: vì sao là 5 mà không phải số khác?
+Exactly **5×**. Answer for yourself: why 5 and not some other number?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select count(*) from don_hang_chi_tiet) dong_goc,
@@ -208,31 +207,31 @@ select (select count(*) from don_hang_chi_tiet) dong_goc,
         from don_hang_chi_tiet ct join kho_hang k using (ma_hang)) tien_phong;
 ```
 
-Vì `kho_hang` có **5 ngày** cho mỗi mặt hàng. Join bỏ mất cột ngày nên mỗi dòng bán
-khớp với cả 5 bản chụp tồn kho.
+Because `kho_hang` has **5 days** per item. The join omits the date column, so each sales row
+matches all 5 stock snapshots.
 
-Hệ số 5 ở đây trông rõ vì dữ liệu bé. Trên thật, `kho_hang` có 400 ngày thì hệ số là
-400 — nhưng **không ai nhìn ra 400**, người ta chỉ thấy "doanh thu tháng này to bất
-thường". Cách sửa là join đủ khoá:
+The factor of 5 is obvious here because the data is small. In reality, with `kho_hang` holding 400 days the factor is
+400 — but **nobody spots 400**, people just see "this month's revenue is unusually
+large". The fix is to join on the full key:
 
 ```sql
--- dung: join du (ma_hang, ngay)
+-- right: join the full (ma_hang, ngay)
 select ct.don_hang_id, ct.dong, ct.so_luong*ct.don_gia tien_hang, k.ton_cuoi_ngay
 from don_hang_chi_tiet ct
 join kho_hang k on k.ma_hang = ct.ma_hang and k.ngay = ct.ngay;
 ```
 
-**Luật:** join hai bảng thì khoá join phải **phủ hết grain của bảng thô hơn**. Thiếu
-một cột khoá là nhân bản, không phải lọc. Xem [Grain](../reference/grain.md).
+**The rule:** when joining two tables, the join key must **cover the whole grain of the coarser table**. Missing
+one key column is replication, not filtering. See [Grain](../reference/grain.md).
 
 </details>
 
-### Bài A.4 — Snapshot: cộng dọc thời gian là vô nghĩa
+### Exercise A.4 — Snapshots: summing along time is meaningless
 
-**Đề:** với `kho_hang`, tính ba số cho mỗi mặt hàng: tổng `ton_cuoi_ngay` qua 5 ngày,
-tồn cuối kỳ, và tồn trung bình. Chỉ **hai trong ba** là số dùng được.
+**The task:** for `kho_hang`, compute three numbers per item: the sum of `ton_cuoi_ngay` across the 5 days,
+the closing stock, and the average stock. Only **two of the three** are usable numbers.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────────┬─────────────┬────────┐
@@ -246,7 +245,7 @@ tồn cuối kỳ, và tồn trung bình. Chỉ **hai trong ba** là số dùng 
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select ma_hang,
@@ -256,31 +255,31 @@ select ma_hang,
 from kho_hang group by 1 order by 1;
 ```
 
-`cong_bay_ngay` là số **rác**: "SP-D tồn 992 cái" không đúng ở bất kỳ thời điểm nào —
-kho chưa bao giờ có quá 200 cái SP-D. Đó là cộng cùng một số hàng năm lần.
+`cong_bay_ngay` is **garbage**: "SP-D has 992 in stock" is untrue at any moment —
+the warehouse has never held more than 200 SP-D. It's adding the same goods up five times.
 
-Đây là **semi-additive**: cộng được theo mặt hàng, theo kho, theo khu vực — nhưng
-**không cộng được theo thời gian**. Theo thời gian thì lấy giá trị cuối kỳ, hoặc trung
-bình, tuỳ câu hỏi nghiệp vụ:
+This is **semi-additive**: summable by item, by warehouse, by region — but
+**not summable across time**. Across time you take the closing value, or the average,
+depending on the business question:
 
-| Câu hỏi | Số đúng |
+| The question | The right number |
 |---|---|
-| "Giờ còn bao nhiêu?" | `ton_cuoi_ky` |
-| "Bình quân kỳ này giữ bao nhiêu hàng?" | `ton_tb` |
-| "Tổng tồn 5 ngày là bao nhiêu?" | **câu hỏi sai** — không có ý nghĩa nghiệp vụ |
+| "How many are left now?" | `ton_cuoi_ky` |
+| "How much stock did we hold on average this period?" | `ton_tb` |
+| "What's the total stock across 5 days?" | **a wrong question** — it has no business meaning |
 
-Cái bẫy: `sum()` **không báo lỗi**. Kéo cột vào ô tổng của BI là ra 992, và không có gì
-trên màn hình nói rằng con số đó vô nghĩa. Xem
-[Fact và Dimension](../reference/fact-and-dimension.md).
+The trap: `sum()` **raises no error**. Dragging the column into a BI total cell gives 992, and nothing
+on screen says that number is meaningless. See
+[Facts and dimensions](../reference/fact-and-dimension.md).
 
 </details>
 
-### Bài A.5 — Đổi grain từ dòng lên đơn: cột nào theo được
+### Exercise A.5 — Changing the grain from line to order: which columns can come along
 
-**Đề:** dựng bảng ở grain **một dòng một đơn** từ `don_hang` ⋈ `don_hang_chi_tiet`, giữ
-bốn số: số đơn, tổng tiền hàng, tổng phí ship, tổng số dòng. Cả bốn phải khớp mốc gốc.
+**The task:** build a table at the grain of **one row per order** from `don_hang` ⋈ `don_hang_chi_tiet`, keeping
+four numbers: the order count, total goods amount, total shipping fee, total line count. All four must match the baselines.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────┬────────────────┬───────────────┬──────────────┐
@@ -290,47 +289,47 @@ bốn số: số đơn, tổng tiền hàng, tổng phí ship, tổng số dòng
 └────────┴────────────────┴───────────────┴──────────────┘
 ```
 
-Ra `phi_ship` = 775.000 nghĩa là bạn đã dùng `sum` ở chỗ phải dùng `max`.
+Getting `phi_ship` = 775,000 means you used `sum` where `max` was needed.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select count(*) so_don, sum(tien_hang) tong_tien_hang,
        sum(phi_ship) tong_phi_ship, sum(so_dong) tong_so_dong
 from (select h.don_hang_id,
-             max(h.phi_ship)              phi_ship,   -- grain don: LAY MOT
-             sum(ct.so_luong*ct.don_gia)  tien_hang,  -- grain dong: CONG
+             max(h.phi_ship)              phi_ship,   -- order grain: TAKE ONE
+             sum(ct.so_luong*ct.don_gia)  tien_hang,  -- line grain: SUM
              count(*)                     so_dong
       from don_hang h join don_hang_chi_tiet ct using (don_hang_id)
       group by 1);
 ```
 
-Khi gom từ grain mịn lên grain thô, mỗi cột đi theo **một trong hai đường**, và chọn sai
-đường là sai số:
+When rolling up from a fine grain to a coarse one, each column takes **one of two paths**, and taking the wrong
+path is a wrong number:
 
-| Cột thuộc grain | Phép gom | Sai thì thành |
+| The column's grain | The aggregate | Getting it wrong gives |
 |---|---|---|
-| Dòng (`so_luong*don_gia`) | `sum` | — |
-| Đơn (`phi_ship`, `trang_thai`, `khach_id`) | `max` / `any_value` | `sum` → phồng 77,5% |
+| Line (`so_luong*don_gia`) | `sum` | — |
+| Order (`phi_ship`, `trang_thai`, `khach_id`) | `max` / `any_value` | `sum` → 77.5% inflated |
 
-400.000 và 775.000 chênh đúng vì các đơn nhiều dòng bị đếm phí ship nhiều lần. `DH003`
-ba dòng nên 90.000 thành 270.000. Xem [lab nền tảng bài 2](lab-nen-tang-grain-fact-dim.md)
-và [case study phí ship phồng 133%](../case-studies/phi-ship-phong-133-phan-tram.md).
+400,000 and 775,000 differ exactly because multi-line orders count the shipping fee several times. `DH003`
+has three lines so its 90,000 becomes 270,000. See [the foundations lab, exercise 2](lab-nen-tang-grain-fact-dim.md)
+and [the case study on shipping fees 133% inflated](../case-studies/phi-ship-phong-133-phan-tram.md).
 
 </details>
 
 ---
 
-## Bộ B — Fact và Dimension
+## Group B — Facts and dimensions
 
-### Bài B.1 — Phân loại từng cột của `don_hang`
+### Exercise B.1 — Classify every column of `don_hang`
 
-**Đề:** lấy danh sách cột của `don_hang` từ `information_schema`, rồi tự phân mỗi cột vào
-một trong bốn nhóm: **khoá ngoại dimension**, **degenerate dimension**, **số đo (fact)**,
-**thuộc tính nên tách sang dimension**.
+**The task:** get `don_hang`'s column list from `information_schema`, then classify each column into
+one of four groups: **a dimension foreign key**, **a degenerate dimension**, **a measure (fact)**,
+**an attribute that should be split into a dimension**.
 
-**Đáp số phải ra (danh sách cột):**
+**The answer it must produce (the column list):**
 
 ```text
 ┌─────────────┬───────────┐
@@ -347,36 +346,36 @@ một trong bốn nhóm: **khoá ngoại dimension**, **degenerate dimension**, 
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select column_name, data_type from information_schema.columns
 where table_schema='main' and table_name='don_hang' order by ordinal_position;
 ```
 
-Phân loại đúng:
+The correct classification:
 
-| Cột | Nhóm | Vì sao |
+| Column | The group | Why |
 |---|---|---|
-| `don_hang_id` | **degenerate dimension** | mã nghiệp vụ, không có thuộc tính nào đi kèm → ở lại fact, đừng dựng bảng |
-| `khach_id` | khoá ngoại dimension | trỏ sang `dim_khach` |
-| `ngay_dat` / `ngay_giao` / `ngay_nhan` | khoá ngoại dimension | ba **vai** của cùng một `dim_ngay` → role-playing |
-| `trang_thai` | thuộc tính nên tách | cardinality thấp (3 giá trị) → junk dimension |
-| `phi_ship` | **số đo** | cộng được, nhưng ở grain **đơn** — bẫy của bài A.5 |
+| `don_hang_id` | **a degenerate dimension** | a business code with no attributes → stays in the fact, build no table |
+| `khach_id` | a dimension foreign key | points at `dim_khach` |
+| `ngay_dat` / `ngay_giao` / `ngay_nhan` | dimension foreign keys | three **roles** of the same `dim_ngay` → role-playing |
+| `trang_thai` | an attribute to split out | low cardinality (3 values) → a junk dimension |
+| `phi_ship` | **a measure** | summable, but at the **order** grain — exercise A.5's trap |
 
-Ba cột ngày cùng trỏ một dimension là [role-playing](../skills/role-playing-dimension.md);
-`trang_thai` gộp với các cờ khác thành [junk dimension](../skills/junk-dimension.md);
-`don_hang_id` là [degenerate dimension](../skills/degenerate-dimension.md). Ba kỹ thuật,
-một bảng bảy cột.
+Three date columns pointing at one dimension is [role-playing](../skills/role-playing-dimension.md);
+`trang_thai` merged with other flags becomes a [junk dimension](../skills/junk-dimension.md);
+`don_hang_id` is a [degenerate dimension](../skills/degenerate-dimension.md). Three techniques,
+one seven-column table.
 
 </details>
 
-### Bài B.2 — Semi-additive: cộng ngang được, cộng dọc không
+### Exercise B.2 — Semi-additive: summable across, not down
 
-**Đề:** với `kho_hang`, tính tổng tồn và **giá trị tồn** (`ton_cuoi_ngay * gia_von`) theo
-từng ngày. Đây là chiều cộng **hợp lệ** — ngược với bài A.4.
+**The task:** for `kho_hang`, compute total stock and **stock value** (`ton_cuoi_ngay * gia_von`) per
+day. This is the **valid** summing direction — the opposite of exercise A.4.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬──────────┬─────────────┐
@@ -391,35 +390,35 @@ từng ngày. Đây là chiều cộng **hợp lệ** — ngược với bài A.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select ngay, sum(ton_cuoi_ngay) tong_ton, sum(ton_cuoi_ngay*gia_von) gia_tri_ton
 from kho_hang group by 1 order by 1;
 ```
 
-Cùng cột `ton_cuoi_ngay`, cùng hàm `sum` — bài A.4 cho số rác, bài này cho số dùng được.
-Khác nhau ở **chiều cộng**:
+The same `ton_cuoi_ngay` column, the same `sum` function — exercise A.4 gave garbage, this gives a usable number.
+The difference is the **summing direction**:
 
 ```text
 cong theo MAT HANG trong mot ngay  →  hop le   (362 = tong ton kho ngay 01/07)
 cong theo NGAY cho mot mat hang    →  vo nghia (420 = cong 5 lan cung mot dong hang)
 ```
 
-Nên bảng semi-additive phải **ghi rõ chiều cấm cộng ngay trong tài liệu bảng** — vì SQL
-không có cách nào cấm được. Một số nơi đặt tên cột là `ton_cuoi_ngay_khong_cong_theo_ngay`;
-xấu, nhưng nó cứu được nhiều buổi chiều.
+So a semi-additive table must **state the forbidden summing direction in the table's documentation** — because SQL
+has no way to forbid it. Some places name the column `ton_cuoi_ngay_khong_cong_theo_ngay`;
+ugly, but it saves many afternoons.
 
-`gia_tri_ton` giảm đều từ 37,17 triệu xuống 31,41 triệu qua 5 ngày — đó là hàng bán ra.
+`gia_tri_ton` falls steadily from 37.17 million to 31.41 million over the 5 days — that's the goods sold.
 
 </details>
 
-### Bài B.3 — Factless fact table: bảng không có số đo nào
+### Exercise B.3 — A factless fact table: a table with no measures
 
-**Đề:** thống kê `su_kien_web` theo `loai_su_kien`, kèm số khách phân biệt và **số dòng
-có `ma_hang`**, **số dòng có `don_hang_id`**. Chỉ ra bảng này không có cột số đo nào.
+**The task:** break `su_kien_web` down by `loai_su_kien`, with the distinct customer count and **the number of rows
+with a `ma_hang`** and **the number with a `don_hang_id`**. Show that this table has no measure column.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬────────────┬──────────┬────────────┬────────┐
@@ -431,10 +430,10 @@ có `ma_hang`**, **số dòng có `don_hang_id`**. Chỉ ra bảng này không c
 └──────────────┴────────────┴──────────┴────────────┴────────┘
 ```
 
-**43 sự kiện, không một cột tiền nào.** Vậy nó là fact hay dimension?
+**43 events, not one money column.** So is it a fact or a dimension?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select loai_su_kien, count(*) so_su_kien, count(distinct khach_id) so_khach,
@@ -442,26 +441,26 @@ select loai_su_kien, count(*) so_su_kien, count(distinct khach_id) so_khach,
 from su_kien_web group by 1 order by 2 desc;
 ```
 
-Nó là **fact** — factless fact table. Dấu hiệu nhận biết không phải "có cột số" mà là
-**"mỗi dòng là một sự kiện xảy ra tại một thời điểm, trỏ tới nhiều dimension"**.
+It's a **fact** — a factless fact table. The signature isn't "has numeric columns" but
+**"each row is an event happening at a moment, pointing at several dimensions"**.
 
-Số đo của nó là `count(*)`. Chính vì thế nó trả lời được những câu mà bảng có tiền không
-trả lời được: *bao nhiêu lượt xem không dẫn tới mua*, *khách xem mấy sản phẩm trước khi
-chốt*. Xem [Fact và Dimension](../reference/fact-and-dimension.md).
+Its measure is `count(*)`. That's precisely why it answers questions a money-bearing table
+can't: *how many views don't lead to a purchase*, *how many products a customer views before
+closing*. See [Facts and dimensions](../reference/fact-and-dimension.md).
 
-Chú ý cấu trúc cột: `ma_hang` chỉ có ở `xem`/`them_gio`, `don_hang_id` chỉ có ở
-`thanh_toan` — **không dòng nào có cả hai**. Đó là mùi của
-[thực thể không đồng nhất](../skills/heterogeneous-schema.md), luyện ở bộ 4.
+Note the column structure: `ma_hang` appears only on `xem`/`them_gio`, `don_hang_id` only on
+`thanh_toan` — **no row has both**. That's the smell of
+[heterogeneous entities](../skills/heterogeneous-schema.md), practised in set 4.
 
 </details>
 
-### Bài B.4 — Grain của "phiên" quyết định con số bỏ giỏ
+### Exercise B.4 — The grain of a session decides the cart-abandonment number
 
-**Đề:** đếm số phiên, số phiên có mua, số phiên **bỏ giỏ** (có `them_gio` mà không
-`thanh_toan`), số phiên **chỉ xem**. Làm **hai lần**: (a) coi một phiên = một khách một
-ngày; (b) cắt phiên theo khoảng lặng **30 phút**.
+**The task:** count the sessions, the sessions with a purchase, the **abandoned-cart** sessions (a `them_gio` with no
+`thanh_toan`), and the **view-only** sessions. Do it **twice**: (a) treating one session = one customer, one
+day; (b) cutting sessions at a **30-minute** gap.
 
-**Đáp số phải ra — cách (a), phiên theo ngày:**
+**The answer it must produce — approach (a), sessions by day:**
 
 ```text
 ┌──────────┬──────────────┬────────┬─────────┐
@@ -471,7 +470,7 @@ ngày; (b) cắt phiên theo khoảng lặng **30 phút**.
 └──────────┴──────────────┴────────┴─────────┘
 ```
 
-**Cách (b), phiên theo khoảng lặng 30 phút:**
+**Approach (b), sessions by a 30-minute gap:**
 
 ```text
 ┌──────────┬────────┬────────┬─────────┐
@@ -482,9 +481,9 @@ ngày; (b) cắt phiên theo khoảng lặng **30 phút**.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Cách (a) — phiên = khách × ngày:
+Approach (a) — a session = customer × day:
 
 ```sql
 with phien as (
@@ -498,7 +497,7 @@ select count(*) so_phien, sum(co_mua) phien_co_mua,
 from phien;
 ```
 
-Cách (b) — cắt theo khoảng lặng:
+Approach (b) — cutting at a gap:
 
 ```sql
 with co_khoang as (
@@ -517,28 +516,28 @@ select count(*) so_phien, sum(co_mua) co_mua,
 from tom;
 ```
 
-**13 phiên hay 14 phiên?** Cả hai đều đúng — với hai định nghĩa *phiên* khác nhau. Đó
-chính là bài học: **grain của "phiên" là một quyết định nghiệp vụ, không phải một sự
-thật có sẵn trong dữ liệu.**
+**13 sessions or 14?** Both are right — under two different definitions of *session*. That's
+the lesson: **the grain of a "session" is a business decision, not a fact sitting
+in the data.**
 
-Dòng lệch là `C3` ngày 02/07: mua lúc 15:10, rồi 16:00 quay lại xem `SP-C`. Cách (a) gộp
-thành một phiên "có mua"; cách (b) tách thành hai — phiên sau là **chỉ xem**.
+The divergent row is `C3` on 02/07: they bought at 15:10, then came back at 16:00 to look at `SP-C`. Approach (a) merges
+that into one "purchasing" session; approach (b) splits it in two — the second being **view-only**.
 
-`bo_gio` = 0 ở cả hai cách: trong bộ dữ liệu này, hễ đã `them_gio` là chốt đơn. Số 0 đó
-là kết quả thật, không phải query hỏng — hãy kiểm chứng bằng cách liệt kê từng phiên
-trước khi tin.
+`bo_gio` = 0 under both approaches: in this dataset, anybody who adds to cart closes the order. That zero
+is a real result, not a broken query — verify it by listing each session
+before believing it.
 
-Bảng phải chốt định nghĩa phiên **trong tài liệu**, vì không có gì trong dữ liệu chỉ ra
-30 phút hay 24 giờ là đúng.
+The table must settle the session definition **in its documentation**, because nothing in the data says whether
+30 minutes or 24 hours is right.
 
 </details>
 
-### Bài B.5 — Số đo trốn trong dimension
+### Exercise B.5 — A measure hiding in a dimension
 
-**Đề:** với `khach_hang_lich_su`, đếm cho mỗi khách: bao nhiêu giá trị `diem_tin_dung`
-khác nhau, min/max, và bao nhiêu tổ hợp `(khu_vuc, hang)` khác nhau.
+**The task:** for `khach_hang_lich_su`, count per customer: how many distinct `diem_tin_dung`
+values, the min/max, and how many distinct `(khu_vuc, hang)` combinations.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬────────────┬──────────┬──────────┬────────────────┐
@@ -551,11 +550,11 @@ khác nhau, min/max, và bao nhiêu tổ hợp `(khu_vuc, hang)` khác nhau.
 └──────────┴────────────┴──────────┴──────────┴────────────────┘
 ```
 
-**Câu hỏi:** `diem_tin_dung` nằm trong bảng khách hàng. Nó là thuộc tính dimension hay
-là số đo?
+**The question:** `diem_tin_dung` sits in the customer table. Is it a dimension attribute or
+a measure?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select khach_id, count(distinct diem_tin_dung) so_gia_tri,
@@ -564,38 +563,38 @@ select khach_id, count(distinct diem_tin_dung) so_gia_tri,
 from khach_hang_lich_su group by 1 order by 1;
 ```
 
-Nó là **số đo trá hình**. Bằng chứng nằm ngay ở hai cột cuối: qua 5 ngày, thuộc tính
-chậm (`khu_vuc`, `hang`) chỉ đổi **1–2** tổ hợp, còn `diem_tin_dung` đổi **4–5** giá trị
-— tức là gần như **mỗi ngày một lần**.
+It's **a measure in disguise**. The evidence is in the last two columns: over 5 days, the slow
+attributes (`khu_vuc`, `hang`) produce only **1–2** combinations, while `diem_tin_dung` produces **4–5** values
+— i.e. nearly **one a day**.
 
-Hậu quả nếu để nguyên trong dim và bật Type 2: dimension khách hàng sinh 4–5 dòng cho
-**mỗi** khách chỉ vì điểm tín dụng nhích vài đơn vị. Với 1 triệu khách và 365 ngày, dim
-phình lên hàng trăm triệu dòng — đúng
-[case study dimension phình 365 lần](../case-studies/dimension-phinh-365-lan.md).
+The consequence of leaving it in the dim with Type 2 on: the customer dimension produces 4–5 rows per
+**each** customer just because the credit score moved a few points. With 1 million customers and 365 days the dim
+bloats to hundreds of millions of rows — exactly
+[the case study on a dimension 365× bloated](../case-studies/dimension-phinh-365-lan.md).
 
-Ba lối ra, luyện kỹ ở bộ 2:
+Three ways out, practised in depth in set 2:
 
-| Cách | Kết quả |
+| The approach | The result |
 |---|---|
-| Tách ra [mini-dimension](../skills/mini-dimension.md) theo khoảng (`700-749`, `750-799`…) | dim chính đứng yên |
-| Đưa vào fact như một số đo tại thời điểm giao dịch | truy được lịch sử theo đơn |
-| Type 1 — ghi đè, không giữ lịch sử | mất khả năng trả lời "lúc đó điểm bao nhiêu" |
+| Split into a [mini-dimension](../skills/mini-dimension.md) by band (`700-749`, `750-799`…) | the main dim stays still |
+| Put it in the fact as a measure at transaction time | history traceable per order |
+| Type 1 — overwrite, no history | you lose the ability to answer "what was the score back then" |
 
-Dấu hiệu tổng quát: **thuộc tính dimension mà đổi gần bằng nhịp fact thì không phải
-thuộc tính dimension.**
+The general sign: **a dimension attribute that changes at nearly the pace of the fact isn't a
+dimension attribute.**
 
 </details>
 
 ---
 
-## Bộ C — Surrogate key
+## Group C — Surrogate keys
 
-### Bài C.1 — Sinh surrogate key kèm dòng "không xác định"
+### Exercise C.1 — Generate surrogate keys with an "unknown" row
 
-**Đề:** dựng `dim_khach_sk` từ `khach_hang`: surrogate key chạy từ **1001**, cộng một
-dòng khoá **-1** cho giá trị không xác định.
+**The task:** build `dim_khach_sk` from `khach_hang`: surrogate keys starting at **1001**, plus a
+**-1** row for the unknown value.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────┬──────────┬────────────────┬────────────────┬────────────────┐
@@ -610,7 +609,7 @@ dòng khoá **-1** cho giá trị không xác định.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table dim_khach_sk as
@@ -623,25 +622,25 @@ select -1, 'N/A', 'Khong xac dinh', 'Khong xac dinh', 'Khong xac dinh';
 select * from dim_khach_sk order by khach_key;
 ```
 
-Hai chi tiết dễ bỏ qua:
+Two easily-missed details:
 
-**Bắt đầu từ 1001, không phải 1.** Khoá một chữ số trông giống mã nghiệp vụ, và rồi ai
-đó sẽ join `khach_key = 1` với `khach_id = '1'`. Bắt đầu từ một số không thể nhầm là quy
-ước rẻ tiền mà hiệu quả.
+**Start at 1001, not 1.** A single-digit key looks like a business code, and then somebody
+will join `khach_key = 1` to `khach_id = '1'`. Starting from a number that can't be confused is a cheap
+and effective convention.
 
-**Dòng -1 phải tồn tại từ ngày đầu.** Nó không phải rác — nó là chỗ để fact trỏ vào khi
-dimension chưa có bản ghi tương ứng, và nhờ nó mà **mọi khoá ngoại trong fact đều
-`NOT NULL`**. Có ràng buộc đó thì `count(*)` trên fact không bao giờ tụt vì join.
+**The -1 row must exist from day one.** It isn't rubbish — it's where the fact points when the
+dimension has no matching record, and thanks to it **every foreign key in the fact is
+`NOT NULL`**. With that constraint, `count(*)` on the fact never drops because of a join.
 
 </details>
 
-### Bài C.2 — Dựng dimension Type 2 từ bản trích hàng ngày
+### Exercise C.2 — Build a Type 2 dimension from daily extracts
 
-**Đề:** từ `khach_hang_lich_su` (20 bản chụp), dựng `dim_khach_t2` giữ lịch sử **chỉ
-theo hai cột chậm** `khu_vuc` và `hang`. Mỗi phiên bản có `hieu_luc_tu`, `hieu_luc_den`,
-`la_hien_tai`. Phiên bản đang hiệu lực đóng bằng `9999-12-31`.
+**The task:** from `khach_hang_lich_su` (20 snapshots), build `dim_khach_t2` keeping history **only for
+the two slow columns** `khu_vuc` and `hang`. Each version has `hieu_luc_tu`, `hieu_luc_den`,
+`la_hien_tai`. The version in force closes with `9999-12-31`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────┬──────────┬────────────┬───────────┬─────────────┬──────────────┬─────────────┐
@@ -656,11 +655,11 @@ theo hai cột chậm** `khu_vuc` và `hang`. Mỗi phiên bản có `hieu_luc_t
 └───────────┴──────────┴────────────┴───────────┴─────────────┴──────────────┴─────────────┘
 ```
 
-**4 khách → 6 dòng.** Ra 20 dòng nghĩa là bạn đang giữ lịch sử theo *mọi* cột, kể cả
-`diem_tin_dung` — xem lại bài B.5.
+**4 customers → 6 rows.** Getting 20 rows means you're keeping history on *every* column, including
+`diem_tin_dung` — go back to exercise B.5.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table dim_khach_t2 as
@@ -682,26 +681,26 @@ select row_number() over (order by khach_id, tu) khach_key,
 from gom;
 ```
 
-Ba kỹ thuật ghép lại:
+Three techniques combined:
 
-1. **`is distinct from`** thay cho `<>` — `<>` trả `NULL` khi một vế `NULL`, nên dòng đổi
-   từ `NULL` sang có giá trị sẽ **không** được đánh dấu. Đây là lỗi im lặng kinh điển.
-2. **`sum(doi) over (...)`** biến cờ đổi thành **số phiên bản** — mẹo gap-and-islands.
-3. **`lead(...) - 1 day`** đóng khoảng của phiên bản trước bằng ngày liền trước phiên bản
-   sau, nên các khoảng **không chồng lấn và không hở**.
+1. **`is distinct from`** instead of `<>` — `<>` returns `NULL` when one side is `NULL`, so a row changing
+   from `NULL` to a value would **not** be flagged. This is the classic silent bug.
+2. **`sum(doi) over (...)`** turns the change flag into a **version number** — the gap-and-islands trick.
+3. **`lead(...) - 1 day`** closes the previous version's interval at the day before the next version,
+   so the intervals **neither overlap nor gap**.
 
-Chỉ chọn hai cột `khu_vuc`, `hang` vào điều kiện đổi là quyết định quan trọng nhất — đó
-là danh sách **cột kích hoạt Type 2**, và nó phải được viết ra tường minh. Xem
-[SCD](../skills/scd.md) và [phát hiện thay đổi](../skills/scd-change-detection.md).
+Choosing only the two columns `khu_vuc` and `hang` for the change condition is the most important decision — that's
+the **Type 2 trigger-column list**, and it must be written out explicitly. See
+[SCD](../skills/scd.md) and [change detection](../skills/scd-change-detection.md).
 
 </details>
 
-### Bài C.3 — Join bằng natural key vào dim Type 2: phồng 47%
+### Exercise C.3 — Joining a Type 2 dim by natural key: 47% inflated
 
-**Đề:** đo thiệt hại khi join `don_hang` với `dim_khach_t2` **chỉ bằng `khach_id`**, bỏ
-qua khoảng hiệu lực.
+**The task:** measure the damage of joining `don_hang` to `dim_khach_t2` **by `khach_id` alone**, ignoring
+the validity intervals.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬──────────┬──────────┬────────────┐
@@ -711,10 +710,10 @@ qua khoảng hiệu lực.
 └─────────┴──────────┴──────────┴────────────┘
 ```
 
-Doanh thu phồng **47,4%**. Tự trả lời: vì sao không phồng đều 2 lần?
+Revenue inflates **47.4%**. Answer for yourself: why isn't it a flat 2×?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select count(*) from don_hang) don_goc,
@@ -726,38 +725,38 @@ select (select count(*) from don_hang) don_goc,
         join dim_khach_t2 d on d.khach_id = h.khach_id) tien_phong;
 ```
 
-Vì **chỉ `C1` và `C3` có hai phiên bản**; `C2` và `C4` có một. Đơn của C1/C3 nhân đôi,
-đơn của C2/C4 giữ nguyên → hệ số phồng là 1,474, một con số **không tròn và không đoán
-được**. Đó mới là chỗ nguy hiểm: phồng 2 lần thì ai cũng nghi, phồng 47% thì trông như
-"tháng này bán tốt".
+Because **only `C1` and `C3` have two versions**; `C2` and `C4` have one. C1/C3's orders double,
+C2/C4's stay put → the inflation factor is 1.474, a number that's **not round and not
+guessable**. That's what makes it dangerous: a 2× inflation makes everybody suspicious, a 47% inflation looks like
+"we sold well this month".
 
-Ba cách join đúng, tuỳ câu hỏi:
+Three correct ways to join, depending on the question:
 
 ```sql
--- as-was: trang thai khach TAI THOI DIEM dat hang
+-- as-was: the customer's state AT ORDER TIME
 join dim_khach_t2 d on d.khach_id = h.khach_id
                    and h.ngay_dat between d.hieu_luc_tu and d.hieu_luc_den
 
--- as-is: trang thai khach HIEN TAI
+-- as-is: the customer's CURRENT state
 join dim_khach_t2 d on d.khach_id = h.khach_id and d.la_hien_tai
 
--- dung nhat: fact luu san surrogate key, khong join lai theo ngay
+-- best: the fact stores the surrogate key, no date-based re-join
 join dim_khach_t2 d on d.khach_key = f.khach_key
 ```
 
-Cách thứ ba là lý do surrogate key tồn tại: **chốt phiên bản vào fact lúc nạp**, để lúc
-đọc không ai có cơ hội join sai. Xem
-[Surrogate key](../reference/surrogate-key.md) và
-[case study báo cáo quá khứ tự đổi số](../case-studies/bao-cao-qua-khu-tu-doi-so.md).
+The third is why surrogate keys exist: **freeze the version into the fact at load time**, so that at
+read time nobody has the chance to join wrongly. See
+[Surrogate keys](../reference/surrogate-key.md) and
+[the case study on historical reports changing their own numbers](../case-studies/bao-cao-qua-khu-tu-doi-so.md).
 
 </details>
 
-### Bài C.4 — Khoá -1 làm cho "chưa giao" đếm được
+### Exercise C.4 — The -1 key makes "not delivered" countable
 
-**Đề:** `don_hang` có 2 đơn chưa giao (`ngay_giao` rỗng). Dựng `ngay_giao_key` dạng
-`YYYYMMDD`, cho `-1` khi chưa giao. Chứng minh `= -1` cộng `<> -1` bằng đúng tổng số đơn.
+**The task:** `don_hang` has 2 undelivered orders (empty `ngay_giao`). Build a `ngay_giao_key` in
+`YYYYMMDD` form, using `-1` when not delivered. Prove that `= -1` plus `<> -1` equals the total order count.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬───────────┬─────────┐
@@ -776,7 +775,7 @@ Cách thứ ba là lý do surrogate key tồn tại: **chốt phiên bản vào 
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select count(*) tong_don,
@@ -794,25 +793,25 @@ select count(*) tat_ca,
 from f;
 ```
 
-**8 + 2 = 10. Khép kín.** Đó là toàn bộ giá trị của khoá `-1`: hai nhóm bù nhau, không
-dòng nào bốc hơi, và `chua_giao` **hiện thành một nhóm trên báo cáo** thay vì biến mất.
+**8 + 2 = 10. Closed.** That's the entire value of the `-1` key: the two groups complement each other, no
+row evaporates, and `chua_giao` **appears as a group on the report** instead of vanishing.
 
-Cột `neu_dung_null` = 8 là bằng chứng của mặt còn lại: `ngay_giao <> '9999-12-31'` trả
-`NULL` cho 2 đơn chưa giao, mà `NULL` không phải `TRUE` nên chúng **bị loại lặng lẽ**.
-Không lỗi, không cảnh báo — chỉ là hai đơn không bao giờ xuất hiện.
+The `neu_dung_null` column at 8 is evidence of the other side: `ngay_giao <> '9999-12-31'` returns
+`NULL` for the 2 undelivered orders, and `NULL` isn't `TRUE` so they're **silently excluded**.
+No error, no warning — just two orders that never appear.
 
-Với `NULL`, mọi phép so sánh đều nuốt dòng. Với `-1`, mọi phép so sánh đều giữ dòng.
-Xem [NULL trong fact và dimension](../skills/null-handling.md) và
-[case study đơn đang giao biến mất](../case-studies/don-dang-giao-bien-mat.md).
+With `NULL`, every comparison swallows rows. With `-1`, every comparison keeps them.
+See [NULLs in facts and dimensions](../skills/null-handling.md) and
+[the case study on orders in transit vanishing](../case-studies/don-dang-giao-bien-mat.md).
 
 </details>
 
-### Bài C.5 — Hash key: được gì, mất gì
+### Exercise C.5 — Hash keys: what you gain, what you lose
 
-**Đề:** sinh khoá bằng `md5` trên `(khach_id, khu_vuc, hang)` cho `dim_khach_t2`, đặt
-cạnh surrogate key dạng số. Rồi trả lời: hash key **hỏng** ở đâu với bảng này?
+**The task:** generate keys with `md5` over `(khach_id, khu_vuc, hang)` for `dim_khach_t2`, alongside
+a numeric surrogate key. Then answer: where does a hash key **break** with this table?
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬────────────┬───────────┬──────────────────────────────────┐
@@ -828,48 +827,48 @@ cạnh surrogate key dạng số. Rồi trả lời: hash key **hỏng** ở đ�
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select khach_id, khu_vuc, hang, md5(khach_id||'|'||khu_vuc||'|'||hang) hash_key
 from dim_khach_t2 order by khach_id, hieu_luc_tu limit 6;
 ```
 
-**Được:** khoá tính được **song song, không cần đọc bảng đích** — nạp lại lô cũ vẫn ra
-đúng khoá đó, nên không cần sequence tập trung. Rất hợp lakehouse.
+**The gain:** the key can be computed **in parallel, without reading the target table** — reloading an old batch still gives
+the same key, so no central sequence is needed. Very suited to a lakehouse.
 
-**Mất, và mất nặng với bảng này:** hash trên `(khach_id, khu_vuc, hang)` **không phân
-biệt được hai phiên bản có cùng giá trị**. Nếu C1 đổi `Mien Bac` → `Mien Nam` → quay lại
-`Mien Bac`, phiên bản 1 và phiên bản 3 sẽ **cùng một hash**, và Type 2 gãy.
+**The loss, and it's heavy with this table:** a hash over `(khach_id, khu_vuc, hang)` **can't
+distinguish two versions with the same values**. If C1 goes `Mien Bac` → `Mien Nam` → back to
+`Mien Bac`, version 1 and version 3 will have **the same hash**, and Type 2 breaks.
 
-Sửa: đưa mốc thời gian vào hash — `md5(khach_id||'|'||hieu_luc_tu)`. Lúc này khoá phụ
-thuộc phiên bản chứ không phụ thuộc nội dung.
+The fix: put the time marker into the hash — `md5(khach_id||'|'||hieu_luc_tu)`. Now the key depends
+on the version rather than on the content.
 
-Ba khác biệt cần nhớ:
+Three differences to remember:
 
-| | Sequence | Hash |
+| | A sequence | A hash |
 |---|---|---|
-| Tính song song không cần khoá tập trung | không | **có** |
-| Ổn định khi nạp lại | không | **có** |
-| Rộng | 8 byte | 16–32 byte, join chậm hơn |
-| Bẫy | — | **trùng khoá khi giá trị quay lại** |
+| Computable in parallel with no central key | no | **yes** |
+| Stable on reload | no | **yes** |
+| Width | 8 bytes | 16–32 bytes, slower joins |
+| The trap | — | **key collisions when a value returns** |
 
-Còn một cái bẫy chung cho cả `md5` lẫn `||`: nếu một cột `NULL` thì cả chuỗi thành
-`NULL` và hash thành `NULL`. Luôn bọc `coalesce(cot, '')` trước khi nối.
+And one trap shared by both `md5` and `||`: if any column is `NULL` the whole string becomes
+`NULL` and the hash becomes `NULL`. Always wrap in `coalesce(col, '')` before concatenating.
 
 </details>
 
 ---
 
-## Bộ D — Star, Snowflake, One Big Table
+## Group D — Star, Snowflake, One Big Table
 
-### Bài D.1 — Cùng một câu hỏi, ba cách bố trí
+### Exercise D.1 — One question, three layouts
 
-**Đề:** tính doanh thu theo `khu_vuc` × `nhom` **hai lần**: (a) từ star schema —
-`don_hang_chi_tiet` join `don_hang`, `khach_hang`, `hang_hoa`; (b) từ bảng `obt_ban_hang`
-dựng ở bài D.3, không join gì. Hai kết quả phải trùng từng dòng.
+**The task:** compute revenue by `khu_vuc` × `nhom` **twice**: (a) from the star schema —
+`don_hang_chi_tiet` joined to `don_hang`, `khach_hang`, `hang_hoa`; (b) from the `obt_ban_hang` table
+built in exercise D.3, with no joins. The two results must match row for row.
 
-**Đáp số phải ra (cả hai cách):**
+**The answer it must produce (both ways):**
 
 ```text
 ┌────────────┬───────────────┬───────────┐
@@ -883,13 +882,13 @@ dựng ở bài D.3, không join gì. Hai kết quả phải trùng từng dòng
 └────────────┴───────────────┴───────────┘
 ```
 
-Tổng 5 dòng = 10.215.000.
+The 5 rows total 10,215,000.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- (a) star: 3 join tu fact
+-- (a) the star: 3 joins from the fact
 select k.khu_vuc, hh.nhom, sum(ct.so_luong*ct.don_gia) doanh_thu
 from don_hang_chi_tiet ct
 join don_hang   h  using (don_hang_id)
@@ -897,26 +896,26 @@ join khach_hang k  using (khach_id)
 join hang_hoa   hh using (ma_hang)
 group by 1,2 order by 3 desc;
 
--- (b) OBT: 0 join
+-- (b) the OBT: 0 joins
 select khu_vuc, nhom, sum(tien_hang) doanh_thu
 from obt_ban_hang group by 1,2 order by 3 desc;
 ```
 
-Trùng khít. Nên **kết quả không phải tiêu chí chọn giữa star và OBT** — cả hai đều ra
-đúng. Tiêu chí nằm ở chỗ khác, đo ở bài D.3 và D.4.
+An exact match. So **the result isn't the criterion for choosing between star and OBT** — both give
+the right answer. The criterion lies elsewhere, measured in exercises D.3 and D.4.
 
-Một chi tiết: chỉ có **5** tổ hợp `khu_vuc × nhom` chứ không phải 3 × 3 = 9. Star schema
-không sinh dòng cho tổ hợp không bán được gì. Nếu báo cáo cần hiện cả tổ hợp doanh thu 0
-thì phải `cross join` hai dimension rồi `left join` fact — bài đó ở bộ 6.
+One detail: there are only **5** `khu_vuc × nhom` combinations, not 3 × 3 = 9. A star schema
+produces no row for a combination that sold nothing. If a report needs to show the zero-revenue combinations too,
+you must `cross join` the two dimensions then `left join` the fact — that exercise is in set 6.
 
 </details>
 
-### Bài D.2 — Snowflake: làm phẳng cây phân cấp bằng recursive CTE
+### Exercise D.2 — Snowflake: flattening a hierarchy with a recursive CTE
 
-**Đề:** `cay_nhom_hang` lưu quan hệ cha–con (`nhom_cha_id`). Viết recursive CTE trả về
-mỗi nhóm kèm **cấp** và **đường dẫn đầy đủ** từ gốc.
+**The task:** `cay_nhom_hang` stores parent–child relationships (`nhom_cha_id`). Write a recursive CTE returning
+each group with its **level** and its **full path** from the root.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────┬──────────────────────────────────────────────────┐
@@ -933,10 +932,10 @@ mỗi nhóm kèm **cấp** và **đường dẫn đầy đủ** từ gốc.
 └─────────┴───────┴──────────────────────────────────────────────────┘
 ```
 
-Chú ý: **hai gốc** (`N1`, `N7`) và cấp sâu nhất là **4**.
+Note: **two roots** (`N1`, `N7`) and a maximum depth of **4**.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with recursive duong as (
@@ -948,23 +947,23 @@ with recursive duong as (
 select nhom_id, cap, duong_dan from duong order by duong_dan;
 ```
 
-Neo (`anchor`) là `nhom_cha_id is null` — bắt **mọi** gốc, nên `N7` không bị bỏ sót dù nó
-không nằm dưới `N1`. Viết neo thành `where nhom_id = 'N1'` là mất luôn nhánh `Hang thanh ly`,
-và không có gì báo.
+The anchor is `nhom_cha_id is null` — catching **every** root, so `N7` isn't missed even though it
+doesn't sit under `N1`. Writing the anchor as `where nhom_id = 'N1'` loses the whole `Hang thanh ly` branch,
+and nothing reports it.
 
-Đây là hình dạng **snowflake**: dimension nhóm hàng được chuẩn hoá thành bảng riêng có
-khoá cha. Đọc thì phải đệ quy; đổi tên thì sửa **một** dòng — đối lập hoàn toàn với OBT
-ở bài D.4.
+This is the **snowflake** shape: the product-group dimension normalised into its own table with a
+parent key. Reading it requires recursion; renaming needs **one** row changed — the exact opposite of OBT
+in exercise D.4.
 
 </details>
 
-### Bài D.3 — Dựng OBT và đo cái giá của nó
+### Exercise D.3 — Build the OBT and measure its cost
 
-**Đề:** dựng `obt_ban_hang` — một bảng phẳng gộp chi tiết đơn, đơn hàng, khách, mặt hàng
-và đường dẫn nhóm đầy đủ. Rồi đo: số dòng, doanh thu, **số cột**, và mỗi chuỗi mô tả mặt
-hàng bị lặp bao nhiêu lần.
+**The task:** build `obt_ban_hang` — one flat table merging the order lines, the orders, the customers, the items
+and the full group path. Then measure: the row count, the revenue, the **column count**, and how many times each item's
+description string repeats.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────┬────────┐
@@ -986,7 +985,7 @@ hàng bị lặp bao nhiêu lần.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table obt_ban_hang as
@@ -1016,22 +1015,22 @@ select ten_hang, count(*) so_lan_lap, ten_hang || ' | ' || nhom_day_du mau_chuoi
 from obt_ban_hang group by 1,3 order by 2 desc;
 ```
 
-**15 dòng, 17 cột** — đúng số dòng của fact gốc. OBT **không** làm phồng dòng, miễn là
-mọi join đều là nhiều-một. Đó là điều kiện sống còn: chỉ cần một quan hệ nhiều-nhiều
-(như `nhan_vien_don`) lọt vào là OBT phồng ngay, và bộ 4 sẽ chứng minh.
+**15 rows, 17 columns** — exactly the source fact's row count. An OBT **doesn't** inflate rows, provided
+every join is many-to-one. That's the vital condition: one many-to-many relationship
+(like `nhan_vien_don`) slipping in and the OBT inflates immediately, as set 4 will prove.
 
-Cái giá nằm ở cột `so_lan_lap`: chuỗi *"Cong nghe > May tinh > Laptop > Laptop van phong"*
-được lưu **3 lần**, *"Bàn phím cơ …"* lưu **6 lần**. Với 15 dòng thì không sao. Với 500
-triệu dòng fact thì đó là hàng chục GB lặp lại — và quan trọng hơn là bài D.4.
+The cost is in the `so_lan_lap` column: the string *"Cong nghe > May tinh > Laptop > Laptop van phong"*
+is stored **3 times**, *"Bàn phím cơ …"* **6 times**. With 15 rows it doesn't matter. With 500
+million fact rows that's tens of GB of repetition — and more important still is exercise D.4.
 
 </details>
 
-### Bài D.4 — Đổi tên một nhóm hàng: sửa bao nhiêu dòng
+### Exercise D.4 — Renaming one product group: how many rows to change
 
-**Đề:** nghiệp vụ đổi tên *"Man hinh"* thành *"Thiet bi hien thi"*. Đếm số dòng phải sửa
-ở ba nơi: `obt_ban_hang`, `cay_nhom_hang`, và cột `nhom` dẹt trong `hang_hoa`.
+**The task:** the business renames *"Man hinh"* to *"Thiet bi hien thi"*. Count the rows to change
+in three places: `obt_ban_hang`, `cay_nhom_hang`, and the flat `nhom` column in `hang_hoa`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────────────────┬───────────────┐
@@ -1043,10 +1042,10 @@ triệu dòng fact thì đó là hàng chục GB lặp lại — và quan trọn
 └─────────────────────────┴───────────────┘
 ```
 
-Dòng cuối ra **0** — đó không phải lỗi query. Tìm cho ra vì sao.
+The last row gives **0** — that isn't a query bug. Work out why.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'obt_ban_hang' bang, count(*) dong_phai_sua
@@ -1055,36 +1054,36 @@ union all select 'cay_nhom_hang', count(*) from cay_nhom_hang where ten_nhom='Ma
 union all select 'hang_hoa (cot nhom det)', count(*) from hang_hoa where nhom='Man hinh';
 ```
 
-**4 dòng so với 1 dòng** — trên dữ liệu thật là *"vài trăm triệu dòng"* so với *"một
-dòng"*. Đây mới là đánh đổi thật của OBT, chứ không phải dung lượng:
+**4 rows against 1** — on real data that's *"a few hundred million rows"* against *"one
+row"*. This is OBT's real trade-off, not storage:
 
 | | Star / Snowflake | OBT |
 |---|---|---|
-| Đọc | 1–3 join | 0 join |
-| Đổi một nhãn dimension | `update` 1 dòng | `update` toàn bảng fact |
-| Áp dụng SCD Type 2 | tự nhiên | gần như không làm được |
+| Reading | 1–3 joins | 0 joins |
+| Renaming one dimension label | `update` 1 row | `update` the whole fact table |
+| Applying SCD Type 2 | natural | practically impossible |
 
-**Còn dòng cuối bằng 0:** `hang_hoa.nhom` ghi *"Màn hình"* — **có dấu tiếng Việt**, còn
-`cay_nhom_hang.ten_nhom` ghi *"Man hinh"* — **không dấu**. Hai hệ thống, hai cách viết
-cùng một nhóm, và `=` không khớp.
+**And as for the last row being 0:** `hang_hoa.nhom` writes *"Màn hình"* — **with Vietnamese diacritics** — while
+`cay_nhom_hang.ten_nhom` writes *"Man hinh"* — **without**. Two systems, two spellings of
+the same group, and `=` doesn't match.
 
-Đây chính là bệnh mà [conformed dimension](../skills/conformed-dimension.md) sinh ra để
-chữa, và bộ 6 sẽ bắt nó bằng SQL. Nhớ lấy hình dạng của nó: **query chạy, không lỗi, trả
-0 dòng, và 0 dòng trông y hệt "không có gì để sửa".**
+This is precisely the illness [conformed dimensions](../skills/conformed-dimension.md) exist to
+cure, and set 6 will catch it with SQL. Remember its shape: **the query runs, no error, returns
+0 rows, and 0 rows looks exactly like "there's nothing to change".**
 
 </details>
 
 ---
 
-## Bộ E — Quy trình thiết kế 4 bước
+## Group E — The four-step design process
 
-### Bài E.1 — Bước 1 & 2: liệt kê quy trình nghiệp vụ và khai grain
+### Exercise E.1 — Steps 1 & 2: list the business processes and declare the grain
 
-**Đề:** kho này có sáu quy trình nghiệp vụ. Với mỗi cái, khai: tên, grain bằng lời, số
-dòng hiện có, và **loại fact** (transaction / periodic snapshot / accumulating snapshot /
+**The task:** this warehouse has six business processes. For each, declare: the name, the grain in words, the current
+row count, and the **fact type** (transaction / periodic snapshot / accumulating snapshot /
 factless / bridge).
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬─────────────────────────────┬─────────┬────────────────────────┐
@@ -1100,7 +1099,7 @@ factless / bridge).
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select 'Ban hang' quy_trinh, 'mot dong hang trong mot don' grain,
@@ -1117,128 +1116,128 @@ union all select 'Phan cong NV', 'mot NV tren mot don',
        (select count(*) from nhan_vien_don), 'bridge';
 ```
 
-Chi tiết đáng dừng lại: **`don_hang` xuất hiện ở hai vai**. Là *nguồn* của quy trình
-"Bán hàng" (cấp header), và là *fact* của quy trình "Giao hàng" — accumulating snapshot
-với ba mốc `ngay_dat` → `ngay_giao` → `ngay_nhan`, mỗi mốc được cập nhật khi đơn tiến
-bước.
+A detail worth pausing on: **`don_hang` appears in two roles**. It's the *source* of the
+"Ban hang" process (at header level), and the *fact* of the "Giao hang" process — an accumulating snapshot
+with three milestones `ngay_dat` → `ngay_giao` → `ngay_nhan`, each updated as the order
+advances.
 
-Đó là lý do bước 1 phải làm **trước** bước 2: cùng một bảng nguồn có thể sinh ra hai
-fact table với hai grain khác nhau, và chỉ khi đã chọn quy trình thì mới khai được grain.
+That's why step 1 must come **before** step 2: the same source table can yield two
+fact tables at two different grains, and only once you've picked the process can you declare the grain.
 
-Nhầm thứ tự — khai grain trước khi chọn quy trình — là cách nhanh nhất để dựng một bảng
-"tổng hợp mọi thứ" mà không trả lời được câu hỏi nào cho ra hồn.
+Getting the order wrong — declaring the grain before picking the process — is the fastest way to build a
+"merge everything" table that answers no question properly.
 
 </details>
 
-### Bài E.2 — Bước 3: dimension nào dùng được cho quy trình nào
+### Exercise E.2 — Step 3: which dimension works for which process
 
-**Đề:** dựng **bus matrix** dạng bảng: sáu quy trình × các dimension (`Ngay`, `Khach`,
-`Hang hoa`, `Nhan vien`, `Tien te`), đánh dấu `X` nếu dimension đó áp dụng được.
+**The task:** build a **bus matrix** as a table: six processes × the dimensions (`Ngay`, `Khach`,
+`Hang hoa`, `Nhan vien`, `Tien te`), marking `X` where the dimension applies.
 
-Bài này không có SQL — **viết bảng bằng tay** rồi so với lời giải. Điền sai chỗ nào thì
-đó chính là chỗ bạn sẽ dựng sai mô hình.
+This exercise has no SQL — **write the table by hand** then compare with the solution. Wherever you fill it in
+wrongly is exactly where you'll build the model wrongly.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Quy trình | Ngay | Khach | Hang hoa | Nhan vien | Tien te |
+| Process | Ngay | Khach | Hang hoa | Nhan vien | Tien te |
 |---|---|---|---|---|---|
-| Bán hàng | X | X | X | X | — |
-| Trả hàng | X | X | — | — | — |
-| Giao hàng | X | X | — | — | — |
-| Tồn kho | X | — | X | — | — |
-| Sự kiện web | X | X | X | — | — |
-| Đơn ngoại tệ | X | X | — | — | X |
+| Sales | X | X | X | X | — |
+| Returns | X | X | — | — | — |
+| Delivery | X | X | — | — | — |
+| Inventory | X | — | X | — | — |
+| Web events | X | X | X | — | — |
+| Foreign-currency orders | X | X | — | — | X |
 
-Ba điều đọc ra được từ bảng này:
+Three things you can read off this table:
 
-**`Ngay` có mặt ở mọi dòng.** Đó là dấu hiệu nó là conformed dimension quan trọng nhất —
-và cũng là lý do `dim_ngay` phải được dựng một lần, dùng chung, không mỗi mart một bản.
+**`Ngay` appears in every row.** That's the sign it's the most important conformed dimension —
+and also why `dim_ngay` must be built once and shared, not one copy per mart.
 
-**`Hang hoa` vắng ở "Trả hàng".** Không phải vì nghiệp vụ không cần, mà vì `tra_hang`
-chỉ ghi ở cấp **đơn**, không ghi mặt hàng nào bị trả. Đó là một **lỗ hổng dữ liệu nguồn**
-— bus matrix làm nó lộ ra. Hệ quả: không trả lời được "tỷ lệ trả hàng theo mặt hàng" mà
-không phân bổ, và bộ 5 sẽ làm đúng chuyện đó.
+**`Hang hoa` is absent from "Returns".** Not because the business doesn't need it, but because `tra_hang`
+only records at the **order** level, never which item was returned. That's a **source-data gap**
+— and the bus matrix reveals it. The consequence: "return rate by item" is unanswerable without
+allocation, and set 5 does exactly that.
 
-**Hai quy trình dùng chung ≥2 dimension thì so được số với nhau.** "Bán hàng" và "Trả
-hàng" chung `Ngay` + `Khach` → drill-across được. "Tồn kho" và "Sự kiện web" chỉ chung
-`Ngay` + `Hang hoa` → vẫn ghép được, nhưng theo hai trục đó thôi.
+**Two processes sharing ≥2 dimensions can have their numbers compared.** "Sales" and "Returns"
+share `Ngay` + `Khach` → drill-across works. "Inventory" and "Web events" share only
+`Ngay` + `Hang hoa` → still combinable, but along those two axes only.
 
-Xem [Bus architecture](../reference/bus-architecture.md); luyện kỹ ở bộ 6.
+See [Bus architecture](../reference/bus-architecture.md); practised in depth in set 6.
 
 </details>
 
-### Bài E.3 — Bước 4: fact table chỉ được chứa hai loại cột
+### Exercise E.3 — Step 4: a fact table may contain only two kinds of column
 
-**Đề:** kiểm `obt_ban_hang` xem nó có thoả luật *"fact table chỉ chứa khoá ngoại + số
-đo"* không. Liệt kê những cột **vi phạm**, và giải thích vì sao OBT được phép vi phạm.
+**The task:** check whether `obt_ban_hang` satisfies the rule *"a fact table contains only foreign keys +
+measures"*. List the **violating** columns, and explain why an OBT is allowed to violate it.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select column_name, data_type from information_schema.columns
 where table_schema='main' and table_name='obt_ban_hang' order by ordinal_position;
 ```
 
-Trong 17 cột, chỉ **5** hợp lệ theo luật fact:
+Of the 17 columns, only **5** are legitimate under the fact rule:
 
-| Nhóm | Cột |
+| The group | Columns |
 |---|---|
-| Khoá ngoại | `khach_id`, `ma_hang`, `ngay_dat` |
+| Foreign keys | `khach_id`, `ma_hang`, `ngay_dat` |
 | Degenerate | `don_hang_id`, `dong` |
-| **Số đo** | `so_luong`, `don_gia`, `tien_hang`, `phi_ship` |
-| **Vi phạm — thuộc tính dimension** | `ho_ten`, `khu_vuc`, `khach_hang_muc`, `ten_hang`, `nhom`, `nhom_day_du`, `do_sau_nhom`, `trang_thai` |
+| **Measures** | `so_luong`, `don_gia`, `tien_hang`, `phi_ship` |
+| **Violations — dimension attributes** | `ho_ten`, `khu_vuc`, `khach_hang_muc`, `ten_hang`, `nhom`, `nhom_day_du`, `do_sau_nhom`, `trang_thai` |
 
-Tám cột vi phạm. Đó **là định nghĩa** của OBT chứ không phải lỗi: OBT cố tình nhét thuộc
-tính dimension vào fact để khỏi join.
+Eight violating columns. That **is the definition** of an OBT, not a bug: an OBT deliberately shoves dimension
+attributes into the fact to avoid joins.
 
-Được phép, với đúng ba điều kiện — thiếu một là hỏng:
+Permitted, under exactly three conditions — missing one breaks it:
 
-1. Mọi join dựng ra nó là **nhiều-một** (bài D.3).
-2. Không cần lịch sử thuộc tính — **không Type 2** (bài D.4).
-3. Thuộc tính **hiếm khi đổi tên** (bài D.4 lần nữa).
+1. Every join that builds it is **many-to-one** (exercise D.3).
+2. No attribute history is needed — **no Type 2** (exercise D.4).
+3. The attributes are **rarely renamed** (exercise D.4 again).
 
-Với `star`, thay vì kiểm bằng mắt thì kiểm bằng test:
+For a `star`, rather than checking by eye, check with a test:
 
 ```sql
--- moi cot khong phai khoa/so do deu la vi pham
+-- every column that isn't a key or a measure is a violation
 select count(*) so_cot_vi_pham from information_schema.columns
 where table_name = 'fct_ban_hang'
   and column_name not like '%_key'
   and column_name not in ('don_hang_id','dong','so_luong','don_gia','tien_hang');
 ```
 
-Đặt câu này thành test chạy mỗi lần build thì không ai lén thêm `ten_khach` vào fact
-được nữa. Xem [Quy trình thiết kế 4 bước](../reference/design-process.md).
+Make this a test running on every build and nobody can slip `ten_khach` into the fact
+again. See [The four-step design process](../reference/design-process.md).
 
 </details>
 
-### Bài E.4 — Chạy đủ 4 bước cho một yêu cầu mới
+### Exercise E.4 — Run the full four steps for a new request
 
-**Đề:** yêu cầu nghiệp vụ: *"Cho tôi xem mỗi nhân viên bán được bao nhiêu, theo tháng."*
-Đi đủ bốn bước, viết ra từng bước, rồi mới viết SQL.
+**The task:** the business request: *"Show me how much each employee sold, by month."*
+Walk all four steps, writing each one out, before writing any SQL.
 
-Đây là bài **thiết kế**, không phải bài SQL. Viết bốn bước ra giấy trước.
+This is a **design** exercise, not a SQL one. Write the four steps down first.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**Bước 1 — Quy trình nghiệp vụ:** Bán hàng. *Không phải* "báo cáo nhân viên" — báo cáo là
-đầu ra, quy trình là thứ sinh ra dữ liệu.
+**Step 1 — the business process:** Sales. *Not* "an employee report" — a report is an
+output, and a process is what produces the data.
 
-**Bước 2 — Grain:** một dòng hàng trong một đơn. Giữ grain mịn nhất, **đừng** khai
-"một nhân viên một tháng" — gom sẵn theo tháng là mất khả năng trả lời mọi câu hỏi khác.
+**Step 2 — the grain:** one goods line within one order. Keep the finest grain; **don't** declare
+"one employee one month" — pre-aggregating by month loses the ability to answer every other question.
 
-**Bước 3 — Dimension:** `Ngay`, `Khach`, `Hang hoa`, `Nhan vien`.
+**Step 3 — the dimensions:** `Ngay`, `Khach`, `Hang hoa`, `Nhan vien`.
 
-**Bước 4 — Số đo:** `so_luong`, `tien_hang`.
+**Step 4 — the measures:** `so_luong`, `tien_hang`.
 
-Và đây là chỗ bài này gài bẫy: **`Nhan vien` không phải quan hệ nhiều-một với đơn hàng.**
-Bài A.2 đã đo rồi — 17 dòng `nhan_vien_don` cho 10 đơn. Join thẳng là phồng:
+And here's where this exercise lays its trap: **`Nhan vien` isn't a many-to-one relationship with an order.**
+Exercise A.2 already measured it — 17 `nhan_vien_don` rows for 10 orders. A direct join inflates:
 
 ```sql
--- SAI: phong vi mot don co nhieu nhan vien
+-- WRONG: inflated because one order has several employees
 select nv.ho_ten, sum(ct.so_luong*ct.don_gia) doanh_thu
 from don_hang_chi_tiet ct
 join nhan_vien_don nd using (don_hang_id)
@@ -1246,10 +1245,10 @@ join nhan_vien nv using (nv_id)
 group by 1;
 ```
 
-Đúng thì phải qua **bridge table có hệ số phân bổ**:
+The right way is through a **bridge table with allocation weights**:
 
 ```sql
--- DUNG: nhan he so, tong khong phong
+-- RIGHT: multiply by the weight, the total doesn't inflate
 select nv.ho_ten, round(sum(ct.so_luong*ct.don_gia * nd.he_so)) doanh_thu
 from don_hang_chi_tiet ct
 join nhan_vien_don nd using (don_hang_id)
@@ -1257,35 +1256,35 @@ join nhan_vien nv using (nv_id)
 group by 1 order by 2 desc;
 ```
 
-Chạy thử cả hai và so tổng — bạn sẽ thấy tổng của bản "đúng" **vẫn chưa** bằng
-10.215.000. Vì sao thì để bộ 4 trả lời: có một đơn trong `nhan_vien_don` có tổng hệ số
-**không bằng 1**. Đó là bài [bridge table](../skills/bridge-table.md).
+Run both and compare the totals — you'll find the "right" version's total **still doesn't** equal
+10,215,000. Why is for set 4 to answer: one order in `nhan_vien_don` has weights totalling
+**something other than 1**. That's the [bridge table](../skills/bridge-table.md) exercise.
 
-Bài học của bước 4: **xác định số đo là lúc phát hiện ra quan hệ nhiều-nhiều**, không
-phải lúc viết báo cáo.
+Step 4's lesson: **identifying the measures is when you discover the many-to-many relationship**, not
+when you write the report.
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-| Số | Nghĩa | Bài |
+| The number | What it means | Exercise |
 |---|---|---|
-| 10 · 15 · 10.215.000 · 400.000 | bốn mốc gốc, mọi bài phải khớp | A.5 |
-| 75 dòng · 51.075.000 | trộn grain với `kho_hang` → nhân 5 | A.3 |
-| 420 / 78 / 84,0 | semi-additive: cộng dọc / cuối kỳ / trung bình | A.4 |
-| 13 hay 14 phiên | grain của "phiên" là quyết định nghiệp vụ | B.4 |
-| 4–5 giá trị vs 1–2 tổ hợp | `diem_tin_dung` là số đo trá hình | B.5 |
-| 4 khách → 6 dòng | Type 2 chỉ theo cột chậm | C.2 |
-| 15 dòng · 15.060.000 (+47,4%) | join Type 2 bằng natural key | C.3 |
-| 8 + 2 = 10 | khoá `-1` khép kín, `NULL` thì không | C.4 |
-| 4 vs 1 dòng phải sửa | OBT vs snowflake khi đổi nhãn | D.4 |
-| 0 dòng | *"Màn hình"* ≠ *"Man hinh"* — bẫy conformed | D.4 |
+| 10 · 15 · 10,215,000 · 400,000 | the four baselines every exercise must match | A.5 |
+| 75 rows · 51,075,000 | mixing grains with `kho_hang` → ×5 | A.3 |
+| 420 / 78 / 84.0 | semi-additive: summed down / closing / average | A.4 |
+| 13 or 14 sessions | the grain of a "session" is a business decision | B.4 |
+| 4–5 values vs 1–2 combinations | `diem_tin_dung` is a measure in disguise | B.5 |
+| 4 customers → 6 rows | Type 2 on the slow columns only | C.2 |
+| 15 rows · 15,060,000 (+47.4%) | joining Type 2 by natural key | C.3 |
+| 8 + 2 = 10 | the `-1` key closes, `NULL` doesn't | C.4 |
+| 4 vs 1 rows to change | OBT vs snowflake when renaming a label | D.4 |
+| 0 rows | *"Màn hình"* ≠ *"Man hinh"* — the conformance trap | D.4 |
 
 ## Related Topics
 
-- [Bài tập — Data Modeling](index.md) — mục lục bộ bài tập
-- [Bài tập bộ 2 — Dimension theo thời gian](bt-02-dimension-thoi-gian.md) — bộ tiếp theo
-- [Phụ lục seed](bt-00-seed.md) — nội dung bảy bảng mới
-- [Tài liệu — Data Modeling](../reference/index.md) — lý thuyết của năm kỹ thuật trên
+- [Exercises — Data Modeling](index.md) — the exercise sets' index
+- [Exercise set 2 — Dimensions over time](bt-02-dimension-thoi-gian.md) — the next set
+- [The seed appendix](bt-00-seed.md) — the contents of the seven new tables
+- [Reference — Data Modeling](../reference/index.md) — the theory behind the five techniques above

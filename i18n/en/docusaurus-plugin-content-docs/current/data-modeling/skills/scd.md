@@ -262,7 +262,7 @@ Two paths, two answers:
 
 The `khach_nhom_sk_hien_tai` column is a **Type 1 outrigger** — it's overwritten whenever the customer changes
 group, so it holds no history and must not be used for historical reporting. The same trap described
-in [dimension-to-dimension joins](centipede-fact.md#dimension-to-dimension-join).
+in [dimension-to-dimension joins](centipede-fact.md#dimension-to-dimension-joins).
 
 When to use it: you're already using Type 4 and have the question *"which group is this customer in now"* without
 wanting to scan the fact.
