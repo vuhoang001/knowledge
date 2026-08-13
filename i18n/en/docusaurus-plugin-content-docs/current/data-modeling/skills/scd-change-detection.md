@@ -1,8 +1,7 @@
 ---
-title: Phát hiện thay đổi cho SCD Type 2
-i18n_status: untranslated
+title: Change detection for SCD Type 2
 sidebar_position: 2
-description: "Bốn cách biết dòng nào đã đổi: so từng cột, hash, updated_at, CDC — kèm bẫy của từng cách và cách áp dụng thay đổi."
+description: "Four ways of knowing which row changed: comparing each column, hashing, updated_at, CDC — with each one's traps and how to apply the changes."
 tags: [scd, change-detection, hash, cdc, dbt-snapshot, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,21 +12,21 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Phát hiện thay đổi cho SCD Type 2
+# Change detection for SCD Type 2
 
-> **Chốt:** [SCD](scd.md) Type 2 nói *phải giữ lịch sử*; trang này nói *làm sao biết dòng
-> nào đã đổi*. Hash là cách dùng được nhất, nhưng chỉ khi đã tránh bốn bẫy — mà mỗi bẫy
-> đều hỏng **im lặng**: hoặc bỏ sót thay đổi thật, hoặc sinh version giả mỗi lần chạy.
+> **Takeaway:** [SCD](scd.md) Type 2 says *history must be kept*; this page says *how you know which row
+> changed*. Hashing is the most usable approach, but only once you've avoided four traps — each of which
+> fails **silently**: either missing a real change, or generating a fake version on every run.
 
-## Mục tiêu
+## The goal
 
-`scd.md` cho thuật toán năm bước, trong đó bước 3 là *"có đổi không"*. Trang này là bước
-3 đó, viết đủ để làm được.
+`scd.md` gives the five-step algorithm, of which step 3 is *"has it changed"*. This page is that step
+3, written out enough to implement.
 
-## Dữ liệu chung cho mọi ví dụ
+## The shared data for every example
 
-Mọi đoạn dưới đây dùng chung bảng này. **Toàn bộ output trong trang này là kết quả
-chạy thật trên DuckDB 1.5.5**, không phải minh hoạ.
+Every snippet below uses this table. **All the output on this page is the result of
+really running on DuckDB 1.5.5**, not an illustration.
 
 ```sql
 -- Anh chup nguon hom nay
@@ -52,18 +51,18 @@ INSERT INTO dim_khach_hang VALUES
   (3,'KH004','Phạm D',  'Miền Nam', 10000000, NULL, DATE '2026-01-01', DATE '9999-12-31', true);
 ```
 
-Đọc kỹ ba khác biệt cố ý:
+Read the three deliberate differences carefully:
 
-| Khách | Chuyện gì |
+| Customer | What happened |
 |---|---|
-| `KH001` | Đổi khu vực Bắc → Nam. **Phải** sinh version mới |
-| `KH002` | Khu vực Miền Trung → `NULL`. **Phải** sinh version mới — đây là ca bẫy |
-| `KH003` | Khách mới, chưa có trong dim |
-| `KH004` | Có trong dim, **biến mất** khỏi nguồn — đã xoá? |
+| `KH001` | Changed region North → South. **Must** generate a new version |
+| `KH002` | Region Central → `NULL`. **Must** generate a new version — this is the trap case |
+| `KH003` | A new customer, not yet in the dim |
+| `KH004` | In the dim but **gone** from the source — deleted? |
 
-## Cách 1 — So từng cột
+## Approach 1 — comparing each column
 
-### Bẫy `NULL`, chứng minh bằng hai câu
+### The `NULL` trap, proved in two statements
 
 ```sql
 SELECT
@@ -79,10 +78,10 @@ SELECT
 └────────────────┴──────────────┘
 ```
 
-Cột đầu ra `NULL` chứ không phải `true`. Mà `WHERE NULL` được coi như false → dòng
-không lọt vào kết quả.
+The first column gives `NULL`, not `true`. And `WHERE NULL` is treated as false → the row
+never reaches the result.
 
-### Hậu quả trên dữ liệu thật
+### The consequence on real data
 
 ```sql
 -- SAI: dung <>
@@ -109,14 +108,14 @@ Câu SAI (<>)              Câu ĐÚNG (IS DISTINCT FROM)
                           └───────────────┘
 ```
 
-Câu trên bắt được `KH001`, **bỏ sót `KH002`**. Câu dưới bắt cả hai. `KH002` mất lịch sử
-vĩnh viễn và không có lỗi nào báo.
+The first catches `KH001` and **misses `KH002`**. The second catches both. `KH002` loses its history
+permanently, with no error reported.
 
-Cách này đúng nhưng không scale: 30 cột là 30 mệnh đề, thêm cột mà quên sửa là sót âm thầm.
+This approach is correct but doesn't scale: 30 columns means 30 clauses, and adding a column without updating it is a silent miss.
 
-## Cách 2 — Hash, và bốn bẫy
+## Approach 2 — hashing, and its four traps
 
-### Bẫy 1: `NULL` làm hai bộ giá trị khác nhau đụng hash
+### Trap 1: `NULL` makes two different value sets collide
 
 ```sql
 SELECT
@@ -133,9 +132,9 @@ SELECT
 └─────────┴────────────┴───────────┘
 ```
 
-`dung_nhau` ra **`true`** — đây là bẫy: `concat_ws` **bỏ qua** `NULL`, nên
-`('a', NULL, 'c')` và `('a','c')` cho cùng chuỗi → cùng hash → thay đổi thật bị coi là
-không đổi. Sửa bằng `coalesce` về một token cố định:
+`dung_nhau` comes out **`true`** — that's the trap: `concat_ws` **skips** `NULL`, so
+`('a', NULL, 'c')` and `('a','c')` produce the same string → the same hash → a real change is treated as
+no change. Fix it with a `coalesce` to a fixed token:
 
 ```sql
 SELECT concat_ws('|', 'a', coalesce(NULL,'<NULL>'), 'c') = concat_ws('|', 'a', 'c') AS con_dung_nhau;
@@ -149,7 +148,7 @@ SELECT concat_ws('|', 'a', coalesce(NULL,'<NULL>'), 'c') = concat_ws('|', 'a', '
 └───────────────┘
 ```
 
-### Bẫy 2: ranh giới cột
+### Trap 2: column boundaries
 
 ```sql
 SELECT
@@ -165,17 +164,17 @@ SELECT
 └─────────────────┴──────────────┘
 ```
 
-`khong_separator` ra `true`: `'ab'+'c'` và `'a'+'bc'` cùng thành `'abc'`. Hai bộ giá trị
-**khác nhau hoàn toàn** mà cùng hash.
+`khong_separator` comes out `true`: `'ab'+'c'` and `'a'+'bc'` both become `'abc'`. Two **completely
+different** value sets with the same hash.
 
-Separator phải là ký tự **không xuất hiện trong dữ liệu**. Nếu dữ liệu có thể chứa `|`
-thì đổi sang ký tự hiếm hơn — hoặc nối thêm độ dài từng cột:
+The separator must be a character **that never appears in the data**. If the data might contain `|`,
+switch to a rarer character — or append each column's length:
 
 ```sql
 SELECT md5(concat_ws('|', length('ab'), 'ab', length('c'), 'c'));
 ```
 
-### Bẫy 3: format số và ngày
+### Trap 3: number and date formatting
 
 ```sql
 SELECT
@@ -191,9 +190,9 @@ SELECT
 └─────────┴─────────┘
 ```
 
-Cả hai ra `false` — **hai giá trị bằng nhau về nghiệp vụ mà hash khác nhau**. Hậu quả
-ngược với bẫy 1: sinh **version giả** mỗi lần nguồn đổi kiểu cột, dimension phình mà
-không ai hiểu vì sao. Chuẩn hoá trước khi băm:
+Both come out `false` — **two values equal in business terms with different hashes**. The consequence is
+the inverse of trap 1: generating a **fake version** every time the source changes a column type, and the
+dimension bloating with nobody understanding why. Normalise before hashing:
 
 ```sql
 md5(concat_ws('|',
@@ -202,7 +201,7 @@ md5(concat_ws('|',
 ))
 ```
 
-### Bẫy 4: thứ tự cột
+### Trap 4: column order
 
 ```sql
 SELECT md5(concat_ws('|','A','B')) = md5(concat_ws('|','B','A')) AS doi_thu_tu;
@@ -216,11 +215,11 @@ SELECT md5(concat_ws('|','A','B')) = md5(concat_ws('|','B','A')) AS doi_thu_tu;
 └────────────┘
 ```
 
-Ra `false`. Nghĩa là đổi thứ tự cột trong `concat_ws` làm **toàn bộ hash cũ vô giá trị**,
-và lần chạy kế sinh version mới cho **mọi** dòng trong dimension. Khoá thứ tự lại; nếu
-buộc phải đổi thì phải backfill hash cũ trước khi chạy.
+It comes out `false`. Meaning that changing the column order inside `concat_ws` makes **every old hash
+worthless**, and the next run generates a new version for **every** row in the dimension. Lock the order down; if
+you're forced to change it, backfill the old hashes before running.
 
-### Hash dùng thật
+### The hash you actually use
 
 ```sql
 CREATE OR REPLACE VIEW stg_khach_hang_hashed AS
@@ -245,17 +244,17 @@ SELECT khach_hang_id, khu_vuc, row_hash FROM stg_khach_hang_hashed ORDER BY khac
 └───────────────┴──────────┴──────────────────────────────────┘
 ```
 
-**Lưu `row_hash` vào chính dimension**, đừng tính lại từ nguồn mỗi lần — nhờ vậy so sánh
-chỉ là một phép bằng trên một cột index được, thay vì băm lại toàn bộ nguồn.
+**Store `row_hash` in the dimension itself** rather than recomputing it from the source each time — that way a comparison
+is one equality on one indexable column, instead of rehashing the whole source.
 
-## Cách 3 — `updated_at` từ nguồn
+## Approach 3 — `updated_at` from the source
 
-Rẻ nhất, nhưng phụ thuộc nguồn nói thật. Hai kiểu nói dối, cả hai đều im lặng:
+The cheapest, but it depends on the source telling the truth. Two ways of lying, both silent:
 
-| Nguồn làm gì | Hậu quả |
+| What the source does | The consequence |
 |---|---|
-| `UPDATE` mà không đổi `updated_at` | **Mất thay đổi vĩnh viễn** |
-| `touch` bản ghi, nội dung không đổi | Sinh version giả |
+| `UPDATE`s without changing `updated_at` | **The change is lost permanently** |
+| `touch`es the record with unchanged content | A fake version is generated |
 
 ```sql
 -- Loc bang updated_at (re), nhung VAN hash de xac nhan (dung)
@@ -278,17 +277,17 @@ WHERE t.row_hash IS DISTINCT FROM u.row_hash;
 └───────────────┴──────────┴──────────┘
 ```
 
-Đây là cách dùng an toàn: `updated_at` để **giảm dữ liệu phải quét**, hash để **xác nhận
-thật sự có đổi**. Vừa rẻ vừa đúng.
+This is the safe way to use it: `updated_at` to **reduce the data scanned**, and the hash to **confirm there
+really was a change**. Cheap and correct.
 
-Lưu ý ví dụ này chỉ quét `KH001` và `KH003` (updated hôm nay), **bỏ qua `KH002`**. Nếu
-nguồn không cập nhật `updated_at` khi đổi khu vực thành `NULL` thì đây chính là kiểu nói
-dối thứ nhất — và đó là lý do không nên dùng `updated_at` một mình.
+Note that this example only scans `KH001` and `KH003` (updated today), **skipping `KH002`**. If the
+source doesn't update `updated_at` when the region changes to `NULL`, that's exactly the first kind of
+lie — and that's why you shouldn't use `updated_at` alone.
 
-## Cách 4 — Bắt `DELETE`
+## Approach 4 — catching `DELETE`s
 
-Ba cách trên đều so *ảnh chụp hiện tại*, nên **không cách nào thấy `KH004` đã biến mất**.
-Không có CDC thì so bộ khoá:
+All three approaches above compare *the current snapshot*, so **none of them can see that `KH004` has vanished**.
+Without CDC, compare the key sets:
 
 ```sql
 SELECT t.khach_hang_id AS co_trong_dim_mat_o_nguon
@@ -305,8 +304,8 @@ WHERE t.is_current AND s.khach_hang_id IS NULL;
 └──────────────────────────┘
 ```
 
-Trả về `KH004`. Nhưng **đừng đóng dòng ngay** — một lần trích xuất lỗi làm thiếu dữ liệu
-trông y hệt "xoá hàng loạt". Đặt ngưỡng an toàn:
+It returns `KH004`. But **don't close the row immediately** — one failed extraction producing incomplete data
+looks exactly like a "mass delete". Set a safety threshold:
 
 ```sql
 SELECT
@@ -324,10 +323,10 @@ SELECT
 └───────┴──────────────┴────────┘
 ```
 
-Tỷ lệ tụt dưới ngưỡng (ví dụ 0.9) thì **dừng pipeline**, đừng đóng dòng. CDC
-(Debezium đọc transaction log) không có vấn đề này vì nó thấy sự kiện `DELETE` thật.
+If the ratio falls below the threshold (say 0.9), **stop the pipeline** and don't close the rows. CDC
+(Debezium reading the transaction log) doesn't have this problem because it sees real `DELETE` events.
 
-## Áp dụng thay đổi — hai bước, không một `MERGE`
+## Applying the changes — two steps, not one `MERGE`
 
 ```sql
 -- Buoc 1: dong cac dong da doi
@@ -351,7 +350,7 @@ LEFT JOIN dim_khach_hang t
 WHERE t.khach_hang_id IS NULL OR t.row_hash IS DISTINCT FROM s.row_hash;
 ```
 
-Dimension sau khi chạy:
+The dimension after the run:
 
 ```text
 ┌──────────┬───────────────┬────────────┬────────────┬────────────┬────────────┐
@@ -366,14 +365,14 @@ Dimension sau khi chạy:
 └──────────┴───────────────┴────────────┴────────────┴────────────┴────────────┘
 ```
 
-`KH001` và `KH002` mỗi khách hai phiên bản, dòng cũ đã đóng đúng ngày. `KH003` vào mới.
-`KH004` **vẫn `is_current`** — bước áp dụng không đụng tới nó, vì phát hiện xoá là việc
-riêng ở Cách 4.
+`KH001` and `KH002` each have two versions, with the old row closed on the right date. `KH003` came in new.
+`KH004` is **still `is_current`** — the apply step doesn't touch it, because delete detection is
+a separate matter in approach 4.
 
-**Thứ tự bắt buộc: đóng trước, chèn sau.** Ngược lại thì bước 1 đóng luôn dòng vừa chèn
-ở bước 2, và dimension không còn dòng `is_current` nào cho khách đó.
+**The order is mandatory: close first, insert second.** The other way round, step 1 also closes the row just inserted
+by step 2, and the dimension has no `is_current` row left for that customer.
 
-### Kiểm chứng
+### Verification
 
 ```sql
 -- Moi natural key co dung MOT dong is_current
@@ -393,16 +392,16 @@ Test 1                     Test 2
         0 rows               └─────────────┘
 ```
 
-Cả hai phải trả về **0 dòng**.
+Both must return **0 rows**.
 
-## Trong dbt
+## In dbt
 
-Hai strategy của `snapshot` tương ứng đúng hai cách trên:
+`snapshot`'s two strategies correspond exactly to two of the approaches above:
 
-| Strategy | Tương đương | Khi nào |
+| Strategy | Equivalent to | When |
 |---|---|---|
-| `check` + `check_cols` | so từng cột / hash | Nguồn không có `updated_at` đáng tin |
-| `timestamp` + `updated_at` | cột thời gian | Nguồn đáng tin, dữ liệu lớn |
+| `check` + `check_cols` | comparing each column / hashing | The source has no trustworthy `updated_at` |
+| `timestamp` + `updated_at` | the time column | The source is trustworthy and the data is large |
 
 ```yaml
 {% raw %}
@@ -418,14 +417,14 @@ select * from {{ source('crm', 'khach_hang') }}
 {% endraw %}
 ```
 
-`check_cols='all'` tiện nhưng nguy hiểm: thêm một cột kỹ thuật vô nghĩa vào nguồn là
-**mọi dòng sinh version mới**. Liệt kê cột tường minh.
+`check_cols='all'` is convenient but dangerous: adding one meaningless technical column to the source makes
+**every row generate a new version**. List the columns explicitly.
 
-Và nhắc lại cảnh báo ở [SCD](scd.md#common-mistakes): `snapshot` là thứ **duy nhất**
-trong dbt không tái tạo được. Model sai thì `dbt run` lại; snapshot chạy sai một lần thì
-phần lịch sử đó mất luôn.
+And to repeat the warning in [SCD](scd.md#common-mistakes): `snapshot` is the **only** thing
+in dbt that isn't reproducible. A wrong model gets `dbt run` again; a snapshot run wrongly once loses
+that piece of history for good.
 
-## Ba bẫy không thuộc riêng cách nào
+## Three traps belonging to no single approach
 
 ### Late-arriving data
 
@@ -437,8 +436,8 @@ SET valid_from = current_date
 SET valid_from = s.ngay_hieu_luc
 ```
 
-Bản ghi đến muộn ba ngày mà gán `current_date` thì fact join theo
-`ngay >= valid_from and ngay < valid_to` sẽ khớp **nhầm phiên bản** cho ba ngày đó.
+A record arriving three days late assigned `current_date` means a fact joining by
+`ngay >= valid_from and ngay < valid_to` matches **the wrong version** for those three days.
 
 ### Idempotency
 
@@ -447,7 +446,7 @@ Bản ghi đến muộn ba ngày mà gán `current_date` thì fact join theo
 SELECT khach_hang_id, count(*) FROM dim_khach_hang GROUP BY khach_hang_id ORDER BY 2 DESC;
 ```
 
-Chạy lại nguyên hai bước lần thứ hai trong cùng ngày: **6 dòng trước, 6 dòng sau.**
+Re-running both steps a second time on the same day: **6 rows before, 6 rows after.**
 
 ```text
 ┌───────────────┬──────────────┐
@@ -460,39 +459,39 @@ Chạy lại nguyên hai bước lần thứ hai trong cùng ngày: **6 dòng tr
 └───────────────┴──────────────┘
 ```
 
-Số dòng **không được tăng**. Điều kiện `row_hash IS DISTINCT FROM` lo việc này — nhưng
-chỉ khi hash ổn định, tức là đã tránh xong bẫy 3 và bẫy 4.
+The row count **must not increase**. The `row_hash IS DISTINCT FROM` condition takes care of that — but
+only if the hash is stable, i.e. traps 3 and 4 have already been avoided.
 
-### Khoảng chồng lấn
+### Overlapping intervals
 
-Đã có ở phần Kiểm chứng bên trên. Chạy sau **mỗi** lần nạp, không phải chỉ lần đầu.
+Already covered in the Verification section above. Run it after **every** load, not just the first.
 
 ## Trade-offs
 
-| Cách | Được | Mất |
+| Approach | You get | You lose |
 |---|---|---|
-| So từng cột | Đơn giản, đọc là hiểu | Không scale; thêm cột mà quên là sót |
-| Hash | Một cột so sánh, index được | Bốn bẫy, mỗi bẫy hỏng im lặng |
-| `updated_at` | Rẻ nhất, quét ít | Phụ thuộc nguồn nói thật |
-| CDC | Bắt được `DELETE` và trạng thái trung gian | Nặng hạ tầng, phức tạp vận hành |
+| Comparing each column | Simple, self-explanatory | Doesn't scale; add a column and forget and it's missed |
+| Hashing | One comparison column, indexable | Four traps, each failing silently |
+| `updated_at` | The cheapest, scanning the least | It depends on the source telling the truth |
+| CDC | Catches `DELETE`s and intermediate states | Heavy infrastructure, complex to operate |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Dùng `<>` thay vì `IS DISTINCT FROM` | Bỏ sót mọi thay đổi liên quan `NULL` |
-| `concat` không separator | Hai bộ giá trị khác nhau cùng hash |
-| Không `coalesce` `NULL` trước khi băm | Hash `NULL`, hoặc đụng hash với bộ ngắn hơn |
-| Không chuẩn hoá số/ngày | Sinh version giả mỗi lần nguồn đổi kiểu cột |
-| Đổi thứ tự cột trong hash | Toàn bộ dimension sinh version mới một lượt |
-| Chèn trước, đóng sau | Không còn dòng `is_current` nào |
-| Đóng dòng "đã xoá" mà không có ngưỡng | Một lần trích xuất lỗi làm đóng sạch dimension |
-| `check_cols='all'` | Thêm cột kỹ thuật là mọi dòng sinh version mới |
+| Using `<>` instead of `IS DISTINCT FROM` | Every `NULL`-related change is missed |
+| `concat` without a separator | Two different value sets share a hash |
+| Not `coalesce`ing `NULL` before hashing | A `NULL` hash, or a collision with a shorter set |
+| Not normalising numbers/dates | A fake version each time the source changes a column type |
+| Changing the column order in the hash | The whole dimension generates new versions at once |
+| Inserting first and closing second | No `is_current` row left at all |
+| Closing "deleted" rows without a threshold | One failed extraction closes the entire dimension |
+| `check_cols='all'` | Adding a technical column makes every row generate a new version |
 
 ## Related Topics
 
-- [SCD](scd.md) — Type 0–7 và thuật toán năm bước; trang này là bước 3 viết đủ
-- [Surrogate key](../reference/surrogate-key.md) — khoá cấp cho mỗi phiên bản mới
-- [Grain](../reference/grain.md) — grain của dimension Type 2 là *một phiên bản*, không phải *một thực thể*
-- [dbt: source, seed, snapshot](../../etl/dbt/reference/sources-seeds-snapshots.md) — công cụ hiện thực
-- [Sáu chiều chất lượng](../../data-quality/six-dimensions.md) — test khoảng thời gian thuộc chiều *consistency*
+- [SCD](scd.md) — Types 0–7 and the five-step algorithm; this page is step 3 written out in full
+- [Surrogate keys](../reference/surrogate-key.md) — the key issued to each new version
+- [Grain](../reference/grain.md) — a Type 2 dimension's grain is *one version*, not *one entity*
+- [dbt: sources, seeds, snapshots](../../etl/dbt/reference/sources-seeds-snapshots.md) — the implementing tool
+- [The six quality dimensions](../../data-quality/six-dimensions.md) — the time-interval test belongs to the *consistency* dimension

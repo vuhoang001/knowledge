@@ -1,8 +1,7 @@
 ---
 title: SCD — Cheatsheet
-i18n_status: untranslated
 sidebar_position: 1
-description: Bảng tra nhanh Slowly Changing Dimension khi đang làm việc.
+description: A quick lookup table for Slowly Changing Dimensions while you work.
 tags: [scd, cheatsheet, data-modeling]
 domain: data-engineering
 category: concept
@@ -15,23 +14,23 @@ updated: 2026-07-31
 
 # SCD — Cheatsheet
 
-Tài liệu đầy đủ: [docs/data-modeling/dimension-techniques/scd.md](../skills/scd.md)
+The full document: [docs/data-modeling/dimension-techniques/scd.md](../skills/scd.md)
 
-## Chọn Type nào
+## Which Type to choose
 
-| Tình huống | Type |
+| Situation | Type |
 |---|---|
-| Đổi là dữ liệu hỏng (ngày mở tài khoản) | **0** |
-| Sửa lỗi chính tả, chuẩn hoá viết hoa | **1** |
-| Không ai `GROUP BY` theo cột này | **1** |
-| Báo cáo quá khứ dùng giá trị **bây giờ** (as-is) | **1** |
-| Báo cáo quá khứ dùng giá trị **lúc đó** (as-was) | **2** |
-| Đổi hằng tháng + dimension lớn | **4** |
-| Cần cả as-was lẫn as-is trong một query | **6** |
-| Hai cách phân loại song song sau một lần tổ chức lại | **3** |
-| **Phân vân, không hỏi được ai** | **2** |
+| A change means corrupt data (the account-opening date) | **0** |
+| Fixing a typo, normalising capitalisation | **1** |
+| Nobody `GROUP BY`s this column | **1** |
+| Historical reports use the value **now** (as-is) | **1** |
+| Historical reports use the value **then** (as-was) | **2** |
+| Changes monthly + a large dimension | **4** |
+| You need both as-was and as-is in one query | **6** |
+| Two parallel classifications after a reorganisation | **3** |
+| **Unsure, and nobody to ask** | **2** |
 
-## Bộ cột Type 2
+## The Type 2 column set
 
 ```text
 khach_sk        BIGINT      PK — mỗi phiên bản một giá trị
@@ -43,7 +42,7 @@ is_current      BOOLEAN
 is_deleted      BOOLEAN     nguồn xoá cứng thì đánh dấu, đừng xoá dòng
 ```
 
-## Dimension lookup — gán SK lúc nạp fact
+## Dimension lookup — assigning the SK when loading the fact
 
 ```sql
 join dim_khach_hang d
@@ -52,13 +51,13 @@ join dim_khach_hang d
   and f.ngay <  d.valid_to
 ```
 
-Với dbt snapshot (`dbt_valid_to` là `NULL`):
+With a dbt snapshot (where `dbt_valid_to` is `NULL`):
 
 ```sql
   and f.ngay < coalesce(d.dbt_valid_to, '9999-12-31')
 ```
 
-## Test bắt buộc
+## The mandatory tests
 
 ```yaml
 tests:
@@ -69,8 +68,8 @@ tests:
       expression: "valid_from < valid_to"
 ```
 
-Cộng thêm **một singular test đối chiếu tổng với nguồn** — đây là test duy nhất bắt
-được lỗi nhân bản do join sai.
+Plus **a singular test reconciling the total against the source** — that's the only test that catches
+duplication caused by a wrong join.
 
 ## dbt snapshot
 
@@ -90,22 +89,22 @@ select * from {{ source('crm', 'khach_hang') }}
 dbt snapshot                 # KHÔNG build lại được — chạy sai là lịch sử sai vĩnh viễn
 ```
 
-| Strategy | Dùng khi |
+| Strategy | Use when |
 |---|---|
-| `timestamp` | Nguồn có cột `updated_at` đáng tin |
-| `check` | Không có cột thời gian — so từng cột trong `check_cols` |
+| `timestamp` | The source has a trustworthy `updated_at` column |
+| `check` | No time column — compare each column in `check_cols` |
 
-## Bốn lỗi chết người
+## The four deadly mistakes
 
-| Lỗi | Dấu hiệu |
+| Mistake | The sign |
 |---|---|
-| Fact join natural key | Doanh thu **nhân đôi**, mọi test vẫn xanh |
-| `where is_current = true` khi cần as-was | Số quá khứ đổi theo hiện tại |
-| `valid_to` = `NULL` | Dữ liệu **mới nhất** biến mất khỏi báo cáo |
-| Type 2 cho cột đổi hằng ngày | Dimension phình gấp trăm lần |
+| The fact joins on the natural key | Revenue **doubles**, and every test stays green |
+| `where is_current = true` when you need as-was | Historical numbers change with the present |
+| `valid_to` = `NULL` | The **newest** data vanishes from reports |
+| Type 2 for a column that changes daily | The dimension bloats a hundredfold |
 
-## Câu hỏi phải hỏi nghiệp vụ
+## The question to ask the business
 
-> "Khách chuyển từ Miền Bắc vào Nam. Doanh thu tháng 1 của họ hiện ở vùng nào?"
+> "A customer moves from the North to the South. Which region does their January revenue sit in now?"
 
-Đừng hỏi "anh muốn SCD Type mấy".
+Don't ask "which SCD Type do you want".

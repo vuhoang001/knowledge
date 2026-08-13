@@ -1,9 +1,8 @@
 ---
-title: Kỹ năng — Data Modeling
-i18n_status: untranslated
+title: Skills — Data Modeling
 sidebar_key: data-modeling-skills
 sidebar_position: 0
-description: "Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần Tài liệu, không thay thế nó."
+description: "Techniques applied to a specific situation — standing on top of the Reference section, not replacing it."
 tags: [skill, data-modeling]
 domain: data-engineering
 category: index
@@ -11,52 +10,52 @@ doc_type: index
 updated: 2026-07-31
 ---
 
-# Kỹ năng — Data Modeling
+# Skills — Data Modeling
 
-Kỹ thuật áp dụng vào một tình huống cụ thể — đứng **trên** phần Tài liệu, không thay thế nó.
+Techniques applied to a specific situation — standing **on top of** the Reference section, not replacing it.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [SCD — Slowly Changing Dimension](scd.md) | Khi thuộc tính của một thực thể thay đổi, báo cáo về quá khứ nên dùng  | 📝 lý thuyết |
-| 2 | [Phát hiện thay đổi cho SCD 2](scd-change-detection.md) | Biết dòng nào đã đổi: so cột, hash, `updated_at`, CDC | 🟡 draft |
-| 3 | [Junk dimension và cột cardinality thấp](junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | 🟡 draft |
-| 4 | [Mini-dimension](mini-dimension.md) | Dim lớn có vài cột đổi nhanh — tách sao cho Type 2 không phình | 🟡 draft |
-| 5 | [Role-playing dimension](role-playing-dimension.md) | Một dim đóng nhiều vai trong cùng fact | 🟡 draft |
-| 6 | [Conformed dimension](conformed-dimension.md) | Điều kiện để cộng được số từ hai fact khác nhau | 🟡 draft |
-| 7 | [Bridge table](bridge-table.md) | Quan hệ nhiều-nhiều — hệ số phân bổ để tổng không phồng | 🟡 draft |
-| 8 | [Degenerate dimension](degenerate-dimension.md) | Số đơn hàng không có thuộc tính nào — ở lại fact, đừng dựng bảng | 📝 lý thuyết |
-| 9 | [Cây phân cấp](hierarchy.md) | Cây sâu không đều: dẹt cố định, kéo cấp cha, hay bridge đường đi | 📝 lý thuyết |
-| 10 | [Dữ liệu về muộn](late-arriving.md) | Fact về sau khi dimension đã đổi, và dimension về sau fact | 📝 lý thuyết |
-| 11 | [Aggregate fact table](aggregate-fact-table.md) | Bảng tổng hợp: chỉ lưu số cộng được, dim rút gọn sinh từ dim gốc | 📝 lý thuyết |
-| 12 | [Nhiều tiền tệ và đơn vị đo](multi-currency-uom.md) | Chốt cả số gốc lẫn số quy đổi vào fact, đừng quy đổi lúc đọc | 📝 lý thuyết |
-| 13 | [Audit dimension](audit-dimension.md) | Mỗi dòng fact trỏ về lần chạy sinh ra nó — xoá đúng thứ phải xoá | 📝 lý thuyết |
-| 14 | [NULL trong fact và dimension](null-handling.md) | Logic ba trị làm bộ lọc âm thầm nuốt dòng | 📝 lý thuyết |
-| 15 | [Conformed facts](conformed-facts.md) | Ghép được rồi, nhưng hai số đó có so được với nhau không | 📝 lý thuyết |
-| 16 | [Thiết kế thuộc tính dimension](dimension-attribute-design.md) | Cờ dạng chữ, nhiều cây phân cấp, drill down, ghi chú tự do | 📝 lý thuyết |
-| 17 | [Header/line và phân bổ fact](allocated-facts.md) | Số đo cấp đơn xuống cấp dòng, và P&L theo sản phẩm | 📝 lý thuyết |
-| 18 | [Centipede fact table](centipede-fact.md) | Fact hai chục khoá ngoại cho vài chiều thật | 📝 lý thuyết |
-| 19 | [Year-to-date và timespan](ytd-timespan-facts.md) | Luỹ kế thì đừng lưu; khoảng hiệu lực thì phải lưu | 📝 lý thuyết |
-| 20 | [Đưa hành vi vào dimension](behavior-dimension.md) | Số tổng hợp làm thuộc tính, phân khoảng động, nhóm nghiên cứu, step | 📝 lý thuyết |
-| 21 | [Thực thể không đồng nhất](heterogeneous-schema.md) | Supertype/subtype, measure type — khi các loại không chung thuộc tính | 📝 lý thuyết |
-| 22 | [Real-time fact table](real-time-fact.md) | Ngày hôm nay chưa đầy nhưng vẫn được đếm là một ngày | 📝 lý thuyết |
+| 1 | [SCD — Slowly Changing Dimension](scd.md) | When an entity's attribute changes, what value should a historical report use | 📝 theory |
+| 2 | [Change detection for SCD 2](scd-change-detection.md) | Knowing which row changed: comparing columns, hashing, `updated_at`, CDC | 🟡 draft |
+| 3 | [Junk dimensions and low-cardinality columns](junk-dimension.md) | A status column with a few values: leave it, split it out, or combine | 🟡 draft |
+| 4 | [Mini-dimensions](mini-dimension.md) | A large dim with a few fast-changing columns — splitting it so Type 2 doesn't bloat | 🟡 draft |
+| 5 | [Role-playing dimensions](role-playing-dimension.md) | One dim playing several roles in the same fact | 🟡 draft |
+| 6 | [Conformed dimensions](conformed-dimension.md) | The conditions for being able to add numbers from two different facts | 🟡 draft |
+| 7 | [Bridge tables](bridge-table.md) | Many-to-many relationships — allocation factors so the total doesn't inflate | 🟡 draft |
+| 8 | [Degenerate dimensions](degenerate-dimension.md) | An order number with no attributes at all — leave it in the fact, don't build a table | 📝 theory |
+| 9 | [Hierarchies](hierarchy.md) | An unevenly deep tree: fixed flattening, pulling up the parent level, or a path bridge | 📝 theory |
+| 10 | [Late-arriving data](late-arriving.md) | A fact arriving after the dimension changed, and a dimension arriving after the fact | 📝 theory |
+| 11 | [Aggregate fact tables](aggregate-fact-table.md) | Summary tables: store only summable numbers, with shrunken dims generated from the originals | 📝 theory |
+| 12 | [Multiple currencies and units of measure](multi-currency-uom.md) | Freeze both the original and the converted number into the fact; don't convert at read time | 📝 theory |
+| 13 | [Audit dimensions](audit-dimension.md) | Each fact row pointing back at the run that produced it — deleting exactly what must be deleted | 📝 theory |
+| 14 | [NULLs in facts and dimensions](null-handling.md) | Three-valued logic makes a filter silently swallow rows | 📝 theory |
+| 15 | [Conformed facts](conformed-facts.md) | They join, but are those two numbers comparable with each other | 📝 theory |
+| 16 | [Designing dimension attributes](dimension-attribute-design.md) | Textual flags, several hierarchies, drill down, free-text notes | 📝 theory |
+| 17 | [Header/line and fact allocation](allocated-facts.md) | Order-level measures down to line level, and P&L by product | 📝 theory |
+| 18 | [Centipede fact tables](centipede-fact.md) | A fact with twenty foreign keys for a handful of real dimensions | 📝 theory |
+| 19 | [Year-to-date and timespan](ytd-timespan-facts.md) | Don't store a running total; do store a validity interval | 📝 theory |
+| 20 | [Putting behaviour into a dimension](behavior-dimension.md) | Aggregate numbers as attributes, dynamic banding, study groups, steps | 📝 theory |
+| 21 | [Heterogeneous entities](heterogeneous-schema.md) | Supertype/subtype, measure type — when the kinds share no attributes | 📝 theory |
+| 22 | [Real-time fact tables](real-time-fact.md) | Today isn't complete yet but still counts as a day | 📝 theory |
 
-**Thứ tự đọc:** SCD (1) trước, rồi Phát hiện thay đổi (2) — hai file này là một cặp: cái
-đầu nói *giữ lịch sử thế nào*, cái sau nói *làm sao biết có gì để giữ*. Dữ liệu về muộn
-(10) là vế thứ ba của cặp đó: *chuyện gì xảy ra khi dữ liệu không về đúng lúc*. Các cái
-còn lại đọc thứ tự nào cũng được. Mini-dimension chính là SCD Type 4 nhìn kỹ hơn.
+**Reading order:** SCD (1) first, then change detection (2) — these two are a pair: the first says
+*how to keep history*, the second says *how you know there's anything to keep*. Late-arriving data
+(10) is the third side of that pair: *what happens when the data doesn't arrive on time*. The rest
+can be read in any order. Mini-dimensions are really SCD Type 4 looked at more closely.
 
-**Nhóm theo bài toán**, nếu muốn đọc theo nhu cầu thay vì theo số:
+**Grouped by problem**, if you'd rather read by need than by number:
 
-| Đang gặp | Đọc |
+| What you're facing | Read |
 |---|---|
-| Thuộc tính đổi theo thời gian | 1, 2, 4, 10, 19 |
-| Cột/bảng nào nên tách, nên gộp | 3, 5, 8, 16, 18, 21 |
-| Quan hệ nhiều-nhiều, cây phân cấp | 7, 9 |
-| Ghép số từ nhiều nguồn, nhiều đơn vị | 6, 11, 12, 15 |
-| Số cộng ra sai mà không ai báo lỗi | 14, 17, 19, 20 |
-| Số sai mà không biết sai từ đâu | 13 |
-| Dữ liệu chưa đầy, chưa tới, hoặc tới muộn | 10, 22 |
+| An attribute changing over time | 1, 2, 4, 10, 19 |
+| Which column/table should be split or combined | 3, 5, 8, 16, 18, 21 |
+| Many-to-many relationships, hierarchies | 7, 9 |
+| Combining numbers from several sources or units | 6, 11, 12, 15 |
+| The numbers add up wrongly with nobody reporting an error | 14, 17, 19, 20 |
+| The numbers are wrong and you don't know where from | 13 |
+| Data that's incomplete, hasn't arrived, or arrived late | 10, 22 |
 
 ## Related Topics
 
-- [Data Modeling](../index.md) — chủ đề chứa thư mục này
+- [Data Modeling](../index.md) — the topic this directory belongs to

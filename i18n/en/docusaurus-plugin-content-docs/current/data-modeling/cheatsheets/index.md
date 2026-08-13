@@ -1,9 +1,8 @@
 ---
-title: Cheatsheet — Data Modeling
-i18n_status: untranslated
+title: Cheatsheets — Data Modeling
 sidebar_key: data-modeling-cheatsheets
 sidebar_position: 0
-description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
+description: "A quick lookup while you work, not for learning something the first time."
 tags: [cheatsheet, data-modeling]
 domain: data-engineering
 category: index
@@ -11,14 +10,14 @@ doc_type: index
 updated: 2026-07-31
 ---
 
-# Cheatsheet — Data Modeling
+# Cheatsheets — Data Modeling
 
-Tra nhanh khi **đang làm**, không dùng để học lần đầu.
+A quick lookup **while you work**, not for learning something the first time.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [SCD — Cheatsheet](scd.md) | Bảng tra nhanh Slowly Changing Dimension khi đang làm việc. | 🟡 draft |
+| 1 | [SCD — Cheatsheet](scd.md) | A quick lookup table for Slowly Changing Dimensions while you work. | 🟡 draft |
 
 ## Related Topics
 
-- [Data Modeling](../index.md) — chủ đề chứa thư mục này
+- [Data Modeling](../index.md) — the topic this directory belongs to
