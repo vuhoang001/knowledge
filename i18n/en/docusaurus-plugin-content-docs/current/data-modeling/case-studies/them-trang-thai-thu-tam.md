@@ -1,8 +1,7 @@
 ---
-title: Thêm trạng thái thứ tám, năm báo cáo sai năm kiểu
-i18n_status: untranslated
+title: Adding an eighth status, and five reports wrong in five different ways
 sidebar_position: 5
-description: Danh sách trạng thái hardcode trong WHERE của từng báo cáo — nghiệp vụ thêm một trạng thái là mỗi báo cáo sai một kiểu.
+description: The status list hardcoded in each report's WHERE — the business adds one status and each report goes wrong differently.
 tags: [case-study, junk-dimension, dimension, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Thêm trạng thái thứ tám, năm báo cáo sai năm kiểu
+# Adding an eighth status, and five reports wrong in five different ways
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. **Con số chạy thật trên DuckDB.**
+> **A reconstructed situation**, not an incident encountered here. **The numbers were really run on DuckDB.**
 
-> **Chốt:** Định nghĩa nghiệp vụ nằm rải trong `WHERE` của từng báo cáo thì nó **không có
-> chủ**. Thêm một giá trị là mỗi báo cáo sai một kiểu, và không ai biết báo cáo nào đã sửa.
+> **Takeaway:** a business definition scattered through each report's `WHERE` has **no
+> owner**. Add one value and each report goes wrong differently, with nobody knowing which reports were fixed.
 
-## Bối cảnh
+## Context
 
-`trang_thai` để thẳng trong fact — đúng lời khuyên ở
-[Junk dimension](../skills/junk-dimension.md) khi chỉ có một cột nhãn.
+`trang_thai` sits directly in the fact — following the advice in
+[Junk dimensions](../skills/junk-dimension.md) for a single label column.
 
-Mỗi báo cáo tự viết điều kiện "đơn nào tính vào doanh thu":
+Each report writes its own "which orders count as revenue" condition:
 
 ```sql
 SELECT sum(tien) AS doanh_thu FROM don
@@ -40,14 +39,14 @@ WHERE trang_thai IN ('Đã giao','Đang giao');
 └───────────────────┘
 ```
 
-Chạy đúng suốt hai năm.
+It ran correctly for two years.
 
-## Triệu chứng
+## Symptoms
 
-Nghiệp vụ thêm trạng thái **"Giao một phần"** — khách nhận một phần đơn, phần còn lại
-đang về. Doanh thu phần đã nhận **vẫn phải tính**.
+The business adds the status **"Partially delivered"** — the customer received part of the order with the
+rest in transit. The revenue for the received part **must still count**.
 
-Không ai sửa báo cáo. Số đúng phải là:
+Nobody updates the reports. The correct figure should be:
 
 ```text
 ┌────────────────┐
@@ -57,52 +56,52 @@ Không ai sửa báo cáo. Số đúng phải là:
 └────────────────┘
 ```
 
-**Thiếu 400.000 — hụt 21%.** Và không có lỗi nào.
+**400,000 missing — 21% short.** And there's no error.
 
-Điều làm nó tệ hơn một con số sai: **năm báo cáo, năm người viết, năm danh sách trạng
-thái khác nhau**. Sau khi phát hiện, phải đi tìm từng câu `WHERE` trong từng dashboard,
-từng notebook, từng model — và không có cách nào chắc đã tìm hết.
+What makes it worse than one wrong number: **five reports, five authors, five different status
+lists**. Once discovered, you have to hunt down every `WHERE` in every dashboard,
+every notebook, every model — with no way of being sure you found them all.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Mất đơn hàng lúc nạp | `count(*)` fact khớp nguồn |
-| Sai tỷ giá / đơn vị tiền | Không, sai đúng một nhóm đơn |
-| Bộ lọc ngày lệch | Không |
-| Có người sửa dữ liệu | Không |
+| Orders lost during loading | The fact's `count(*)` matches the source |
+| A wrong exchange rate / currency unit | No, exactly one group of orders is wrong |
+| A skewed date filter | No |
+| Somebody edited the data | No |
 
-Hướng nghi ngờ tập trung vào **dữ liệu**. Dữ liệu đầy đủ — **định nghĩa** mới là chỗ cũ.
+The suspicion focuses on the **data**. The data is complete — the **definition** is what's out of date.
 
-Chẩn đoán đúng chỉ đến khi ai đó chạy `SELECT DISTINCT trang_thai` và thấy một giá trị
-chưa từng gặp.
+The correct diagnosis only arrives when somebody runs `SELECT DISTINCT trang_thai` and sees a value
+they've never met.
 
-## Nguyên nhân thật
+## The real cause
 
-Câu hỏi *"đơn nào tính vào doanh thu"* là một **định nghĩa nghiệp vụ**. Nó đang được
-lưu ở nơi tệ nhất có thể: **lặp lại trong mỗi câu query**.
+The question *"which orders count as revenue"* is a **business definition**. It's being
+stored in the worst place possible: **repeated inside every query**.
 
-Hệ quả:
+The consequences:
 
-- Không có một chỗ nào để sửa.
-- Không có cách nào liệt kê "những nơi cần sửa".
-- Không có test nào bảo vệ, vì mỗi bản sao đều tự nhất quán.
+- There's no single place to fix.
+- There's no way to enumerate "the places needing fixing".
+- No test protects it, because each copy is internally consistent.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `accepted_values` trên `trang_thai` | ⚠️ **bắt được** — nếu có khai, và nếu ai đó cập nhật danh sách |
-| `not_null`, `unique` | ✅ xanh |
-| Tổng doanh thu so nguồn | ❌ không ai dựng, vì "nguồn" cũng dùng định nghĩa cũ |
+| `accepted_values` on `trang_thai` | ⚠️ **catches it** — if it's declared, and if somebody updates the list |
+| `not_null`, `unique` | ✅ green |
+| Total revenue against the source | ❌ nobody built it, because the "source" also uses the old definition |
 
-`accepted_values` là test **duy nhất** có cơ hội — nhưng nó chỉ báo *"có giá trị lạ"*,
-không báo *"báo cáo của bạn đang bỏ sót giá trị đó"*. Và nếu người thêm trạng thái cũng
-cập nhật luôn `accepted_values` thì test lại xanh, im lặng như cũ.
+`accepted_values` is the **only** test with a chance — but it only reports *"there's an unknown value"*,
+not *"your report is missing that value"*. And if whoever added the status also
+updated `accepted_values`, the test goes green again, silent as before.
 
-## Cách sửa
+## The fix
 
-Đưa định nghĩa vào **dimension**, dưới dạng một cột cờ:
+Move the definition into the **dimension** as a flag column:
 
 ```sql
 CREATE TABLE dim_tt AS SELECT * FROM (VALUES
@@ -110,7 +109,7 @@ CREATE TABLE dim_tt AS SELECT * FROM (VALUES
  ('Đã huỷ',false),('Hoàn hàng',false)) AS t(trang_thai, la_don_hop_le);
 ```
 
-Mọi báo cáo đổi thành:
+Every report becomes:
 
 ```sql
 SELECT sum(d.tien) AS doanh_thu
@@ -126,29 +125,29 @@ WHERE t.la_don_hop_le;
 └───────────┘
 ```
 
-**Đúng, và tự đúng.** Thêm trạng thái thứ chín chỉ cần thêm một dòng vào dimension —
-mọi báo cáo cập nhật theo, không ai phải nhớ gì.
+**Correct, and self-correcting.** Adding a ninth status needs only one row added to the dimension —
+every report follows, with nobody having to remember anything.
 
-Đây chính là ngưỡng đảo chiều mà [Junk dimension](../skills/junk-dimension.md) nói tới:
-*cột trạng thái đáng tách khi nó **mang thuộc tính***. `la_don_hop_le` là thuộc tính đó.
+This is exactly the reversal threshold [Junk dimensions](../skills/junk-dimension.md) mentions:
+*a status column is worth splitting out when it **carries attributes***. `la_don_hop_le` is that attribute.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Cùng một danh sách giá trị xuất hiện trong `WHERE` của **nhiều hơn hai** query.
-2. Có người phải hỏi *"trạng thái nào thì tính doanh thu?"* — nghĩa là câu trả lời không
-   nằm trong dữ liệu.
-3. `SELECT DISTINCT` cột phân loại ra giá trị mà bạn không nhận ra.
+1. The same value list appears in the `WHERE` of **more than two** queries.
+2. Somebody has to ask *"which statuses count as revenue?"* — meaning the answer doesn't
+   live in the data.
+3. `SELECT DISTINCT` on a categorical column returns a value you don't recognise.
 
-Kiểm rẻ nhất, chạy định kỳ:
+The cheapest check, run periodically:
 
 ```sql
 SELECT trang_thai, count(*) FROM don GROUP BY 1 ORDER BY 2 DESC;
 ```
 
-Giá trị lạ xuất hiện là tín hiệu đi rà mọi báo cáo — **trước khi** ai đó phát hiện số hụt.
+An unfamiliar value appearing is the signal to audit every report — **before** somebody notices the shortfall.
 
 ## Related Topics
 
-- [Junk dimension](../skills/junk-dimension.md) — khi nào cột trạng thái đáng tách ra
-- [Fact và Dimension](../reference/fact-and-dimension.md) — thuộc tính suy diễn thuộc về dimension
-- [Triển khai test](../../etl/dbt/skills/implementing-tests.md) — `accepted_values` và giới hạn của nó
+- [Junk dimensions](../skills/junk-dimension.md) — when a status column is worth splitting out
+- [Facts and dimensions](../reference/fact-and-dimension.md) — a derived attribute belongs to the dimension
+- [Implementing tests](../../etl/dbt/skills/implementing-tests.md) — `accepted_values` and its limits

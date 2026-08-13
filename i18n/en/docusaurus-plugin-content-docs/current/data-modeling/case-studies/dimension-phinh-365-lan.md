@@ -1,8 +1,7 @@
 ---
-title: Dimension phồng 365 lần sau một năm
-i18n_status: untranslated
+title: A dimension 365× bloated after a year
 sidebar_position: 3
-description: Bật SCD Type 2 cho cột đổi hằng ngày — 100 nghìn khách thành 36,5 triệu dòng, query chậm dần đều.
+description: Turning SCD Type 2 on for a column that changes daily — 100 thousand customers become 36.5 million rows, and queries slow steadily.
 tags: [case-study, scd, mini-dimension, fact, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,30 +12,30 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Dimension phồng 365 lần sau một năm
+# A dimension 365× bloated after a year
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Phép tính bên dưới chạy thật.
+> **A reconstructed situation**, not an incident encountered here. The arithmetic below was really run.
 
-> **Chốt:** [SCD](../skills/scd.md) Type 2 phình theo **nhịp của cột đổi nhanh nhất**
-> trong bảng. Bật Type 2 cho một cột đổi hằng ngày là biến dimension thành fact.
+> **Takeaway:** [SCD](../skills/scd.md) Type 2 bloats at **the rate of the fastest-changing column**
+> in the table. Turning Type 2 on for a column that changes daily turns the dimension into a fact.
 
-## Bối cảnh
+## Context
 
-`dim_khach_hang`, 100 nghìn khách. Yêu cầu nghiệp vụ: *"báo cáo phải phản ánh hạng khách
-tại thời điểm mua"*. Hoàn toàn chính đáng — đó là as-was, đúng việc của Type 2.
+`dim_khach_hang`, 100 thousand customers. The business requirement: *"the report must reflect the customer's
+tier at the moment of purchase"*. Entirely legitimate — that's as-was, exactly Type 2's job.
 
-Bật Type 2 cho cả bảng. Trong bảng có:
+Type 2 gets turned on for the whole table. The table contains:
 
-| Cột | Nhịp đổi |
+| Column | Change rate |
 |---|---|
-| `ho_ten`, `ngay_sinh` | gần như không đổi |
-| `khu_vuc` | vài năm một lần |
-| `hang_khach` | **hằng ngày** — tính lại theo chi tiêu 30 ngày gần nhất |
+| `ho_ten`, `ngay_sinh` | almost never changes |
+| `khu_vuc` | once every few years |
+| `hang_khach` | **daily** — recomputed from the last 30 days' spend |
 
-## Triệu chứng
+## Symptoms
 
-Ba tháng sau: query chậm dần, không đột ngột. Sáu tháng: báo cáo chạy quá giờ. Phép tính
-cho thấy vì sao:
+Three months later: queries slow gradually, not suddenly. Six months: the report overruns its window. The arithmetic
+shows why:
 
 ```sql
 WITH tham_so AS (SELECT 100000 AS so_khach, 365 AS so_ngay)
@@ -54,67 +53,67 @@ FROM tham_so;
 └────────────────┴──────────────────────────────┴──────────────────────────────┘
 ```
 
-**36,5 triệu dòng** thay vì 100 nghìn. Trong khi nếu chỉ `khu_vuc` là Type 2 thì chỉ
-**200 nghìn**.
+**36.5 million rows** instead of 100 thousand. Whereas with only `khu_vuc` as Type 2 it would be just
+**200 thousand**.
 
-Chênh lệch **182 lần** — và nó đến từ đúng một cột đặt sai chỗ.
+A difference of **182×** — and it comes from exactly one column placed wrongly.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Thiếu index / partition | Thêm vào, nhanh hơn chút, vẫn chậm dần |
-| Warehouse cần nâng cấp | Nâng, mua thêm thời gian vài tháng |
-| Query viết kém | Tối ưu được ít, vấn đề không nằm ở đó |
-| Dữ liệu tăng tự nhiên | **Sai** — số khách không tăng, chỉ số dòng dimension tăng |
+| A missing index / partition | Added, slightly faster, still slowing |
+| The warehouse needs upgrading | Upgraded, buying a few months |
+| Badly written queries | A little to optimise, but that isn't the problem |
+| Natural data growth | **Wrong** — the customer count isn't growing, only the dimension's row count |
 
-Chẩn đoán sai kinh điển: coi đây là **vấn đề hạ tầng**. Nâng cấp mua được thời gian
-nhưng số dòng vẫn tăng tuyến tính theo ngày, nên chỉ hoãn chứ không giải.
+The classic misdiagnosis: treating this as an **infrastructure problem**. Upgrading buys time
+but the row count still grows linearly with the days, so it only postpones rather than solves.
 
-Câu hỏi tách bạch: *"số khách hàng có tăng không?"* Không. Vậy đây không phải chuyện dữ
-liệu tăng — mà là **mô hình sinh dòng**.
+The clarifying question: *"is the customer count growing?"* No. So this isn't about data
+growth — it's about **the model generating rows**.
 
-## Nguyên nhân thật
+## The real cause
 
-`hang_khach` **không phải thuộc tính dimension**. Nó là **số đo tính lại liên tục** —
-tức là fact.
+`hang_khach` is **not a dimension attribute**. It's **a continuously recomputed measure** —
+that is, a fact.
 
-Phép thử ở [Fact và Dimension](../reference/fact-and-dimension.md): *cột này bạn sẽ `SUM`
-hay `GROUP BY`?* `hang_khach` thì `GROUP BY` — nghe như dimension. Nhưng có một phép thử
-thứ hai quan trọng hơn:
+The test in [Facts and dimensions](../reference/fact-and-dimension.md): *will you `SUM` this column
+or `GROUP BY` it?* `hang_khach` gets a `GROUP BY` — sounding like a dimension. But there's a second, more
+important test:
 
-> **Cột này đổi nhanh tới mức nào?** Đổi nhanh hơn nhịp người ta hỏi về nó thì nó không
-> thuộc dimension.
+> **How fast does this column change?** Faster than the rate at which people ask about it, and it doesn't
+> belong in a dimension.
 
-Không ai hỏi *"hạng khách hôm 14/03 lúc 9 giờ sáng"*. Nhưng Type 2 thì ghi lại **mọi**
-lần đổi, kể cả những lần không ai cần.
+Nobody asks *"what tier was the customer at 9am on 14 March"*. But Type 2 records **every**
+change, including the ones nobody needs.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique` trên `khach_sk` | ✅ xanh |
-| `unique_combination_of_columns [khach_id, valid_from]` | ✅ xanh |
-| `valid_from < valid_to` | ✅ xanh |
-| Không có khoảng chồng lấn | ✅ xanh |
+| `unique` on `khach_sk` | ✅ green |
+| `unique_combination_of_columns [khach_id, valid_from]` | ✅ green |
+| `valid_from < valid_to` | ✅ green |
+| No overlapping intervals | ✅ green |
 
-**Dimension hoàn toàn đúng.** Nó làm chính xác thứ được yêu cầu: ghi lại mọi thay đổi.
-Không có bất biến nào bị phá.
+**The dimension is entirely correct.** It's doing exactly what it was asked to: recording every change.
+No invariant is broken.
 
-Đây là loại lỗi không test nào bắt được vì nó **không phải lỗi dữ liệu** — nó là lỗi
-quyết định thiết kế, và hậu quả xuất hiện dần theo thời gian chứ không xuất hiện ngay.
+This is the class of bug no test catches because it **isn't a data bug** — it's a design
+decision bug, and the consequence appears gradually over time rather than immediately.
 
-## Cách sửa
+## The fix
 
-Ba lựa chọn, theo bản chất của cột:
+Three options, according to the column's real nature:
 
-| Cột thật ra là gì | Cách xử lý |
+| What the column really is | The handling |
 |---|---|
-| Số đo đổi liên tục | Chuyển sang **fact** — mỗi dòng fact ghi giá trị lúc đó |
-| Vài cột đổi nhanh, phần còn lại ổn định | [Mini-dimension](../skills/mini-dimension.md) |
-| Chỉ cần giá trị hiện tại | Type 1 cho cột đó, Type 2 cho phần còn lại |
+| A continuously changing measure | Move it to a **fact** — each fact row records the value at the time |
+| A few fast-changing columns among otherwise stable ones | A [mini-dimension](../skills/mini-dimension.md) |
+| Only the current value is needed | Type 1 for that column, Type 2 for the rest |
 
-Với `hang_khach`, cách gọn nhất là **mini-dimension**:
+For `hang_khach`, the tidiest is a **mini-dimension**:
 
 ```text
 dim_khach_hang        100.000 dòng, Type 2 chỉ cho khu_vuc  → 200.000 sau 1 năm
@@ -122,18 +121,18 @@ dim_khach_hang_hang        ~5 dòng, bất biến — mọi hạng có thể có
 fct_don_hang               khach_sk + khach_hang_sk
 ```
 
-Lịch sử hạng khách chuyển từ dimension sang **fact**: mỗi đơn ghi lại khách lúc đó hạng
-nào. Vẫn trả lời được as-was, mà dimension không phình.
+The tier history moves from the dimension into the **fact**: each order records what tier the customer
+was. It still answers as-was, without the dimension bloating.
 
-**36,5 triệu → 200 nghìn dòng**, cùng một khả năng phân tích.
+**36.5 million → 200 thousand rows**, with the same analytical capability.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Có cột trong dimension được **tính lại theo lịch** (điểm số, hạng, phân khúc, dự báo).
-2. Số dòng dimension tăng **đều đặn theo ngày**, không theo số thực thể.
-3. Tỷ lệ `số dòng dimension / số thực thể phân biệt` lớn hơn ~10 và vẫn tăng.
+1. There's a column in the dimension that's **recomputed on a schedule** (a score, a tier, a segment, a forecast).
+2. The dimension's row count grows **steadily by the day**, not by the number of entities.
+3. The ratio of `dimension rows / distinct entities` exceeds ~10 and is still rising.
 
-Kiểm nhanh:
+A quick check:
 
 ```sql
 SELECT count(*) AS so_dong,
@@ -142,12 +141,12 @@ SELECT count(*) AS so_dong,
 FROM dim_khach_hang;
 ```
 
-`dong_moi_khach` tăng theo tháng là dấu hiệu chắc chắn. Đặt câu này thành một test
-`severity: warn` với ngưỡng, xem [Triển khai test](../../etl/dbt/skills/implementing-tests.md).
+`dong_moi_khach` rising month on month is a certain sign. Make this query a
+`severity: warn` test with a threshold, see [Implementing tests](../../etl/dbt/skills/implementing-tests.md).
 
 ## Related Topics
 
-- [SCD](../skills/scd.md) — Type 2 và bảng chọn Type nào
-- [Mini-dimension](../skills/mini-dimension.md) — cách sửa cụ thể, có ví dụ chạy được
-- [Fact và Dimension](../reference/fact-and-dimension.md) — phép thử cột thuộc bảng nào
-- [Grain](../reference/grain.md) — grain của dim Type 2 là *một phiên bản*, không phải *một khách*
+- [SCD](../skills/scd.md) — Type 2 and the which-Type table
+- [Mini-dimensions](../skills/mini-dimension.md) — the concrete fix, with a runnable example
+- [Facts and dimensions](../reference/fact-and-dimension.md) — the test for which table a column belongs to
+- [Grain](../reference/grain.md) — a Type 2 dim's grain is *one version*, not *one customer*

@@ -1,8 +1,7 @@
 ---
-title: Một nửa số đơn biến mất khỏi báo cáo
-i18n_status: untranslated
+title: Half the orders vanished from the report
 sidebar_position: 6
-description: Fact có ba cột ngày, join cả ba vào dim_thoi_gian — mọi đơn chưa giao xong bị loại sạch, không lỗi nào báo.
+description: The fact has three date columns and joins all three to dim_thoi_gian — every not-yet-delivered order is wiped out, with no error reported.
 tags: [case-study, role-playing-dimension, join, null-handling, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,18 +12,18 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Một nửa số đơn biến mất khỏi báo cáo
+# Half the orders vanished from the report
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. **Con số chạy thật trên DuckDB.**
+> **A reconstructed situation**, not an incident encountered here. **The numbers were really run on DuckDB.**
 
-> **Chốt:** `JOIN` thường với dimension **loại bỏ mọi dòng có khoá `NULL`**. Fact có cột
-> ngày chưa xảy ra (ngày giao của đơn đang giao) thì join là mất sạch nhóm đó — và nhóm
-> bị mất thường là nhóm **quan trọng nhất**.
+> **Takeaway:** an ordinary `JOIN` to a dimension **discards every row with a `NULL` key**. If the fact
+> has a date column for something that hasn't happened yet (the ship date of an in-transit order), the join
+> wipes that group out entirely — and the lost group is usually the **most important** one.
 
-## Bối cảnh
+## Context
 
-`fct_don_hang` có ba vai của `dim_thoi_gian`: ngày đặt, ngày giao, ngày thanh toán —
-đúng mô hình [role-playing dimension](../skills/role-playing-dimension.md).
+`fct_don_hang` has three roles of `dim_thoi_gian`: order date, ship date, payment date —
+exactly the [role-playing dimension](../skills/role-playing-dimension.md) model.
 
 ```sql
 CREATE TABLE fct AS SELECT * FROM (VALUES
@@ -35,7 +34,7 @@ CREATE TABLE fct AS SELECT * FROM (VALUES
  AS t(ma_don, ngay_dat_sk, ngay_giao_sk);
 ```
 
-Bốn đơn:
+Four orders:
 
 ```text
 ┌──────────┐
@@ -45,9 +44,9 @@ Bốn đơn:
 └──────────┘
 ```
 
-## Triệu chứng
+## Symptoms
 
-Báo cáo "đơn theo tháng đặt và tháng giao" — join cả hai vai:
+The "orders by order month and ship month" report — joining both roles:
 
 ```sql
 SELECT count(*) AS con_lai FROM fct f
@@ -63,55 +62,55 @@ JOIN dim_ngay d2 ON f.ngay_giao_sk = d2.ngay_sk;
 └─────────┘
 ```
 
-**Bốn đơn thành hai.** Mất đúng 50%.
+**Four orders become two.** Exactly 50% lost.
 
-Và nhóm bị mất không ngẫu nhiên — đó là **toàn bộ đơn đang giao**. Tức là báo cáo vận
-hành, thứ dùng để theo dõi việc đang chạy, lại là báo cáo **không thấy việc đang chạy**.
+And the lost group isn't random — it's **every in-transit order**. Meaning the operations
+report, the thing used to track work in progress, is the report that **can't see work in progress**.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| `dim_thoi_gian` thiếu ngày | Kiểm: có đủ dải ngày |
-| Fact nạp thiếu | `count(*)` fact = 4, đúng |
-| Bộ lọc ngày trong báo cáo | Không có bộ lọc nào |
-| Đơn bị xoá ở nguồn | Không |
+| `dim_thoi_gian` is missing dates | Checked: the date range is complete |
+| The fact loaded incompletely | The fact's `count(*)` = 4, correct |
+| A date filter in the report | There is no filter |
+| Orders deleted at the source | No |
 
-Rất khó nghi vì **cả hai bảng đều đầy đủ**. Số chỉ hụt *sau khi join*, mà join thì trông
-hoàn toàn bình thường — không ai đọc `JOIN ... ON` mà nghĩ tới `NULL`.
+Very hard to suspect because **both tables are complete**. The number only falls short *after the join*, and the
+join looks entirely ordinary — nobody reads a `JOIN ... ON` and thinks about `NULL`.
 
-Bẫy phụ: nếu chỉ join **một** vai thì số vẫn đúng. Lỗi chỉ xuất hiện khi join vai thứ
-hai — vai của sự kiện **chưa xảy ra**.
+A secondary trap: joining just **one** role keeps the number correct. The bug only appears when you join the
+second role — the role of an event that **hasn't happened**.
 
-## Nguyên nhân thật
+## The real cause
 
-`ngay_giao_sk` là `NULL` với đơn chưa giao. `JOIN ... ON f.ngay_giao_sk = d2.ngay_sk`
-không bao giờ khớp với `NULL` — `NULL = bất kỳ` cho ra `NULL`, không phải `true`.
+`ngay_giao_sk` is `NULL` for an undelivered order. `JOIN ... ON f.ngay_giao_sk = d2.ngay_sk`
+never matches a `NULL` — `NULL = anything` gives `NULL`, not `true`.
 
-Đây là hệ quả trực tiếp của luật ba trị trong SQL, cùng gốc với bẫy `<>` ở
-[Phát hiện thay đổi cho SCD 2](../skills/scd-change-detection.md).
+This is a direct consequence of SQL's three-valued logic, the same root as the `<>` trap in
+[change detection for SCD 2](../skills/scd-change-detection.md).
 
-Điểm khiến nó thành lỗi thiết kế chứ không chỉ lỗi query: **mô hình chiều cổ điển giả
-định mọi khoá ngoại đều có giá trị.** Fact ghi lại một quy trình *đang diễn ra* thì giả
-định đó sai — và không có gì trong mô hình cảnh báo điều đó.
+What makes it a design bug rather than merely a query bug: **the classic dimensional model assumes
+every foreign key has a value.** A fact recording a process *in progress* breaks that
+assumption — and nothing in the model warns you.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `ngay_giao_sk` | ❌ **không khai được** — null là hợp lệ ở đây |
-| `relationships` `ngay_giao_sk` → `dim_ngay` | ✅ xanh — dbt bỏ qua null |
-| `count(*)` của fact | ✅ đúng 4 |
-| `count(*)` của dimension | ✅ đúng |
+| `not_null` on `ngay_giao_sk` | ❌ **can't be declared** — null is legitimate here |
+| `relationships` `ngay_giao_sk` → `dim_ngay` | ✅ green — dbt skips nulls |
+| The fact's `count(*)` | ✅ correctly 4 |
+| The dimension's `count(*)` | ✅ correct |
 
-Cả hai bảng đều hoàn hảo. Lỗi sinh ra **lúc đọc**, không lúc ghi — giống hệt ca
-[join hai fact](join-hai-fact-lam-phong-tong.md).
+Both tables are perfect. The bug arises **at read time**, not write time — exactly like the
+[joining two facts](join-hai-fact-lam-phong-tong.md) case.
 
-Đó là lý do mart nên được dựng sẵn đúng cách thay vì để mỗi người tự join.
+That's why a mart should be pre-built correctly rather than left for everybody to join themselves.
 
-## Cách sửa
+## The fix
 
-**Cách 1 — `LEFT JOIN` cho vai của sự kiện chưa chắc xảy ra:**
+**Approach 1 — a `LEFT JOIN` for the role of an event that may not have happened:**
 
 ```sql
 SELECT count(*) AS con_lai FROM fct f
@@ -127,8 +126,8 @@ LEFT JOIN dim_ngay d2 ON f.ngay_giao_sk = d2.ngay_sk;  -- ngày giao: có thể 
 └─────────┘
 ```
 
-**Cách 2 — dòng "chưa xác định" trong dimension.** Thêm một dòng khoá `-1` nghĩa là
-*chưa xảy ra*, và fact dùng `-1` thay cho `NULL`:
+**Approach 2 — an "unknown" row in the dimension.** Add a row with key `-1` meaning
+*hasn't happened*, and have the fact use `-1` instead of `NULL`:
 
 ```text
 ngay_sk | ngay       | ghi_chu
@@ -136,21 +135,21 @@ ngay_sk | ngay       | ghi_chu
 20260701| 2026-07-01 | ...
 ```
 
-Cách 2 tốt hơn cho hệ thống lớn: `JOIN` thường vẫn dùng được ở mọi nơi, không phụ thuộc
-người viết query nhớ dùng `LEFT JOIN`. Đổi lại phải xử lý `-1` lúc nạp fact.
+Approach 2 is better for a large system: an ordinary `JOIN` still works everywhere, without depending on
+whoever writes a query remembering to use `LEFT JOIN`. In exchange you have to handle `-1` when loading the fact.
 
-**Quy tắc chung:** vai nào ứng với sự kiện **có thể chưa xảy ra** thì hoặc `LEFT JOIN`,
-hoặc có dòng "chưa xác định". Không có lựa chọn thứ ba.
+**The general rule:** any role corresponding to an event that **may not have happened** must either use a `LEFT JOIN`
+or have an "unknown" row. There is no third option.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Fact có cột khoá ngoại **cho phép `NULL`** — nhất là các cột `ngay_*_sk` của bước sau
-   trong quy trình.
-2. Fact là **accumulating snapshot** (theo dõi một quy trình nhiều bước) — loại fact này
-   gần như luôn có cột chưa điền.
-3. Báo cáo vận hành ra số **nhỏ hơn** cảm nhận, nhưng không ai chứng minh được.
+1. The fact has a foreign-key column that **allows `NULL`** — especially `ngay_*_sk` columns for later steps
+   in a process.
+2. The fact is an **accumulating snapshot** (tracking a multi-step process) — that fact kind
+   almost always has unfilled columns.
+3. An operations report gives a number **smaller** than intuition suggests, and nobody can prove it.
 
-Kiểm rẻ nhất, chạy trước mọi báo cáo dùng nhiều vai:
+The cheapest check, run before any report using several roles:
 
 ```sql
 SELECT count(*) AS tong,
@@ -159,11 +158,11 @@ SELECT count(*) AS tong,
 FROM fct;
 ```
 
-`chua_giao > 0` nghĩa là mọi `JOIN` thường trên cột đó đang âm thầm lọc bỏ nhóm này.
+`chua_giao > 0` means every ordinary `JOIN` on that column is silently filtering that group out.
 
 ## Related Topics
 
-- [Role-playing dimension](../skills/role-playing-dimension.md) — nhiều vai trong một fact
-- [Fact và Dimension](../reference/fact-and-dimension.md) — accumulating snapshot và cột chưa điền
-- [Phát hiện thay đổi cho SCD 2](../skills/scd-change-detection.md) — cùng gốc: `NULL` trong so sánh
-- [Doanh thu phồng vì join hai fact](join-hai-fact-lam-phong-tong.md) — cũng là lỗi sinh lúc đọc
+- [Role-playing dimensions](../skills/role-playing-dimension.md) — several roles in one fact
+- [Facts and dimensions](../reference/fact-and-dimension.md) — accumulating snapshots and unfilled columns
+- [Change detection for SCD 2](../skills/scd-change-detection.md) — the same root: `NULL` in a comparison
+- [Revenue inflated by joining two facts](join-hai-fact-lam-phong-tong.md) — also a read-time bug

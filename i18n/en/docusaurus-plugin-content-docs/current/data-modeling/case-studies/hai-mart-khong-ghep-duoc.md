@@ -1,8 +1,7 @@
 ---
-title: Hai mart đúng, ghép lại thì không trả lời được câu nào
-i18n_status: untranslated
+title: Two correct marts that together can't answer anything
 sidebar_position: 4
-description: Team bán hàng và team CSKH mỗi bên dựng một dim_khach_hang — câu hỏi cắt ngang hai bên thành bất khả thi.
+description: The sales team and the customer-service team each built their own dim_khach_hang — making any question cutting across the two impossible.
 tags: [case-study, conformed-dimension, bus-matrix, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,17 +12,17 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Hai mart đúng, ghép lại thì không trả lời được câu nào
+# Two correct marts that together can't answer anything
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. **Mọi con số chạy thật.**
+> **A reconstructed situation**, not an incident encountered here. **Every number was really run.**
 
-> **Chốt:** Hai mart mỗi bên tự dựng dimension riêng thì **mỗi bên chạy đúng**, nhưng
-> câu hỏi cắt ngang hai bên là bất khả thi. Đây là nợ kỹ thuật đắt nhất trong data
-> warehouse, và nó **không có triệu chứng** cho tới lúc ai đó hỏi câu đầu tiên.
+> **Takeaway:** when two marts each build their own dimension, **each side runs correctly**, but a
+> question cutting across the two is impossible. This is the most expensive technical debt in a data
+> warehouse, and it **has no symptoms** until somebody asks the first such question.
 
-## Bối cảnh
+## Context
 
-Hai team, hai quý, hai dự án độc lập. Không ai làm gì sai.
+Two teams, two quarters, two independent projects. Nobody did anything wrong.
 
 ```sql
 -- Team ban hang, quy 1
@@ -35,7 +34,7 @@ CREATE TABLE dim_kh_cskh AS SELECT * FROM (VALUES
  ('C-01','HN'),('C-02','HCM'),('C-03','HCM')) AS t(ma_kh_cskh, khu_vuc);
 ```
 
-Mỗi mart chạy hoàn hảo. Team bán hàng:
+Each mart runs perfectly. The sales team:
 
 ```text
 ┌──────────┬───────────┐
@@ -46,7 +45,7 @@ Mỗi mart chạy hoàn hảo. Team bán hàng:
 └──────────┴───────────┘
 ```
 
-Team CSKH:
+The customer-service team:
 
 ```text
 ┌─────────┬───────────┐
@@ -57,16 +56,16 @@ Team CSKH:
 └─────────┴───────────┘
 ```
 
-Cả hai đều được nghiệm thu. Cả hai đều đúng.
+Both were signed off. Both are correct.
 
-## Triệu chứng
+## Symptoms
 
-Sáu tháng sau, sếp hỏi một câu rất bình thường:
+Six months later the boss asks a perfectly ordinary question:
 
-> *"Khu vực nào doanh thu cao mà số ticket hỗ trợ cũng cao? Có phải chúng ta đang bán
-> nhiều ở chỗ phục vụ kém không?"*
+> *"Which region has high revenue and also a high support-ticket count? Are we selling
+> a lot where we serve people badly?"*
 
-Thử ghép hai tập giá trị khu vực:
+Try combining the two region value sets:
 
 ```sql
 SELECT b.khu_vuc AS kv_ban_hang, h.khu_vuc AS kv_cskh
@@ -85,58 +84,58 @@ FULL OUTER JOIN (SELECT DISTINCT khu_vuc FROM dim_kh_cskh) h ON b.khu_vuc = h.kh
 └─────────────┴─────────┘
 ```
 
-**Không một giá trị nào khớp.** Bốn dòng, không dòng nào có cả hai cột.
+**Not a single value matches.** Four rows, none of which has both columns.
 
-Và tệ hơn: khoá khách cũng khác nhau (`KH01` vs `C-01`) — không có cách nào biết `KH01`
-và `C-01` có phải cùng một người không.
+And worse: the customer keys differ too (`KH01` vs `C-01`) — there's no way to know whether `KH01`
+and `C-01` are the same person.
 
-Câu hỏi của sếp **không trả lời được**, dù dữ liệu đã có đủ từ sáu tháng trước.
+The boss's question is **unanswerable**, even though the data has been complete for six months.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Đề xuất | Vì sao không giải quyết được |
+| The proposal | Why it doesn't solve it |
 |---|---|
-| "Viết một bảng ánh xạ khu vực" | HN thuộc Miền Bắc — nhưng "Khác" thuộc miền nào? Ánh xạ **không tồn tại** |
-| "Join theo tên khách" | Tên trùng, viết hoa khác nhau, có dấu / không dấu |
-| "Chuẩn hoá lại một bên cho khớp bên kia" | Đúng hướng, nhưng bên nào chuẩn? Cả hai đều đang phục vụ báo cáo chạy thật |
-| "Dựng mart thứ ba gộp cả hai" | Vẫn phải trả lời câu "khu vực nghĩa là gì" trước |
+| "Write a region mapping table" | HN is in the North — but which region is "Other" in? The mapping **doesn't exist** |
+| "Join by customer name" | Duplicate names, different capitalisation, with and without diacritics |
+| "Normalise one side to match the other" | The right direction, but which side is the standard? Both are serving live reports |
+| "Build a third mart merging both" | You still have to answer "what does region mean" first |
 
-Mấu chốt: đây **không phải vấn đề kỹ thuật**. Nó là vấn đề **hai team chưa bao giờ thoả
-thuận định nghĩa**, và không SQL nào giải được chuyện đó.
+The crux: this **isn't a technical problem**. It's the problem of **two teams never having agreed
+a definition**, and no SQL can solve that.
 
-## Nguyên nhân thật
+## The real cause
 
-Hai dimension **không conformed**. Chúng vi phạm cả ba điều kiện:
+The two dimensions **aren't conformed**. They break all three conditions:
 
-| Điều kiện | Trạng thái |
+| Condition | Status |
 |---|---|
-| Cùng surrogate key | ❌ `KH01` vs `C-01` |
-| Cùng tập giá trị thuộc tính | ❌ Bắc/Trung/Nam vs HN/HCM/Khác |
-| Cùng định nghĩa nghiệp vụ | ❌ nơi giao hàng vs nơi đăng ký hỗ trợ |
+| The same surrogate key | ❌ `KH01` vs `C-01` |
+| The same attribute value set | ❌ North/Central/South vs HN/HCM/Other |
+| The same business definition | ❌ where it's delivered vs where they registered for support |
 
-Điều kiện thứ ba là gốc rễ, và là điều kiện **không kiểm được bằng SQL**. Hai bên dùng
-chung một từ — "khu vực" — cho hai khái niệm khác nhau.
+The third condition is the root, and it's the one **not checkable with SQL**. The two sides use
+the same word — "region" — for two different concepts.
 
-Đáng chú ý: nếu hai bên tình cờ dùng **cùng tập giá trị** nhưng khác định nghĩa, tình
-huống còn **nguy hiểm hơn** — số sẽ cộng được, ra kết quả trông hợp lý, và sai. Ở đây ít
-nhất nó gãy lộ liễu.
+Worth noting: if the two sides happened to use **the same value set** with different definitions, the situation
+would be **even more dangerous** — the numbers would add up, produce a plausible result, and be wrong. Here at
+least it breaks visibly.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| Mọi test của mart bán hàng | ✅ xanh |
-| Mọi test của mart CSKH | ✅ xanh |
-| `relationships` trong từng mart | ✅ xanh |
+| Every test in the sales mart | ✅ green |
+| Every test in the customer-service mart | ✅ green |
+| `relationships` within each mart | ✅ green |
 
-Không có test nào **chạy ngang hai mart**, vì chúng là hai dự án riêng, hai file
-`schema.yml` riêng, thường là hai repo riêng.
+There is no test **spanning the two marts**, because they're two separate projects with two separate
+`schema.yml` files, usually in two separate repos.
 
-Đây là loại lỗi mà công cụ không giúp được — chỉ có **quy trình** giúp được.
+This is the class of bug tooling can't help with — only **process** can.
 
-## Cách sửa
+## The fix
 
-Một dimension dùng chung, định nghĩa thống nhất một lần:
+One shared dimension with the definition agreed once:
 
 ```sql
 CREATE TABLE dim_khach_hang AS
@@ -146,23 +145,23 @@ SELECT row_number() OVER (ORDER BY ma_khach) AS khach_sk,
 FROM khach_hang_raw;
 ```
 
-Cả hai fact trỏ về bảng này bằng `khach_sk`. Team nào cần thuộc tính riêng thì **thêm
-cột**, không dựng bảng thứ hai.
+Both facts point at this table via `khach_sk`. A team needing its own attribute **adds a
+column**, rather than building a second table.
 
-Sau đó câu hỏi của sếp trả lời được bằng *drill-across* — xem
-[Conformed dimension](../skills/conformed-dimension.md).
+After that the boss's question is answerable by *drilling across* — see
+[Conformed dimensions](../skills/conformed-dimension.md).
 
-**Chi phí sửa muộn:** phải nạp lại cả hai fact để gán `khach_sk`, sửa mọi báo cáo đang
-chạy, và thuyết phục hai team bỏ bảng của mình. Làm từ đầu thì đó chỉ là **một cuộc họp**.
+**The cost of fixing it late:** reloading both facts to assign `khach_sk`, fixing every running
+report, and persuading two teams to abandon their own table. Done from the start it's just **one meeting**.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Có **hai bảng cùng mô tả một thực thể** với tên khác nhau (`dim_khach_hang_ban_hang`,
+1. There are **two tables describing the same entity** under different names (`dim_khach_hang_ban_hang`,
    `dim_kh_cskh`).
-2. Mart mới dựng mà **không dùng lại** dimension nào có sẵn.
-3. Chưa ai kẻ **bus matrix** — bảng fact × dimension.
+2. A new mart is built **without reusing** any existing dimension.
+3. Nobody has drawn a **bus matrix** — the fact × dimension table.
 
-Kiểm rẻ nhất, chạy được ngay hôm nay:
+The cheapest check, runnable today:
 
 ```sql
 -- hai dimension co cung tap gia tri khong?
@@ -171,15 +170,15 @@ UNION ALL SELECT 'cskh', khu_vuc FROM dim_kh_cskh
 ORDER BY 2;
 ```
 
-Tập giá trị khác nhau là bằng chứng cứng. **Giống nhau vẫn chưa đủ** — phải hỏi định
-nghĩa.
+Differing value sets are hard evidence. **Matching ones still aren't enough** — you have to ask about the
+definition.
 
-**Việc nên làm trước khi dựng mart thứ hai:** kẻ bus matrix. Ô trống trong đó là chỗ sẽ
-đau sáu tháng sau.
+**What to do before building the second mart:** draw the bus matrix. Its empty cells are where the pain will be
+six months later.
 
 ## Related Topics
 
-- [Conformed dimension](../skills/conformed-dimension.md) — ba điều kiện, bus matrix, drill-across
-- [Quy trình thiết kế 4 bước](../reference/design-process.md) — bus matrix nằm ở bước 1
-- [Surrogate key](../reference/surrogate-key.md) — khoá chung là điều kiện đầu tiên
-- [Sáu chiều chất lượng](../../data-quality/six-dimensions.md) — chiều *consistency*
+- [Conformed dimensions](../skills/conformed-dimension.md) — the three conditions, the bus matrix, drilling across
+- [The 4-step design process](../reference/design-process.md) — the bus matrix sits at step 1
+- [Surrogate keys](../reference/surrogate-key.md) — a shared key is the first condition
+- [The six quality dimensions](../../data-quality/six-dimensions.md) — the *consistency* dimension
