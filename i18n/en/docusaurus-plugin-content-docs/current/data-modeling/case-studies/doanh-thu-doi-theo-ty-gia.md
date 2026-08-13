@@ -1,8 +1,7 @@
 ---
-title: Doanh thu tháng 1 tự giảm 10% vào tháng 8, không giao dịch nào thay đổi
-i18n_status: untranslated
+title: January revenue falling 10% in August, with no transaction changing
 sidebar_position: 13
-description: "Fact chỉ lưu số tiền bản địa; báo cáo quy đổi lúc đọc bằng tỷ giá hiện tại — quá khứ di động theo tỷ giá."
+description: "The fact only stores the local amount; the report converts at read time with the current rate — so the past moves with the exchange rate."
 tags: [case-study, multi-currency, fact, additivity, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,20 +12,20 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Doanh thu tháng 1 tự giảm 10% vào tháng 8, không giao dịch nào thay đổi
+# January revenue falling 10% in August, with no transaction changing
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** số tiền chỉ có nghĩa khi đi kèm đơn vị **và** thời điểm quy đổi. Fact chỉ lưu
-> số bản địa thì mọi báo cáo tập đoàn phải tự quy đổi — và nếu nó quy đổi bằng tỷ giá hôm
-> nay, quá khứ sẽ đổi số mỗi tháng. Xem
-> [nhiều loại tiền tệ](../skills/multi-currency-uom.md).
+> **Takeaway:** an amount of money only means something with a unit **and** a conversion moment. If the fact only stores
+> the local amount, every corporate report has to convert for itself — and if it converts at today's
+> rate, the past will change its numbers every month. See
+> [multiple currencies](../skills/multi-currency-uom.md).
 
-## Bối cảnh
+## Context
 
-Công ty bán ở Việt Nam và Mỹ. Fact lưu đúng thứ hệ nguồn phát ra: số tiền theo tiền tệ
-giao dịch, kèm mã tiền tệ.
+The company sells in Vietnam and the US. The fact stores exactly what the source system emits: the amount in the
+transaction currency, plus the currency code.
 
 ```sql
 CREATE TABLE fct_ban_tho AS
@@ -47,12 +46,12 @@ SELECT * FROM (VALUES
 ) t(thang, tien_te, doi_ra_usd);
 ```
 
-Báo cáo tập đoàn quy ra USD, join sang bảng tỷ giá lúc chạy.
+The corporate report converts to USD, joining the rate table at run time.
 
-## Triệu chứng thứ nhất — con số vô nghĩa nhưng trông bình thường
+## The first symptom — a meaningless number that looks perfectly normal
 
-Trước khi chuyện tỷ giá lộ ra, có một dashboard hiển thị **72.001.000** với nhãn "Tổng
-doanh thu".
+Before the exchange-rate business surfaces, there's a dashboard showing **72,001,000** labelled "Total
+revenue".
 
 ```sql
 SELECT sum(so_tien) AS "tong_(khong_co_don_vi)", count(DISTINCT tien_te) AS so_loai_tien
@@ -67,13 +66,13 @@ FROM fct_ban_tho;
 └────────────────────────┴──────────────┘
 ```
 
-24 triệu VND + 1.000 USD + 48 triệu VND = 72.001.000 **cái gì?** Không là gì cả. Nhưng nó
-là số hợp lệ, format đẹp, và không có gì cảnh báo.
+24 million VND + 1,000 USD + 48 million VND = 72,001,000 **of what?** Of nothing at all. But it's
+a valid number, nicely formatted, with nothing warning you.
 
-## Triệu chứng thứ hai — quá khứ di động
+## The second symptom — a moving past
 
-Báo cáo tháng 1 chạy hồi tháng 2 cho **2.000 USD**. Cùng báo cáo đó, chạy lại tháng 8, ra
-**1.800 USD**.
+The January report run in February gave **2,000 USD**. The same report, re-run in August, gives
+**1,800 USD**.
 
 ```sql
 WITH luc_gd AS (
@@ -101,60 +100,60 @@ SELECT round((SELECT usd FROM luc_gd), 2)  AS thang1_usd_luc_gd,
 └───────────────────┴───────────────────────────┴──────────┘
 ```
 
-Tháng đã đóng sổ, đã báo cáo lên hội đồng, **tự giảm 10%**. Và tháng sau tỷ giá nhích
-tiếp thì nó lại đổi lần nữa.
+A closed month, already reported to the board, **falls 10% by itself**. And next month the rate moves
+again and it changes once more.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Có đơn tháng 1 bị huỷ sau đó | Kiểm: không có đơn nào bị huỷ, `count(*)` không đổi |
-| ETL xoá nhầm dòng khi nạp lại | So số dòng giữa hai lần chạy: y hệt |
-| Có đơn trả hàng ghi giảm doanh thu | Không có fact trả hàng trong kỳ |
-| Bảng tỷ giá bị sửa dữ liệu lịch sử | **Sai** — bảng tỷ giá không sửa gì, chỉ **thêm** dòng tháng 8 |
+| A January order cancelled afterwards | Checked: no order was cancelled, `count(*)` unchanged |
+| The ETL deleted a row on reload | Comparing row counts between the two runs: identical |
+| A return recorded as reducing revenue | There's no returns fact in the period |
+| The rate table had its historical data edited | **Wrong** — the rate table edited nothing, it only **added** an August row |
 
-Chỗ mất thời gian: mọi người tìm dòng **bị thay đổi**. Không dòng nào đổi. Số dòng như cũ,
-số tiền bản địa như cũ. Cái đổi là **hệ số nhân được chọn lúc chạy query**.
+Where the time goes: everybody looks for the row that **changed**. No row changed. The row count is the same,
+the local amounts are the same. What changed is **the multiplier chosen at query time**.
 
-Câu hỏi rẽ hướng: *"tổng theo VND có đổi không?"* Không. Vậy vấn đề nằm ở bước quy đổi,
-không nằm ở dữ liệu.
+The redirecting question: *"does the VND total change?"* No. So the problem is in the conversion step,
+not in the data.
 
-## Nguyên nhân thật
+## The real cause
 
-Fact không lưu giá trị quy đổi. Nên mỗi báo cáo phải tự join sang `ty_gia`, và điều kiện
-join là thứ do người viết query quyết định.
+The fact doesn't store the converted value. So each report has to join to `ty_gia` itself, and the join
+condition is whatever the query's author decided.
 
-Ai đó viết `g.thang = (SELECT max(thang) FROM ty_gia)` — lấy tỷ giá mới nhất. Câu này
-**đúng cho câu hỏi "nếu quy đổi hôm nay thì bao nhiêu"**, và **sai cho mọi báo cáo lịch
-sử**.
+Somebody wrote `g.thang = (SELECT max(thang) FROM ty_gia)` — taking the latest rate. That statement is
+**correct for the question "what would it be if converted today"**, and **wrong for every historical
+report**.
 
-Sai lầm gốc nằm sâu hơn một tầng: quyết định *"tỷ giá nào áp cho giao dịch này"* là một
-**dữ kiện của giao dịch**, phải chốt một lần lúc nạp. Đẩy nó ra thời điểm đọc là để mỗi
-người đọc tự chọn một câu trả lời khác nhau.
+The root error sits a layer deeper: deciding *"which rate applies to this transaction"* is a
+**fact about the transaction** that must be frozen once at load time. Pushing it to read time lets each
+reader choose a different answer.
 
-Cùng cơ chế với [báo cáo quá khứ tự đổi số](bao-cao-qua-khu-tu-doi-so.md) — ở đó thủ phạm
-là SCD Type 1, ở đây là tỷ giá. Cả hai đều là *"giá trị quá khứ được tra bằng trạng thái
-hiện tại"*.
+The same mechanism as [historical reports changing their own numbers](bao-cao-qua-khu-tu-doi-so.md) — there the culprit
+is SCD Type 1, here it's the exchange rate. Both are *"a past value looked up through the current
+state"*.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `so_tien`, `tien_te` | ✅ xanh |
-| `accepted_values` cho `tien_te` — `[VND, USD]` | ✅ xanh |
-| `so_tien > 0` | ✅ xanh |
-| `relationships` fact → `ty_gia` | ✅ xanh |
-| Tổng theo VND khớp hệ nguồn | ✅ xanh |
+| `not_null` on `so_tien`, `tien_te` | ✅ green |
+| `accepted_values` for `tien_te` — `[VND, USD]` | ✅ green |
+| `so_tien > 0` | ✅ green |
+| `relationships` fact → `ty_gia` | ✅ green |
+| The VND total matching the source | ✅ green |
 
-Mọi bất biến đều giữ. Bảng tỷ giá cũng đúng — nó chỉ có thêm dòng mới, đúng như nhiệm vụ
-của nó.
+Every invariant holds. The rate table is correct too — it only gains new rows, exactly as it's
+supposed to.
 
-Lỗi nằm ở **câu join trong lớp báo cáo**, chỗ mà test dữ liệu không với tới. Test duy nhất
-bắt được: chụp lại tổng của kỳ đã đóng sổ và so mỗi lần chạy.
+The bug lives in **the join inside the reporting layer**, where data tests can't reach. The only test that
+catches it: snapshotting the totals of closed periods and comparing on each run.
 
-## Cách sửa
+## The fix
 
-Fact chốt **cả hai số** ngay lúc nạp, kèm tỷ giá đã dùng:
+The fact freezes **both numbers** at load time, along with the rate used:
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -176,7 +175,7 @@ FROM fct_ban_tho f JOIN ty_gia g
 └─────────┴────────────┴─────────┴─────────────────┴─────────────┴────────────────┘
 ```
 
-Báo cáo tập đoàn giờ bất biến — chạy lại bao nhiêu lần cũng một số:
+The corporate report is now immutable — re-run it however many times and it gives one number:
 
 ```text
 ┌────────────┬───────────────┐
@@ -187,7 +186,7 @@ Báo cáo tập đoàn giờ bất biến — chạy lại bao nhiêu lần cũn
 └────────────┴───────────────┘
 ```
 
-Mà câu hỏi bản địa của kế toán chi nhánh vẫn trả lời được:
+While the branch accountants' local question is still answerable:
 
 ```text
 ┌─────────┬───────────────┐
@@ -198,34 +197,34 @@ Mà câu hỏi bản địa của kế toán chi nhánh vẫn trả lời đư�
 └─────────┴───────────────┘
 ```
 
-Cột `ty_gia_ap_dung` là thứ dễ bị coi là thừa nhất và có giá trị nhất khi có tranh cãi:
-không có nó thì không ai tái lập được phép tính đã dùng.
+The `ty_gia_ap_dung` column is the one most easily dismissed as redundant and the most valuable when there's a dispute:
+without it, nobody can reproduce the calculation that was used.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Doanh thu tháng 1 (USD) | Đổi theo ngày chạy báo cáo | 2.000, cố định |
-| `SUM` cột tiền | Ra số vô nghĩa | Ra tổng theo từng tiền tệ |
-| Tái lập phép quy đổi | Không được | `ty_gia_ap_dung` |
-| Nơi quyết định tỷ giá | Lớp báo cáo, mỗi người một kiểu | Lớp nạp, một lần |
+| January revenue (USD) | Changes with the report's run date | 2,000, fixed |
+| `SUM`ming the amount column | A meaningless number | A total per currency |
+| Reproducing the conversion | Impossible | `ty_gia_ap_dung` |
+| Where the rate is decided | The reporting layer, differently per person | The load layer, once |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Fact có cột tiền mà **không có** cột đã quy đổi:
+1. The fact has an amount column but **no** converted column:
 
 ```sql
 SELECT count(DISTINCT tien_te) AS so_loai_tien FROM fct_ban_tho;
 ```
 
-Lớn hơn 1 mà bảng chỉ có một cột số tiền là đã mắc.
+Greater than 1 with only one amount column in the table means you already have the problem.
 
-2. Grep lớp báo cáo tìm chỗ join tỷ giá bằng giá trị mới nhất:
+2. Grep the reporting layer for rate joins using the latest value:
 
 ```bash
 grep -rn "max(thang)\|current_date\|order by thang desc limit 1" models/marts/
 ```
 
-3. Chụp tổng của các kỳ đã đóng sổ, so mỗi lần chạy — đây là test bắt được cả ca này lẫn
-   [ca SCD Type 1](bao-cao-qua-khu-tu-doi-so.md):
+3. Snapshot the totals of closed periods and compare on each run — this test catches both this case and
+   [the SCD Type 1 case](bao-cao-qua-khu-tu-doi-so.md):
 
 ```sql
 -- luu lai, so voi lan chay truoc
@@ -233,11 +232,11 @@ SELECT date_trunc('month', ngay)::DATE AS thang, sum(so_tien_usd) AS doanh_thu_u
 FROM fct_ban WHERE ngay < date_trunc('month', current_date) GROUP BY 1;
 ```
 
-4. Có ai đó `SUM` cột tiền mà không `GROUP BY tien_te`.
+4. Somebody `SUM`ming the amount column without a `GROUP BY tien_te`.
 
 ## Related Topics
 
-- [Nhiều loại tiền tệ và đơn vị đo](../skills/multi-currency-uom.md) — kỹ thuật bị bỏ qua ở đây
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity: cột nào được `SUM`
-- [CS: báo cáo quá khứ tự đổi số](bao-cao-qua-khu-tu-doi-so.md) — cùng bệnh "tra quá khứ bằng hiện tại"
-- [Audit dimension](../skills/audit-dimension.md) — ghi lại lần nạp lại khi tỷ giá bị sửa hồi tố
+- [Multiple currencies and units of measure](../skills/multi-currency-uom.md) — the technique skipped here
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity: which column may be `SUM`med
+- [CS: historical reports changing their own numbers](bao-cao-qua-khu-tu-doi-so.md) — the same "look up the past through the present" illness
+- [Audit dimensions](../skills/audit-dimension.md) — recording the reload when a rate is retroactively corrected

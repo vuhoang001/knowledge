@@ -1,8 +1,7 @@
 ---
-title: Một file nạp hai lần, xoá 10 dòng để diệt 5 dòng rác
-i18n_status: untranslated
+title: One file loaded twice, deleting 10 rows to kill 5 junk ones
 sidebar_position: 14
-description: "Fact không mang dấu vết lần chạy ETL, nên cách xoá duy nhất là theo khoảng ngày — và một nửa số dòng bị xoá là dòng tốt."
+description: "The fact carries no trace of the ETL run, so the only way to delete is by date range — and half the deleted rows are good ones."
 tags: [case-study, audit-dimension, data-quality, lineage, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,22 +12,22 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Một file nạp hai lần, xoá 10 dòng để diệt 5 dòng rác
+# One file loaded twice, deleting 10 rows to kill 5 junk ones
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** dữ liệu sẽ sai. Thứ quyết định sự cố mất mười phút hay nửa ngày là **fact có
-> mang dấu vết của lần chạy đã sinh ra nó hay không** — xem
-> [audit dimension](../skills/audit-dimension.md).
+> **Takeaway:** the data will be wrong. What decides whether an incident takes ten minutes or half a day is **whether the fact
+> carries a trace of the run that produced it** — see
+> [audit dimensions](../skills/audit-dimension.md).
 
-## Bối cảnh
+## Context
 
-Job nạp đêm chạy 02:00 mỗi ngày, mỗi lần một file. Hôm 02/03 job lỗi giữa chừng, người
-trực chạy lại tay lúc 09:15 — nhưng chạy lại **file của hôm trước** vì gõ nhầm tên.
+The nightly load job runs at 02:00 every day, one file per run. On 2 March the job failed mid-way and the
+on-call person re-ran it by hand at 09:15 — but re-ran **the previous day's file** because they mistyped the name.
 
-Fact có `ngay`, `doanh_thu`, và không có gì khác. Không cột nào cho biết dòng này từ lần
-chạy nào ra.
+The fact has `ngay`, `doanh_thu`, and nothing else. No column tells you which run a row came
+from.
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -40,10 +39,10 @@ CREATE TABLE fct_ban AS
   SELECT 'B' || i, (DATE '2026-01-01' + INTERVAL (i-1) DAY)::DATE, 100, 3 FROM range(6, 11) t(i);
 ```
 
-*(Cột `audit_sk` ở đây chỉ để bài này kiểm chứng được — trong hiện trường nó **không tồn
-tại**, và đó chính là vấn đề.)*
+*(The `audit_sk` column here exists only so this document can verify things — in the real scene it **doesn't
+exist**, and that's precisely the problem.)*
 
-## Triệu chứng
+## Symptoms
 
 ```sql
 SELECT count(*) AS dong_trong_kho, sum(doanh_thu) AS doanh_thu_kho,
@@ -60,30 +59,30 @@ FROM fct_ban;
 └────────────────┴───────────────┴───────────┴────────────────┴───────────┘
 ```
 
-Doanh thu **phồng 25%**. Nguyên nhân được đoán ra khá nhanh — có người nhớ mình đã chạy
-lại tay hôm đó.
+Revenue **25% inflated**. The cause is guessed fairly quickly — somebody remembers re-running it by
+hand that day.
 
-Phần đắt tiền không phải chẩn đoán, mà là câu hỏi tiếp theo: **xoá cái gì?**
+The expensive part isn't the diagnosis but the next question: **what do you delete?**
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Hệ nguồn phát trùng | Đối chiếu file gốc: mỗi file 10 dòng, sạch |
-| Có đơn bị ghi nhận hai lần từ đầu | `ma_ban` trong file không trùng nhau |
-| Job đêm chạy hai lần | Log scheduler: đúng một lần |
-| Ai đó chạy lại tay | **Đúng** — nhưng chạy lại *cái gì*, và *dòng nào* đã vào? |
+| The source emitted duplicates | Reconciling against the original files: 10 rows each, clean |
+| An order was recorded twice from the start | The `ma_ban` values in the file don't repeat |
+| The nightly job ran twice | The scheduler's log: exactly once |
+| Somebody re-ran it by hand | **Correct** — but re-ran *what*, and *which rows* got in? |
 
-Ba giả thuyết đầu mất khoảng một giờ. Giả thuyết đúng lại **không giải quyết được gì**:
-biết là do chạy lại tay, vẫn không biết dòng nào trong kho là của lần chạy đó.
+The first three hypotheses take about an hour. The correct one **solves nothing**:
+knowing it was a manual re-run still doesn't tell you which rows in the warehouse came from that run.
 
-## Nguyên nhân thật
+## The real cause
 
-`ma_ban` **không** duy nhất trên toàn hệ thống — nó chỉ duy nhất trong một file. Nên
-`DELETE ... WHERE ma_ban IN (...)` sẽ xoá cả bản gốc lẫn bản trùng.
+`ma_ban` is **not** unique system-wide — it's only unique within a file. So
+`DELETE ... WHERE ma_ban IN (...)` would delete both the original and the duplicate.
 
-Không có cột nào phân biệt hai lần nạp. Thông tin duy nhất còn lại trong fact là **ngày
-giao dịch**, nên cách xoá duy nhất là theo khoảng ngày:
+No column distinguishes the two loads. The only remaining information in the fact is the **transaction
+date**, so the only way to delete is by date range:
 
 ```sql
 SELECT count(*) AS dong_bi_xoa,
@@ -100,31 +99,31 @@ FROM fct_ban WHERE ngay BETWEEN DATE '2026-01-06' AND DATE '2026-01-10';
 └─────────────┴────────────────┴───────────────────┘
 ```
 
-**Xoá 10 dòng để diệt 5 dòng rác — một nửa là dòng tốt.** Sau đó phải nạp lại phần xoá
-nhầm, và trong khoảng thời gian đó báo cáo bị hụt. Một sự cố nhỏ thành nửa ngày.
+**Deleting 10 rows to kill 5 junk ones — half are good rows.** Then you have to reload what was wrongly
+deleted, and during that window the reports fall short. A small incident becomes half a day.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên mọi cột | ✅ xanh |
-| `unique` trên `ma_ban` | ❌ đỏ — **nhưng chỉ báo "có trùng"** |
-| `relationships` sang dimension | ✅ xanh |
-| `doanh_thu > 0` | ✅ xanh |
-| Số dòng khớp tổng số dòng các file nguồn | ❌ — **không ai viết test này** |
+| `not_null` on every column | ✅ green |
+| `unique` on `ma_ban` | ❌ red — **but it only reports "there are duplicates"** |
+| `relationships` to the dimension | ✅ green |
+| `doanh_thu > 0` | ✅ green |
+| Row count matching the total rows across the source files | ❌ — **nobody writes this test** |
 
-Test `unique` **có** đỏ. Nó nói được *"có trùng"* và không nói được *"dòng nào là bản
-thừa"*. Với hai dòng giống hệt nhau ở mọi cột, không có thông tin nào trong bảng phân
-biệt được chúng.
+The `unique` test **does** go red. It can say *"there are duplicates"* and can't say *"which row is the
+surplus"*. With two rows identical in every column, no information in the table
+distinguishes them.
 
-Đó là điểm cốt lõi: đây **không phải lỗi thiếu test**, mà là lỗi **thiếu metadata**. Test
-chỉ phát hiện được thứ có mặt trong dữ liệu.
+That's the crux: this **isn't a missing-test bug** but a **missing-metadata** bug. A test
+can only detect what's present in the data.
 
-## Cách sửa
+## The fix
 
-### Sửa 1 — audit dimension
+### Fix 1 — an audit dimension
 
-Mỗi lần chạy ETL sinh một dòng; mỗi dòng fact mang khoá trỏ về lần chạy đã tạo ra nó.
+Each ETL run produces one row; each fact row carries a key pointing back at the run that created it.
 
 ```sql
 CREATE TABLE dim_audit AS
@@ -150,7 +149,7 @@ GROUP BY 1,2,3,4 ORDER BY 1;
 └──────────┴───────────────────┴────────────┴──────────────┴──────────┴───────────┘
 ```
 
-Sửa thành một câu lệnh, chính xác 5 dòng:
+The fix becomes one statement, exactly 5 rows:
 
 ```sql
 DELETE FROM fct_ban WHERE audit_sk = 3;
@@ -164,7 +163,7 @@ DELETE FROM fct_ban WHERE audit_sk = 3;
 └──────────────┴───────────┘
 ```
 
-### Sửa 2 — phát hiện tự động, không cần ai nghi ngờ trước
+### Fix 2 — automatic detection, with nobody needing to suspect it first
 
 ```sql
 SELECT file_nguon, count(*) AS so_lan_nap, list(ma_lan_chay) AS cac_lan
@@ -179,11 +178,11 @@ FROM dim_audit GROUP BY 1 HAVING count(*) > 1;
 └────────────┴────────────┴────────────────────────────────────────┘
 ```
 
-Test này chạy được **ngay sau khi nạp**, trước khi ai kịp nhìn dashboard.
+This test can run **immediately after the load**, before anybody looks at a dashboard.
 
-### Sửa 3 — đẳng thức khép kín nạp + loại = nguồn
+### Fix 3 — the closed-loop equality loaded + rejected = source
 
-Kèm theo audit dimension là error event schema cho các dòng bị loại:
+Alongside the audit dimension comes an error event schema for the rejected rows:
 
 ```sql
 SELECT (SELECT count(*) FROM fct_ban) AS da_nap,
@@ -200,33 +199,33 @@ SELECT (SELECT count(*) FROM fct_ban) AS da_nap,
 └────────┴─────────┴──────────┴────────────┘
 ```
 
-Đẳng thức này không thể đúng một cách tình cờ. Nó bắt được cả nạp trùng lẫn mất dòng âm
-thầm.
+This equality can't hold by accident. It catches both duplicate loads and silent row
+loss.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Thời gian xử lý sự cố | Nửa ngày | Một câu lệnh |
-| Dòng tốt bị xoá nhầm | 5 | 0 |
-| Phát hiện nạp trùng bằng | Người dùng báo số lạ | Test sau mỗi lần nạp |
-| Chi phí thường trực | 0 | Một cột `INT` + một bảng nhỏ |
+| Incident handling time | Half a day | One statement |
+| Good rows wrongly deleted | 5 | 0 |
+| Duplicate loads detected by | A user reporting an odd number | A test after every load |
+| The standing cost | 0 | One `INT` column + one small table |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Bảng fact **không có** cột nào kiểu `ma_lan_chay` / `_run_id` / `_loaded_at`. Kiểm một
-   phút:
+1. The fact table has **no** column like `ma_lan_chay` / `_run_id` / `_loaded_at`. A one-minute
+   check:
 
 ```sql
 DESCRIBE fct_ban;
 ```
 
-2. Quy trình xử lý sự cố có câu *"xoá theo khoảng ngày rồi nạp lại"*. Đó là dấu hiệu chắc
-   chắn không có audit dimension — nếu có thì đã xoá theo lần chạy.
+2. The incident-handling procedure contains the words *"delete by date range then reload"*. That's a certain
+   sign of no audit dimension — with one, you'd delete by run.
 
-3. Không ai trả lời được câu *"dòng này do lần chạy nào tạo ra"* trong dưới một phút.
+3. Nobody can answer *"which run created this row"* in under a minute.
 
-4. Không có test đếm `count(*)` của mỗi lần nạp so với `so_dong_nguon` khai báo.
+4. There's no test counting each load's `count(*)` against the declared `so_dong_nguon`.
 
-Trong dbt, gắn cột audit vào model tốn đúng hai dòng:
+In dbt, attaching the audit columns to a model takes exactly two lines:
 
 ```sql
 SELECT ...,
@@ -237,7 +236,7 @@ FROM {{ ref('stg_ban') }}
 
 ## Related Topics
 
-- [Audit dimension và error event schema](../skills/audit-dimension.md) — kỹ thuật bị bỏ qua ở đây
-- [Six dimensions of data quality](../../data-quality/six-dimensions.md) — bộ nhãn cho lý do loại dòng
-- [Triển khai test trong dbt](../../etl/dbt/skills/implementing-tests.md) — hai tầng chặn và phát hiện
-- [CS: bảng tổng hợp lệch số](bang-tong-hop-lech-so.md) — cũng cần nạp lại có kiểm soát
+- [Audit dimensions and error event schemas](../skills/audit-dimension.md) — the technique skipped here
+- [The six dimensions of data quality](../../data-quality/six-dimensions.md) — the label set for rejection reasons
+- [Implementing tests in dbt](../../etl/dbt/skills/implementing-tests.md) — the blocking and detecting layers
+- [CS: the summary table with divergent numbers](bang-tong-hop-lech-so.md) — also needing a controlled reload
