@@ -1,8 +1,7 @@
 ---
-title: Thực thể không đồng nhất — supertype, subtype và measure type
-i18n_status: untranslated
+title: Heterogeneous entities — supertype, subtype and measure type
 sidebar_position: 21
-description: "Sản phẩm bảo hiểm và điện thoại không chung thuộc tính; nhét vào một bảng thì 67% ô trống. Supertype cho câu hỏi cắt ngang, subtype cho câu hỏi riêng."
+description: "An insurance product and a phone share no attributes; forcing them into one table leaves 67% of the cells empty. A supertype for cross-cutting questions, subtypes for specific ones."
 tags: [supertype, subtype, measure-type, abstract-dimension, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,17 +12,17 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Thực thể không đồng nhất — supertype, subtype và measure type
+# Heterogeneous entities — supertype, subtype and measure type
 
-> **Chốt:** khi các "sản phẩm" trong cùng một dimension **không chung thuộc tính**, mọi
-> lựa chọn đều tệ theo một kiểu. Kimball chọn kiểu tệ ít nhất: **một bảng chung chỉ chứa
-> thuộc tính chung** cho câu hỏi cắt ngang, cộng **một bảng riêng cho mỗi loại** cho câu
-> hỏi chuyên sâu.
+> **Takeaway:** when the "products" in one dimension **share no attributes**, every
+> option is bad in some way. Kimball picks the least bad: **one shared table holding only
+> the shared attributes** for cross-cutting questions, plus **one table per kind** for
+> specialised questions.
 
-## Vấn đề
+## The problem
 
-Một tập đoàn tài chính bán cả sổ tiết kiệm, bảo hiểm nhân thọ, lẫn điện thoại trả góp.
-Nhét hết vào một `dim_san_pham`:
+A financial group sells savings accounts, life insurance and phones on instalment.
+Force them all into one `dim_san_pham`:
 
 ```sql
 CREATE TABLE dim_sp_gop AS
@@ -44,27 +43,27 @@ SELECT * FROM (VALUES
 └─────────┴──────────┴──────────────────┴─────────────┴─────────────┘
 ```
 
-**66,7% số ô là trống.** Và tỷ lệ này chỉ tăng: thêm một dòng sản phẩm mới là thêm 5–10
-cột mà 90% dòng cũ không dùng.
+**66.7% of the cells are empty.** And that ratio only rises: each new product line adds 5–10
+columns that 90% of the existing rows don't use.
 
-Hậu quả không chỉ là chỗ trống:
+The consequences aren't only wasted space:
 
-- Người dùng mở bảng, thấy 40 cột, không biết cột nào áp dụng cho sản phẩm nào.
-- `NOT NULL` không đặt được cho cột nào cả — mất luôn tầng kiểm tra rẻ nhất.
-- Mỗi loại sản phẩm mới là một lần `ALTER TABLE` trên bảng mọi báo cáo đang dùng.
-- `NULL` ở đây nghĩa là *"không áp dụng"*, nhưng trông y hệt *"thiếu dữ liệu"* — xem
-  [NULL trong fact và dimension](null-handling.md).
+- A user opens the table, sees 40 columns, and can't tell which column applies to which product.
+- `NOT NULL` can't be set on any column — you lose the cheapest checking layer of all.
+- Each new product kind means an `ALTER TABLE` on the table every report already uses.
+- `NULL` here means *"not applicable"* but looks identical to *"data missing"* — see
+  [NULLs in facts and dimensions](null-handling.md).
 
-## Cách làm — supertype + subtype
+## The approach — supertype + subtype
 
-**Supertype**: chỉ những thuộc tính **mọi loại đều có**. Fact trỏ vào bảng này.
+**The supertype**: only the attributes **every kind has**. The fact points at this table.
 
 ```sql
 CREATE TABLE dim_sp AS
 SELECT sp_sk, ma_sp, loai_sp, nhom_lon FROM dim_sp_gop;
 ```
 
-**Subtype**: một bảng cho mỗi loại, chỉ thuộc tính của riêng loại đó, **cùng khoá** với
+**The subtypes**: one table per kind, holding only that kind's own attributes, with **the same key** as the
 supertype.
 
 ```sql
@@ -75,7 +74,7 @@ CREATE TABLE dim_sp_bao_hiem AS
 SELECT sp_sk, ma_sp, so_tien_bao_hiem, tuoi_toi_da FROM dim_sp_gop WHERE loai_sp = 'Bao hiem';
 ```
 
-Câu hỏi cắt ngang — dùng supertype, mọi loại đều có mặt:
+The cross-cutting question — use the supertype, and every kind is present:
 
 ```sql
 SELECT s.nhom_lon, s.loai_sp, sum(f.doanh_thu) AS doanh_thu
@@ -93,7 +92,7 @@ GROUP BY 1,2 ORDER BY 3 DESC;
 └───────────┴────────────┴───────────┘
 ```
 
-Câu hỏi riêng của một loại — dùng subtype, **không còn cột `NULL` nào**:
+A kind-specific question — use the subtype, with **no `NULL` column left**:
 
 ```sql
 SELECT t.ma_sp, t.lai_suat, t.ky_han_thang, sum(f.doanh_thu) AS doanh_thu
@@ -110,8 +109,8 @@ GROUP BY 1,2,3 ORDER BY 1;
 └─────────┴──────────────┴──────────────┴───────────┘
 ```
 
-Bất biến bắt buộc: **tổng qua supertype phải bằng tổng fact** — supertype phải phủ 100%
-sản phẩm, không sót loại nào.
+The mandatory invariant: **the total through the supertype must equal the fact's total** — the supertype must cover 100%
+of the products, missing no kind.
 
 ```text
 ┌───────────────┬───────────┐
@@ -121,19 +120,19 @@ sản phẩm, không sót loại nào.
 └───────────────┴───────────┘
 ```
 
-### Ba luật khi dùng supertype/subtype
+### Three rules when using supertype/subtype
 
-1. **Fact luôn trỏ vào supertype**, không bao giờ trỏ vào subtype. Trỏ vào subtype là
-   phải có N fact cho N loại sản phẩm.
-2. **Subtype dùng chung khoá thay thế** với supertype. Không sinh khoá riêng.
-3. **Không bao giờ `UNION` các subtype lại rồi phân tích** — đó là quay lại bảng gộp với
-   toàn `NULL`. Muốn cắt ngang thì dùng supertype.
+1. **The fact always points at the supertype**, never at a subtype. Pointing at subtypes means
+   needing N facts for N product kinds.
+2. **Subtypes share the surrogate key** with the supertype. Don't generate their own keys.
+3. **Never `UNION` the subtypes back together and analyse that** — that's returning to the merged table
+   full of `NULL`s. For cross-cutting analysis, use the supertype.
 
-## Measure type dimension
+## Measure type dimensions
 
-Cùng bài toán, phía fact: mỗi sản phẩm có một bộ **số đo** khác nhau (lãi suất thực nhận,
-số lượng, tỷ lệ trả hàng…). Thay vì 50 cột mà mỗi dòng dùng 3, chuyển sang **fact dạng
-dài** — một dòng cho mỗi loại số đo:
+The same problem on the fact side: each product has a different set of **measures** (effective interest rate,
+quantity, return rate…). Instead of 50 columns of which each row uses 3, move to a **long-form
+fact** — one row per measure type:
 
 ```sql
 CREATE TABLE dim_loai_so_do AS
@@ -144,7 +143,7 @@ SELECT * FROM (VALUES
 ) t(so_do_sk, ten_so_do, don_vi, cong_duoc);
 ```
 
-Cột `cong_duoc` là phần quan trọng nhất, vì nếu không có nó thì:
+The `cong_duoc` column is the most important part, because without it:
 
 ```sql
 SELECT round(sum(gia_tri), 1) AS "sum_tat_ca_vo_nghia", count(*) AS so_dong FROM fct_dai;
@@ -158,11 +157,11 @@ SELECT round(sum(gia_tri), 1) AS "sum_tat_ca_vo_nghia", count(*) AS so_dong FROM
 └─────────────────────┴─────────┘
 ```
 
-**3.033** = tiền + số lượng cái + phần trăm. Cùng loại lỗi với
-[cộng nhiều loại tiền tệ](multi-currency-uom.md), nhưng dễ mắc hơn vì fact dạng dài
-**mời gọi** người ta `SUM` cả cột.
+**3,033** = money + a count of items + a percentage. The same class of bug as
+[summing several currencies](multi-currency-uom.md), but easier to fall into because a long-form fact
+**invites** you to `SUM` the whole column.
 
-Có `cong_duoc` thì lọc được trước khi cộng:
+With `cong_duoc` you can filter before summing:
 
 ```sql
 SELECT l.ten_so_do, l.don_vi, l.cong_duoc,
@@ -182,15 +181,15 @@ GROUP BY 1,2,3 ORDER BY 1;
 └────────────────┴─────────┴───────────┴───────────────┴────────────┘
 ```
 
-### Dài hay rộng?
+### Long or wide?
 
-| | Fact dạng dài (measure type) | Fact dạng rộng (mỗi số đo một cột) |
+| | Long-form fact (measure type) | Wide-form fact (a column per measure) |
 |---|---|---|
-| Thêm loại số đo | Thêm dòng, không đổi DDL | `ALTER TABLE` |
-| Kiểu dữ liệu | Một cột `DOUBLE` cho mọi thứ — mất kiểm soát | Đúng kiểu cho từng cột |
-| `SUM` nhầm | **Rất dễ** | Khó — tên cột nói rõ |
-| Số dòng | Gấp N lần | 1 |
-| Đọc bằng mắt | Khó | Dễ |
+| Adding a measure type | Add rows, no DDL change | `ALTER TABLE` |
+| Data types | One `DOUBLE` column for everything — control lost | The right type per column |
+| Accidental `SUM` | **Very easy** | Hard — the column name says what it is |
+| Row count | N× | 1 |
+| Reading it by eye | Hard | Easy |
 
 ```text
 ┌──────────┬──────────────┬──────────────┬────────────────┐
@@ -201,56 +200,56 @@ GROUP BY 1,2,3 ORDER BY 1;
 └──────────┴──────────────┴──────────────┴────────────────┘
 ```
 
-**Mặc định nên là dạng rộng.** Chỉ chuyển sang dạng dài khi tập số đo thật sự thưa và hay
-thay đổi — ví dụ dữ liệu cảm biến IoT, chỉ số xét nghiệm y tế, nơi mỗi thực thể chỉ có
-một nhúm trong hàng trăm chỉ tiêu khả dĩ.
+**The default should be wide.** Only move to long-form when the measure set is genuinely sparse and frequently
+changing — e.g. IoT sensor data or medical test results, where each entity has only
+a handful of hundreds of possible metrics.
 
-## Abstract generic dimension và hot swappable — hai kỹ thuật nên cân nhắc kỹ
+## Abstract generic dimensions and hot swappable — two techniques to weigh carefully
 
-Kimball liệt kê thêm hai biến thể mà thực tế hiếm khi là lựa chọn đúng:
+Kimball lists two further variants that are rarely the right choice in practice:
 
-**Abstract generic dimension** — một dimension "vạn năng" kiểu `dim_thuc_the(loai, ma,
-ten)` cho cả khách, nhà cung cấp, nhân viên. Được: một bảng. Mất: mọi câu hỏi đều phải
-lọc `WHERE loai = ...`, không đặt được ràng buộc, và người dùng không đọc nổi. Chỉ dùng
-khi các loại thực thể **thật sự** thay thế nhau được trong cùng một vai trò.
+**An abstract generic dimension** — a "universal" dimension like `dim_thuc_the(loai, ma,
+ten)` for customers, suppliers and employees alike. You get: one table. You lose: every question has to
+filter `WHERE loai = ...`, no constraints can be set, and users can't read it. Only use it
+when the entity kinds **genuinely** substitute for one another in the same role.
 
-**Hot swappable dimension** — nhiều phiên bản của cùng một dimension, mỗi nhóm người dùng
-gắn một phiên bản (ví dụ mỗi công ty môi giới nhìn cùng danh mục chứng khoán theo cách
-phân loại riêng). Được: mỗi bên có cách nhìn của mình. Mất: **không còn conformed**, số
-của hai bên không so được với nhau — trực tiếp phá thứ mà
-[conformed dimension](conformed-dimension.md) tồn tại để bảo vệ.
+**A hot swappable dimension** — several versions of the same dimension, with each user group
+attached to one version (e.g. each brokerage viewing the same securities catalogue under its own
+classification). You get: each side has its own view. You lose: **it's no longer conformed**, and the two sides'
+numbers aren't comparable — directly destroying what
+[conformed dimensions](conformed-dimension.md) exist to protect.
 
-Trước khi chọn hai cái này, kiểm xem supertype/subtype có giải được không. Thường là có.
+Before choosing either, check whether supertype/subtype solves it. It usually does.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Supertype: câu hỏi cắt ngang chạy trên bảng gọn | Thêm một join khi cần thuộc tính riêng |
-| Subtype: `NOT NULL` đặt được, bảng đọc được | Nhiều bảng hơn phải bảo trì |
-| Thêm loại sản phẩm = thêm bảng subtype | Bảng mới phải nối vào quy trình nạp |
-| Measure type: thêm số đo không đổi DDL | Rất dễ `SUM` nhầm; mất kiểu dữ liệu |
+| A supertype: cross-cutting questions run on a tidy table | One extra join when you need a specific attribute |
+| Subtypes: `NOT NULL` can be set, and the table is readable | More tables to maintain |
+| A new product kind = a new subtype table | The new table must be wired into the load process |
+| Measure type: adding a measure changes no DDL | Very easy to `SUM` wrongly; data types lost |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Một bảng gộp cho mọi loại sản phẩm | 67% ô trống, không đặt được ràng buộc — [case study](../case-studies/bang-san-pham-hai-phan-ba-o-trong.md) |
-| Fact trỏ vào subtype | Phải có N fact cho N loại |
-| `UNION` các subtype để phân tích cắt ngang | Quay lại bảng gộp đầy `NULL` |
-| Fact dạng dài không có cột `cong_duoc` | `SUM` cộng lẫn tiền, số lượng và phần trăm |
-| Dùng abstract generic dimension cho tiện | Không ai đọc được, không ràng buộc được |
-| Hot swappable mà vẫn muốn so số giữa các bên | Mất conformed, số không so được |
+| One merged table for every product kind | 67% empty cells and no constraints possible — [case study](../case-studies/bang-san-pham-hai-phan-ba-o-trong.md) |
+| The fact pointing at a subtype | You need N facts for N kinds |
+| `UNION`ing the subtypes for cross-cutting analysis | Back to a merged table full of `NULL`s |
+| A long-form fact with no `cong_duoc` column | `SUM` mixes money, counts and percentages |
+| Using an abstract generic dimension for convenience | Nobody can read it and nothing can be constrained |
+| Hot swappable while still wanting to compare numbers between sides | Conformance lost, numbers not comparable |
 
 ## Related Topics
 
-- [NULL trong fact và dimension](null-handling.md) — "không áp dụng" khác "thiếu dữ liệu"
-- [Nhiều tiền tệ và đơn vị đo](multi-currency-uom.md) — cùng lỗi cộng lẫn đơn vị
-- [Conformed dimension](conformed-dimension.md) — thứ hot swappable đánh đổi mất
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — subtype là snowflake có chủ đích
-- [CS: bảng sản phẩm hai phần ba ô trống](../case-studies/bang-san-pham-hai-phan-ba-o-trong.md)
+- [NULLs in facts and dimensions](null-handling.md) — "not applicable" differs from "data missing"
+- [Multiple currencies and units of measure](multi-currency-uom.md) — the same mixed-unit summing bug
+- [Conformed dimensions](conformed-dimension.md) — what hot swappable trades away
+- [Star, snowflake, OBT](../reference/star-snowflake-obt.md) — a subtype is a deliberate snowflake
+- [CS: the product table two-thirds empty](../case-studies/bang-san-pham-hai-phan-ba-o-trong.md)
 
 ## References
 
 - Kimball Group — [Supertype and Subtype Schemas · Measure Type Dimensions · Abstract Generic Dimensions · Hot Swappable Dimensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 10 và 14
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 10 and 14

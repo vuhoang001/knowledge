@@ -1,8 +1,7 @@
 ---
-title: Year-to-date và timespan trong fact
-i18n_status: untranslated
+title: Year-to-date and timespan in a fact
 sidebar_position: 19
-description: "Cột luỹ kế lưu sẵn trong fact là bẫy cộng trùng; ngược lại, khoảng hiệu lực lưu trong fact là thứ giữ cho giá quá khứ không đổi."
+description: "A pre-stored running-total column in a fact is a double-counting trap; conversely, a validity interval stored in the fact is what keeps historical prices from changing."
 tags: [year-to-date, timespan, additivity, fact, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,13 +12,13 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Year-to-date và timespan trong fact
+# Year-to-date and timespan in a fact
 
-> **Chốt:** hai kỹ thuật đều nhét *thời gian* vào fact và cho kết quả ngược nhau. Cột
-> **luỹ kế** (`YTD`) là số **không cộng được** nằm giữa các số cộng được — gần như luôn
-> nên bỏ. Cột **khoảng hiệu lực** thì ngược lại: thiếu nó là quá khứ tự đổi số.
+> **Takeaway:** two techniques both push *time* into the fact and give opposite results. A
+> **running-total** (`YTD`) column is a **non-summable** number sitting among summable ones — almost always
+> to be dropped. A **validity interval** column is the reverse: without it, the past changes its own numbers.
 
-## Year-to-date: đừng lưu, hãy tính lúc đọc
+## Year-to-date: don't store it, compute it at read time
 
 ```sql
 CREATE TABLE fct_thang AS
@@ -39,8 +38,8 @@ FROM (VALUES (1, 100), (2, 200), (3, 150), (4, 300)) t(thang, doanh_thu);
 └───────┴───────────┴───────────────┘
 ```
 
-Bảng này **đúng**. Mọi dòng đều chính xác. Nó hỏng ở thao tác tự nhiên nhất mà người dùng
-BI làm với một cột số: kéo vào ô "tổng".
+This table is **correct**. Every row is accurate. It fails at the most natural action a BI
+user takes with a numeric column: dragging it into the "total" box.
 
 ```sql
 SELECT sum(doanh_thu)     AS doanh_thu_that,
@@ -57,15 +56,15 @@ FROM fct_thang;
 └────────────────┴─────────────────┴───────────────┘
 ```
 
-**Phồng 2,13 lần** — và với 12 tháng thì phồng khoảng 6,5 lần. Tháng 1 được đếm 4 lần,
-tháng 2 ba lần, và cứ thế.
+**2.13× inflated** — and with 12 months it inflates about 6.5×. January gets counted 4 times,
+February three times, and so on.
 
-`doanh_thu_ytd` là **non-additive theo chiều thời gian**, giống hệt số dư trong
-[periodic snapshot](../reference/fact-and-dimension.md). Nhưng có một điểm khác làm nó
-nguy hiểm hơn: số dư *trông như* không cộng được (ai cũng biết cộng số dư 12 tháng là vô
-lý), còn `doanh_thu_ytd` **trông y hệt** `doanh_thu`.
+`doanh_thu_ytd` is **non-additive along the time dimension**, exactly like a balance in a
+[periodic snapshot](../reference/fact-and-dimension.md). But one difference makes it more
+dangerous: a balance *looks* non-summable (everybody knows adding 12 months of balances is
+absurd), while `doanh_thu_ytd` **looks identical** to `doanh_thu`.
 
-Lấy đúng thì phải đọc **một dòng**, không được gộp:
+To read it correctly you must read **one row** and never aggregate:
 
 ```sql
 SELECT thang, doanh_thu_ytd FROM fct_thang WHERE thang = 4;
@@ -79,7 +78,7 @@ SELECT thang, doanh_thu_ytd FROM fct_thang WHERE thang = 4;
 └───────┴───────────────┘
 ```
 
-### Cách làm — bỏ cột, dùng window function
+### The approach — drop the column, use a window function
 
 ```sql
 SELECT thang, doanh_thu,
@@ -98,20 +97,20 @@ FROM fct_thang ORDER BY thang;
 └───────┴───────────┴──────────────────┘
 ```
 
-Cùng kết quả, nhưng cột luỹ kế **không tồn tại trong bảng** nên không ai cộng nhầm được.
-Mọi engine hiện đại đều có window function; đây không còn là lý do chính đáng để lưu sẵn.
+The same result, but the running-total column **doesn't exist in the table**, so nobody can add it wrongly.
+Every modern engine has window functions; that's no longer a valid reason to pre-store it.
 
-**Ngoại lệ duy nhất:** BI không hỗ trợ window function và tập dữ liệu quá lớn để tính lại.
-Khi đó lưu YTD trong một **bảng riêng, tên nói rõ** (`agg_ytd_thang`), không trộn vào fact
-atomic, và ghi trong mô tả bảng rằng cột này không được `SUM`.
+**The only exception:** the BI tool doesn't support window functions and the dataset is too large to recompute.
+Then store the YTD in a **separate, clearly named table** (`agg_ytd_thang`), not mixed into the atomic
+fact, and note in the table description that the column must not be `SUM`med.
 
-Cùng lập luận với việc không lưu `avg` trong
-[bảng tổng hợp](aggregate-fact-table.md): **lưu số cộng được, tính phần còn lại lúc đọc.**
+The same argument as not storing `avg` in an
+[aggregate table](aggregate-fact-table.md): **store summable numbers and compute the rest at read time.**
 
-## Timespan tracking: cái này thì phải lưu
+## Timespan tracking: this one you must store
 
-Hướng ngược lại. Fact ghi lại **một trạng thái có hiệu lực trong một khoảng thời gian** —
-giá bán, hạn mức tín dụng, mức phí — với `hieu_luc_tu` / `hieu_luc_den` ngay trong fact.
+The opposite direction. The fact records **a state valid over a time interval** —
+a selling price, a credit limit, a fee level — with `hieu_luc_tu` / `hieu_luc_den` right in the fact.
 
 ```sql
 CREATE TABLE fct_gia AS
@@ -123,7 +122,7 @@ SELECT * FROM (VALUES
 ) t(san_pham, gia, hieu_luc_tu, hieu_luc_den);
 ```
 
-Giá tại thời điểm bán:
+The price at the moment of sale:
 
 ```sql
 SELECT b.san_pham, b.ngay, b.so_luong, g.gia, b.so_luong * g.gia AS thanh_tien
@@ -144,7 +143,7 @@ ORDER BY b.ngay;
 └──────────┴────────────┴──────────┴───────┴────────────┘
 ```
 
-Nếu thay bằng giá hiện tại:
+Substituting the current price instead:
 
 ```text
 ┌──────────────────┬───────────────────┬──────────┐
@@ -154,13 +153,13 @@ Nếu thay bằng giá hiện tại:
 └──────────────────┴───────────────────┴──────────┘
 ```
 
-**Lệch 39,1%.** Cùng cơ chế với [SCD](scd.md) Type 2 và với
-[tỷ giá](multi-currency-uom.md), chỉ khác là áp lên chính fact thay vì dimension.
+**39.1% out.** The same mechanism as [SCD](scd.md) Type 2 and as
+[exchange rates](multi-currency-uom.md), except applied to the fact itself rather than a dimension.
 
-### Hai bất biến phải kiểm
+### Two invariants to check
 
-Khoảng hiệu lực chỉ đáng tin khi **không hở và không chồng lấn**. Sai một trong hai thì
-join theo ngày sẽ mất dòng hoặc nhân đôi dòng.
+A validity interval is only trustworthy when there are **no gaps and no overlaps**. Fail either and a
+date-based join will lose rows or duplicate them.
 
 ```sql
 SELECT san_pham, count(*) AS so_khoang,
@@ -178,7 +177,7 @@ FROM fct_gia GROUP BY 1 ORDER BY 1;
 └──────────┴───────────┴──────────────┴────────────┘
 ```
 
-Và kiểm tính liên tục bằng `lead()`:
+And check continuity with `lead()`:
 
 ```sql
 WITH x AS (
@@ -205,66 +204,66 @@ FROM x ORDER BY san_pham, hieu_luc_tu;
 └──────────┴──────────────┴────────────┴────────────┘
 ```
 
-Câu này đáng đặt thành test dbt — nó bắt được cả khoảng trống lẫn chồng lấn bằng một lần
-quét.
+This query is worth making a dbt test — it catches both gaps and overlaps in a single
+scan.
 
-### Quy ước nửa mở `[tu, den)`
+### The half-open convention `[tu, den)`
 
-`hieu_luc_den` của khoảng trước **bằng đúng** `hieu_luc_tu` của khoảng sau, và điều kiện
-join dùng `>= tu AND < den`. Quy ước này loại bỏ mọi tranh cãi về "ngày đổi giá thì tính
-giá nào" và làm phép kiểm liên tục thành một phép so sánh bằng.
+The previous interval's `hieu_luc_den` **exactly equals** the next interval's `hieu_luc_tu`, and the join
+condition uses `>= tu AND < den`. This convention removes every argument about "which price applies on the
+day the price changed" and turns the continuity check into an equality comparison.
 
-Dùng `<=` ở cả hai đầu là tự tạo ra chồng lấn một ngày ở mỗi mốc — lỗi kinh điển, và nó
-nhân đôi đúng những dòng rơi vào ngày chuyển tiếp.
+Using `<=` at both ends creates a one-day overlap at every boundary — the classic bug, and it
+duplicates exactly the rows falling on a transition day.
 
 ## Fact table surrogate key
 
-Kimball để riêng một kỹ thuật nhỏ hay bị bỏ qua: **thêm một khoá thay thế cho chính dòng
-fact** (`ban_sk BIGINT`, tự tăng).
+Kimball keeps a small, often-overlooked technique separate: **adding a surrogate key for the fact row
+itself** (`ban_sk BIGINT`, auto-incrementing).
 
-| Khi nào đáng thêm | Vì sao |
+| When it's worth adding | Why |
 |---|---|
-| Fact bị `UPDATE` (accumulating snapshot, timespan) | Có mốc duy nhất để trỏ tới khi sửa |
-| Cần nạp lại từng dòng, không theo lô | `DELETE ... WHERE ban_sk IN (...)` |
-| Có bảng con trỏ ngược về dòng fact | Cần một khoá đơn thay vì khoá tổ hợp 6 cột |
-| Truy vết trong quy trình nạp | Ghép với [audit dimension](audit-dimension.md) |
+| The fact gets `UPDATE`d (an accumulating snapshot, a timespan) | You have a unique handle to point at when editing |
+| You need to reload individual rows rather than batches | `DELETE ... WHERE ban_sk IN (...)` |
+| A child table points back at the fact row | You need a single key rather than a 6-column composite |
+| Tracing within the load process | Pairs with an [audit dimension](audit-dimension.md) |
 
-Khi nào **không** cần: fact chỉ `INSERT`, không có bảng nào trỏ tới. Thêm khoá lúc đó chỉ
-tốn 8 byte mỗi dòng mà không dùng đến.
+When you **don't** need it: the fact is `INSERT`-only and nothing points at it. Adding a key then just
+costs 8 bytes a row for nothing.
 
-Lưu ý: khoá này **không** thay thế việc khai grain. `ban_sk` duy nhất không chứng minh
-grain đúng — hai dòng trùng grain vẫn có hai `ban_sk` khác nhau. Phép kiểm grain vẫn phải
-chạy trên tổ hợp khoá nghiệp vụ, xem [grain](../reference/grain.md).
+Note: this key does **not** replace declaring the grain. A unique `ban_sk` doesn't prove the
+grain is right — two rows duplicating the grain still have two different `ban_sk` values. The grain check must still
+run on the business-key combination, see [grain](../reference/grain.md).
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Bỏ cột YTD: không ai cộng nhầm được | Mỗi query phải viết window function |
-| Timespan trong fact: giá quá khứ bất biến | Join bất đẳng thức, chậm hơn join khoá |
-| Quy ước `[tu, den)` | Phải kỷ luật ở mọi chỗ ghi và mọi chỗ đọc |
-| Fact surrogate key: sửa/nạp lại từng dòng | 8 byte mỗi dòng, và một chuỗi phải sinh |
+| Dropping the YTD column: nobody can add it wrongly | Each query has to write a window function |
+| A timespan in the fact: historical prices immutable | An inequality join, slower than a key join |
+| The `[tu, den)` convention | Discipline required everywhere you write and everywhere you read |
+| A fact surrogate key: editing/reloading individual rows | 8 bytes a row, and a sequence to generate |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Lưu cột YTD trong fact atomic | `SUM` phồng 2–6 lần — [case study](../case-studies/cong-cot-luy-ke.md) |
-| Đặt tên cột luỹ kế giống cột thường | Không ai biết cột nào được cộng |
-| Timespan dùng `<=` ở cả hai đầu | Chồng lấn một ngày, nhân đôi dòng ở mốc chuyển |
-| Không kiểm khoảng trống / chồng lấn | Join theo ngày mất dòng, không báo lỗi |
-| Join giá bằng bản ghi hiện tại | Doanh thu quá khứ lệch 39% |
-| Tin `ban_sk` duy nhất là grain đúng | Grain trùng vẫn qua được test `unique` |
+| Storing a YTD column in the atomic fact | `SUM` inflates 2–6× — [case study](../case-studies/cong-cot-luy-ke.md) |
+| Naming a running-total column like an ordinary one | Nobody knows which column may be summed |
+| A timespan using `<=` at both ends | A one-day overlap duplicating rows at every transition |
+| Not checking for gaps / overlaps | A date-based join loses rows with no error reported |
+| Joining the price with the current record | Historical revenue 39% out |
+| Believing a unique `ban_sk` means the grain is right | A duplicated grain still passes a `unique` test |
 
 ## Related Topics
 
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity, và periodic snapshot cũng non-additive theo thời gian
-- [Aggregate fact table](aggregate-fact-table.md) — cùng luật: chỉ lưu số cộng được
-- [SCD](scd.md) — khoảng hiệu lực áp cho dimension
-- [Nhiều tiền tệ](multi-currency-uom.md) — chốt giá trị tại thời điểm giao dịch
-- [CS: cộng cột luỹ kế](../case-studies/cong-cot-luy-ke.md)
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity, and periodic snapshots being non-additive over time too
+- [Aggregate fact tables](aggregate-fact-table.md) — the same rule: store only summable numbers
+- [SCD](scd.md) — validity intervals applied to a dimension
+- [Multiple currencies](multi-currency-uom.md) — freezing the value as of the transaction
+- [CS: summing a running-total column](../case-studies/cong-cot-luy-ke.md)
 
 ## References
 
 - Kimball Group — [Year-to-Date Facts · Timespan Tracking in Fact Tables · Fact Table Surrogate Keys](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 3 và 4
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 3 and 4

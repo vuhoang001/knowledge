@@ -1,8 +1,7 @@
 ---
-title: Đưa hành vi vào dimension
-i18n_status: untranslated
+title: Putting behaviour into a dimension
 sidebar_position: 20
-description: "Số tổng hợp làm thuộc tính dimension, phân khoảng động, nhóm nghiên cứu và step dimension — bốn cách phân khúc, cùng một cái bẫy cộng trùng."
+description: "Aggregate numbers as dimension attributes, dynamic banding, study groups and step dimensions — four ways of segmenting, one shared double-counting trap."
 tags: [behavior-tag, study-group, value-banding, step-dimension, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,14 +12,14 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Đưa hành vi vào dimension
+# Putting behaviour into a dimension
 
-> **Chốt:** *"khách chi tiêu nhiều"* là một câu hỏi về **fact**, nhưng người ta muốn dùng
-> nó để **lọc và nhóm** — tức là dùng như dimension. Bốn kỹ thuật dưới đây giải bài toán
-> đó, và cả bốn dính chung một cái bẫy: **số tổng hợp nằm trong dimension thì không được
-> `SUM` sau khi join fact.**
+> **Takeaway:** *"a high-spending customer"* is a question about a **fact**, but people want to use
+> it to **filter and group** — that is, use it as a dimension. The four techniques below solve that
+> problem, and all four share one trap: **an aggregate number sitting in a dimension must not be
+> `SUM`med after joining the fact.**
 
-## Dữ liệu chung
+## The shared data
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -34,7 +33,7 @@ SELECT * FROM (VALUES
 
 ## 1. Aggregated facts as dimension attributes
 
-Đưa số tổng hợp lên dimension để lọc/nhóm mà không phải quét fact:
+Lifting an aggregate number into the dimension so you can filter/group without scanning the fact:
 
 ```sql
 CREATE TABLE dim_khach AS
@@ -54,12 +53,12 @@ FROM fct_ban GROUP BY 1;
 └──────────┴───────────────┴────────────┴──────────────────┘
 ```
 
-Rất tiện: *"doanh thu từ khách có tổng chi tiêu trên 5.000"* thành một `WHERE` trên
-dimension, không phải subquery gộp fact.
+Very convenient: *"revenue from customers whose total spend exceeds 5,000"* becomes a `WHERE` on the
+dimension rather than an aggregating subquery over the fact.
 
-### Cái bẫy
+### The trap
 
-Cộng cột này **trong dimension** thì đúng:
+Summing this column **inside the dimension** is correct:
 
 ```text
 ┌───────────────┬───────────────────┐
@@ -69,7 +68,7 @@ Cộng cột này **trong dimension** thì đúng:
 └───────────────┴───────────────────┘
 ```
 
-Cộng **sau khi join fact** thì hỏng:
+Summing it **after joining the fact** breaks:
 
 ```sql
 SELECT sum(d.tong_chi_tieu) AS sum_sau_khi_join_fact,
@@ -87,28 +86,28 @@ FROM fct_ban f JOIN dim_khach d USING (khach_id);
 └───────────────────────┴───────────┴───────────────┘
 ```
 
-**Phồng gần 2 lần** — mỗi khách được đếm bằng đúng số dòng fact của họ. Đây là cùng cơ
-chế fan-out với [dim đơn hàng phồng doanh thu](../case-studies/dim-don-hang-lam-phong-doanh-thu.md),
-chỉ khác là bên nhân bản là *fact*, và cột bị nhân là cột *tổng hợp trong dimension*.
+**Nearly 2× inflated** — each customer is counted once per fact row they have. This is the same fan-out
+mechanism as [the order dim inflating revenue](../case-studies/dim-don-hang-lam-phong-doanh-thu.md),
+except that here the duplicating side is the *fact*, and the multiplied column is the dimension's *aggregate*.
 
-Ba cách phòng, dùng cả ba:
+Three defences, use all three:
 
-- **Đặt tên tự tố cáo**: `tong_chi_tieu_khong_cong` hoặc tiền tố `attr_`.
-- **Ghi rõ trong mô tả cột** rằng nó chỉ dùng để lọc và nhóm.
-- **Test bất biến**: `sum(cot_tong_hop)` trong dimension phải bằng `sum(cot_goc)` trong
-  fact; nếu người dùng cộng sau join, con số sẽ khác.
+- **A self-incriminating name**: `tong_chi_tieu_khong_cong` or an `attr_` prefix.
+- **State clearly in the column description** that it's only for filtering and grouping.
+- **An invariant test**: `sum(the_aggregate_column)` in the dimension must equal `sum(the_source_column)` in the
+  fact; if a user sums it after a join, the number will differ.
 
-### Nhịp cập nhật
+### The refresh cadence
 
-Cột này **đổi mỗi ngày**. Bật [SCD](scd.md) Type 2 cho nó là con đường thẳng tới
-[dimension phồng 365 lần](../case-studies/dimension-phinh-365-lan.md). Hai lựa chọn đúng:
-Type 1 (ghi đè, chỉ giữ giá trị hiện tại), hoặc tách sang
-[mini-dimension](mini-dimension.md) nếu thật sự cần as-was.
+This column **changes daily**. Turning on [SCD](scd.md) Type 2 for it is a direct road to a
+[dimension 365× bloated](../case-studies/dimension-phinh-365-lan.md). Two correct options:
+Type 1 (overwrite, keeping only the current value), or splitting it into a
+[mini-dimension](mini-dimension.md) if you genuinely need as-was.
 
 ## 2. Dynamic value banding
 
-Phân khách thành nhóm theo ngưỡng. Cách sai là `CASE WHEN` rải khắp dashboard; cách đúng
-là **một bảng ngưỡng**:
+Segmenting customers by threshold. The wrong way is `CASE WHEN` scattered across dashboards; the right way
+is **one threshold table**:
 
 ```sql
 CREATE TABLE dai_gia_tri AS
@@ -134,7 +133,7 @@ GROUP BY 1 ORDER BY 3 DESC;
 └─────────┴──────────┴──────────┘
 ```
 
-Marketing muốn tách nhóm giữa? **Sửa bảng, không sửa một dòng SQL nào**:
+Marketing wants the middle band split? **Edit the table, without changing a line of SQL**:
 
 ```sql
 UPDATE dai_gia_tri SET den = 5000 WHERE ten_dai = 'Vua';
@@ -151,8 +150,8 @@ INSERT INTO dai_gia_tri VALUES ('Lon vua', 5000, 10000);
 └─────────┴──────────┴──────────┘
 ```
 
-Bảng ngưỡng cần đúng bất biến như [timespan](ytd-timespan-facts.md) — không hở, không
-chồng:
+The threshold table needs exactly the same invariants as a [timespan](ytd-timespan-facts.md) — no gaps, no
+overlaps:
 
 ```text
 ┌─────────┬─────────┬────────────┬────────────┐
@@ -165,15 +164,15 @@ chồng:
 └─────────┴─────────┴────────────┴────────────┘
 ```
 
-Hở một khoảng thì khách rơi vào đó **biến mất khỏi báo cáo phân khúc**; chồng lấn thì họ
-bị đếm hai lần. Cả hai đều không báo lỗi.
+Leave a gap and any customer falling into it **vanishes from the segmentation report**; overlap and they
+get counted twice. Neither reports an error.
 
-**Đánh đổi phải nói rõ:** sửa bảng ngưỡng làm **báo cáo cũ đổi số**. Nếu cần so sánh theo
-thời gian thì bảng ngưỡng phải có `hieu_luc_tu`/`hieu_luc_den` — cùng cách xử lý với SCD.
+**A trade-off to state plainly:** editing the threshold table makes **old reports change their numbers**. If you need
+comparability over time, the threshold table must have `hieu_luc_tu`/`hieu_luc_den` — the same handling as SCD.
 
-## 3. Behavior study group
+## 3. Behavior study groups
 
-Một **tập khoá cố định**, chọn theo hành vi tại một thời điểm, rồi theo dõi về sau.
+A **fixed set of keys**, chosen by behaviour at a point in time and then tracked afterwards.
 
 ```sql
 CREATE TABLE nhom_nghien_cuu AS
@@ -207,16 +206,16 @@ GROUP BY 1 ORDER BY 1;
 └────────────┴───────────────────┘
 ```
 
-Đây là phân tích cohort, và điểm mấu chốt là bảng chỉ chứa **khoá**, không copy dữ liệu.
-Nhờ vậy nó join được với **mọi** fact — bán hàng, trả hàng, chăm sóc khách — mà không bao
-giờ lệch khỏi nguồn.
+This is cohort analysis, and the crucial point is that the table holds only **keys**, copying no data.
+That's what lets it join to **any** fact — sales, returns, customer service — without ever
+diverging from the source.
 
-Nếu thay vì lưu khoá mà lưu điều kiện (`WHERE thang = 1`), thì mỗi lần chạy lại tập thành
-viên sẽ khác đi khi dữ liệu quá khứ được sửa — và toàn bộ so sánh cohort mất ý nghĩa.
+If instead of storing keys you stored the condition (`WHERE thang = 1`), the membership set would differ
+on each run whenever historical data was corrected — and the whole cohort comparison would lose its meaning.
 
-## 4. Step dimension
+## 4. Step dimensions
 
-Vị trí của một sự kiện trong **chuỗi sự kiện của cùng một thực thể**:
+An event's position within **the sequence of events of the same entity**:
 
 ```sql
 CREATE TABLE fct_buoc AS
@@ -239,59 +238,59 @@ FROM fct_buoc GROUP BY 1 ORDER BY 1;
 └──────────────┴────────┴───────────┴────────────┘
 ```
 
-Câu hỏi *"đơn thứ hai có lớn hơn đơn đầu không"* — ở đây 19.000 so với 13.300 — chỉ trả
-lời được khi có cột này. Không có nó, người dùng phải tự viết window function, và mỗi
-người viết một kiểu.
+The question *"is the second order bigger than the first"* — here 19,000 against 13,300 — is only
+answerable with this column. Without it, users write their own window functions and each writes
+a different one.
 
-Ứng dụng chuẩn: bước thứ mấy trong phễu bán hàng, trang thứ mấy trong phiên, lần khám thứ
-mấy của bệnh nhân.
+The standard applications: which step in the sales funnel, which page in a session, which visit
+number for a patient.
 
-`tong_so_buoc` cho phép hỏi ngược: *"trong các phiên có đúng 3 bước, bước 2 là gì"*.
+`tong_so_buoc` lets you ask the inverse: *"among sessions with exactly 3 steps, what is step 2"*.
 
-**Lưu ý:** cả hai cột phải tính lại khi có [dữ liệu về muộn](late-arriving.md) — một giao
-dịch lùi ngày về sẽ đẩy số thứ tự của mọi giao dịch sau nó.
+**Note:** both columns must be recomputed when there's [late-arriving data](late-arriving.md) — one
+backdated transaction shifts the sequence number of every transaction after it.
 
 ## Behavior tag time series
 
-Biến thể của (1): thay vì một số, lưu **một chuỗi nhãn theo thời gian** —
-`'AABBCA'` nghĩa là 6 tháng gần nhất khách ở các mức A, A, B, B, C, A.
+A variant of (1): instead of a number, store **a series of labels over time** —
+`'AABBCA'` meaning that over the last 6 months the customer was at levels A, A, B, B, C, A.
 
-Điểm mạnh: tìm mẫu hành vi bằng so khớp chuỗi (`LIKE '%CC%'` = hai tháng liên tiếp tụt
-hạng). Điểm yếu: chuỗi phải cập nhật mỗi kỳ, và mọi phân tích trên nó **không cộng được**
-— y hệt cái bẫy ở mục 1.
+The strength: finding behaviour patterns with string matching (`LIKE '%CC%'` = two consecutive months of dropping
+a tier). The weakness: the string must be updated each period, and every analysis over it **isn't summable**
+— exactly the trap in section 1.
 
-Chỉ nên dựng khi thật sự có bài toán phát hiện mẫu; nếu không, một fact hạng khách theo
-tháng vừa đơn giản hơn vừa cộng được.
+Only build it when you genuinely have a pattern-detection problem; otherwise a monthly customer-tier
+fact is both simpler and summable.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Lọc/nhóm theo hành vi không phải quét fact | Cột tổng hợp không được cộng sau join |
-| Bảng ngưỡng: đổi phân khúc không sửa code | Đổi ngưỡng làm báo cáo cũ đổi số |
-| Study group: cohort ổn định, join được mọi fact | Phải sinh và đặt tên rõ ràng |
-| Step dimension: phân tích chuỗi thành `GROUP BY` | Phải tính lại khi có dữ liệu về muộn |
+| Filtering/grouping by behaviour without scanning the fact | The aggregate column mustn't be summed after a join |
+| A threshold table: changing segments without changing code | Changing a threshold makes old reports change numbers |
+| A study group: a stable cohort joinable to any fact | It must be generated and clearly named |
+| A step dimension: sequence analysis becomes a `GROUP BY` | It must be recomputed when data arrives late |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| `SUM` cột tổng hợp sau khi join fact | Phồng theo số dòng — [case study](../case-studies/cong-cot-tong-hop-trong-dim.md) |
-| Type 2 cho cột tổng hợp đổi hằng ngày | Dimension phồng — [case study](../case-studies/dimension-phinh-365-lan.md) |
-| `CASE WHEN` phân khoảng rải khắp dashboard | Mỗi dashboard một định nghĩa phân khúc |
-| Bảng ngưỡng hở hoặc chồng lấn | Khách biến mất hoặc bị đếm hai lần |
-| Study group lưu điều kiện thay vì khoá | Tập thành viên đổi mỗi lần chạy |
-| Không tính lại step khi có dữ liệu về muộn | Số thứ tự sai từ điểm chèn trở đi |
+| `SUM`ming the aggregate column after joining the fact | Inflation by the row count — [case study](../case-studies/cong-cot-tong-hop-trong-dim.md) |
+| Type 2 for an aggregate column that changes daily | The dimension bloats — [case study](../case-studies/dimension-phinh-365-lan.md) |
+| `CASE WHEN` banding scattered across dashboards | Each dashboard has its own segmentation definition |
+| A threshold table with gaps or overlaps | Customers vanish or get counted twice |
+| A study group storing a condition rather than keys | The membership set changes on each run |
+| Not recomputing steps when data arrives late | The sequence numbers are wrong from the insertion point onwards |
 
 ## Related Topics
 
-- [Mini-dimension](mini-dimension.md) — chỗ đúng cho thuộc tính đổi nhanh cần as-was
-- [SCD](scd.md) — vì sao Type 1 là lựa chọn cho cột tổng hợp
-- [Aggregate fact table](aggregate-fact-table.md) — cùng luật về số cộng được
-- [Year-to-date và timespan](ytd-timespan-facts.md) — bảng ngưỡng cần cùng bất biến với timespan
-- [CS: cộng cột tổng hợp trong dimension](../case-studies/cong-cot-tong-hop-trong-dim.md)
+- [Mini-dimensions](mini-dimension.md) — the right home for a fast-changing attribute needing as-was
+- [SCD](scd.md) — why Type 1 is the choice for an aggregate column
+- [Aggregate fact tables](aggregate-fact-table.md) — the same rule about summable numbers
+- [Year-to-date and timespan](ytd-timespan-facts.md) — a threshold table needs the same invariants as a timespan
+- [CS: summing an aggregate column in a dimension](../case-studies/cong-cot-tong-hop-trong-dim.md)
 
 ## References
 
 - Kimball Group — [Aggregated Facts as Dimension Attributes · Dynamic Value Banding · Behavior Study Groups · Behavior Tag Time Series · Step Dimensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 8
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 8

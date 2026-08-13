@@ -1,8 +1,7 @@
 ---
-title: Centipede fact table và dimension-to-dimension join
-i18n_status: untranslated
+title: Centipede fact tables and dimension-to-dimension joins
 sidebar_position: 18
-description: "Fact có hai chục khoá ngoại vì mỗi cấp của một cây được tách thành một dimension riêng — dấu hiệu chuẩn hoá nhầm chỗ."
+description: "A fact with twenty foreign keys because each level of one hierarchy was split into its own dimension — the classic sign of normalising in the wrong place."
 tags: [centipede, dimension, snowflake, outrigger, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,15 +12,15 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Centipede fact table và dimension-to-dimension join
+# Centipede fact tables and dimension-to-dimension joins
 
-> **Chốt:** fact có 20–30 khoá ngoại gần như luôn là **một cây phân cấp bị chẻ thành
-> nhiều dimension**. Ngày, tuần, tháng, quý, năm không phải năm dimension — chúng là năm
-> **cột của một** dimension.
+> **Takeaway:** a fact with 20–30 foreign keys is almost always **one hierarchy split into
+> several dimensions**. Day, week, month, quarter and year aren't five dimensions — they're five
+> **columns of one** dimension.
 
-## Nhận ra một centipede
+## Recognising a centipede
 
-Kimball gọi là *centipede* — con rết — vì sơ đồ có hàng chục chân toả ra từ fact.
+Kimball calls it a *centipede* because the diagram has dozens of legs radiating from the fact.
 
 ```sql
 CREATE TABLE fct_centipede AS
@@ -39,10 +38,10 @@ SELECT 20260110 AS ngay_key, 202602 AS tuan_key, 202601 AS thang_key,
 └───────────────┘
 ```
 
-Tám khoá ngoại cho một fact bán hàng đơn giản. Mà thực chất chỉ có **hai chiều**: thời
-gian và sản phẩm.
+Eight foreign keys for a simple sales fact. When in reality there are only **two dimensions**: time
+and product.
 
-Báo cáo đơn giản nhất phải join ba bảng:
+Even the simplest report has to join three tables:
 
 ```sql
 SELECT t.thang_ten, n.nganh_ten, sum(f.doanh_thu) AS doanh_thu
@@ -60,7 +59,7 @@ GROUP BY 1,2;
 └──────────────┴───────────┴───────────┘
 ```
 
-### Phép thử: cột này có suy ra được từ cột kia không?
+### The test: can this column be derived from that one?
 
 ```sql
 SELECT ngay,
@@ -79,13 +78,13 @@ FROM dim_ngay;
 └────────────┴─────────────┴──────────────┴────────────┴────────────┘
 ```
 
-Bốn khoá kia **suy ra được từ `ngay_key`**. Chúng không mang thông tin mới — chúng chỉ
-làm fact rộng ra và bắt mọi query join thêm.
+The other four keys are **derivable from `ngay_key`**. They carry no new information — they just
+widen the fact and force every query into extra joins.
 
-> **Phép thử một câu:** nếu khoá B luôn xác định được từ khoá A, thì B là **thuộc tính
-> của dimension A**, không phải một dimension riêng.
+> **The one-sentence test:** if key B is always determinable from key A, then B is **an attribute
+> of dimension A**, not a dimension of its own.
 
-## Cách sửa — gộp về một dimension cho mỗi chiều thật
+## The fix — one dimension per genuine dimension
 
 ```sql
 CREATE TABLE dim_ngay_day_du AS
@@ -116,37 +115,37 @@ GROUP BY 1,2;
 └──────────────┴───────────┴───────────┘
 ```
 
-Cùng kết quả, **hai khoá ngoại thay vì tám**, hai join thay vì ba, và fact hẹp hơn ở bảng
-lớn nhất trong kho.
+The same result, **two foreign keys instead of eight**, two joins instead of three, and a narrower fact in the
+warehouse's largest table.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Khoá ngoại trong fact | 8 | **2** |
-| Bảng cho chiều thời gian | 5 | **1** |
-| Bảng cho chiều sản phẩm | 3 | **1** |
-| Drill từ tháng xuống ngày | Join thêm bảng | Thêm một cột vào `GROUP BY` |
+| Foreign keys in the fact | 8 | **2** |
+| Tables for the time dimension | 5 | **1** |
+| Tables for the product dimension | 3 | **1** |
+| Drilling from month to day | Join another table | Add a column to the `GROUP BY` |
 
-Điểm cuối là lợi ích lớn nhất mà người ta hay quên: gộp lại thì **drill down thành miễn
-phí** — xem [thiết kế thuộc tính dimension](dimension-attribute-design.md).
+The last point is the biggest benefit people forget: once combined, **drilling down becomes
+free** — see [designing dimension attributes](dimension-attribute-design.md).
 
-## Bao nhiêu khoá ngoại là quá nhiều?
+## How many foreign keys is too many?
 
-Kimball đưa ra một con số thực dụng: **hầu hết fact table nên có dưới 20 khoá ngoại**,
-và phần lớn nằm trong khoảng 5–15. Vượt ngưỡng thì kiểm ba thứ theo thứ tự:
+Kimball gives a pragmatic number: **most fact tables should have fewer than 20 foreign keys**,
+and most sit in the 5–15 range. Past that, check three things in order:
 
-1. **Có cây phân cấp bị chẻ không?** (ngày/tuần/tháng, sản phẩm/nhóm/ngành, quận/tỉnh/vùng)
-   → gộp lại. Đây là nguyên nhân của phần lớn ca.
-2. **Có nhóm cờ cardinality thấp không?** → gom thành [junk dimension](junk-dimension.md).
-3. **Có nhiều khoá thật sự độc lập không?** → có thể grain đang trộn nhiều quy trình
-   nghiệp vụ vào một bảng; tách fact.
+1. **Is a hierarchy being split?** (day/week/month, product/group/line, district/province/region)
+   → combine them. This is the cause of most cases.
+2. **Is there a cluster of low-cardinality flags?** → gather them into a [junk dimension](junk-dimension.md).
+3. **Are there many genuinely independent keys?** → the grain may be mixing several business
+   processes into one table; split the fact.
 
-Ba câu này giải quyết gần hết mọi centipede.
+Those three questions resolve nearly every centipede.
 
-## Dimension-to-dimension join
+## Dimension-to-dimension joins
 
-Khi gộp, thỉnh thoảng gặp trường hợp một dimension **trỏ tới dimension khác** thay vì dẹt
-hết vào — Kimball gọi là *dimension-to-dimension join*, và khi bảng được trỏ tới nhỏ thì
-gọi là *outrigger*.
+When combining, you occasionally meet a case where one dimension **points at another** rather than being flattened
+all the way — Kimball calls it a *dimension-to-dimension join*, and when the pointed-at table is small it's
+called an *outrigger*.
 
 ```sql
 CREATE TABLE dim_khu_vuc AS
@@ -172,7 +171,7 @@ GROUP BY 1 ORDER BY 2 DESC;
 └─────────┴───────────┘
 ```
 
-Chạy đúng. Nhưng có một cái bẫy về **thời gian** mà cấu trúc này giấu đi:
+It runs correctly. But there's a **temporal** trap this structure hides:
 
 ```sql
 SELECT count(*) AS so_dong_fact_bi_anh_huong
@@ -187,53 +186,53 @@ FROM fct_ban2 f JOIN dim_khach k USING (khach_sk) WHERE k.kv_key = 1;
 └───────────────────────────┘
 ```
 
-Nếu `dim_khu_vuc` sửa nhãn `'Mien Bac'` thành `'Khu vuc 1'`, **toàn bộ lịch sử báo cáo
-đổi theo** — dù `dim_khach` có [SCD](scd.md) Type 2 đầy đủ. Type 2 chỉ bảo vệ những cột
-**nằm trong chính nó**; cột ở bảng outrigger nằm ngoài vùng bảo vệ đó.
+If `dim_khu_vuc` changes the label `'Mien Bac'` to `'Khu vuc 1'`, **all the reporting history changes
+with it** — even with full [SCD](scd.md) Type 2 on `dim_khach`. Type 2 only protects the columns
+**inside itself**; a column in an outrigger table sits outside that protection.
 
-Đây là biến thể của [báo cáo quá khứ tự đổi số](../case-studies/bao-cao-qua-khu-tu-doi-so.md),
-và nó khó thấy hơn vì mô hình *trông như* đã làm đúng Type 2.
+This is a variant of [historical reports changing their own numbers](../case-studies/bao-cao-qua-khu-tu-doi-so.md),
+and it's harder to see because the model *looks like* it did Type 2 properly.
 
-### Khi nào chấp nhận outrigger, khi nào dẹt
+### When to accept an outrigger, when to flatten
 
-| Chấp nhận outrigger | Nên dẹt vào dimension |
+| Accept an outrigger | Flatten into the dimension |
 |---|---|
-| Bảng được trỏ tới **hầu như không đổi** (danh mục hành chính, mã quốc gia) | Thuộc tính thay đổi và cần as-was |
-| Nhiều dimension dùng chung nó → thành conformed | Chỉ một dimension dùng |
-| Nó có cây phân cấp riêng, sâu | Chỉ vài cột |
-| Cập nhật tập trung là mục tiêu | Báo cáo lịch sử là mục tiêu |
+| The pointed-at table **almost never changes** (administrative catalogues, country codes) | The attribute changes and you need as-was |
+| Several dimensions share it → it becomes conformed | Only one dimension uses it |
+| It has its own deep hierarchy | Only a few columns |
+| Centralised updating is the goal | Historical reporting is the goal |
 
-Mặc định của Kimball vẫn là **dẹt**. Outrigger là ngoại lệ có lý do, không phải mặc định
-— cùng lập luận với [snowflake](../reference/star-snowflake-obt.md).
+Kimball's default remains **flatten**. An outrigger is a justified exception, not a default
+— the same argument as for [snowflake](../reference/star-snowflake-obt.md).
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Fact hẹp, ít join, query nhanh | Dimension rộng, lặp dữ liệu |
-| Drill down thành thêm cột `GROUP BY` | Sửa nhãn phải sửa nhiều dòng |
-| Sơ đồ đọc được | Mất tính "chuẩn hoá" mà DBA quen |
-| Outrigger: cập nhật một chỗ | Outrigger: phá as-was của Type 2 |
+| A narrow fact, fewer joins, faster queries | A wide dimension with repeated data |
+| Drilling down becomes another `GROUP BY` column | Changing a label means changing many rows |
+| A readable diagram | The "normalisation" DBAs are used to |
+| An outrigger: update in one place | An outrigger: it breaks Type 2's as-was |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Mỗi cấp thời gian một dimension | Fact 8+ khoá ngoại, query nào cũng join 3–5 bảng — [case study](../case-studies/fact-hai-chuc-khoa-ngoai.md) |
-| Mỗi cấp sản phẩm một dimension | Không drill được nếu thiếu một join |
-| Đưa cột hay đổi vào outrigger | Type 2 mất tác dụng, lịch sử đổi số |
-| Chuẩn hoá fact như chuẩn hoá OLTP | Đúng lý thuyết CSDL, sai mục đích phân tích |
-| Coi số khoá ngoại lớn là "mô hình giàu chiều" | Thường chỉ là một cây bị chẻ nhỏ |
+| One dimension per time level | A fact with 8+ foreign keys, and every query joining 3–5 tables — [case study](../case-studies/fact-hai-chuc-khoa-ngoai.md) |
+| One dimension per product level | You can't drill if a join is missing |
+| Putting a frequently changing column in an outrigger | Type 2 loses its effect and history changes its numbers |
+| Normalising a fact the way you'd normalise OLTP | Correct database theory, the wrong analytical purpose |
+| Treating a large foreign-key count as a "richly dimensioned model" | It's usually just one hierarchy chopped up |
 
 ## Related Topics
 
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — outrigger là snowflake cục bộ
-- [Junk dimension](junk-dimension.md) — gom cờ cardinality thấp, giảm số khoá ngoại
-- [Date dimension](../reference/date-dimension.md) — một bảng cho mọi cấp thời gian
-- [Thiết kế thuộc tính dimension](dimension-attribute-design.md) — drill down chỉ là thêm cột
-- [CS: fact hai chục khoá ngoại](../case-studies/fact-hai-chuc-khoa-ngoai.md)
+- [Star, snowflake, OBT](../reference/star-snowflake-obt.md) — an outrigger is a local snowflake
+- [Junk dimensions](junk-dimension.md) — gathering low-cardinality flags to reduce the foreign-key count
+- [The date dimension](../reference/date-dimension.md) — one table for every time level
+- [Designing dimension attributes](dimension-attribute-design.md) — drilling down is just adding a column
+- [CS: a fact with twenty foreign keys](../case-studies/fact-hai-chuc-khoa-ngoai.md)
 
 ## References
 
 - Kimball Group — [Centipede Fact Tables / Dimension-to-Dimension Table Joins / Outrigger Dimensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 3 và 6
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 3 and 6

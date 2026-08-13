@@ -1,8 +1,7 @@
 ---
-title: Real-time fact table — phân vùng nóng
-i18n_status: untranslated
+title: Real-time fact tables — the hot partition
 sidebar_position: 22
-description: "Ngày hôm nay chưa đầy nhưng vẫn được đếm là một ngày trọn vẹn — mọi chỉ số trung bình nhảy suốt ngày rồi ổn định lúc nửa đêm."
+description: "Today isn't complete yet but still counts as a whole day — so every average metric jumps all day and settles at midnight."
 tags: [real-time, streaming, partition, fact, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,13 +12,13 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Real-time fact table — phân vùng nóng
+# Real-time fact tables — the hot partition
 
-> **Chốt:** dữ liệu thời gian thực không phá mô hình chiều, nó phá một **giả định ngầm**
-> mà mọi báo cáo đều dựa vào: *"mỗi ngày trong bảng là một ngày đã đầy"*. Ngày hôm nay
-> chưa đầy, nhưng mẫu số vẫn đếm nó là 1.
+> **Takeaway:** real-time data doesn't break the dimensional model, it breaks an **implicit assumption**
+> every report relies on: *"each day in the table is a complete day"*. Today
+> isn't complete, but the denominator still counts it as 1.
 
-## Vấn đề
+## The problem
 
 ```sql
 CREATE TABLE fct_ban_chot AS       -- lich su, da chot
@@ -34,7 +33,7 @@ SELECT * FROM (VALUES
 ) t(ngay, gio, doanh_thu);
 ```
 
-Dashboard *"doanh thu trung bình mỗi ngày"*, chạy lúc **11h**:
+The *"average daily revenue"* dashboard, run at **11:00**:
 
 ```text
 ┌─────────┬────────┬─────────────┐
@@ -44,7 +43,7 @@ Dashboard *"doanh thu trung bình mỗi ngày"*, chạy lúc **11h**:
 └─────────┴────────┴─────────────┘
 ```
 
-Cùng dashboard, cùng query, chạy lúc **21h**:
+The same dashboard, the same query, run at **21:00**:
 
 ```text
 ┌─────────┬────────┬─────────────┐
@@ -54,10 +53,10 @@ Cùng dashboard, cùng query, chạy lúc **21h**:
 └─────────┴────────┴─────────────┘
 ```
 
-**862,5 → 1.050,0.** Không ai sửa gì. Người xem lúc sáng và người xem lúc tối tranh luận
-về hai con số khác nhau của cùng một chỉ số.
+**862.5 → 1,050.0.** Nobody changed anything. The morning viewer and the evening viewer argue
+about two different numbers for the same metric.
 
-Nguyên nhân nhìn thấy ngay khi tách theo ngày:
+The cause is visible the moment you break it down by day:
 
 ```text
 ┌────────────┬───────────┬────────────┐
@@ -70,16 +69,16 @@ Nguyên nhân nhìn thấy ngay khi tách theo ngày:
 └────────────┴───────────┴────────────┘
 ```
 
-Ngày 04/08 mới đầy một phần, nhưng mẫu số `count(DISTINCT ngay)` vẫn đếm nó là **1 ngày
-trọn vẹn**. Mọi chỉ số dạng "trung bình mỗi ngày", "tỷ lệ trên tổng", "so với hôm qua"
-đều bị kéo lệch bởi ngày dở dang này — và mức lệch **thay đổi theo giờ**.
+4 August is only partly filled, but the `count(DISTINCT ngay)` denominator still counts it as **1 complete
+day**. Every "average per day", "share of total" and "versus yesterday" metric
+is skewed by that partial day — and the amount of skew **changes by the hour**.
 
-## Cách làm
+## The approach
 
-### 1. Đánh dấu phân vùng nóng
+### 1. Mark the hot partition
 
-Kimball tách **hot partition** — phần dữ liệu chưa chốt — khỏi phần lịch sử, cả về vật lý
-lẫn về ngữ nghĩa. Cột `da_chot` phải đi kèm dữ liệu tới tận lớp báo cáo:
+Kimball separates the **hot partition** — the not-yet-closed data — from the historical part, both physically
+and semantically. The `da_chot` column must travel with the data all the way to the reporting layer:
 
 ```sql
 WITH tat_ca AS (
@@ -102,13 +101,13 @@ FROM tat_ca;
 └─────────────────┴──────────────┴─────────────────────┴──────────────────┘
 ```
 
-**1.033,3 không đổi theo giờ.** Số hôm nay vẫn hiện, nhưng ở một cột riêng có nhãn *tạm
-tính* — người xem biết mình đang nhìn cái gì.
+**1,033.3 doesn't change with the hour.** Today's figure still appears, but in its own column labelled
+*provisional* — the viewer knows what they're looking at.
 
-### 2. So sánh cùng khung giờ, không so cả ngày
+### 2. Compare the same time window, not the whole day
 
-Muốn biết hôm nay tốt hay xấu thì so *tới cùng thời điểm* của các ngày trước, không so
-tổng ngày:
+To know whether today is good or bad, compare it *up to the same moment* on previous days, not against
+whole-day totals:
 
 ```sql
 SELECT 'hom nay den 11h' AS moc,
@@ -127,83 +126,83 @@ SELECT 'hom nay den 21h',
 └─────────────────┴───────────┘
 ```
 
-Điều kiện để làm được: fact phải có **giờ**, không chỉ ngày. Đó là lý do real-time fact
-cần một [dimension giờ trong ngày](../reference/date-dimension.md) tách riêng khỏi
+The precondition: the fact must carry **the time**, not just the date. That's why a real-time fact
+needs a [time-of-day dimension](../reference/date-dimension.md) separate from
 `dim_ngay`.
 
-### 3. Mốc chốt sổ phải là dữ liệu, không phải quy ước
+### 3. The closing mark must be data, not convention
 
-Ngày được coi là "chốt" khi nào? Nửa đêm theo múi giờ nào? Sau khi job nạp chạy xong hay
-sau khi kế toán duyệt? Câu trả lời phải nằm trong một bảng:
+When is a day considered "closed"? Midnight in which timezone? After the load job finishes or
+after accounting approves it? The answer must live in a table:
 
 ```text
 dim_ky_bao_cao(ngay, da_chot, thoi_diem_chot, ai_chot)
 ```
 
-Không có bảng đó thì mỗi báo cáo tự định nghĩa "hôm nay" một kiểu, và chúng lệch nhau vào
-đúng lúc giao ca — cùng bệnh với
-[định nghĩa quý nằm trong query](../case-studies/bao-cao-quy-tai-chinh-lech.md).
+Without that table, each report defines "today" its own way, and they diverge at exactly the
+shift change — the same illness as
+[the quarter definition living inside a query](../case-studies/bao-cao-quy-tai-chinh-lech.md).
 
-## Đánh đổi kiến trúc
+## The architectural trade-off
 
-| Cách | Được | Mất |
+| Approach | You get | You lose |
 |---|---|---|
-| Chỉ báo cáo tới ngày đã chốt | Số ổn định tuyệt đối | Không có gì cho hôm nay |
-| Phân vùng nóng riêng, gắn nhãn | Có cả hai, người xem biết đang nhìn gì | Query phải lọc đúng; hai đường nạp |
-| Trộn thẳng vào fact chính | Đơn giản nhất | Mọi chỉ số nhảy theo giờ |
-| Hai kho riêng (streaming + batch) | Mỗi bên tối ưu cho việc của mình | Hai định nghĩa chỉ số — phá [conformed fact](conformed-facts.md) |
+| Only report up to the closed day | Absolutely stable numbers | Nothing at all for today |
+| A separate labelled hot partition | Both, with the viewer knowing which is which | Queries must filter correctly; two load paths |
+| Mixing it straight into the main fact | The simplest | Every metric jumps by the hour |
+| Two separate stores (streaming + batch) | Each optimised for its own job | Two metric definitions — destroying [conformed facts](conformed-facts.md) |
 
-Dòng cuối là cái bẫy kiến trúc đắt nhất: dựng một hệ thống thời gian thực tách hẳn khỏi
-kho, và sáu tháng sau phát hiện *"doanh thu real-time"* không bao giờ khớp *"doanh thu
-kho"*, vì hai bên xử lý đơn huỷ khác nhau.
+The last row is the most expensive architectural trap: building a real-time system entirely separate from the
+warehouse, and discovering six months later that *"real-time revenue"* never matches *"warehouse
+revenue"*, because the two sides handle cancelled orders differently.
 
-Nếu buộc phải có hai đường, thì phải có **một query đối soát chạy hằng ngày** so hai bên
-sau khi ngày đã chốt — giống query đối soát của
-[bảng tổng hợp](aggregate-fact-table.md).
+If you're forced to have two paths, you must have **a daily reconciliation query** comparing the two sides
+after the day has closed — like the reconciliation query for
+[an aggregate table](aggregate-fact-table.md).
 
-## Quan hệ với dữ liệu về muộn
+## The relationship to late-arriving data
 
-Phân vùng nóng chỉ giải quyết *"dữ liệu chưa tới đủ trong ngày hôm nay"*. Nó **không**
-giải quyết *"dữ liệu của tuần trước mới về"* — đó là [dữ liệu về muộn](late-arriving.md),
-và nó làm cả những ngày đã chốt cũng đổi số.
+A hot partition only solves *"today's data hasn't all arrived"*. It does **not**
+solve *"last week's data just arrived"* — that's [late-arriving data](late-arriving.md),
+and it makes even closed days change their numbers.
 
-Hai vấn đề, hai cách xử lý, thường xuất hiện cùng nhau:
+Two problems, two handlings, usually appearing together:
 
-| | Phân vùng nóng | Dữ liệu về muộn |
+| | The hot partition | Late-arriving data |
 |---|---|---|
-| Ảnh hưởng | Ngày hôm nay | Ngày đã chốt trong quá khứ |
-| Xử lý | Gắn nhãn `da_chot` | Nạp lại theo cửa sổ + audit |
-| Người dùng thấy | "Số tạm tính" | Báo cáo cũ đổi số |
+| Affects | Today | Closed days in the past |
+| Handling | Labelling `da_chot` | Reloading a window + auditing |
+| What users see | "A provisional figure" | An old report changing its numbers |
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Chỉ số không nhảy theo giờ | Query phải phân biệt hai vùng |
-| Vẫn có số hôm nay, có nhãn rõ | Hai đường nạp phải giữ đồng bộ |
-| So cùng khung giờ chính xác | Fact phải lưu tới giờ, không chỉ ngày |
-| Mốc chốt sổ là dữ liệu | Thêm một bảng phải duy trì |
+| Metrics that don't jump by the hour | Queries must distinguish the two regions |
+| Today's figure still available, clearly labelled | Two load paths to keep in sync |
+| Accurate same-time-window comparison | The fact must store time, not just the date |
+| The closing mark as data | Another table to maintain |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Trộn dữ liệu chưa chốt vào fact chính | Trung bình nhảy suốt ngày — [case study](../case-studies/so-hom-nay-nhay-suot-ngay.md) |
-| `count(DISTINCT ngay)` làm mẫu số | Ngày dở dang tính bằng ngày đầy |
-| So tổng hôm nay với tổng hôm qua | Luôn thấy "giảm" cho tới cuối ngày |
-| Fact chỉ có ngày, không có giờ | Không so được cùng khung giờ |
-| Hai hệ thống, hai định nghĩa chỉ số | Số real-time không bao giờ khớp số kho |
-| Không có mốc "đã chốt" trong dữ liệu | Mỗi báo cáo tự hiểu "hôm nay" một kiểu |
+| Mixing not-yet-closed data into the main fact | The average jumps all day — [case study](../case-studies/so-hom-nay-nhay-suot-ngay.md) |
+| Using `count(DISTINCT ngay)` as the denominator | A partial day counted as a full one |
+| Comparing today's total with yesterday's total | It always looks "down" until the end of the day |
+| A fact with only dates and no times | You can't compare the same time window |
+| Two systems with two metric definitions | The real-time number never matches the warehouse's |
+| No "closed" mark in the data | Each report interprets "today" its own way |
 
 ## Related Topics
 
-- [Dữ liệu về muộn](late-arriving.md) — vấn đề song song, ảnh hưởng ngày đã chốt
-- [Conformed facts](conformed-facts.md) — hai hệ thống thì định nghĩa chỉ số phải conform
-- [Aggregate fact table](aggregate-fact-table.md) — query đối soát giữa hai lớp
-- [Date dimension](../reference/date-dimension.md) — dimension giờ trong ngày tách riêng
-- [CS: số hôm nay nhảy suốt ngày](../case-studies/so-hom-nay-nhay-suot-ngay.md)
+- [Late-arriving data](late-arriving.md) — the parallel problem, affecting closed days
+- [Conformed facts](conformed-facts.md) — with two systems, the metric definitions must conform
+- [Aggregate fact tables](aggregate-fact-table.md) — the reconciliation query between two layers
+- [The date dimension](../reference/date-dimension.md) — a separate time-of-day dimension
+- [CS: today's figure jumping all day](../case-studies/so-hom-nay-nhay-suot-ngay.md)
 
 ## References
 
 - Kimball Group — [Real-Time Fact Tables](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 20
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 20
