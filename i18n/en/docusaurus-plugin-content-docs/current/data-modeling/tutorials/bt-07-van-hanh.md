@@ -1,8 +1,7 @@
 ---
-title: "Bài tập bộ 7 — Vận hành: date dimension, audit, real-time"
-i18n_status: untranslated
+title: "Exercise set 7 — Operations: the date dimension, audit, real-time"
 sidebar_position: 16
-description: "14 bài tự viết: dòng -1 của dim_ngay, nạp trùng phồng 45,5% và phải xoá 10 dòng để diệt 5, ngày hôm nay chưa đầy kéo trung bình xuống 4,4%."
+description: "14 exercises to write yourself: dim_ngay's -1 row, a duplicate load inflating 45.5% and forcing you to delete 10 rows to kill 5, today's incomplete day dragging the average down 4.4%."
 tags: [tutorial, bai-tap, date-dimension, audit-dimension, real-time-fact, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,39 +12,39 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bài tập bộ 7 — Vận hành
+# Exercise set 7 — Operations
 
-> **Chốt:** sáu bộ trước lo **mô hình đúng**. Bộ này lo **mô hình đúng vẫn cho số sai khi
-> chạy thật** — vì lịch là dữ liệu chứ không phải hàm, vì job chạy hai lần, và vì hôm nay
-> chưa hết mà đã bị đếm là một ngày đủ.
+> **Takeaway:** the six earlier sets deal with **the model being right**. This one deals with **a right
+> model still producing wrong numbers in production** — because a calendar is data rather than a function, because a job
+> runs twice, and because today isn't over yet and is already counted as a complete day.
 
-## Kỹ thuật được luyện trong bộ này
+## Techniques practised in this set
 
-| # | Kỹ thuật | Tài liệu gốc | Số bài |
+| # | Technique | Source document | Exercises |
 |---|---|---|---|
-| 1 | Date dimension | [Date dimension](../reference/date-dimension.md) | 5 |
-| 2 | Audit dimension | [Audit dimension](../skills/audit-dimension.md) | 5 |
-| 3 | Real-time fact table | [Real-time fact table](../skills/real-time-fact.md) | 4 |
+| 1 | The date dimension | [The date dimension](../reference/date-dimension.md) | 5 |
+| 2 | Audit dimensions | [Audit dimensions](../skills/audit-dimension.md) | 5 |
+| 3 | Real-time fact tables | [Real-time fact tables](../skills/real-time-fact.md) | 4 |
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Bộ này dùng `dim_ngay` (dựng ở [lab 1](star-schema-duckdb.md)), `kho_hang` (**có một dòng
-lệch lan sang ngày sau**) và `su_kien_web` (**ngày 05/07 cắt lúc 10:00**). Xem
-[phụ lục seed](bt-00-seed.md).
+This set uses `dim_ngay` (built in [lab 1](star-schema-duckdb.md)), `kho_hang` (**with one divergent
+row spreading into the following day**) and `su_kien_web` (**05/07 cut off at 10:00**). See
+[the seed appendix](bt-00-seed.md).
 
 ---
 
-## Bộ A — Date dimension
+## Group A — The date dimension
 
-### Bài A.1 — Dòng `-1` trong `dim_ngay`
+### Exercise A.1 — The `-1` row in `dim_ngay`
 
-**Đề:** tìm dòng đặc biệt trong `dim_ngay` và giải thích nó tồn tại để làm gì.
+**The task:** find the special row in `dim_ngay` and explain what it exists for.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬──────┬───────┬──────────────────┐
@@ -56,17 +55,17 @@ lệch lan sang ngày sau**) và `su_kien_web` (**ngày 05/07 cắt lúc 10:00**
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select * from dim_ngay where thang is null;
 ```
 
-Đây là **unknown member**, và nó phải tồn tại từ ngày đầu tiên của `dim_ngay`. Lý do:
-`don_hang` có 2 đơn chưa giao (`ngay_giao` rỗng), và fact **không được phép** có khoá
-ngoại `NULL`.
+This is the **unknown member**, and it must exist from `dim_ngay`'s very first day. The reason:
+`don_hang` has 2 undelivered orders (`ngay_giao` empty), and a fact **must never** have a `NULL`
+foreign key.
 
-Chuỗi hệ quả nếu không có nó:
+The chain of consequences without it:
 
 ```text
 ngay_giao_key = NULL
@@ -75,35 +74,35 @@ ngay_giao_key = NULL
   → "don dang giao" bien mat khoi moi bao cao
 ```
 
-Một chi tiết dễ sai: các cột **mô tả** của dòng `-1` nên là chữ, không phải `NULL`:
+One easily-missed detail: the `-1` row's **descriptive** columns should be text, not `NULL`:
 
 ```sql
--- tot hon
+-- better
 insert into dim_ngay values (-1, null, null, null, 'Chua giao', 'Khong xac dinh');
 ```
 
-Cột `ngay` để `NULL` là đúng (không có ngày nào cả), nhưng cột hiển thị nên có chữ để báo
-cáo hiện *"Chưa giao"* thay vì ô trống. Người đọc phân biệt được "chưa giao" với "lỗi dữ
-liệu".
+Leaving the `ngay` column `NULL` is right (there is no date at all), but the display columns should carry text so the
+report shows *"Chua giao"* instead of a blank cell. The reader can then tell "not yet delivered" from "a data
+bug".
 
-Nhiều kho dữ liệu dùng nhiều dòng đặc biệt, mỗi dòng một lý do:
+Many warehouses use several special rows, one per reason:
 
-| Khoá | Nghĩa |
+| Key | Meaning |
 |---|---|
-| `-1` | Chưa xảy ra (chưa giao, chưa nhận) |
-| `-2` | Không áp dụng (đơn huỷ thì không có ngày giao) |
-| `-3` | Lỗi dữ liệu nguồn (ngày không parse được) |
+| `-1` | Hasn't happened (not delivered, not received) |
+| `-2` | Not applicable (a cancelled order has no delivery date) |
+| `-3` | A source data bug (an unparseable date) |
 
-Ba khoá thay vì một cho phép **đếm riêng từng loại**, và `-3` tăng đột biến là tín hiệu
-nguồn đang hỏng.
+Three keys instead of one lets you **count each kind separately**, and a spike in `-3` is a signal that
+the source is breaking.
 
 </details>
 
-### Bài A.2 — Ngày làm việc là dữ liệu, không phải hàm
+### Exercise A.2 — Working days are data, not a function
 
-**Đề:** đếm số ngày, ngày làm việc và ngày nghỉ theo tháng trong `dim_ngay`.
+**The task:** count days, working days and non-working days per month in `dim_ngay`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────┬─────────┬───────────────┬───────────┐
@@ -115,10 +114,10 @@ nguồn đang hỏng.
 └───────┴─────────┴───────────────┴───────────┘
 ```
 
-Dòng `NULL` chính là dòng `-1` của bài A.1 — nhớ loại nó khi tính tổng.
+The `NULL` row is exercise A.1's `-1` row — remember to exclude it when totalling.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select thang, count(*) so_ngay,
@@ -127,19 +126,19 @@ select thang, count(*) so_ngay,
 from dim_ngay group by 1 order by 1;
 ```
 
-Tháng 7 có **23** ngày làm việc, tháng 8 có **21**. Không hàm SQL nào tính ra được hai
-con số đó, vì chúng phụ thuộc:
+July has **23** working days, August **21**. No SQL function can produce those two
+numbers, because they depend on:
 
-- Cuối tuần — suy được từ ngày.
-- **Ngày lễ quốc gia** — không suy được, khác nhau theo nước.
-- **Ngày nghỉ riêng của công ty** — càng không suy được.
-- **Lịch nghỉ bù** — quy tắc phức tạp, đổi theo năm.
+- Weekends — derivable from the date.
+- **National public holidays** — not derivable, differing by country.
+- **A company's own closure days** — even less derivable.
+- **Substitute-day rules** — complicated, changing year to year.
 
-Đó là toàn bộ lý do `dim_ngay` phải là **bảng**. Viết `dayofweek(ngay) not in (0,6)` là
-đúng cho cuối tuần và sai cho mọi thứ còn lại — và cái sai đó **không lộ ra** cho tới khi
-ai đó tính SLA giao hàng qua dịp lễ.
+That's the entire reason `dim_ngay` must be a **table**. Writing `dayofweek(ngay) not in (0,6)` is
+right for weekends and wrong for everything else — and that wrongness **doesn't surface** until
+somebody computes a delivery SLA across a holiday.
 
-Bảng `dim_ngay` thật nên có 20–40 cột, tất cả đều là **dữ liệu tra sẵn**:
+A real `dim_ngay` should have 20–40 columns, all of them **precomputed lookup data**:
 
 ```text
 ngay_key, ngay, thu, tuan_trong_nam, thang, ten_thang, quy,
@@ -148,20 +147,20 @@ ten_ngay_le, ngay_lam_viec_thu_may_trong_thang, la_cuoi_thang,
 la_cuoi_quy, ngay_truoc_do_cung_ky, ...
 ```
 
-Mỗi cột ở đây là một `case when` **không** phải viết lại trong hàng trăm truy vấn. Đó là
-dimension duy nhất mà "càng nhiều cột càng tốt" gần như luôn đúng — nó chỉ có vài nghìn
-dòng.
+Every column here is a `case when` that **doesn't** have to be rewritten in hundreds of queries. It's the one
+dimension where "more columns is better" is nearly always true — it only has a few thousand
+rows.
 
-**Dựng trước 5–10 năm**, đừng sinh theo nhu cầu. Fact có ngày nằm ngoài phạm vi
-`dim_ngay` là rơi vào `-1`, và không ai để ý cho tới khi sang năm mới.
+**Build 5–10 years ahead**, don't generate it on demand. A fact with a date outside `dim_ngay`'s
+range falls into `-1`, and nobody notices until the new year arrives.
 
 </details>
 
-### Bài A.3 — Ngày không có giao dịch vẫn phải xuất hiện
+### Exercise A.3 — A day with no transactions must still appear
 
-**Đề:** liệt kê doanh thu từ 01/07 đến 08/07, **kể cả** ngày không bán được gì.
+**The task:** list revenue from 01/07 to 08/07, **including** days with no sales.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬───────────┐
@@ -178,10 +177,10 @@ dòng.
 └────────────┴───────────┘
 ```
 
-**Tám dòng, không phải năm.**
+**Eight rows, not five.**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select d.ngay, coalesce(sum(ct.so_luong*ct.don_gia), 0) doanh_thu
@@ -191,24 +190,24 @@ where d.ngay between date '2026-07-01' and date '2026-07-08'
 group by 1 order by 1;
 ```
 
-`dim_ngay` **đi trước** trong `left join` — đó là điểm mấu chốt. Query bắt đầu từ fact sẽ
-chỉ ra 5 dòng, và ba ngày không bán được gì **biến mất khỏi biểu đồ**.
+`dim_ngay` comes **first** in the `left join` — that's the crux. A query starting from the fact yields
+only 5 rows, and the three days with no sales **vanish from the chart**.
 
-Hậu quả cụ thể, không phải lý thuyết:
+The concrete consequences, not theory:
 
-| Phép tính | Từ 5 dòng | Từ 8 dòng | Đúng |
+| The calculation | From 5 rows | From 8 rows | Correct |
 |---|---|---|---|
-| Doanh thu trung bình/ngày | 2.043.000 | 1.276.875 | tuỳ câu hỏi |
-| Biểu đồ đường | **liền mạch, che mất 3 ngày trống** | có 3 điểm 0 rõ ràng | 8 dòng |
-| "Có ngày nào không bán được gì?" | không trả lời được | trả lời được | 8 dòng |
+| Average revenue/day | 2,043,000 | 1,276,875 | depends on the question |
+| A line chart | **continuous, hiding the 3 empty days** | 3 clear zero points | 8 rows |
+| "Was there a day with no sales?" | unanswerable | answerable | 8 rows |
 
-Biểu đồ đường là chỗ nguy hiểm nhất: nối 05/07 thẳng sang 09/07 trông y hệt một đường
-giảm dần bình thường, và **không có gì trên hình chỉ ra ba ngày đã bị bỏ qua**.
+The line chart is the most dangerous place: connecting 05/07 straight to 09/07 looks exactly like an ordinary
+declining line, and **nothing on the picture indicates three days were skipped**.
 
-Đây là ứng dụng phổ biến nhất của `dim_ngay`, và cũng là lý do nó phải phủ **liên tục**
-mọi ngày — không được có lỗ hổng.
+This is `dim_ngay`'s most common application, and also why it must cover **every** day
+continuously — with no gaps.
 
-Với các chiều khác, kỹ thuật tương đương là `cross join` hai dimension rồi `left join`
+For other dimensions, the equivalent technique is `cross join`ing two dimensions then `left join`ing the
 fact:
 
 ```sql
@@ -218,24 +217,24 @@ cross join (select distinct nhom from hang_hoa) h
 left join ... group by 1,2;
 ```
 
-Đó là cách hiện đủ 9 tổ hợp thay vì 5 như
-[bộ 1 bài D.1](bt-01-nen-tang.md#bài-d1--cùng-một-câu-hỏi-ba-cách-bố-trí).
+That's how you show all 9 combinations instead of 5, as in
+[set 1, exercise D.1](bt-01-nen-tang.md#exercise-d1--one-question-three-layouts).
 
 </details>
 
-### Bài A.4 — Quý tài chính không phải quý lịch
+### Exercise A.4 — A fiscal quarter isn't a calendar quarter
 
-**Đề:** không có SQL bắt buộc. Công ty có năm tài chính bắt đầu từ **tháng 4**. Vì sao
-`quarter(ngay)` là sai, và sửa thế nào?
+**The task:** no SQL required. The company's fiscal year starts in **April**. Why is
+`quarter(ngay)` wrong, and how do you fix it?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- SAI: quy lich
-select quarter(ngay) quy from dim_ngay;    -- thang 7 -> quy 3
+-- WRONG: the calendar quarter
+select quarter(ngay) quy from dim_ngay;    -- July -> quarter 3
 
--- DUNG: cot tra san trong dim_ngay
+-- RIGHT: precomputed columns in dim_ngay
 alter table dim_ngay add column quy_tai_chinh int;
 alter table dim_ngay add column nam_tai_chinh int;
 update dim_ngay set
@@ -244,55 +243,54 @@ update dim_ngay set
 where ngay is not null;
 ```
 
-Với năm tài chính bắt đầu tháng 4: tháng 7 thuộc **quý 2** tài chính, không phải quý 3.
-Chênh **một quý** trên mọi báo cáo tài chính.
+With a fiscal year starting in April, July belongs to fiscal **quarter 2**, not quarter 3.
+A gap of **one quarter** on every financial report.
 
-Ba lý do phải để thành cột trong `dim_ngay` thay vì viết công thức mỗi lần:
+Three reasons to make it a column in `dim_ngay` rather than writing the formula each time:
 
-**1. Công thức dễ sai và sai im lặng.** `((month - 4 + 12) % 12) / 3 + 1` là biểu thức
-không ai kiểm bằng mắt được. Viết nó ở 50 chỗ là 50 cơ hội sai.
+**1. The formula is easy to get wrong and fails silently.** `((month - 4 + 12) % 12) / 3 + 1` is an
+expression nobody can verify by eye. Writing it in 50 places is 50 chances to get it wrong.
 
-**2. Quy tắc đổi được.** Công ty đổi năm tài chính sang tháng 1, hoặc mua lại công ty
-khác có năm tài chính khác. Sửa một bảng, không sửa 50 truy vấn.
+**2. The rule can change.** The company moves its fiscal year to January, or acquires another
+company with a different fiscal year. Change one table, not 50 queries.
 
-**3. Không phải mọi năm tài chính đều chia đều theo tháng.** Lịch 4-4-5 của bán lẻ chia
-quý thành các tuần 4-4-5, và **không có công thức nào** từ ngày ra quý — nó là bảng tra
-thuần tuý.
+**3. Not every fiscal year divides evenly by month.** Retail's 4-4-5 calendar splits
+quarters into 4-4-5 weeks, and **no formula** goes from date to quarter — it's a pure lookup table.
 
-Điểm 3 là lý do quyết định: chừng nào còn tin rằng "quý tính được từ ngày", bạn còn chưa
-gặp lịch bán lẻ.
+Point 3 is the decisive one: as long as you still believe "a quarter can be computed from a date", you haven't
+met a retail calendar yet.
 
-Xem [case study báo cáo quý tài chính lệch](../case-studies/bao-cao-quy-tai-chinh-lech.md).
+See [the case study on divergent fiscal-quarter reports](../case-studies/bao-cao-quy-tai-chinh-lech.md).
 
 </details>
 
-### Bài A.5 — `dim_ngay` và `dim_thoi_gian` là hai bảng
+### Exercise A.5 — `dim_ngay` and `dim_thoi_gian` are two tables
 
-**Đề:** không có SQL. `su_kien_web` có `thoi_diem` tới giây. Vì sao không thêm giờ/phút
-vào `dim_ngay`?
+**The task:** no SQL. `su_kien_web` has `thoi_diem` down to the second. Why not add hours/minutes
+to `dim_ngay`?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Số dòng nếu gộp:
+The row count if merged:
 
 ```text
 10 nam x 365 ngay x 86.400 giay  =  315 trieu dong
 ```
 
-315 triệu dòng cho một *dimension*. Đó không còn là dimension, đó là một fact table.
+315 million rows for a *dimension*. That isn't a dimension any more, that's a fact table.
 
-Tách hai bảng:
+Split into two tables:
 
-| Bảng | Grain | Số dòng (10 năm) | Cột |
+| Table | Grain | Rows (10 years) | Columns |
 |---|---|---|---|
-| `dim_ngay` | một ngày | ~3.650 | `thang`, `quy`, `la_ngay_le`, `nam_tai_chinh` |
-| `dim_thoi_gian` | một giây trong ngày | **86.400, cố định** | `gio`, `phut`, `ca_lam_viec`, `khung_gio_cao_diem` |
+| `dim_ngay` | one day | ~3,650 | `thang`, `quy`, `la_ngay_le`, `nam_tai_chinh` |
+| `dim_thoi_gian` | one second within a day | **86,400, fixed** | `gio`, `phut`, `ca_lam_viec`, `khung_gio_cao_diem` |
 
-`dim_thoi_gian` **không phụ thuộc ngày** — nó là 86.400 dòng, mãi mãi, dù dữ liệu kéo dài
-100 năm.
+`dim_thoi_gian` **doesn't depend on the date** — it's 86,400 rows forever, even if the data spans
+100 years.
 
-Fact giữ hai khoá:
+The fact keeps two keys:
 
 ```sql
 select su_kien_id, khach_id,
@@ -301,29 +299,29 @@ select su_kien_id, khach_id,
 from su_kien_web;
 ```
 
-Với dữ liệu này, `dim_thoi_gian` trả lời được câu mà `dim_ngay` không đụng tới:
-*"khách hoạt động mạnh nhất vào khung giờ nào"* — và đó chính là loại câu hỏi khiến người
-ta muốn lưu giờ ngay từ đầu.
+With this data, `dim_thoi_gian` answers a question `dim_ngay` can't touch:
+*"in which time window are customers most active"* — and that's exactly the kind of question that makes people
+want to store the time in the first place.
 
-**Khi nào không cần `dim_thoi_gian`:** khi chỉ cần giờ/phút thô, không cần thuộc tính như
-"ca sáng", "giờ cao điểm", "giờ hành chính". Lúc đó để nguyên cột `timestamp` trong fact
-và dùng hàm — vì bạn không cần **tra** gì cả.
+**When you don't need `dim_thoi_gian`:** when you only need raw hours/minutes, with no attributes like
+"morning shift", "peak hour" or "office hours". Then leave the `timestamp` column in the fact
+and use functions — because you have nothing to **look up**.
 
-Phép thử giống hệt `dim_ngay`: có thuộc tính **không suy ra được từ giá trị** (ca làm
-việc, khung giờ khuyến mãi) thì cần bảng; không có thì dùng hàm.
+The test is exactly the same as for `dim_ngay`: an attribute **not derivable from the value** (a work
+shift, a promotional window) means you need a table; without one, use functions.
 
 </details>
 
 ---
 
-## Bộ B — Audit dimension
+## Group B — Audit dimensions
 
-### Bài B.1 — Nạp trùng phồng 45,5%
+### Exercise B.1 — A duplicate load inflating 45.5%
 
-**Đề:** dựng `fct_nap` mô phỏng nạp hai lô, trong đó lô 2 **nạp lại** `DH003` và `DH005`.
-Đo thiệt hại.
+**The task:** build `fct_nap` simulating two loaded batches, where batch 2 **reloads** `DH003` and `DH005`.
+Measure the damage.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────┬────────────────┬─────────────────┐
@@ -334,7 +332,7 @@ việc, khung giờ khuyến mãi) thì cần bảng; không có thì dùng hàm
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table fct_nap as
@@ -351,30 +349,30 @@ select count(*) so_dong, sum(so_luong*don_gia) doanh_thu, 10215000 doanh_thu_tha
 from fct_nap;
 ```
 
-Chỉ 5 dòng thừa trên 15, nhưng doanh thu phồng **45,5%** — vì `DH003` (1.950.000) và
-`DH005` (2.700.000) là hai đơn to nhất.
+Only 5 surplus rows out of 15, but revenue inflates **45.5%** — because `DH003` (1,950,000) and
+`DH005` (2,700,000) are the two biggest orders.
 
-Đó là tính chất chung của nạp trùng: **tỷ lệ phồng doanh thu không bằng tỷ lệ phồng số
-dòng**. 33% số dòng thừa nhưng 45,5% tiền thừa. Nên ước lượng thiệt hại bằng cách đếm
-dòng là sai.
+That's a general property of duplicate loads: **the revenue inflation rate isn't the row-count inflation
+rate**. 33% surplus rows but 45.5% surplus money. So estimating the damage by counting
+rows is wrong.
 
-Ba nguyên nhân thật của nạp trùng, không cái nào hiếm:
+Three real causes of duplicate loads, none of them rare:
 
-| Nguyên nhân | Hoàn cảnh |
+| The cause | The circumstance |
 |---|---|
-| Job chạy lại sau lỗi | lỗi ở bước 9/10, chạy lại từ đầu, 8 bước đầu nạp hai lần |
-| Nguồn gửi lại file | đối tác gửi lại vì "file trước thiếu", nhưng thực ra đủ |
-| Backfill chồng lịch | nạp bù tháng 6 trong khi job hàng ngày vẫn chạy |
+| A job re-run after a failure | it failed at step 9/10, was re-run from the start, and the first 8 steps loaded twice |
+| The source resending a file | a partner resends because "the last file was incomplete", when in fact it was complete |
+| An overlapping backfill | backfilling June while the daily job keeps running |
 
-Không cách nào trong ba cái trên báo lỗi. Bài B.2 phát hiện.
+None of the three reports an error. Exercise B.2 detects it.
 
 </details>
 
-### Bài B.2 — Phát hiện trùng khi chưa biết lô nào sai
+### Exercise B.2 — Detect duplicates before knowing which batch is wrong
 
-**Đề:** tìm mọi khoá xuất hiện nhiều hơn một lần, kèm số lô liên quan.
+**The task:** find every key appearing more than once, along with how many batches are involved.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────────┬───────┬────────┬───────┐
@@ -389,7 +387,7 @@ Không cách nào trong ba cái trên báo lỗi. Bài B.2 phát hiện.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select don_hang_id, dong, count(*) so_ban, count(distinct lo_nap) so_lo
@@ -398,17 +396,17 @@ having count(*) > 1
 order by 1,2;
 ```
 
-Cột `so_lo` là cột quan trọng và hay bị bỏ. Nó phân biệt hai chuyện hoàn toàn khác nhau:
+The `so_lo` column is the important one and the one usually omitted. It distinguishes two entirely different things:
 
-| `so_ban` | `so_lo` | Chẩn đoán |
+| `so_ban` | `so_lo` | The diagnosis |
 |---|---|---|
-| 2 | **2** | **nạp trùng** — cùng dòng từ hai lô |
-| 2 | **1** | **grain sai** — khoá bạn khai không duy nhất trong nguồn |
+| 2 | **2** | **a duplicate load** — the same row from two batches |
+| 2 | **1** | **a wrong grain** — the key you declared isn't unique in the source |
 
-Cả hai đều làm `count(*) > 1`, nhưng cách chữa ngược nhau: cái đầu xoá bớt dữ liệu, cái
-sau sửa lại định nghĩa grain. Chữa nhầm là hoặc xoá dữ liệu đúng, hoặc giữ dữ liệu sai.
+Both make `count(*) > 1`, but the cures are opposites: the first deletes data, the
+second redefines the grain. Applying the wrong cure either deletes correct data or keeps incorrect data.
 
-Câu này nên là **test chạy mỗi lần build**, và trong dbt nó là test có sẵn:
+This statement should be a **test running on every build**, and in dbt it's a built-in test:
 
 ```yaml
 models:
@@ -418,19 +416,19 @@ models:
           combination_of_columns: [don_hang_id, dong]
 ```
 
-Test này bắt cả hai trường hợp trên. Nó là test **rẻ nhất và giá trị nhất** trong mọi
-fact table — và nó chính là phép kiểm grain của
-[bộ 1 bài A.1](bt-01-nen-tang.md#bài-a1--khai-grain-cho-cả-bảy-bảng-và-chứng-minh), lần
-này chạy tự động.
+This test catches both cases above. It's the **cheapest and most valuable** test in any
+fact table — and it's exactly the grain check from
+[set 1, exercise A.1](bt-01-nen-tang.md#exercise-a1--declare-the-grain-for-all-seven-tables-and-prove-it), this
+time running automatically.
 
 </details>
 
-### Bài B.3 — Không có audit: xoá 10 dòng để diệt 5
+### Exercise B.3 — Without audit: delete 10 rows to kill 5
 
-**Đề:** đo xem nếu **không** có cột `lo_nap`, việc xoá "các dòng trùng" sẽ đụng vào bao
-nhiêu dòng.
+**The task:** measure how many rows deleting "the duplicate rows" would touch if there were **no** `lo_nap`
+column.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────┬──────────────────┬──────────────┐
@@ -440,10 +438,10 @@ nhiêu dòng.
 └───────────────┴──────────────────┴──────────────┘
 ```
 
-**10 dòng dính líu, nhưng chỉ 5 dòng đáng xoá.**
+**10 rows implicated, but only 5 worth deleting.**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select count(*) from fct_nap) truoc_khi_xoa,
@@ -454,11 +452,11 @@ select (select count(*) from fct_nap) truoc_khi_xoa,
        (select count(*) from fct_nap where lo_nap = 2) so_dong_lo_2;
 ```
 
-Không có cột đánh dấu lô, hai bản sao của cùng một dòng là **giống hệt nhau về mọi
-mặt** — không có cách nào phân biệt bản gốc với bản trùng.
+Without a batch-marking column, two copies of the same row are **identical in every
+respect** — there's no way to tell the original from the duplicate.
 
 ```sql
--- SAI: xoa het ca hai ban -> mat luon du lieu dung
+-- WRONG: deleting both copies -> losing the correct data too
 delete from fct_nap f
 where exists (select 1 from fct_nap g
               where g.don_hang_id = f.don_hang_id and g.dong = f.dong
@@ -466,7 +464,7 @@ where exists (select 1 from fct_nap g
 -- 10 dong bien mat, DH003 va DH005 mat sach
 ```
 
-Lối thoát duy nhất khi không có audit là `row_number()` giữ lại một bản:
+The only escape without audit is `row_number()` keeping one copy:
 
 ```sql
 delete from fct_nap where rowid in (
@@ -474,22 +472,22 @@ delete from fct_nap where rowid in (
     (partition by don_hang_id, dong order by rowid) rn from fct_nap) where rn > 1);
 ```
 
-Nó **hoạt động**, nhưng có ba vấn đề nghiêm trọng:
+It **works**, but has three serious problems:
 
-1. **Giữ lại bản nào là tuỳ tiện** — `rowid` không có ý nghĩa nghiệp vụ. Nếu hai lô có
-   dữ liệu khác nhau (lô 2 là bản sửa), bạn có thể vừa giữ lại bản cũ.
-2. **Không truy được** đã xoá gì, vì sao.
-3. **Không lặp lại được** — chạy lại trên bản sao khác có thể cho kết quả khác.
+1. **Which copy is kept is arbitrary** — `rowid` has no business meaning. If the two batches hold
+   different data (batch 2 being a correction), you may have just kept the old version.
+2. **You can't trace** what was deleted, or why.
+3. **It isn't reproducible** — re-running it on another copy may give a different result.
 
-Bài B.4 làm đúng.
+Exercise B.4 does it properly.
 
 </details>
 
-### Bài B.4 — Có audit: xoá chính xác 5 dòng
+### Exercise B.4 — With audit: delete exactly 5 rows
 
-**Đề:** dùng `lo_nap` xoá đúng lô 2 và chứng minh doanh thu về đúng.
+**The task:** use `lo_nap` to delete exactly batch 2 and prove revenue is back to correct.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────┬─────────┐
@@ -500,7 +498,7 @@ Bài B.4 làm đúng.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table fct_da_sua as select * from fct_nap where lo_nap <> 2;
@@ -510,47 +508,47 @@ select count(*) so_dong, sum(so_luong*don_gia) doanh_thu,
 from fct_da_sua;
 ```
 
-**Một điều kiện `where`.** Đó là toàn bộ giá trị của audit dimension — và nó chỉ có giá
-trị nếu cột đó **đã có sẵn từ trước khi sự cố xảy ra**. Thêm audit sau khi phát hiện nạp
-trùng là quá muộn.
+**One `where` clause.** That's the entire value of an audit dimension — and it's only valuable
+if that column **was already there before the incident happened**. Adding audit after discovering a duplicate
+load is too late.
 
-Audit dimension đầy đủ nên có sáu cột, mỗi cột trả lời một câu:
+A complete audit dimension should have six columns, each answering one question:
 
 ```sql
 create or replace table dim_audit (
   audit_key    int primary key,
-  lo_nap       int,           -- lo nao
-  nap_luc      timestamp,     -- chay luc nao
-  nguon        varchar,       -- tu he thong nao
-  phien_ban_code varchar,     -- git sha cua pipeline
-  so_dong_doc  int,           -- doc bao nhieu
-  so_dong_ghi  int            -- ghi bao nhieu
+  lo_nap       int,           -- which batch
+  nap_luc      timestamp,     -- when it ran
+  nguon        varchar,       -- from which system
+  phien_ban_code varchar,     -- the pipeline's git sha
+  so_dong_doc  int,           -- how many rows read
+  so_dong_ghi  int            -- how many rows written
 );
 ```
 
-Bốn câu hỏi audit dimension trả lời mà không có nó thì **không trả lời được**:
+Four questions an audit dimension answers that are **unanswerable** without it:
 
-| Câu hỏi | Cột |
+| The question | The column |
 |---|---|
-| "Xoá lô hỏng mà không đụng dữ liệu đúng" | `lo_nap` |
-| "Số này được sinh lúc nào" | `nap_luc` |
-| "Sau khi sửa code, số có đổi không" | `phien_ban_code` |
-| "Nguồn gửi thiếu dòng nào không" | `so_dong_doc` vs `so_dong_ghi` |
+| "Delete the broken batch without touching the correct data" | `lo_nap` |
+| "When was this number produced" | `nap_luc` |
+| "After the code change, did the number change" | `phien_ban_code` |
+| "Did the source send fewer rows than expected" | `so_dong_doc` vs `so_dong_ghi` |
 
-Cột `phien_ban_code` là cột hay bị quên và cứu được nhiều nhất: khi có người hỏi *"vì sao
-số tháng 6 giờ khác tháng 6 hồi tháng trước"*, so hai `phien_ban_code` là ra ngay.
+`phien_ban_code` is the most easily forgotten column and the one that saves the most: when somebody asks *"why is
+June's number different from June's number last month"*, comparing two `phien_ban_code` values answers it at once.
 
-Chi phí: **một cột `int` trên mỗi dòng fact**. Xem
-[case study nạp hai lần không truy được](../case-studies/nap-hai-lan-khong-truy-duoc.md).
+The cost: **one `int` column per fact row**. See
+[the case study on a file loaded twice with no traceability](../case-studies/nap-hai-lan-khong-truy-duoc.md).
 
 </details>
 
-### Bài B.5 — Đối soát tồn kho: một nguyên nhân, hai triệu chứng
+### Exercise B.5 — Inventory reconciliation: one cause, two symptoms
 
-**Đề:** đối soát `kho_hang` với số bán ra, tìm **dòng lệch đầu tiên** của mỗi mặt hàng.
-Tồn đầu kỳ 01/07: `SP-A` 100 · `SP-B` 50 · `SP-C` 20 · `SP-D` 200.
+**The task:** reconcile `kho_hang` against quantities sold, and find each item's **first divergent row**.
+Opening stock on 01/07: `SP-A` 100 · `SP-B` 50 · `SP-C` 20 · `SP-D` 200.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬────────────────────┬──────────────────┐
@@ -560,10 +558,10 @@ Tồn đầu kỳ 01/07: `SP-A` 100 · `SP-B` 50 · `SP-C` 20 · `SP-D` 200.
 └─────────┴────────────────────┴──────────────────┘
 ```
 
-**Hai dòng báo lệch, nhưng chỉ một nguyên nhân.**
+**Two rows reporting divergence, but only one cause.**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with ban as (select ngay, ma_hang, sum(so_luong) da_ban
@@ -580,22 +578,22 @@ from luy where ton_cuoi_ngay <> ton_tinh
 group by 1;
 ```
 
-`SP-B` ngày 04/07 ghi 41 nhưng tính ra 40. Và vì tồn kho là **luỹ kế**, sai số **lan sang
-mọi ngày sau** — ngày 05/07 cũng báo lệch dù dữ liệu ngày đó hoàn toàn đúng.
+`SP-B` on 04/07 records 41 but computes to 40. And because stock is **cumulative**, the error **spreads to
+every following day** — 05/07 also reports divergence even though that day's data is perfectly correct.
 
-Đây là đặc tính của mọi đối soát trên số luỹ kế, và nó đổi hẳn cách đọc kết quả:
+This is a property of every reconciliation on cumulative numbers, and it changes how you read the result entirely:
 
 ```text
 So dong bao loi  ≠  So loi that
 ```
 
-Trên dữ liệu thật với 400 ngày, một sai số ngày thứ 3 làm **398 dòng** báo đỏ. Nhìn báo
-cáo thấy "398 lỗi" là hoảng và bắt đầu sửa từng dòng — sai hoàn toàn.
+On real data with 400 days, one error on day 3 makes **398 rows** go red. Seeing "398 errors" on a
+report is alarming and you start fixing row by row — entirely wrong.
 
-**Luật: với số luỹ kế, luôn tìm dòng lệch ĐẦU TIÊN, không đếm tổng số dòng lệch.**
-`min(ngay)` trong câu trên chính là chỗ đó. Sửa dòng đầu là toàn bộ dòng sau tự hết.
+**The rule: with cumulative numbers, always find the FIRST divergent row, never count the total divergent rows.**
+The `min(ngay)` in the statement above is exactly that. Fix the first row and every row after it clears itself.
 
-Cách trình bày đúng cho báo cáo đối soát:
+The right presentation for a reconciliation report:
 
 ```sql
 select ma_hang, min(ngay) lech_tu_ngay,
@@ -603,20 +601,20 @@ select ma_hang, min(ngay) lech_tu_ngay,
 from luy where ton_cuoi_ngay <> ton_tinh group by 1;
 ```
 
-Một dòng cho mỗi mặt hàng, chỉ ra ngày và mức chênh gốc — không phải 398 dòng.
+One row per item, giving the date and the original gap — not 398 rows.
 
 </details>
 
 ---
 
-## Bộ C — Real-time fact table
+## Group C — Real-time fact tables
 
-### Bài C.1 — Ngày hôm nay chưa đầy
+### Exercise C.1 — Today isn't full yet
 
-**Đề:** với `su_kien_web`, đếm sự kiện mỗi ngày kèm thời điểm đầu/cuối và số phút được
-phủ sóng.
+**The task:** with `su_kien_web`, count events per day along with the first/last moment and the number of minutes
+covered.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬────────────┬─────────────────────┬─────────────────────┬───────────────┐
@@ -630,10 +628,10 @@ phủ sóng.
 └────────────┴────────────┴─────────────────────┴─────────────────────┴───────────────┘
 ```
 
-Ngày 05/07 dừng lúc **09:50**. Nó là "hôm nay", và nó chưa xong.
+05/07 stops at **09:50**. It's "today", and it isn't finished.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with theo_ngay as (
@@ -645,25 +643,25 @@ select ngay, so_su_kien, dau, cuoi,
 from theo_ngay order by ngay;
 ```
 
-Cột `so_su_kien` **không nói cho bạn biết điều đó**. Ngày 05/07 có 7 sự kiện, ngày 03/07
-có 8 — nhìn qua thì hai ngày tương đương. Nhưng 05/07 mới chạy được **110 phút** còn
-03/07 đã xong cả ngày.
+The `so_su_kien` column **doesn't tell you that**. 05/07 has 7 events and 03/07
+has 8 — at a glance the two days look comparable. But 05/07 has only run for **110 minutes** while
+03/07 finished its whole day.
 
-Đây là vấn đề của mọi bảng real-time: **kỳ hiện tại là kỳ chưa đầy, nhưng nó nằm chung
-bảng với các kỳ đã đầy** — và không có cột nào phân biệt.
+This is every real-time table's problem: **the current period is an incomplete period, but it sits in the same
+table as the complete ones** — with no column distinguishing them.
 
-Chú ý cột `phut_phu_song` cũng không phải thước đo tin cậy: 03/07 chỉ phủ 180 phút vì
-khách không hoạt động, không phải vì dữ liệu thiếu. **Khoảng phủ sóng ≠ độ đầy đủ.**
+Note that `phut_phu_song` isn't a reliable measure either: 03/07 covers only 180 minutes because
+customers weren't active, not because data is missing. **Coverage span ≠ completeness.**
 
-Bài C.2 đo hậu quả, bài C.3 là lối ra.
+Exercise C.2 measures the consequence, exercise C.3 is the way out.
 
 </details>
 
-### Bài C.2 — Ngày chưa đầy kéo trung bình xuống 4,4%
+### Exercise C.2 — The incomplete day drags the average down 4.4%
 
-**Đề:** tính số sự kiện trung bình mỗi ngày, **có** và **không có** ngày cuối.
+**The task:** compute the average events per day **with** and **without** the last day.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────────────┬──────────────────┬────────────────┐
@@ -674,7 +672,7 @@ Bài C.2 đo hậu quả, bài C.3 là lối ra.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with theo_ngay as (select cast(thoi_diem as date) ngay, count(*) n from su_kien_web group by 1)
@@ -685,30 +683,30 @@ select round(avg(n),2) avg_ca_5_ngay,
 from theo_ngay;
 ```
 
-Lệch **4,4%** với dữ liệu chỉ cắt 14 tiếng cuối. Với dữ liệu cắt sớm hơn — báo cáo chạy
-lúc 9h sáng — ngày hôm nay chỉ có ~1/10 lượng sự kiện, và trung bình 5 ngày lệch ~18%.
+A gap of **4.4%** with data cut only 14 hours short. With data cut earlier — a report running
+at 9am — today has only ~1/10 of its events, and the 5-day average is ~18% out.
 
-Nhưng con số lệch **không phải** vấn đề chính. Ba hậu quả nặng hơn:
+But the divergence figure **isn't** the main problem. Three heavier consequences:
 
-**1. Số "hôm nay" nhảy suốt ngày.** Chạy báo cáo lúc 9h và 15h cho hai kết quả khác nhau,
-và người dùng kết luận "báo cáo không đáng tin". Đúng
-[case study số hôm nay nhảy suốt ngày](../case-studies/so-hom-nay-nhay-suot-ngay.md).
+**1. "Today's" number jumps all day.** Running the report at 9am and at 3pm gives two different results,
+and the user concludes "the report isn't trustworthy". Exactly
+[the case study on today's number jumping all day](../case-studies/so-hom-nay-nhay-suot-ngay.md).
 
-**2. So sánh với kỳ trước luôn âm.** "Hôm nay so với hôm qua: −85%" là báo động giả mỗi
-sáng — và sau vài tuần thì không ai đọc cảnh báo nữa.
+**2. The comparison against the prior period is always negative.** "Today vs yesterday: −85%" is a false alarm every
+morning — and after a few weeks nobody reads the alerts any more.
 
-**3. Đường xu hướng luôn gãy ở điểm cuối.** Mọi biểu đồ đều tụt ở ngày cuối, tạo ấn tượng
-sai về xu hướng giảm.
+**3. The trend line always breaks at the last point.** Every chart dips on the final day, giving a false
+impression of a downward trend.
 
-Ba cái này cùng một gốc: **kỳ chưa đầy bị đối xử như kỳ đã đầy.**
+All three share one root: **an incomplete period treated as a complete one.**
 
 </details>
 
-### Bài C.3 — Cột `ngay_da_day_du` và ba cách dùng
+### Exercise C.3 — The `ngay_da_day_du` column and three ways to use it
 
-**Đề:** thêm cột đánh dấu ngày đã đầy đủ dữ liệu, rồi nêu ba cách báo cáo dùng nó.
+**The task:** add a column marking days whose data is complete, then state three ways a report uses it.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬───────┬─────────────────────┬────────────────┐
@@ -722,14 +720,14 @@ Ba cái này cùng một gốc: **kỳ chưa đầy bị đối xử như kỳ �
 └────────────┴───────┴─────────────────────┴────────────────┘
 ```
 
-Kết quả này **sai** — chỉ 04/07 được đánh dấu đầy đủ, còn 01–03/07 thì không. Tìm ra vì
-sao, và sửa.
+This result is **wrong** — only 04/07 is marked complete, while 01–03/07 aren't. Work out why,
+and fix it.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- CACH SAI: suy tu du lieu
+-- THE WRONG WAY: inferring from the data
 with theo_ngay as (
   select cast(thoi_diem as date) ngay, count(*) n, max(thoi_diem) cuoi,
          max(thoi_diem) >= cast(thoi_diem as date) + interval 20 hour ngay_da_day_du
@@ -737,53 +735,53 @@ with theo_ngay as (
 select * from theo_ngay order by ngay;
 ```
 
-Câu này suy "ngày đã đầy" từ *"có sự kiện sau 20h không"* — và nó sai vì **vắng sự kiện
-buổi tối không có nghĩa là dữ liệu thiếu**. Ngày 01/07 chỉ đơn giản là không có ai truy
-cập sau 14h.
+This statement infers "the day is complete" from *"is there an event after 20:00"* — and it's wrong because **an absence of
+evening events doesn't mean the data is missing**. 01/07 simply had nobody visiting
+after 14:00.
 
-**Không thể suy độ đầy đủ từ chính dữ liệu.** Đó là bài học chính của bài này, và nó
-đúng cho mọi bảng real-time: dữ liệu không tự biết nó có thiếu hay không.
+**Completeness cannot be inferred from the data itself.** That's this exercise's main lesson, and it
+holds for every real-time table: data doesn't know whether it's missing anything.
 
-Độ đầy đủ là **metadata của quá trình nạp**, phải do pipeline ghi:
+Completeness is **metadata about the loading process**, which the pipeline must record:
 
 ```sql
 create or replace table trang_thai_nap (
   ngay date primary key,
-  da_chot boolean,          -- pipeline ghi 'true' khi da nap xong ca ngay
+  da_chot boolean,          -- the pipeline writes 'true' once the whole day is loaded
   chot_luc timestamp,
   nguon varchar
 );
--- pipeline ghi vao day sau khi nap xong ngay hom truoc
+-- the pipeline writes here after finishing the previous day's load
 insert into trang_thai_nap values
   ('2026-07-01', true, '2026-07-02 02:00:00', 'web-events'),
   ('2026-07-02', true, '2026-07-03 02:00:00', 'web-events'),
   ('2026-07-03', true, '2026-07-04 02:00:00', 'web-events'),
   ('2026-07-04', true, '2026-07-05 02:00:00', 'web-events'),
-  ('2026-07-05', false, null, 'web-events');     -- hom nay, chua chot
+  ('2026-07-05', false, null, 'web-events');     -- today, not yet closed
 ```
 
-Ba cách báo cáo dùng cột đó, chọn theo đối tượng đọc:
+Three ways a report uses that column, chosen by audience:
 
-| Cách | Làm gì | Hợp với |
+| The way | What it does | Suits |
 |---|---|---|
-| **Loại kỳ chưa chốt** | `where da_chot` | báo cáo quản trị, KPI, so sánh kỳ |
-| **Hiện nhưng đánh dấu** | vẽ nét đứt, ghi *"đang cập nhật"* | dashboard vận hành |
-| **Ngoại suy** | `n / phan_ngay_da_troi_qua` | dự báo trong ngày |
+| **Exclude the unclosed period** | `where da_chot` | management reports, KPIs, period comparisons |
+| **Show it but mark it** | draw a dashed line, label it *"updating"* | operational dashboards |
+| **Extrapolate** | `n / phan_ngay_da_troi_qua` | intraday forecasting |
 
-Cách 3 nguy hiểm nhất và phải ghi nhãn rõ nhất — nó tạo ra một con số **không có thật**,
-và người đọc sẽ nhớ con số chứ không nhớ nhãn.
+The third is the most dangerous and needs the clearest label — it creates a number that **isn't real**,
+and the reader will remember the number rather than the label.
 
-**Mặc định nên là cách 1.** Người dùng hỏi được "sao chưa có số hôm nay" thì tốt hơn là
-họ tin một con số sai.
+**The default should be the first.** A user able to ask "why is there no number for today yet" is better than
+one who believes a wrong number.
 
 </details>
 
-### Bài C.4 — Hai bảng: nóng và nguội
+### Exercise C.4 — Two tables: hot and cold
 
-**Đề:** không có SQL. Nêu kiến trúc tách bảng real-time và bảng lịch sử.
+**The task:** no SQL. Describe the architecture separating the real-time table from the history table.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```text
 fct_su_kien_nong    ← hom nay, ghi lien tuc, khong phan vung, khong nen
@@ -798,54 +796,54 @@ union all
 select *, true from fct_su_kien_nong;
 ```
 
-Bốn khác biệt buộc phải tách:
+Four differences force the split:
 
-| | Bảng nóng | Bảng nguội |
+| | The hot table | The cold table |
 |---|---|---|
-| Ghi | liên tục, độ trễ giây | một lần/ngày |
-| Nén / phân vùng | **không** — làm chậm ghi | nén chặt, phân vùng theo ngày |
-| Sửa lại | thường xuyên | **gần như không** |
-| Tối ưu cho | ghi nhanh | đọc nhanh |
+| Writes | continuous, seconds of latency | once a day |
+| Compression / partitioning | **none** — it slows writes | tightly compressed, partitioned by day |
+| Corrections | frequent | **almost never** |
+| Optimised for | fast writes | fast reads |
 
-Bảng nóng tối ưu cho **ghi**, bảng nguội tối ưu cho **đọc** — hai mục tiêu mâu thuẫn, nên
-một bảng không thể làm tốt cả hai.
+The hot table optimises for **writing**, the cold one for **reading** — two conflicting goals, so
+one table can't do both well.
 
-Nửa đêm, dữ liệu hôm qua **chuyển từ nóng sang nguội**: ghi vào bảng nguội, xoá khỏi bảng
-nóng, cập nhật `trang_thai_nap.da_chot = true`. Ba thao tác phải **cùng một transaction**,
-hoặc theo đúng thứ tự đó — sai thứ tự là dữ liệu bị đếm hai lần hoặc biến mất trong vài
-phút.
+At midnight, yesterday's data **moves from hot to cold**: written into the cold table, deleted from the hot
+one, and `trang_thai_nap.da_chot = true` updated. Those three operations must be in **one transaction**,
+or follow exactly that order — the wrong order double-counts data or makes it vanish for a few
+minutes.
 
-Cột `la_du_lieu_nong` trong view là chi tiết quan trọng: nó cho phép mọi báo cáo lọc kỳ
-chưa chốt bằng **một** điều kiện, mà không cần biết gì về kiến trúc hai bảng.
+The `la_du_lieu_nong` column in the view is an important detail: it lets every report filter the unclosed
+period with **one** condition, without knowing anything about the two-table architecture.
 
-Trên lakehouse hiện đại (Iceberg, Delta), ranh giới này mờ đi vì engine tự làm compaction.
-Nhưng **khái niệm** thì không mất: vẫn phải biết dữ liệu nào đã chốt, và đó vẫn là
-metadata do pipeline ghi, không phải thứ suy được từ dữ liệu.
+On a modern lakehouse (Iceberg, Delta) this boundary blurs, because the engine compacts by itself.
+But the **concept** doesn't disappear: you still have to know which data is closed, and that's still
+metadata written by the pipeline, not something inferable from the data.
 
-Xem [Real-time fact table](../skills/real-time-fact.md).
+See [real-time fact tables](../skills/real-time-fact.md).
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-| Số | Nghĩa | Bài |
+| The number | What it means | Exercise |
 |---|---|---|
-| `ngay_key = -1`, `ngay = NULL` | unknown member của `dim_ngay` | A.1 |
-| 23 và 21 ngày làm việc | lịch là dữ liệu, không phải hàm | A.2 |
-| 8 dòng chứ không 5 | ngày không giao dịch vẫn phải hiện | A.3 |
-| 20 dòng · 14.865.000 · **+45,5%** | nạp trùng 5 dòng, phồng 45,5% tiền | B.1 |
-| `so_lo` = 2 | phân biệt nạp trùng với grain sai | B.2 |
-| **10 dòng dính líu / 5 dòng đáng xoá** | không có audit thì xoá thừa gấp đôi | B.3 |
-| 15 dòng · 10.215.000 | có audit: một `where` là xong | B.4 |
-| 2 dòng báo lệch / 1 nguyên nhân | sai số luỹ kế lan sang ngày sau | B.5 |
-| 8,6 vs 9,0 (−4,4%) | ngày chưa đầy kéo trung bình xuống | C.2 |
-| chỉ 04/07 `true` | **không suy được độ đầy đủ từ dữ liệu** | C.3 |
+| `ngay_key = -1`, `ngay = NULL` | `dim_ngay`'s unknown member | A.1 |
+| 23 and 21 working days | the calendar is data, not a function | A.2 |
+| 8 rows rather than 5 | a day with no transactions must still appear | A.3 |
+| 20 rows · 14,865,000 · **+45.5%** | 5 duplicate rows, 45.5% money inflation | B.1 |
+| `so_lo` = 2 | distinguishing a duplicate load from a wrong grain | B.2 |
+| **10 rows implicated / 5 worth deleting** | without audit you delete twice as much as needed | B.3 |
+| 15 rows · 10,215,000 | with audit: one `where` and it's done | B.4 |
+| 2 divergent rows / 1 cause | a cumulative error spreads into the following day | B.5 |
+| 8.6 vs 9.0 (−4.4%) | the incomplete day drags the average down | C.2 |
+| only 04/07 `true` | **completeness can't be inferred from the data** | C.3 |
 
 ## Related Topics
 
-- [Bài tập bộ 6 — Tích hợp](bt-06-tich-hop.md) — bộ trước
-- [Bài tập — Data Modeling](index.md) — mục lục toàn bộ
-- [Lab vận hành](lab-van-hanh.md) — bản chẩn đoán của cùng chủ đề
-- [Kỹ năng — Data Modeling](../skills/index.md) — lý thuyết của ba kỹ thuật trên
+- [Exercise set 6 — Integration](bt-06-tich-hop.md) — the previous set
+- [Exercises — Data Modeling](index.md) — the full index
+- [The operations lab](lab-van-hanh.md) — the diagnostic version of the same subject
+- [Skills — Data Modeling](../skills/index.md) — the theory behind the three techniques above
