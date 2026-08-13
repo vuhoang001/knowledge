@@ -1,8 +1,7 @@
 ---
-title: Conformed facts — cùng tên phải cùng nghĩa
-i18n_status: untranslated
+title: Conformed facts — the same name must mean the same thing
 sidebar_position: 15
-description: "Conformed dimension cho phép ghép số theo chiều; conformed fact quyết định hai con số đó có so được với nhau không."
+description: "Conformed dimensions let you combine numbers along a dimension; conformed facts decide whether those two numbers are comparable."
 tags: [conformed-facts, conformed-dimension, metric, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,16 +12,16 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Conformed facts — cùng tên phải cùng nghĩa
+# Conformed facts — the same name must mean the same thing
 
-> **Chốt:** [conformed dimension](conformed-dimension.md) làm hai fact **ghép được** theo
-> chiều. Conformed fact quyết định hai con số ghép ra có **so được** hay không. Hai cột
-> cùng tên `doanh_thu` với hai công thức khác nhau là lỗi tệ hơn hai cột khác tên, vì
-> không ai nghĩ phải kiểm.
+> **Takeaway:** [conformed dimensions](conformed-dimension.md) make two facts **combinable** along a
+> dimension. Conformed facts decide whether the two combined numbers are **comparable**. Two columns
+> both named `doanh_thu` with two different formulas is a worse bug than two differently named columns, because
+> nobody thinks to check.
 
-## Vấn đề
+## The problem
 
-Hai mart, hai đội, cùng một cột tên `doanh_thu`:
+Two marts, two teams, the same column name `doanh_thu`:
 
 ```sql
 CREATE TABLE src_don AS
@@ -41,8 +40,8 @@ CREATE VIEW mart_tai_chinh AS
 SELECT so_don, tien_hang - giam_gia + vat + phi_ship AS doanh_thu FROM src_don;
 ```
 
-Cả hai định nghĩa đều **đúng trong bối cảnh của nó**. Đội bán hàng không tính VAT vì VAT
-không phải tiền của công ty; đội tài chính tính tổng tiền vào tài khoản. Không ai sai.
+Both definitions are **correct in their own context**. The sales team excludes VAT because VAT
+isn't the company's money; the finance team totals the money coming into the account. Neither is wrong.
 
 ```sql
 SELECT (SELECT sum(doanh_thu) FROM mart_ban_hang)  AS doanh_thu_mart_ban_hang,
@@ -62,12 +61,12 @@ SELECT (SELECT sum(doanh_thu) FROM mart_ban_hang)  AS doanh_thu_mart_ban_hang,
 └─────────────────────────┴──────────────────────────┴───────┴──────────┘
 ```
 
-**Lệch 11,9%** giữa hai bảng của cùng một công ty, cho cùng một tháng, từ cùng một nguồn.
+**11.9% apart** between two tables in the same company, for the same month, from the same source.
 
-### Chỗ nó chuyển từ khó chịu sang nguy hiểm
+### Where it goes from annoying to dangerous
 
-Chênh lệch còn nhìn thấy được. Cái không nhìn thấy được là khi ai đó **lấy tử số từ mart
-này, mẫu số từ mart kia**:
+The discrepancy is at least visible. What isn't visible is when somebody **takes the numerator from one mart
+and the denominator from the other**:
 
 ```sql
 WITH x AS (
@@ -85,32 +84,32 @@ SELECT round(100.0 * ban_hang / tai_chinh, 1) AS "ty_le_%_tuong_nhu_co_nghia" FR
 └────────────────────────────┘
 ```
 
-**89,4%** — một con số trông rất hợp lý, nằm trong khoảng người ta kỳ vọng, và **không đo
-cái gì cả**. Nó chỉ đang đo tỷ trọng của VAT và phí ship, khoác nhãn "tỷ lệ chuyển đổi".
+**89.4%** — a number that looks perfectly plausible, sits inside the expected range, and **measures
+nothing at all**. It's only measuring the share taken by VAT and shipping, wearing a "conversion rate" label.
 
-Không có test nào bắt được một tỷ lệ nằm trong khoảng hợp lý.
+No test catches a ratio that sits inside a plausible range.
 
-## Điều kiện để gọi là conformed fact
+## The conditions for a conformed fact
 
-Theo Kimball, hai fact **conform** khi cả bốn điều sau đúng:
+Per Kimball, two facts **conform** when all four of the following hold:
 
-| Điều kiện | Kiểm bằng cách nào |
+| Condition | How to check it |
 |---|---|
-| Cùng **định nghĩa nghiệp vụ** | Viết công thức ra, đặt cạnh nhau, đọc to |
-| Cùng **đơn vị** | Tiền tệ, đơn vị đo — xem [nhiều tiền tệ](multi-currency-uom.md) |
-| Cùng **thời điểm ghi nhận** | Lúc đặt hàng, lúc giao, hay lúc thu tiền |
-| Cùng **cách xử lý ngoại lệ** | Đơn huỷ, đơn trả, đơn nội bộ có tính không |
+| The same **business definition** | Write the formulas out, put them side by side, read them aloud |
+| The same **unit** | Currency, unit of measure — see [multiple currencies](multi-currency-uom.md) |
+| The same **recognition moment** | At order time, at delivery, or at payment |
+| The same **exception handling** | Whether cancelled, returned and internal orders count |
 
-Không thoả **một** điều nào thì **bắt buộc đổi tên**. Đây là luật ngắn gọn nhất trong cả
-mô hình chiều:
+Fail **one** of them and you are **obliged to rename**. This is the shortest rule in all of
+dimensional modeling:
 
-> **Không conform thì không được cùng tên.**
+> **If it doesn't conform, it can't share the name.**
 
-Đổi tên không phải thất bại — nó là cách duy nhất để người đọc biết mình đang cầm cái gì.
+Renaming isn't a failure — it's the only way for a reader to know what they're holding.
 
-## Cách làm
+## The approach
 
-### Bước 1 — hai khái niệm, hai tên, cùng một bảng
+### Step 1 — two concepts, two names, one table
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -128,13 +127,13 @@ FROM src_don;
 └─────────────────┴─────────────────────┴───────┴──────────┴──────────┘
 ```
 
-Cả hai chỉ số cùng nằm một chỗ, sinh từ cùng một tập dòng, và **các thành phần cấu thành
-cũng có mặt**. Đó là điểm quan trọng: giữ `vat`, `phi_ship`, `giam_gia` làm cột riêng cho
-phép mọi định nghĩa tương lai được tính lại mà không phải sửa nguồn.
+Both metrics live in one place, generated from the same row set, and **the constituent components
+are present too**. That's the important part: keeping `vat`, `phi_ship` and `giam_gia` as their own columns lets
+any future definition be recomputed without touching the source.
 
-### Bước 2 — đối soát khép kín
+### Step 2 — a closed-loop reconciliation
 
-Hai chỉ số phải lệch **đúng bằng** các thành phần giải thích được, không hơn không kém:
+The two metrics must differ by **exactly** the explainable components, no more and no less:
 
 ```sql
 SELECT sum(tong_tien_khach_tra) - sum(doanh_thu_thuan) AS chenh_thuc_te,
@@ -152,12 +151,12 @@ FROM fct_ban;
 └───────────────┴───────────────────────┴───────────────────────────────┘
 ```
 
-Cột cuối bằng 0 là thứ đáng đặt thành test. Nó không thể bằng 0 một cách tình cờ, và nó
-biến câu *"hai đội ra hai số"* từ một cuộc tranh cãi thành một phép trừ.
+The last column being 0 is worth making a test. It can't be 0 by accident, and it
+turns *"two teams got two numbers"* from an argument into a subtraction.
 
-### Bước 3 — sổ đăng ký chỉ số
+### Step 3 — a metric registry
 
-Định nghĩa chỉ số phải là **dữ liệu tra cứu được**, không phải tri thức truyền miệng:
+Metric definitions must be **queryable data**, not oral tradition:
 
 ```sql
 CREATE TABLE dang_ky_chi_so AS
@@ -178,52 +177,52 @@ SELECT * FROM (VALUES
 └─────────────────────┴───────────────────────────────────────┴─────────────────────┘
 ```
 
-Trong dbt, chỗ tự nhiên của bảng này là `schema.yml` (mô tả cột) hoặc semantic layer —
-miễn là nó nằm **cùng repo với code tính ra chỉ số**, để hai thứ không trôi khỏi nhau.
+In dbt, this table's natural home is `schema.yml` (column descriptions) or the semantic layer —
+as long as it lives **in the same repo as the code computing the metric**, so the two don't drift apart.
 
-## Quan hệ với conformed dimension
+## The relationship to conformed dimensions
 
-Hai kỹ thuật giải hai nửa của cùng một bài toán:
+The two techniques solve two halves of the same problem:
 
-| | Conformed dimension | Conformed fact |
+| | Conformed dimensions | Conformed facts |
 |---|---|---|
-| Trả lời | Hai fact có **ghép được** không | Hai số ghép ra có **so được** không |
-| Sai thì | Câu hỏi cắt ngang bất khả thi | Câu trả lời có, và sai |
-| Phát hiện | Dễ — join không ra dòng nào | **Khó** — số vẫn đẹp |
-| Xem | [Conformed dimension](conformed-dimension.md) | File này |
+| Answers | Can two facts be **combined** | Are the two combined numbers **comparable** |
+| When wrong | The cross-cutting question is impossible | There's an answer, and it's wrong |
+| Detection | Easy — the join returns no rows | **Hard** — the numbers still look fine |
+| See | [Conformed dimensions](conformed-dimension.md) | This file |
 
-Vế thứ hai nguy hiểm hơn, đúng vì lý do đó: thiếu conformed dimension thì bạn *biết* mình
-đang bế tắc. Thiếu conformed fact thì bạn có một con số và tin nó.
+The second half is more dangerous for exactly that reason: without conformed dimensions you *know* you're
+stuck. Without conformed facts you have a number and you believe it.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Số của hai đội so được với nhau | Phải đàm phán định nghĩa — việc của người, không phải của SQL |
-| Đổi tên làm rõ ý, không ai nhầm | Tên dài hơn (`doanh_thu_thuan` thay vì `doanh_thu`) |
-| Giữ các thành phần cấu thành | Fact rộng thêm vài cột |
-| Đối soát khép kín thành test | Phải viết và duy trì test đó |
+| Two teams' numbers become comparable | You must negotiate definitions — a human job, not SQL's |
+| Renaming makes the intent clear so nobody confuses them | Longer names (`doanh_thu_thuan` instead of `doanh_thu`) |
+| Keeping the constituent components | The fact gets a few columns wider |
+| The closed-loop reconciliation becomes a test | You have to write and maintain that test |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Hai mart cùng cột `doanh_thu`, khác công thức | Số lệch 12%, không ai biết nên tin cái nào — [case study](../case-studies/hai-phong-hai-doanh-thu.md) |
-| Lấy tử số mart này, mẫu số mart kia | Ra tỷ lệ hợp lý và vô nghĩa |
-| Chỉ lưu kết quả, bỏ các thành phần | Không tính lại được khi định nghĩa đổi |
-| Định nghĩa nằm trong đầu người | Người nghỉ việc là mất định nghĩa |
-| Conform dimension rồi coi như xong | Ghép được nhưng không so được |
-| Cùng tên nhưng khác thời điểm ghi nhận | Lệch theo mùa, tưởng là biến động nghiệp vụ |
+| Two marts with the same `doanh_thu` column and different formulas | The numbers are 12% apart and nobody knows which to trust — [case study](../case-studies/hai-phong-hai-doanh-thu.md) |
+| Taking the numerator from one mart and the denominator from another | A plausible, meaningless ratio |
+| Storing only the result and dropping the components | You can't recompute when the definition changes |
+| Definitions living in people's heads | Somebody leaving loses the definition |
+| Conforming the dimensions and considering it done | Combinable but not comparable |
+| The same name with a different recognition moment | It diverges seasonally and looks like a business trend |
 
 ## Related Topics
 
-- [Conformed dimension](conformed-dimension.md) — nửa còn lại của bài toán tích hợp
-- [Bus architecture và bus matrix](../reference/bus-architecture.md) — nơi khai báo cái gì phải conform
-- [Nhiều tiền tệ và đơn vị đo](multi-currency-uom.md) — cùng đơn vị là một trong bốn điều kiện
-- [CS: hai phòng, hai con số doanh thu](../case-studies/hai-phong-hai-doanh-thu.md)
-- [CS: hai mart không ghép được](../case-studies/hai-mart-khong-ghep-duoc.md)
+- [Conformed dimensions](conformed-dimension.md) — the other half of the integration problem
+- [Bus architecture and the bus matrix](../reference/bus-architecture.md) — where you declare what must conform
+- [Multiple currencies and units of measure](multi-currency-uom.md) — the same unit is one of the four conditions
+- [CS: two departments, two revenue figures](../case-studies/hai-phong-hai-doanh-thu.md)
+- [CS: two marts that couldn't be joined](../case-studies/hai-mart-khong-ghep-duoc.md)
 
 ## References
 
 - Kimball Group — [Conformed Facts](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 4
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 4

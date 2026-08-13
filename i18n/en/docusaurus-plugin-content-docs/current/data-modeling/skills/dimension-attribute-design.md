@@ -1,8 +1,7 @@
 ---
-title: Thiết kế thuộc tính dimension
-i18n_status: untranslated
+title: Designing dimension attributes
 sidebar_position: 16
-description: "Cờ Y/N và mã 1/0 làm báo cáo không đọc được; nhiều cây phân cấp song song sống chung một dimension; chỗ đúng cho ghi chú tự do."
+description: "Y/N flags and 1/0 codes make reports unreadable; several parallel hierarchies living in one dimension; the right home for free-text notes."
 tags: [dimension, attribute, hierarchy, drill-down, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,21 +12,21 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Thiết kế thuộc tính dimension
+# Designing dimension attributes
 
-> **Chốt:** dimension không phải chỗ lưu dữ liệu, nó là **giao diện người dùng của kho
-> dữ liệu**. Mọi nhãn trên báo cáo đều đến từ đây. `Y`, `1`, `A` là ngôn ngữ của hệ
-> nguồn; báo cáo phải nói tiếng người.
+> **Takeaway:** a dimension isn't a place to store data, it's **the data warehouse's user
+> interface**. Every label on a report comes from here. `Y`, `1`, `A` are the source system's
+> language; a report has to speak human.
 
-## Ba việc thuộc tính dimension phải làm
+## The three jobs a dimension attribute must do
 
-| Việc | Kimball gọi là | Hỏng thì |
+| The job | Kimball calls it | When it fails |
 |---|---|---|
-| Đặt nhãn để lọc và gộp | Flags & indicators as textual attributes | Báo cáo đầy `Y`/`N`/`1`/`0` |
-| Cho đường đi từ tổng quát xuống chi tiết | Drilling down · multiple hierarchies | Không drill được, hoặc chỉ một hướng |
-| Chứa mô tả tự do | Text comments | Ghi chú nằm trong fact, phá grain |
+| Providing labels to filter and group by | Flags & indicators as textual attributes | Reports full of `Y`/`N`/`1`/`0` |
+| Providing a path from general down to detail | Drilling down · multiple hierarchies | You can't drill, or only in one direction |
+| Holding free-text descriptions | Text comments | Notes end up in the fact, destroying the grain |
 
-## Bẫy 1 — cờ dạng mã
+## Trap 1 — coded flags
 
 ```sql
 CREATE TABLE dim_sp_ma AS
@@ -37,7 +36,7 @@ SELECT * FROM (VALUES
 ) t(sp_sk, san_pham, hang_moi, khuyen_mai, phan_loai_abc);
 ```
 
-Báo cáo chạy ra thế này:
+The report comes out like this:
 
 ```text
 ┌──────────┬────────────┬───────────┐
@@ -49,12 +48,12 @@ Báo cáo chạy ra thế này:
 └──────────┴────────────┴───────────┘
 ```
 
-Ba vấn đề trong một bảng ba dòng:
+Three problems in a three-row table:
 
-1. **`Y` và `y` thành hai nhóm.** Cùng một khái niệm, hai dòng riêng.
-2. **`1` và `0` ở cột `khuyen_mai`** — người đọc phải đoán `1` là có hay không.
-3. **Không tự giải thích.** Cột tên `hang_moi`, giá trị `N` — "không phải hàng mới"? Hay
-   "chưa xác định"?
+1. **`Y` and `y` become two groups.** The same concept, two separate rows.
+2. **`1` and `0` in the `khuyen_mai` column** — the reader has to guess whether `1` means yes or no.
+3. **It isn't self-explanatory.** A column named `hang_moi` with the value `N` — "not a new product"? Or
+   "undetermined"?
 
 ```sql
 SELECT count(DISTINCT hang_moi) AS so_gia_tri_hang_moi,
@@ -70,10 +69,10 @@ FROM dim_sp_ma;
 └─────────────────────┴─────────────┘
 ```
 
-**Ba giá trị cho một khái niệm nhị phân.** Đây là chỗ dữ liệu bắt đầu phân mảnh, và nó
-lan ra mọi báo cáo dùng cột đó.
+**Three values for a binary concept.** This is where the data starts fragmenting, and it
+spreads to every report using that column.
 
-### Cách sửa — giải mã ngay ở tầng dimension
+### The fix — decode at the dimension layer
 
 ```sql
 CREATE TABLE dim_sp AS
@@ -96,23 +95,23 @@ FROM dim_sp_ma;
 └─────────────────┴──────────────────┴───────────┘
 ```
 
-Cùng dữ liệu, báo cáo giờ đọc được mà không cần chú thích. `Y` và `y` gộp lại đúng.
+The same data, and the report is now readable without a legend. `Y` and `y` group together correctly.
 
-Ba luật rút ra:
+Three rules to take away:
 
-- **Giải mã một lần, ở tầng dimension** — không phải trong từng câu query hay từng
-  dashboard. Đây cũng là lý do dashboard không nên chứa `CASE WHEN`.
-- **Nhãn phải tự giải thích khi đứng một mình.** `Hang thuong` đọc được; `N` thì không.
-- **Giữ cả mã gốc trong một cột riêng** (`ma_hang_moi`) để đối chiếu hệ nguồn — nhưng
-  người dùng cuối không thấy nó.
+- **Decode once, at the dimension layer** — not in each query or each
+  dashboard. This is also why a dashboard shouldn't contain `CASE WHEN`.
+- **A label must be self-explanatory standing alone.** `Hang thuong` reads; `N` doesn't.
+- **Keep the original code in its own column** (`ma_hang_moi`) for reconciling with the source — but
+  end users don't see it.
 
-Cờ có ít giá trị và hay đi cùng nhau thì gom vào [junk dimension](junk-dimension.md).
+Flags with few values that usually travel together belong in a [junk dimension](junk-dimension.md).
 
-## Nhiều cây phân cấp trong cùng một dimension
+## Several hierarchies in one dimension
 
-Một sản phẩm được nhìn theo nhiều cách, tuỳ ai hỏi. Đội bán hàng phân theo ngành hàng;
-đội kế toán phân theo loại tài khoản. Kimball gọi là **multiple hierarchies**, và cách xử
-lý đơn giản hơn người ta tưởng: **thêm cột, không thêm bảng.**
+A product is viewed several ways depending on who's asking. The sales team classifies by product line;
+accounting classifies by account type. Kimball calls this **multiple hierarchies**, and the handling
+is simpler than people expect: **add columns, not tables.**
 
 ```sql
 CREATE TABLE dim_sp_2cay AS
@@ -124,7 +123,7 @@ SELECT * FROM (VALUES
 ) t(sp_sk, san_pham, nganh_hang, nhom_hang, loai_ke_toan, muc_bao_cao_tc);
 ```
 
-Cây bán hàng:
+The sales tree:
 
 ```text
 ┌────────────┬───────────┐
@@ -136,7 +135,7 @@ Cây bán hàng:
 └────────────┴───────────┘
 ```
 
-Cây kế toán — **cùng một dimension, cùng một fact, không join thêm gì**:
+The accounting tree — **the same dimension, the same fact, with nothing extra joined**:
 
 ```text
 ┌──────────────┬───────────┐
@@ -147,7 +146,7 @@ Cây kế toán — **cùng một dimension, cùng một fact, không join thêm
 └──────────────┴───────────┘
 ```
 
-Bất biến phải kiểm: hai cây chia nhóm khác nhau nhưng **tổng phải bằng nhau**.
+The invariant to check: the two trees group differently but **the totals must match**.
 
 ```sql
 SELECT (SELECT sum(f.doanh_thu) FROM fct_ban f JOIN dim_sp_2cay d USING (sp_sk)) AS tong,
@@ -163,18 +162,18 @@ SELECT (SELECT sum(f.doanh_thu) FROM fct_ban f JOIN dim_sp_2cay d USING (sp_sk))
 └────────┴──────────────────────┴─────────────────────┘
 ```
 
-800 + 200 + 100 = 900 + 200 = **1.100**. Hai cách chia, một tổng. Cây nào cộng ra số khác
-là cây đó có sản phẩm chưa được gán, hoặc gán vào hai nhánh.
+800 + 200 + 100 = 900 + 200 = **1,100**. Two ways of dividing it, one total. A tree that adds up to a different number
+has products unassigned, or assigned to two branches.
 
-**Điều kiện:** mỗi cây phải **phủ hết và không chồng lấn** — mỗi sản phẩm thuộc đúng một
-nhánh trong mỗi cây. Nếu một sản phẩm thuộc nhiều nhánh của cùng một cây thì đó không còn
-là cây phân cấp nữa, mà là quan hệ nhiều-nhiều → [bridge table](bridge-table.md).
+**The condition:** each tree must be **exhaustive and non-overlapping** — each product belongs to exactly one
+branch in each tree. If a product belongs to several branches of the same tree, that's no longer
+a hierarchy but a many-to-many relationship → a [bridge table](bridge-table.md).
 
-Cây có độ sâu không đều thì xem [cây phân cấp](hierarchy.md).
+For a tree of uneven depth, see [hierarchies](hierarchy.md).
 
-## Drilling down thật ra không phải một tính năng
+## Drilling down isn't really a feature
 
-Kimball nhấn mạnh điều dễ bị bỏ qua: **drill down chỉ là thêm một cột vào `GROUP BY`.**
+Kimball emphasises something easily overlooked: **drilling down is just adding a column to the `GROUP BY`.**
 
 ```sql
 GROUP BY nganh_hang                        -- muc tong quat
@@ -182,57 +181,57 @@ GROUP BY nganh_hang, nhom_hang             -- drill xuong mot cap
 GROUP BY nganh_hang, nhom_hang, san_pham   -- toi chi tiet
 ```
 
-Không cần cấu hình gì, không cần OLAP engine. Hệ quả thực tế: **dimension càng nhiều
-thuộc tính mô tả thì càng drill được sâu**. Một dimension 5 cột hạn chế người dùng nhiều
-hơn bất kỳ giới hạn công cụ nào.
+No configuration, no OLAP engine. The practical consequence: **the more descriptive attributes a dimension has,
+the deeper you can drill**. A 5-column dimension limits users more
+than any tool limit does.
 
-Đây là lý do Kimball khuyên dimension **rộng và dẹt** — 50–100 cột là bình thường, không
-phải dấu hiệu thiết kế kém.
+This is why Kimball advises dimensions be **wide and flat** — 50–100 columns is normal, not
+a sign of poor design.
 
-## Text comments — ghi chú tự do để đâu
+## Text comments — where free-text notes go
 
-Trường ghi chú (`ly_do_huy`, `ghi_chu_giao_hang`) hay bị nhét thẳng vào fact. Ba vấn đề:
-nó là chuỗi dài trong bảng lớn nhất, nó không gộp được, và nó thường trùng lặp.
+Note fields (`ly_do_huy`, `ghi_chu_giao_hang`) often get stuffed straight into the fact. Three problems:
+it's a long string in the largest table, it can't be grouped, and it's usually duplicated.
 
-| Trường hợp | Chỗ đúng |
+| The case | The right home |
 |---|---|
-| Ghi chú lặp lại, ít giá trị phân biệt | Một dimension nhỏ, fact trỏ khoá tới |
-| Ghi chú gần như duy nhất mỗi dòng | Một bảng riêng khoá theo degenerate dimension (`so_don`) |
-| Cần lọc/gộp theo nội dung | **Trích thành thuộc tính có cấu trúc** — đừng gộp theo chuỗi tự do |
+| Repeated notes with few distinct values | A small dimension the fact points a key at |
+| Notes almost unique per row | Its own table keyed by the degenerate dimension (`so_don`) |
+| You need to filter/group by the content | **Extract it into a structured attribute** — don't group by free text |
 
-Dòng cuối là quan trọng nhất: nếu người dùng muốn *"đếm đơn huỷ theo lý do"* thì lý do
-phải là **danh mục** có mã, không phải chữ người nhập tay. Chuỗi tự do dùng để đọc, không
-dùng để gộp.
+The last row is the most important: if users want *"count cancelled orders by reason"* then the reason
+must be a **coded catalogue**, not text typed by hand. Free text is for reading, not
+for grouping.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Nhãn dạng chữ: báo cáo đọc được ngay | Tốn chỗ hơn mã một ký tự (nén dictionary lo phần này) |
-| Nhiều cây trong một dimension | Dimension rộng; phải giữ mỗi cây phủ hết, không chồng |
-| Dimension rộng → drill sâu | Nhiều cột phải bảo trì và mô tả |
-| Ghi chú tách khỏi fact | Thêm một join khi cần đọc |
+| Textual labels: reports readable immediately | More space than a one-character code (dictionary compression handles that) |
+| Several trees in one dimension | A wide dimension; each tree must stay exhaustive and non-overlapping |
+| A wide dimension → deep drilling | Many columns to maintain and describe |
+| Notes separated from the fact | One extra join when you need to read them |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Để `Y`/`N`/`1`/`0` tới tận báo cáo | Không đọc được; `Y` và `y` thành hai nhóm — [case study](../case-studies/co-y-n-tren-dashboard.md) |
-| Giải mã bằng `CASE WHEN` trong từng dashboard | Mỗi dashboard một cách hiểu, sửa một chỗ sót chín chỗ |
-| Dựng bảng riêng cho mỗi cây phân cấp | Snowflake không cần thiết — thêm cột là đủ |
-| Dimension chỉ có vài cột "cho gọn" | Người dùng không drill được, phải mở ticket xin cột |
-| Gộp báo cáo theo chuỗi ghi chú tự do | Mỗi lỗi chính tả thành một nhóm |
-| Nhét ghi chú dài vào fact | Bảng lớn nhất phình vì cột không ai gộp |
+| Letting `Y`/`N`/`1`/`0` reach the report | Unreadable; `Y` and `y` become two groups — [case study](../case-studies/co-y-n-tren-dashboard.md) |
+| Decoding with `CASE WHEN` in each dashboard | Each dashboard has its own interpretation; fix one place and miss nine |
+| Building a separate table for each hierarchy | An unnecessary snowflake — adding columns is enough |
+| A dimension with only a few columns "to keep it tidy" | Users can't drill and have to raise a ticket for a column |
+| Grouping reports by free-text notes | Every typo becomes its own group |
+| Stuffing long notes into the fact | The largest table bloats with a column nobody groups by |
 
 ## Related Topics
 
-- [Junk dimension](junk-dimension.md) — gom nhiều cờ cardinality thấp vào một chỗ
-- [Cây phân cấp](hierarchy.md) — khi cây có độ sâu không đều
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — vì sao dimension nên dẹt
-- [NULL trong fact và dimension](null-handling.md) — thuộc tính trống thì gắn nhãn gì
-- [CS: dashboard đầy Y, N và y](../case-studies/co-y-n-tren-dashboard.md)
+- [Junk dimensions](junk-dimension.md) — gathering several low-cardinality flags into one place
+- [Hierarchies](hierarchy.md) — when the tree has uneven depth
+- [Star, snowflake, OBT](../reference/star-snowflake-obt.md) — why dimensions should be flat
+- [NULLs in facts and dimensions](null-handling.md) — what label to give an empty attribute
+- [CS: a dashboard full of Y, N and y](../case-studies/co-y-n-tren-dashboard.md)
 
 ## References
 
 - Kimball Group — [Flags and Indicators as Textual Attributes / Multiple Hierarchies / Drilling Down / Text Comments](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 3
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 3

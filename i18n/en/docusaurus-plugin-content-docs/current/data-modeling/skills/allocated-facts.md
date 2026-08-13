@@ -1,8 +1,7 @@
 ---
-title: Header/line và phân bổ fact
-i18n_status: untranslated
+title: Header/line and fact allocation
 sidebar_position: 17
-description: "Số đo ở cấp đơn hàng nhân bản xuống dòng đơn thì SUM phồng theo số dòng; phân bổ theo tỷ trọng giữ tổng đúng và mở ra P&L theo sản phẩm."
+description: "Duplicating an order-level measure down to the line level makes SUM inflate by the line count; allocating by weight keeps the total correct and unlocks P&L by product."
 tags: [allocated-facts, header-line, profit-and-loss, grain, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,13 +12,13 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Header/line và phân bổ fact
+# Header/line and fact allocation
 
-> **Chốt:** đơn hàng có số đo ở **hai cấp** — phí ship thuộc cả đơn, tiền hàng thuộc từng
-> dòng. Nhân bản số cấp trên xuống cấp dưới là bảo đảm `SUM` sai. Cách duy nhất giữ cả
-> grain mịn lẫn tổng đúng là **phân bổ theo tỷ trọng**.
+> **Takeaway:** an order has measures at **two levels** — the shipping fee belongs to the whole order, the goods
+> amount to each line. Duplicating the higher-level number downwards guarantees a wrong `SUM`. The only way to keep
+> both a fine grain and a correct total is **allocation by weight**.
 
-## Vấn đề
+## The problem
 
 ```sql
 CREATE TABLE src_header AS
@@ -34,17 +33,17 @@ SELECT * FROM (VALUES
 ) t(so_don, dong_so, san_pham, tien_hang);
 ```
 
-Sự thật: **phí ship 150.000**, tiền hàng 1.500.000.
+The truth: **150,000 of shipping**, 1,500,000 of goods.
 
-Ba cách dựng, và chỉ một cách đúng:
+Three ways to build it, and only one is correct:
 
-| Cách | Grain | Vấn đề |
+| Approach | Grain | The problem |
 |---|---|---|
-| Hai fact riêng, join khi cần | Hai grain | Join hai fact khác grain → phồng, xem [case study](../case-studies/join-hai-fact-lam-phong-tong.md) |
-| Một fact grain dòng, **nhân bản** header | Dòng đơn | `SUM(phi_ship)` phồng theo số dòng |
-| Một fact grain dòng, **phân bổ** header | Dòng đơn | Cách Kimball khuyên |
+| Two separate facts, joined when needed | Two grains | Joining two facts of different grain → inflation, see the [case study](../case-studies/join-hai-fact-lam-phong-tong.md) |
+| One line-grain fact with the header **duplicated** | Order line | `SUM(phi_ship)` inflates by the line count |
+| One line-grain fact with the header **allocated** | Order line | The approach Kimball recommends |
 
-### Cách nhân bản hỏng như thế nào
+### How the duplicating approach fails
 
 ```sql
 CREATE TABLE fct_sai AS
@@ -66,12 +65,12 @@ FROM fct_sai;
 └───────────┴──────────────────┴────────────┴───────────┘
 ```
 
-`tien_hang` đúng, `phi_ship` **phồng 133%**. Cùng một bảng, một cột đúng một cột sai —
-đó là điều làm nó khó phát hiện: người kiểm thấy doanh thu khớp nên tin cả bảng.
+`tien_hang` is correct while `phi_ship` is **133% inflated**. The same table with one column right and one wrong —
+that's what makes it hard to detect: whoever checks sees revenue match and trusts the whole table.
 
-Đơn `DH-001` có 3 dòng nên phí ship 100.000 được đếm ba lần.
+Order `DH-001` has 3 lines, so its 100,000 shipping fee is counted three times.
 
-## Cách làm — phân bổ theo tỷ trọng
+## The approach — allocation by weight
 
 ```sql
 CREATE TABLE fct_dung AS
@@ -107,11 +106,10 @@ FROM fct_dung;
 └──────────────┴───────────┴────────────────┘
 ```
 
-**Cộng theo chiều nào cũng đúng** — theo sản phẩm, theo tháng, theo khu vực. Số đo giờ
-additive ở grain dòng đơn, đúng như [additivity](../reference/fact-and-dimension.md) đòi
-hỏi.
+**Correct summed along any dimension** — by product, by month, by region. The measure is now
+additive at line-item grain, exactly as [additivity](../reference/fact-and-dimension.md) requires.
 
-Và câu hỏi trước đây không trả lời được, giờ trả lời được:
+And a question that was previously unanswerable is now answerable:
 
 ```sql
 SELECT san_pham, sum(tien_hang) AS tien_hang, sum(phi_ship_phan_bo) AS phi_ship,
@@ -129,30 +127,30 @@ FROM fct_dung GROUP BY 1 ORDER BY 3 DESC;
 └──────────┴───────────┴──────────┴───────────────┘
 ```
 
-### Chọn tiêu chí phân bổ
+### Choosing the allocation basis
 
-Tỷ trọng tiền hàng là mặc định, không phải luôn đúng. Tiêu chí phải phản ánh **cái gì
-thật sự gây ra chi phí**:
+Weighting by goods amount is the default, not always the right answer. The basis must reflect **what
+actually causes the cost**:
 
-| Số đo header | Tiêu chí hợp lý | Vì sao |
+| The header measure | A sensible basis | Why |
 |---|---|---|
-| Phí vận chuyển | Trọng lượng hoặc thể tích | Hãng vận chuyển tính theo cân, không theo tiền |
-| Chiết khấu toàn đơn | Tiền hàng | Chiết khấu tính trên giá trị |
-| Chi phí đóng gói | Số lượng món | Mỗi món một thao tác |
-| Hoa hồng nhân viên | Tiền hàng | Đúng cách tính hoa hồng |
+| Shipping cost | Weight or volume | Carriers charge by weight, not by value |
+| Order-wide discount | Goods amount | A discount is computed on value |
+| Packaging cost | Item count | Each item is one operation |
+| Sales commission | Goods amount | That's how commission is computed |
 
-Chọn tiêu chí là **quyết định nghiệp vụ**, không phải kỹ thuật. Ghi lại lý do ngay cạnh
-code — sáu tháng sau không ai nhớ vì sao chọn tiền hàng thay vì trọng lượng.
+Choosing the basis is a **business decision**, not a technical one. Record the reason next to
+the code — six months later nobody remembers why goods amount was chosen over weight.
 
-**Luật bất di:** dù chọn tiêu chí nào, `sum(phan_bo)` phải bằng tổng gốc. Sai số làm tròn
-gom về dòng lớn nhất của mỗi đơn.
+**The immovable rule:** whatever basis you choose, `sum(phan_bo)` must equal the original total. Rounding error
+goes to each order's largest line.
 
-## P&L theo sản phẩm — phân bổ chồng phân bổ
+## P&L by product — allocation on top of allocation
 
-Kimball xếp *profit and loss fact tables using allocations* thành mục riêng vì nó là ứng
-dụng khó nhất của kỹ thuật này: **chi phí chung không thuộc về đơn hàng nào cả** (lương
-văn phòng, thuê kho, marketing thương hiệu) mà vẫn phải xuất hiện trong lợi nhuận từng
-sản phẩm.
+Kimball makes *profit and loss fact tables using allocations* its own section because it's the hardest
+application of this technique: **overhead belongs to no order at all** (office salaries,
+warehouse rent, brand marketing) and yet must appear in each product's
+profit.
 
 ```sql
 CREATE TABLE chi_phi_chung AS SELECT 300000 AS chi_phi_van_hanh;
@@ -170,11 +168,11 @@ SELECT * FROM (VALUES ('SP-A', 0.60), ('SP-B', 0.75), ('SP-C', 0.50)) t(san_pham
 └──────────┴───────────┴───────────────┴──────────┴───────────────────────┴───────────┘
 ```
 
-**`SP-B` lỗ 15.000** dù doanh thu 300.000 — giá vốn 75% cộng chi phí chung đẩy nó xuống
-âm. Đây chính là loại kết luận mà chỉ P&L có phân bổ mới đưa ra được, và nó thường làm
-đảo lộn quyết định danh mục sản phẩm.
+**`SP-B` loses 15,000** despite 300,000 of revenue — a 75% cost of goods plus overhead pushes it
+negative. This is exactly the kind of conclusion only an allocated P&L can produce, and it usually
+overturns product-portfolio decisions.
 
-Đối soát bắt buộc — tổng lợi nhuận theo sản phẩm phải bằng lợi nhuận tính một cục:
+The mandatory reconciliation — the total per-product profit must equal the profit computed in one lump:
 
 ```text
 ┌───────────┬───────────────┬──────────┬───────────────┬────────────────┐
@@ -184,43 +182,43 @@ SELECT * FROM (VALUES ('SP-A', 0.60), ('SP-B', 0.75), ('SP-C', 0.50)) t(san_pham
 └───────────┴───────────────┴──────────┴───────────────┴────────────────┘
 ```
 
-110.000 + 20.000 − 15.000 = **115.000**. Khớp.
+110,000 + 20,000 − 15,000 = **115,000**. Matching.
 
-**Cảnh báo Kimball nhấn mạnh:** con số lợi nhuận theo sản phẩm chỉ đáng tin **bằng đúng
-tiêu chí phân bổ**. Đổi tiêu chí, `SP-B` có thể thành có lãi. Vì thế bảng P&L phân bổ
-phải luôn đi kèm cột `chi_phi_chung_phan_bo` hiện rõ — để người đọc thấy phần nào là thực
-tế đo được và phần nào là quy ước.
+**The warning Kimball emphasises:** a per-product profit figure is only trustworthy **to the extent the allocation
+basis is**. Change the basis and `SP-B` may become profitable. So an allocated P&L table
+must always come with a visible `chi_phi_chung_phan_bo` column — so the reader sees which part is
+actually measured and which part is convention.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Một fact, một grain, cộng theo chiều nào cũng đúng | Phải chọn và bảo vệ tiêu chí phân bổ |
-| P&L tới cấp sản phẩm | Con số phụ thuộc quy ước, dễ bị tranh cãi |
-| Không phải join hai fact khác grain | Sai số làm tròn phải xử lý |
-| Số header vẫn tra được (giữ bảng gốc) | Hai nơi lưu cùng một số đo |
+| One fact, one grain, correct summed along any dimension | You must choose and defend an allocation basis |
+| P&L down to product level | The figure depends on a convention and is easily disputed |
+| No joining of two facts of different grain | Rounding error must be handled |
+| The header numbers stay queryable (keep the original table) | The same measure stored in two places |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Nhân bản số header xuống mọi dòng | `SUM` phồng theo số dòng — [case study](../case-studies/phi-ship-phong-133-phan-tram.md) |
-| Phân bổ xong không đối soát tổng | Sai số làm tròn tích luỹ |
-| Chia đều thay vì theo tỷ trọng | Dòng 10.000đ gánh phí bằng dòng 1 triệu |
-| Không ghi lại lý do chọn tiêu chí | Sáu tháng sau không ai bảo vệ được con số |
-| Trộn chi phí phân bổ với chi phí trực tiếp trong một cột | Không tách được phần đo được và phần quy ước |
-| Coi P&L phân bổ là sự thật tuyệt đối | Quyết định cắt sản phẩm dựa trên một quy ước |
+| Duplicating the header number onto every line | `SUM` inflates by the line count — [case study](../case-studies/phi-ship-phong-133-phan-tram.md) |
+| Allocating without reconciling the total | Rounding error accumulates |
+| Splitting evenly instead of by weight | A 10,000đ line bears the same fee as a 1-million one |
+| Not recording why the basis was chosen | Six months later nobody can defend the figure |
+| Mixing allocated cost with direct cost in one column | You can't separate the measured part from the conventional one |
+| Treating an allocated P&L as absolute truth | Cutting a product on the basis of a convention |
 
 ## Related Topics
 
-- [Grain](../reference/grain.md) — vì sao không được trộn hai grain trong một bảng
-- [Degenerate dimension](degenerate-dimension.md) — `so_don` là thứ nối header với line
-- [Bridge table](bridge-table.md) — cùng cơ chế hệ số phân bổ cho quan hệ nhiều-nhiều
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity sau khi phân bổ
-- [CS: phí ship phồng 133%](../case-studies/phi-ship-phong-133-phan-tram.md)
-- [CS: join hai fact làm phồng tổng](../case-studies/join-hai-fact-lam-phong-tong.md)
+- [Grain](../reference/grain.md) — why you must never mix two grains in one table
+- [Degenerate dimensions](degenerate-dimension.md) — `so_don` is what links the header to the lines
+- [Bridge tables](bridge-table.md) — the same allocation-factor mechanism for many-to-many relationships
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity after allocation
+- [CS: the shipping fee 133% inflated](../case-studies/phi-ship-phong-133-phan-tram.md)
+- [CS: joining two facts inflating the total](../case-studies/join-hai-fact-lam-phong-tong.md)
 
 ## References
 
 - Kimball Group — [Header/Line Fact Tables · Allocated Facts · Profit and Loss Fact Tables Using Allocations](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 6 và 7
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 6 and 7
