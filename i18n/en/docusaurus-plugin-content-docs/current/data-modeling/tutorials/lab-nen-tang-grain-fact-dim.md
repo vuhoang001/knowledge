@@ -1,8 +1,7 @@
 ---
-title: "Lab nền tảng — grain, fact/dimension, khoá: bốn cách làm phồng số"
-i18n_status: untranslated
+title: "Foundations lab — grain, fact/dimension, keys: four ways to inflate numbers"
 sidebar_position: 3
-description: "Tự tay tái hiện bốn ca phồng số kinh điển trên cùng một bộ dữ liệu, rồi sửa từng cái — mọi con số chạy thật."
+description: "Reproduce four classic inflation cases yourself on one dataset, then fix each one — every number really run."
 tags: [tutorial, grain, fact, dimension, surrogate-key, degenerate-dimension, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Lab nền tảng — grain, fact/dimension, khoá: bốn cách làm phồng số
+# Foundations lab — grain, fact/dimension, keys: four ways to inflate numbers
 
-> **Chốt:** bốn bài dưới đây đều làm doanh thu phồng lên, đều **không có lỗi nào báo**,
-> và đều bắt nguồn từ một câu chưa trả lời: *một dòng của bảng này là cái gì*.
+> **Takeaway:** the four exercises below all inflate revenue, all **raise no error**,
+> and all stem from one unanswered question: *what is one row of this table*.
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt
 ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Bốn số gốc — **chép ra giấy**, mọi bài dưới đây đối chiếu với chúng:
+The four baseline numbers — **write them down**; every exercise below reconciles against them:
 
 ```text
 ┌───────┬──────────┬───────────┬──────────┐
@@ -35,15 +34,15 @@ Bốn số gốc — **chép ra giấy**, mọi bài dưới đây đối chiế
 └───────┴──────────┴───────────┴──────────┘
 ```
 
-Mở DuckDB trên chính file lab:
+Open DuckDB on the lab file itself:
 
 ```bash
 ./.venv/bin/python -c "import duckdb; duckdb.connect('lab.duckdb').sql('...').show()"
 ```
 
-## Bài 1 — Đo grain, đừng đoán
+## Exercise 1 — Measure the grain, don't guess it
 
-Đừng nhìn tên bảng rồi suy. Đếm:
+Don't look at the table name and infer. Count:
 
 ```sql
 select count(*) so_dong,
@@ -60,23 +59,23 @@ from don_hang_chi_tiet;
 └─────────┴────────┴────────────────┘
 ```
 
-`so_khoa_to_hop` bằng `so_dong` → grain là **`(don_hang_id, dong)`**.
-`so_don` chỉ 10 → `don_hang_id` **không** phải khoá.
+`so_khoa_to_hop` equals `so_dong` → the grain is **`(don_hang_id, dong)`**.
+`so_don` is only 10 → `don_hang_id` is **not** a key.
 
-Viết grain thành một câu tiếng Việt rồi mới đi tiếp:
+Write the grain as one sentence before going any further:
 
-> *"Một dòng của `don_hang_chi_tiet` là **một dòng hàng trong một đơn hàng**."*
+> *"One row of `don_hang_chi_tiet` is **one goods line within one order**."*
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-**Việc cần làm:** đặt test `unique` lên `don_hang_id` trong `schema.yml`, chạy
-`dbt test`. Nó FAIL. Dữ liệu sai hay test sai? Xem [Grain](../reference/grain.md).
+**What to do:** declare a `unique` test on `don_hang_id` in `schema.yml` and run
+`dbt test`. It FAILS. Is the data wrong or the test? See [Grain](../reference/grain.md).
 
-## Bài 2 — Trộn hai grain: phí ship phồng 77,5%
+## Exercise 2 — Mixing two grains: shipping fees 77.5% inflated
 
-`don_hang` có `phi_ship` ở **cấp đơn**. `don_hang_chi_tiet` ở **cấp dòng**. Join rồi cộng:
+`don_hang` has `phi_ship` at **order level**. `don_hang_chi_tiet` is at **line level**. Join and sum:
 
 ```sql
 select sum(h.phi_ship) phi_ship_bao_cao
@@ -91,20 +90,20 @@ from don_hang h join don_hang_chi_tiet ct using (don_hang_id);
 └──────────────────┴───────────────┴───────────┘
 ```
 
-Nhưng `sum(so_luong*don_gia)` trong cùng câu đó vẫn **đúng** 10.215.000.
+But `sum(so_luong*don_gia)` in that same statement is still **exactly** 10,215,000.
 
-> **Một cột đúng, một cột sai, trong cùng một bảng.** Người kiểm thấy doanh thu khớp
-> nên tin cả bảng.
+> **One right column, one wrong, in the same table.** The reviewer sees revenue matching
+> and trusts the whole table.
 
-**Việc cần làm:** đơn nào bị nhân nhiều nhất? (gợi ý: `DH003` có 3 dòng). Cách sửa là
-phân bổ theo tỷ trọng — xem [header/line và phân bổ fact](../skills/allocated-facts.md)
-và [case study phí ship phồng 133%](../case-studies/phi-ship-phong-133-phan-tram.md).
+**What to do:** which order is multiplied the most? (hint: `DH003` has 3 lines). The fix is
+proportional allocation — see [header/line and allocating facts](../skills/allocated-facts.md)
+and [the case study on shipping fees 133% inflated](../case-studies/phi-ship-phong-133-phan-tram.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 3 — Join thẳng hai fact: vừa phồng vừa mất
+## Exercise 3 — Joining two facts directly: inflating and losing at once
 
 ```sql
 select count(*) dong_sau_join, sum(ct.so_luong*ct.don_gia) doanh_thu
@@ -119,14 +118,14 @@ from don_hang_chi_tiet ct join tra_hang t using (don_hang_id);
 └───────────────┴────────────────────┴────────────────┘
 ```
 
-Con số 6.750.000 **không phải doanh thu của bất kỳ thứ gì**:
+The number 6,750,000 is **not the revenue of anything at all**:
 
-- `DH003` bị trả **hai lần** → các dòng của nó đếm đôi
-- 7 đơn **không có** dòng trả hàng → biến mất khỏi kết quả
+- `DH003` was returned **twice** → its lines are double-counted
+- 7 orders have **no** return line → they vanish from the result
 
-Hai lỗi ngược chiều, nên tổng vừa phồng vừa hụt, và không ai đoán được hướng.
+Two errors in opposite directions, so the total both inflates and falls short, and nobody can guess which way.
 
-Cách đúng — gộp riêng từng bên **về cùng một mức** rồi mới ghép:
+The right way — aggregate each side separately **to the same level**, then combine:
 
 ```sql
 with ban as (select don_hang_id, sum(so_luong*don_gia) dt from don_hang_chi_tiet group by 1),
@@ -143,20 +142,20 @@ from ban full join tra using (don_hang_id);
 └───────────┴─────────────┘
 ```
 
-Khớp nguồn. Đây là **multipass SQL** — xem
-[conformed dimension](../skills/conformed-dimension.md#kỹ-thuật-này-có-tên-multipass-sql)
-và [case study join hai fact](../case-studies/join-hai-fact-lam-phong-tong.md).
+Matching the source. This is **multipass SQL** — see
+[conformed dimensions](../skills/conformed-dimension.md#this-technique-has-a-name-multipass-sql)
+and [the case study on joining two facts](../case-studies/join-hai-fact-lam-phong-tong.md).
 
-**Việc cần làm:** đổi `FULL JOIN` thành `INNER JOIN` rồi chạy lại. Mất mấy đơn? Vì sao
-`FULL` mới đúng?
+**What to do:** change `FULL JOIN` to `INNER JOIN` and run it again. How many orders are lost? Why is
+`FULL` the right one?
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 4 — Dựng dimension cho số đơn hàng: phồng 44,1%
+## Exercise 4 — Building a dimension for the order number: 44.1% inflated
 
-Phản xạ "mọi khoá trong fact phải trỏ tới một dimension" dẫn tới `dim_don_hang`. Đo trước:
+The reflex "every key in a fact must point at a dimension" leads to `dim_don_hang`. Measure first:
 
 ```sql
 select (select count(*) from don_hang) dong_dim,
@@ -171,10 +170,10 @@ select (select count(*) from don_hang) dong_dim,
 └──────────┴───────────┴────────┘
 ```
 
-Tỷ lệ **0,67** — một dimension đúng nghĩa phải nhỏ hơn fact vài bậc độ lớn. Đã đáng nghi.
+A ratio of **0.67** — a genuine dimension should be orders of magnitude smaller than the fact. Already suspicious.
 
-Giờ làm điều ai cũng làm tiếp: bảng trống trải quá nên nhét `trang_thai` vào, và vì
-trạng thái đổi theo thời gian nên bật Type 2:
+Now do what everybody does next: the table looks too bare so `trang_thai` gets shoved in, and because
+status changes over time, Type 2 gets turned on:
 
 ```sql
 create or replace table dim_don_type2 as
@@ -195,26 +194,26 @@ select * from (values
 └──────────┴─────────────┴────────────────────┴────────────────┴───────────┘
 ```
 
-**Dimension giờ nhiều dòng hơn số đơn thật** (13 vs 10) — dấu hiệu nhìn thấy bằng mắt.
+**The dimension now has more rows than there are real orders** (13 vs 10) — a sign visible to the naked eye.
 
-Cách sửa: `don_hang_id` ở lại fact như một cột thường
-([degenerate dimension](../skills/degenerate-dimension.md)); trạng thái thành dimension
-nhỏ riêng; còn lịch sử quy trình thì thuộc về **accumulating snapshot**, không thuộc
-dimension. Xem [case study dim đơn hàng phồng 40%](../case-studies/dim-don-hang-lam-phong-doanh-thu.md).
+The fix: `don_hang_id` stays in the fact as an ordinary column
+(a [degenerate dimension](../skills/degenerate-dimension.md)); the status becomes its own small
+dimension; and the process history belongs to an **accumulating snapshot**, not to a
+dimension. See [the case study on the order dim inflating 40%](../case-studies/dim-don-hang-lam-phong-doanh-thu.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 5 — Join dimension Type 2 bằng natural key: phồng 26,9%
+## Exercise 5 — Joining a Type 2 dimension by natural key: 26.9% inflated
 
-Cần làm [lab SCD](scd-bang-dbt-snapshot.md) trước để có `scd_khach_hang` với `C1` hai
-phiên bản.
+You need to do [the SCD lab](scd-bang-dbt-snapshot.md) first to have `scd_khach_hang` with two
+versions of `C1`.
 
 ```sql
 select sum(ct.so_luong*ct.don_gia) doanh_thu, count(*) dong_sau_join
 from don_hang h join don_hang_chi_tiet ct using (don_hang_id)
-join scd_khach_hang d on d.khach_id = h.khach_id;   -- thieu dieu kien thoi gian
+join scd_khach_hang d on d.khach_id = h.khach_id;   -- missing the time condition
 ```
 
 ```text
@@ -225,7 +224,7 @@ join scd_khach_hang d on d.khach_id = h.khach_id;   -- thieu dieu kien thoi gian
 └────────────────────┴────────────────┴───────────────┴───────────┘
 ```
 
-Xem lỗi rơi vào ai:
+See who the error lands on:
 
 ```text
 ┌──────────┬──────────────┬───────────────┐
@@ -238,31 +237,31 @@ Xem lỗi rơi vào ai:
 └──────────┴──────────────┴───────────────┘
 ```
 
-Chỉ `C1` bị nhân đôi — đúng bằng số phiên bản của nó. Đó là lý do fact phải trỏ vào
-**surrogate key của đúng phiên bản**, không phải natural key. Xem
-[Surrogate key](../reference/surrogate-key.md).
+Only `C1` is doubled — exactly by its version count. That's why the fact must point at
+**the surrogate key of the right version**, not at the natural key. See
+[Surrogate keys](../reference/surrogate-key.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Điểm chung của cả năm bài
+## What all five exercises share
 
-| Bài | Phồng | Có gì báo lỗi không |
+| Exercise | Inflation | Does anything report an error |
 |---|---|---|
-| 2 · trộn hai grain | +77,5% (chỉ cột `phi_ship`) | Không — cột kia vẫn đúng |
-| 3 · join hai fact | vừa phồng vừa hụt | Không |
-| 4 · dim có grain bằng fact | +44,1% | Không |
-| 5 · join Type 2 bằng natural key | +26,9% | Không |
+| 2 · mixing two grains | +77.5% (the `phi_ship` column only) | No — the other column is still right |
+| 3 · joining two facts | inflating and falling short at once | No |
+| 4 · a dim with the same grain as the fact | +44.1% | No |
+| 5 · joining Type 2 by natural key | +26.9% | No |
 
-**Không ca nào có test đỏ.** SQL chạy, pipeline xanh, số sai. Đó là lý do phép kiểm
-`count(*) = count(distinct <khoá grain>)` phải chạy **trước** mọi phép cộng.
+**No case has a red test.** The SQL runs, the pipeline is green, the numbers are wrong. That's why the
+`count(*) = count(distinct <grain key>)` check must run **before** any addition.
 
 ## Related Topics
 
-- [Grain](../reference/grain.md) — bài 1 và bài 2
-- [Fact và Dimension](../reference/fact-and-dimension.md) — cột nào thuộc bảng nào
-- [Degenerate dimension](../skills/degenerate-dimension.md) — bài 4
-- [Surrogate key](../reference/surrogate-key.md) — bài 5
-- [SCD Type 2 bằng dbt snapshot](scd-bang-dbt-snapshot.md) — dựng `scd_khach_hang` dùng ở bài 5
-- [Star schema bằng SQL thuần](star-schema-duckdb.md) — dựng lại mô hình đúng từ đầu
+- [Grain](../reference/grain.md) — exercises 1 and 2
+- [Facts and dimensions](../reference/fact-and-dimension.md) — which column belongs to which table
+- [Degenerate dimensions](../skills/degenerate-dimension.md) — exercise 4
+- [Surrogate keys](../reference/surrogate-key.md) — exercise 5
+- [SCD Type 2 with dbt snapshots](scd-bang-dbt-snapshot.md) — builds the `scd_khach_hang` used in exercise 5
+- [A star schema in plain SQL](star-schema-duckdb.md) — rebuilding the correct model from scratch

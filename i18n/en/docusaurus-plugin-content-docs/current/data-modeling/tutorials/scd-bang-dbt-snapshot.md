@@ -1,8 +1,7 @@
 ---
-title: SCD Type 2 bằng dbt snapshot — và cái bẫy không sách nào nói
-i18n_status: untranslated
+title: SCD Type 2 with dbt snapshots — and the trap no book mentions
 sidebar_position: 2
-description: "Dựng SCD Type 2 bằng dbt snapshot, rồi tự tay phá nó: as-was join đúng lý thuyết lại trả về 0 dòng, và vì sao."
+description: "Build SCD Type 2 with dbt snapshots, then break it yourself: the theoretically correct as-was join returns 0 rows, and why."
 tags: [tutorial, scd, dbt, snapshot, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,23 +12,23 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# SCD Type 2 bằng dbt snapshot — và cái bẫy không sách nào nói
+# SCD Type 2 with dbt snapshots — and the trap no book mentions
 
-> **Chốt:** dbt lo phần cơ bắp của [SCD](../skills/scd.md) Type 2 — bốn cột
-> `dbt_valid_from` / `dbt_valid_to` / `dbt_scd_id` / `dbt_updated_at` sinh tự động.
-> Nhưng nó **chỉ ghi lịch sử từ lần bạn chạy đầu tiên**. Mọi fact có trước mốc đó không
-> được phiên bản nào phủ — và as-was join sẽ trả về **rỗng** thay vì báo lỗi.
+> **Takeaway:** dbt handles the muscle work of [SCD](../skills/scd.md) Type 2 — the four columns
+> `dbt_valid_from` / `dbt_valid_to` / `dbt_scd_id` / `dbt_updated_at` are generated automatically.
+> But it **only records history from your first run onwards**. Any fact predating that moment is covered
+> by no version at all — and the as-was join returns **nothing** instead of raising an error.
 
-## Chuẩn bị
+## Preparation
 
-Lab nằm **ngoài repo** (xem `CLAUDE.md`): `~/Documents/learn-lab/dbt`.
+The lab lives **outside the repo** (see `CLAUDE.md`): `~/Documents/learn-lab/dbt`.
 
 ```bash
 cd ~/Documents/learn-lab/dbt
 ./.venv/bin/dbt --version      # dbt-core 1.12.0 · dbt-duckdb 1.10.1
 ```
 
-Bốn seed dùng trong bài — `khach_hang` là nguồn của snapshot:
+The four seeds used here — `khach_hang` is the snapshot's source:
 
 ```csv
 # seeds/khach_hang.csv
@@ -40,23 +39,23 @@ C3,Le Van C,Mien Trung,Bac
 C4,Pham Thi D,Mien Bac,Kim cuong
 ```
 
-`don_hang` (10 đơn, có `khach_id` và `ngay_dat` trong **tháng 7**) và
-`don_hang_chi_tiet` (15 dòng, tổng **10.215.000**) là fact. Nhớ con số tổng — mọi bài
-dưới đây đối chiếu với nó.
+`don_hang` (10 orders, with `khach_id` and `ngay_dat` in **July**) and
+`don_hang_chi_tiet` (15 lines, totalling **10,215,000**) are the facts. Remember that total — every exercise
+below reconciles against it.
 
 ```bash
 ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-## Bài 1 — Khai snapshot, và ba quyết định của *người*
+## Exercise 1 — Declare the snapshot, and the three decisions that are *a person's*
 
-dbt sinh cột hộ bạn. Ba thứ nó **không** quyết được:
+dbt generates the columns for you. Three things it **can't** decide:
 
-| Khai gì | Nghĩa là gì | Sai thì sao |
+| What you declare | What it means | What goes wrong |
 |---|---|---|
-| `unique_key` | Natural key của thực thể | Sai khoá → mỗi lần chạy sinh phiên bản mới cho mọi dòng |
-| `check_cols` | Cột **nào** đang được giữ lịch sử | Khai `'all'` là bật Type 2 cho cả cột đổi hằng ngày |
-| `strategy` | `check` (so cột) hay `timestamp` (tin `updated_at` của nguồn) | `timestamp` mà nguồn nói dối → [mất thay đổi vĩnh viễn](../skills/scd-change-detection.md) |
+| `unique_key` | The entity's natural key | The wrong key → every run creates a new version for every row |
+| `check_cols` | **Which** columns are having their history kept | Declaring `'all'` turns Type 2 on even for a column that changes daily |
+| `strategy` | `check` (compare columns) or `timestamp` (trust the source's `updated_at`) | `timestamp` while the source lies → [changes lost forever](../skills/scd-change-detection.md) |
 
 ```sql
 -- snapshots/scd_khach_hang.sql
@@ -72,7 +71,7 @@ select khach_id, ho_ten, khu_vuc, hang from {{ ref('khach_hang') }}
 {% endsnapshot %}
 ```
 
-Thêm `snapshot-paths: ['snapshots']` vào `dbt_project.yml`, rồi:
+Add `snapshot-paths: ['snapshots']` to `dbt_project.yml`, then:
 
 ```bash
 ./.venv/bin/dbt snapshot --profiles-dir .
@@ -89,16 +88,16 @@ Thêm `snapshot-paths: ['snapshots']` vào `dbt_project.yml`, rồi:
 └──────────┴────────────┴────────────────────────────┴──────────────┘
 ```
 
-**Nhìn kỹ `dbt_valid_from`: đó là *lúc bạn chạy lệnh*, không phải lúc dữ liệu phát sinh.**
-Ghi nhớ điều này — bài 4 sẽ quay lại.
+**Look closely at `dbt_valid_from`: that's *when you ran the command*, not when the data happened.**
+Remember this — exercise 4 comes back to it.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 2 — Đổi một giá trị, chạy lại, xem phiên bản sinh ra
+## Exercise 2 — Change one value, re-run, watch the version appear
 
-Sửa `seeds/khach_hang.csv`, đổi `C1` từ `Mien Bac` thành `Mien Nam`:
+Edit `seeds/khach_hang.csv`, changing `C1` from `Mien Bac` to `Mien Nam`:
 
 ```bash
 ./.venv/bin/dbt seed --profiles-dir . -s khach_hang
@@ -117,17 +116,17 @@ Sửa `seeds/khach_hang.csv`, đổi `C1` từ `Mien Bac` thành `Mien Nam`:
 └──────────┴────────────┴──────────┴────────────┘
 ```
 
-`C1` có **hai dòng**. Grain của bảng vừa đổi từ *một khách* thành
-*[một phiên bản của một khách](../reference/grain.md)* — và `unique` trên `khach_id`
-từ giờ sẽ FAIL, đúng như nó phải thế.
+`C1` has **two rows**. The table's grain has just changed from *one customer* to
+*[one version of one customer](../reference/grain.md)* — and `unique` on `khach_id`
+will FAIL from now on, exactly as it should.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 3 — Join sai: `dbt_valid_to is null`
+## Exercise 3 — The wrong join: `dbt_valid_to is null`
 
-Đây là câu ai cũng viết theo bản năng, vì nó ngắn và chạy được:
+This is the one everybody writes instinctively, because it's short and it runs:
 
 ```sql
 join scd_khach_hang d on d.khach_id = h.khach_id and d.dbt_valid_to is null
@@ -143,18 +142,18 @@ join scd_khach_hang d on d.khach_id = h.khach_id and d.dbt_valid_to is null
 └────────────┴───────────┴────────┘
 ```
 
-Tổng **10.215.000** — khớp nguồn. Không dòng nào mất, không test nào đỏ.
+The total is **10,215,000** — matching the source. No row lost, no test red.
 
-Nhưng cả ba đơn tháng 7 của `C1` bị gán vào **Miền Nam**, trong khi tháng 7 `C1` còn ở
-Miền Bắc. Đây chính là [case study "Miền Bắc bằng 0"](../case-studies/fact-den-muon-gan-sai-khu-vuc.md),
-tái hiện bằng tay.
+But all three of `C1`'s July orders are assigned to **the South**, while in July `C1` was still in
+the North. This is precisely [the case study "the North is zero"](../case-studies/fact-den-muon-gan-sai-khu-vuc.md),
+reproduced by hand.
 
-**Câu hỏi:** một mệnh đề `and d.dbt_valid_to is null` đã vô hiệu hoá thứ gì mà bạn vừa
-bỏ công dựng ở bài 1–2?
+**The question:** what did that single `and d.dbt_valid_to is null` clause nullify, out of everything you just
+went to the trouble of building in exercises 1–2?
 
-## Bài 4 — Join "đúng", và nó trả về **0 dòng**
+## Exercise 4 — The "correct" join, and it returns **0 rows**
 
-Sửa lại cho đúng lý thuyết — khớp phiên bản có hiệu lực **tại ngày đặt hàng**:
+Fix it to match the theory — match the version in effect **at the order date**:
 
 ```sql
 join scd_khach_hang d on d.khach_id = h.khach_id
@@ -170,35 +169,35 @@ join scd_khach_hang d on d.khach_id = h.khach_id
              0 rows
 ```
 
-**Không một dòng nào.** SQL đúng, mô hình đúng, và kết quả rỗng.
+**Not a single row.** The SQL is right, the model is right, and the result is empty.
 
-Dừng lại tự trả lời trước khi đọc tiếp: *vì sao?*
+Stop and answer for yourself before reading on: *why?*
 
 <details>
-<summary>Đáp án</summary>
+<summary>Answer</summary>
 
-`dbt_valid_from` của **mọi** phiên bản đầu tiên là `2026-08-04` — lúc bạn chạy
-`dbt snapshot` lần đầu. Còn đơn hàng nằm ở **tháng 7**.
+The `dbt_valid_from` of **every** first version is `2026-08-04` — when you first ran
+`dbt snapshot`. The orders, meanwhile, are in **July**.
 
-Mọi fact đều có trước mốc đó, nên **không phiên bản nào phủ chúng**.
+Every fact predates that moment, so **no version covers them**.
 
-> dbt snapshot **không** dựng lại lịch sử quá khứ. Nó bắt đầu ghi từ lần chạy đầu tiên.
-> Bạn chỉ có lịch sử kể từ ngày bạn nhớ ra là phải bật nó.
+> dbt snapshot does **not** reconstruct past history. It starts recording from the first run.
+> You only have history from the day you remembered to turn it on.
 
-Đây là lý do thật để chạy `dbt snapshot` **ngay từ ngày đầu của dự án**, kể cả khi chưa
-ai hỏi câu as-was nào — mỗi ngày trễ là một ngày lịch sử mất vĩnh viễn, và không có cách
-lấy lại.
+This is the real reason to run `dbt snapshot` **from a project's first day**, even when
+nobody has asked an as-was question yet — every day of delay is a day of history lost forever, with no way
+to get it back.
 
 </details>
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 5 — Sửa: phiên bản đầu tiên có hiệu lực từ vô cực quá khứ
+## Exercise 5 — The fix: the first version takes effect from the infinite past
 
-Cách xử lý chuẩn khi bật snapshot muộn — coi bản ghi **sớm nhất** của mỗi thực thể là đã
-đúng từ trước khi kho tồn tại:
+The standard treatment when you turn snapshots on late — treat each entity's **earliest** record as having
+been true from before the warehouse existed:
 
 ```sql
 with d as (
@@ -222,7 +221,7 @@ join d on d.khach_id = h.khach_id
 └────────────┴───────────┴────────┘
 ```
 
-Kiểm bắt buộc — tổng và số dòng phải khớp nguồn:
+The mandatory check — the total and the row count must match the source:
 
 ```text
 ┌──────────┬─────────┐
@@ -232,81 +231,81 @@ Kiểm bắt buộc — tổng và số dòng phải khớp nguồn:
 └──────────┴─────────┘
 ```
 
-### Ba con số đáng nhớ
+### Three numbers worth remembering
 
-| | Bài 3 (sai) | Bài 5 (đúng) | Chênh |
+| | Exercise 3 (wrong) | Exercise 5 (right) | The gap |
 |---|---|---|---|
-| Miền Bắc | 1.650.000 | **4.395.000** | thiếu **62%** |
-| Miền Nam | 6.465.000 | 3.720.000 | phồng 74% |
-| Tổng | 10.215.000 | 10.215.000 | **khớp cả hai** |
+| The North | 1,650,000 | **4,395,000** | **62%** short |
+| The South | 6,465,000 | 3,720,000 | 74% inflated |
+| The total | 10,215,000 | 10,215,000 | **matching in both** |
 
-Dòng cuối là bài học: **tổng khớp không chứng minh gì cả.** Doanh thu chỉ bị *gán sai
-chiều*, không bị mất — nên mọi test đối soát tổng đều xanh.
+The last row is the lesson: **a matching total proves nothing.** The revenue is merely *assigned to the wrong
+dimension member*, not lost — so every total-reconciliation test is green.
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 6 — `check_cols` và cái bẫy `'all'`
+## Exercise 6 — `check_cols` and the `'all'` trap
 
-Đổi `check_cols=['khu_vuc', 'hang']` thành `check_cols='all'`, rồi sửa `ho_ten` của một
-khách (thêm dấu, sửa chính tả) và chạy lại snapshot.
+Change `check_cols=['khu_vuc', 'hang']` to `check_cols='all'`, then edit one customer's
+`ho_ten` (add diacritics, fix a spelling) and re-run the snapshot.
 
-**Dự đoán trước khi chạy:** có sinh phiên bản mới không? Nên hay không nên?
+**Predict before running:** does a new version get created? Should it?
 
-Đối chiếu với [SCD](../skills/scd.md#khi-nào-nên-dùng): sửa lỗi chính tả tên là **Type 1**
-— không ai chia báo cáo theo tên. Khai `'all'` là bắt cả cột đó giữ lịch sử, và
-dimension phình theo nhịp của cột đổi nhiều nhất. Xem
-[dimension phồng 365 lần](../case-studies/dimension-phinh-365-lan.md).
+Compare against [SCD](../skills/scd.md#when-to-use-which): fixing a spelling in a name is **Type 1**
+— nobody splits a report by name. Declaring `'all'` forces that column to keep history too, and the
+dimension bloats at the pace of its fastest-changing column. See
+[a dimension 365× bloated](../case-studies/dimension-phinh-365-lan.md).
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bài 7 — Xoá ở nguồn thì sao?
+## Exercise 7 — What about a delete at the source?
 
-`invalidate_hard_deletes=True` đã bật ở bài 1. Xoá dòng `C4` khỏi seed, chạy lại
-snapshot, rồi kiểm:
+`invalidate_hard_deletes=True` was turned on in exercise 1. Delete the `C4` row from the seed, re-run the
+snapshot, then check:
 
 ```sql
 select khach_id, khu_vuc, dbt_valid_to from scd_khach_hang where khach_id = 'C4';
 ```
 
-**Câu hỏi:** dòng đó bị **xoá** hay bị **đóng lại**? Và vì sao lựa chọn đó quan trọng với
-các fact đang trỏ vào nó?
+**The question:** is that row **deleted** or **closed off**? And why does that choice matter to the
+facts pointing at it?
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Tự kiểm trước khi sang bài khác
+## Self-check before moving on
 
-Bốn phép kiểm nên chạy sau **mỗi** lần dựng lại mô hình:
+Four checks worth running after **every** model rebuild:
 
 ```sql
--- 1. Grain cua snapshot: mot phien ban cua mot khach
+-- 1. The snapshot's grain: one version of one customer
 select count(*) = count(distinct (khach_id, dbt_valid_from)) as grain_dung from scd_khach_hang;
 
--- 2. Khong chong lan khoang hieu luc
+-- 2. No overlapping validity intervals
 with x as (select khach_id, dbt_valid_to,
                   lead(dbt_valid_from) over (partition by khach_id order by dbt_valid_from) ke
            from scd_khach_hang)
 select count(*) as so_khoang_chong_lan from x where ke is not null and ke <> dbt_valid_to;
 
--- 3. Tong fact khop nguon (10.215.000)
--- 4. Khong dong fact nao mat sau join (15 dong)
+-- 3. The fact total matching the source (10,215,000)
+-- 4. No fact row lost after the join (15 rows)
 ```
 
-Ba và bốn là hai câu quan trọng nhất, và chúng **không** phát hiện được lỗi ở bài 3 —
-đó là lý do phải có thêm một phép kiểm *as-was* riêng: doanh thu tháng 7 của `C1` phải
-nằm ở Miền Bắc.
+Three and four are the two most important, and they **don't** detect the bug in exercise 3 —
+which is why you also need a separate *as-was* check: `C1`'s July revenue must
+sit in the North.
 
 ## Related Topics
 
-- [SCD](../skills/scd.md) — Type 0–7 và cây quyết định cho từng cột
-- [Phát hiện thay đổi cho SCD 2](../skills/scd-change-detection.md) — `strategy` chọn thế nào, bốn bẫy của hash
-- [Dữ liệu về muộn](../skills/late-arriving.md) — vì sao `la_hien_tai` phá as-was
-- [Grain](../reference/grain.md) — snapshot làm đổi grain của dimension
-- [CS: Miền Bắc bằng 0](../case-studies/fact-den-muon-gan-sai-khu-vuc.md) — bài 3 chính là ca này
-- [CS: dimension phồng 365 lần](../case-studies/dimension-phinh-365-lan.md) — bài 6 chính là ca này
-- [Lab star schema bằng SQL thuần](star-schema-duckdb.md) — cùng mô hình, không qua dbt
+- [SCD](../skills/scd.md) — Types 0–7 and the decision tree per column
+- [Change detection for SCD 2](../skills/scd-change-detection.md) — how to choose `strategy`, and hashing's four traps
+- [Late-arriving data](../skills/late-arriving.md) — why `la_hien_tai` breaks as-was
+- [Grain](../reference/grain.md) — a snapshot changes the dimension's grain
+- [CS: the North is zero](../case-studies/fact-den-muon-gan-sai-khu-vuc.md) — exercise 3 is that case
+- [CS: a dimension 365× bloated](../case-studies/dimension-phinh-365-lan.md) — exercise 6 is that case
+- [The plain-SQL star schema lab](star-schema-duckdb.md) — the same model, without dbt
