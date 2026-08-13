@@ -1,8 +1,7 @@
 ---
-title: Dashboard báo 800, query tay ra 1.000 — và trung bình lệch 50%
-i18n_status: untranslated
+title: The dashboard says 800, a manual query says 1,000 — and the average is 50% out
 sidebar_position: 12
-description: "Bảng tổng hợp lưu sẵn avg rồi bị cộng lên một cấp, và không được nạp lại khi có đơn lùi ngày về."
+description: "A summary table pre-storing avg then being rolled up a level, and never reloaded when a backdated order arrives."
 tags: [case-study, aggregate, additivity, late-arriving, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,20 +12,20 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Dashboard báo 800, query tay ra 1.000 — và trung bình lệch 50%
+# The dashboard says 800, a manual query says 1,000 — and the average is 50% out
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** [bảng tổng hợp](../skills/aggregate-fact-table.md) là bản sao có thể sai lệch
-> của fact chi tiết. Nó sai theo hai cách độc lập: lưu số **không cộng được**, và **trôi
-> khỏi** atomic khi dữ liệu về muộn. Ca này dính cả hai.
+> **Takeaway:** an [aggregate table](../skills/aggregate-fact-table.md) is a copy that can drift
+> from the detailed fact. It goes wrong in two independent ways: storing **non-summable** numbers, and **drifting
+> away from** the atomic table when data arrives late. This case has both.
 
-## Bối cảnh
+## Context
 
-`fct_don` chi tiết chạy chậm cho dashboard, nên có thêm `agg_ngay` gộp theo ngày. Bảng
-tổng hợp lưu doanh thu và **giá trị đơn trung bình** — vì dashboard hiển thị cả hai, tính
-sẵn cho nhanh.
+The detailed `fct_don` is slow for the dashboard, so an `agg_ngay` was added, grouped by day. The summary
+table stores revenue and the **average order value** — because the dashboard shows both, so it's precomputed
+for speed.
 
 ```sql
 CREATE TABLE fct_don AS
@@ -51,11 +50,11 @@ FROM fct_don GROUP BY ngay;
 └────────────┴───────────┴────────────┘
 ```
 
-Bảng này **đúng ở grain của nó**. Đó là điều làm ca này khó chịu.
+This table is **correct at its own grain**. That's what makes this case so irritating.
 
-## Triệu chứng thứ nhất — giá trị đơn trung bình lệch 50%
+## The first symptom — the average order value is 50% out
 
-Dashboard tuần hiển thị giá trị đơn trung bình **300**. Phân tích viên query tay ra
+The weekly dashboard shows an average order value of **300**. An analyst querying by hand gets
 **200**.
 
 ```sql
@@ -74,10 +73,10 @@ SELECT (SELECT round(avg(doanh_thu), 1) FROM fct_don)       AS tu_atomic,
 └───────────┴────────────────────┴──────────┘
 ```
 
-## Triệu chứng thứ hai — tổng cũng lệch
+## The second symptom — the total is out too
 
-Ba tuần sau, một đơn lùi ngày về 05/01 mới vào kho ([late arriving fact](../skills/late-arriving.md)).
-Fact atomic được nạp lại; bảng tổng hợp thì không ai đụng tới.
+Three weeks later, an order backdated to 5 January reaches the warehouse ([a late arriving fact](../skills/late-arriving.md)).
+The atomic fact gets reloaded; nobody touches the summary table.
 
 ```sql
 INSERT INTO fct_don VALUES ('D5', DATE '2026-01-05', 200);
@@ -99,62 +98,62 @@ SELECT (SELECT sum(doanh_thu) FROM fct_don)      AS atomic,
 └────────┴───────────────┴────────┴──────────┘
 ```
 
-Dashboard: **800**. Query tay: **1.000**. Cả hai đều "chạy đúng trên bảng của mình".
+The dashboard: **800**. The manual query: **1,000**. Both "run correctly against their own table".
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Phân tích viên viết query sai | Đọc lại: `avg(doanh_thu)` trên atomic — không có gì sai |
-| Dashboard lọc thiếu ngày | Bỏ bộ lọc thời gian, vẫn lệch |
-| Bảng tổng hợp nạp lỗi hôm đó | Log xanh, `agg_ngay` chạy đúng lịch mọi hôm |
-| Múi giờ làm dòng rơi sang ngày khác | Kiểm biên ngày: không lệch |
-| Cache của BI | Xoá cache: không đổi |
+| The analyst wrote a wrong query | Re-read: `avg(doanh_thu)` on the atomic table — nothing wrong |
+| The dashboard filters out a day | Removing the time filter still leaves a discrepancy |
+| The summary table failed to load that day | The log is green; `agg_ngay` ran on schedule every day |
+| Timezones dropping a row into another day | Checking the day boundaries: no shift |
+| The BI cache | Clearing the cache: unchanged |
 
-Chỗ mất thời gian: hai triệu chứng có **hai nguyên nhân khác nhau**, nhưng cùng xuất hiện
-trên một dashboard nên bị điều tra như một sự cố. Mãi tới khi tách riêng "vì sao trung
-bình lệch" khỏi "vì sao tổng lệch" thì mới ra.
+Where the time goes: the two symptoms have **two different causes** but appear together
+on one dashboard, so they're investigated as one incident. Only once "why is the average out" is separated from "why is
+the total out" does it resolve.
 
-## Nguyên nhân thật
+## The real causes
 
-### Nguyên nhân 1 — trung bình không cộng được
+### Cause 1 — averages aren't summable
 
-`avg` không phải fact additive. Cộng trung bình của các ngày lại rồi chia cho số ngày là
-cho **mỗi ngày trọng số bằng nhau**, bất kể ngày đó có 3 đơn hay 1 đơn.
+`avg` isn't an additive fact. Adding up daily averages and dividing by the day count gives
+**each day equal weight**, whether that day had 3 orders or 1.
 
-- Đúng: (100+100+100+500) / 4 = **200**
-- Bảng tổng hợp: (100 + 500) / 2 = **300**
+- Correct: (100+100+100+500) / 4 = **200**
+- The summary table: (100 + 500) / 2 = **300**
 
-Ngày 05/01 có 3 đơn nhưng bị tính ngang một ngày có 1 đơn. Xem phần additivity ở
-[Fact và Dimension](../reference/fact-and-dimension.md).
+5 January had 3 orders but is weighted the same as a day with 1. See the additivity section in
+[Facts and dimensions](../reference/fact-and-dimension.md).
 
-### Nguyên nhân 2 — cửa sổ nạp lại không khớp nhau
+### Cause 2 — mismatched reload windows
 
-`fct_don` nạp lại 30 ngày gần nhất; `agg_ngay` chỉ dựng cho ngày hôm qua. Mọi dòng về
-muộn quá một ngày đều vào atomic mà không bao giờ vào bảng tổng hợp. Hai lớp **trôi dần
-khỏi nhau**, và độ lệch chỉ tăng chứ không tự sửa.
+`fct_don` reloads the last 30 days; `agg_ngay` is only built for yesterday. Every row arriving
+more than a day late enters the atomic table and never the summary. The two layers **gradually drift
+apart**, and the divergence only grows rather than self-correcting.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null`, `unique` trên `agg_ngay.ngay` | ✅ xanh |
-| `agg_ngay` có đủ mọi ngày trong kỳ | ✅ xanh |
-| `doanh_thu > 0` | ✅ xanh |
-| `fct_don` khớp hệ nguồn | ✅ xanh |
-| `agg_ngay` khớp `fct_don` | ❌ — **không ai viết test này** |
+| `not_null`, `unique` on `agg_ngay.ngay` | ✅ green |
+| `agg_ngay` has every day in the period | ✅ green |
+| `doanh_thu > 0` | ✅ green |
+| `fct_don` matching the source | ✅ green |
+| `agg_ngay` matching `fct_don` | ❌ — **nobody writes this test** |
 
-Bốn test đầu kiểm `agg_ngay` **tự nó**. Không cái nào kiểm quan hệ giữa hai bảng — và đó
-chính là chỗ duy nhất lỗi tồn tại.
+The first four tests check `agg_ngay` **on its own**. None checks the relationship between the two tables — and that's
+the only place the bug exists.
 
-Đây là đặc điểm chung của mọi dữ liệu dẫn xuất: **bất biến nằm ở quan hệ với nguồn, không
-nằm trong bản thân bảng.**
+This is the common characteristic of all derived data: **the invariant lives in the relationship to the source, not
+inside the table itself.**
 
-## Cách sửa
+## The fix
 
-### Sửa 1 — chỉ lưu số cộng được
+### Fix 1 — store only summable numbers
 
-Dựng lại bảng tổng hợp, lần này chỉ với số cộng được:
+Rebuild the summary table, this time with summable numbers only:
 
 ```sql
 CREATE TABLE agg_ngay AS
@@ -174,7 +173,7 @@ FROM agg_ngay;
 └───────────┴────────┴────────────┘
 ```
 
-Đối chiếu với atomic:
+Reconciled against the atomic table:
 
 ```sql
 SELECT round(avg(doanh_thu), 1) AS tb_tu_atomic FROM fct_don;
@@ -188,12 +187,13 @@ SELECT round(avg(doanh_thu), 1) AS tb_tu_atomic FROM fct_don;
 └──────────────┘
 ```
 
-Lưu **tử số và mẫu số**, chia lúc đọc. Trung bình giờ khớp atomic ở mọi cấp gộp.
+Store **the numerator and the denominator**, and divide at read time. The average now matches the atomic table at every
+aggregation level.
 
-### Sửa 2 — query đối soát, chạy sau mỗi lần nạp
+### Fix 2 — a reconciliation query, run after every load
 
-Bảng vừa dựng lại nên đang khớp. Giả lập dòng về muộn **tiếp theo** — vì sẽ luôn có dòng
-tiếp theo:
+The table has just been rebuilt so it currently matches. Simulate the **next** late-arriving row — because
+there will always be a next one:
 
 ```sql
 INSERT INTO fct_don VALUES ('D6', DATE '2026-01-06', 400);
@@ -214,41 +214,41 @@ WHERE coalesce(a.doanh_thu, 0) <> coalesce(f.doanh_thu, 0);
 └────────────┴────────┴────────┴────────┘
 ```
 
-Không trả về dòng nào là hai lớp khớp. Trả về dòng nào thì đó chính là ngày phải nạp lại.
-Đặt thành test dbt `severity: error` — xem
-[Triển khai test](../../etl/dbt/skills/implementing-tests.md).
+Returning no rows means the two layers match. Returning a row identifies exactly the day to reload.
+Make it a dbt test with `severity: error` — see
+[Implementing tests](../../etl/dbt/skills/implementing-tests.md).
 
-### Sửa 3 — cửa sổ nạp lại của bảng tổng hợp ≥ cửa sổ của atomic
+### Fix 3 — the summary table's reload window ≥ the atomic table's
 
-Nếu atomic nạp lại 30 ngày thì bảng tổng hợp cũng phải dựng lại 30 ngày. Hẹp hơn là **bảo
-đảm sẽ trôi**.
+If the atomic table reloads 30 days, the summary table must rebuild 30 days too. Narrower is a **guarantee
+of drift**.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Giá trị đơn trung bình | 300 (**lệch 50%**) | 200 |
-| Tổng trên dashboard | 800 (**lệch −20%**) | 1.000 |
-| Phát hiện lệch bằng | Người dùng báo | Test CI |
-| Cột lưu trong agg | `sum`, `avg` | `sum`, `count` |
+| Average order value | 300 (**50% out**) | 200 |
+| The dashboard's total | 800 (**−20% out**) | 1,000 |
+| Divergence detected by | Users reporting it | A CI test |
+| Columns stored in the agg | `sum`, `avg` | `sum`, `count` |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Trong DDL của bất kỳ bảng `agg_`/`rollup_` nào có `avg(`, `median(`, hoặc
-   `count(DISTINCT`. Cả ba đều không cộng được:
+1. Any `agg_`/`rollup_` table's DDL containing `avg(`, `median(`, or
+   `count(DISTINCT`. None of the three is summable:
 
 ```bash
 grep -rn "avg(\|median(\|count(distinct" models/marts/agg_*.sql
 ```
 
-2. Có bảng tổng hợp mà **không có** query đối soát với atomic.
+2. There's a summary table with **no** reconciliation query against the atomic one.
 
-3. Cửa sổ nạp lại của bảng tổng hợp hẹp hơn của fact atomic.
+3. The summary table's reload window is narrower than the atomic fact's.
 
-4. Người dùng hỏi *"sao số trên dashboard khác số tôi query"* — câu hỏi này gần như luôn
-   là triệu chứng của lệch giữa hai lớp, không phải của lỗi query.
+4. A user asking *"why does the dashboard's number differ from the one I queried"* — that question is almost always
+   a symptom of divergence between the two layers, not of a wrong query.
 
 ## Related Topics
 
-- [Aggregate fact table](../skills/aggregate-fact-table.md) — hai luật bị vi phạm ở đây
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity: cột nào được vào bảng tổng hợp
-- [Dữ liệu về muộn](../skills/late-arriving.md) — nguyên nhân làm hai lớp trôi khỏi nhau
-- [CS: fact về muộn bị gán sai khu vực](fact-den-muon-gan-sai-khu-vuc.md) — cùng gốc, khác hậu quả
+- [Aggregate fact tables](../skills/aggregate-fact-table.md) — the two rules broken here
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity: which column may enter a summary table
+- [Late-arriving data](../skills/late-arriving.md) — the reason the two layers drift apart
+- [CS: a late fact assigned the wrong region](fact-den-muon-gan-sai-khu-vuc.md) — the same root, a different consequence

@@ -1,8 +1,7 @@
 ---
-title: Báo cáo theo danh mục cấp 3 chỉ thấy một nửa doanh thu
-i18n_status: untranslated
+title: The level-3 category report seeing only half the revenue
 sidebar_position: 10
-description: "Cây danh mục sâu 1–3 cấp bị dẹt thành ba cột cố định; sản phẩm gắn ở cấp 1 và 2 rơi vào ô NULL rồi bị lọc mất."
+description: "A category tree 1–3 levels deep flattened into three fixed columns; products attached at levels 1 and 2 fall into NULL and get filtered out."
 tags: [case-study, hierarchy, ragged-hierarchy, bridge-table, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Báo cáo theo danh mục cấp 3 chỉ thấy một nửa doanh thu
+# The level-3 category report seeing only half the revenue
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** cây có độ sâu không đều mà dẹt thành cột cố định thì các nhánh nông rơi vào
-> `NULL`. `NULL` bị BI lọc mặc định, và dữ liệu **biến mất không tiếng động**. Xem
-> [cây phân cấp](../skills/hierarchy.md).
+> **Takeaway:** a tree of uneven depth flattened into fixed columns puts its shallow branches into
+> `NULL`. BI filters `NULL` by default, and the data **vanishes silently**. See
+> [hierarchies](../skills/hierarchy.md).
 
-## Bối cảnh
+## Context
 
-Cây danh mục sản phẩm của một cửa hàng bán lẻ. Ngành hàng lâu năm được chia sâu; ngành
-hàng mới thì chưa ai chia.
+A retailer's product category tree. Long-established product lines are subdivided deeply; new
+lines haven't been subdivided by anybody yet.
 
 ```text
 Dien tu (cap 1)
@@ -47,10 +46,10 @@ SELECT * FROM (VALUES ('SP-01', 3, 500), ('SP-02', 4, 300), ('SP-03', 5, 200))
   t(san_pham, dm_id, doanh_thu);
 ```
 
-Tổng thật: **1.000**.
+The real total: **1,000**.
 
-Dimension được dẹt thành ba cột — cách chuẩn cho cây phân cấp, và là cách duy nhất công cụ
-BI drill-down hiểu được:
+The dimension is flattened into three columns — the standard approach for a hierarchy, and the only one
+BI drill-down tools understand:
 
 ```sql
 CREATE TABLE dim_dm_det AS
@@ -76,12 +75,12 @@ LEFT JOIN danh_muc l1 ON l2.cha_id = l1.dm_id;
 └───────┴────────────┴────────────┴────────────┘
 ```
 
-## Triệu chứng
+## Symptoms
 
-Báo cáo *"doanh thu theo danh mục cấp 3"* hiển thị đúng **một dòng**: Smartphone 500.
+The *"revenue by level-3 category"* report shows exactly **one row**: Smartphone 500.
 
-Ban đầu không ai thắc mắc — nhìn thì có vẻ công ty chỉ bán smartphone ở cấp chi tiết
-nhất. Vấn đề lộ ra khi ai đó so tổng của báo cáo này với tổng doanh thu công ty.
+At first nobody questions it — it looks as though the company only sells smartphones at the most detailed
+level. The problem surfaces when somebody compares this report's total against total company revenue.
 
 ```sql
 SELECT sum(f.doanh_thu) FILTER (WHERE d.cap_3 IS NOT NULL) AS vao_bao_cao,
@@ -99,61 +98,61 @@ FROM fct_ban f JOIN dim_dm_det d USING (dm_id);
 └─────────────┴──────────┴─────────┘
 ```
 
-**Một nửa doanh thu không có mặt trong báo cáo.**
+**Half the revenue isn't present in the report.**
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Sản phẩm chưa được gán danh mục | Kiểm: mọi sản phẩm đều có `dm_id` hợp lệ |
-| `JOIN` loại dòng vì khoá mồ côi | `LEFT JOIN` cho cùng kết quả — không mất dòng ở join |
-| Fact thiếu dữ liệu | `sum(doanh_thu)` trên fact = 1.000, đủ |
-| BI cấu hình sai bộ lọc | **Gần đúng** — BI lọc `NULL`, nhưng `NULL` từ đâu ra mới là câu hỏi |
+| Products not assigned a category | Checked: every product has a valid `dm_id` |
+| The `JOIN` dropping rows because of an orphaned key | A `LEFT JOIN` gives the same result — no rows lost at the join |
+| The fact is missing data | `sum(doanh_thu)` on the fact = 1,000, complete |
+| BI's filter is misconfigured | **Nearly right** — BI filters `NULL`, but where the `NULL` comes from is the real question |
 
-Chỗ mất thời gian: ai cũng đi tìm **dòng bị mất**. Không dòng nào mất cả — cả 3 dòng fact
-đều tham gia join. Cái mất là **nhãn**: hai trong ba dòng không có giá trị ở cột dùng để
-`GROUP BY`.
+Where the time goes: everybody looks for **lost rows**. No row is lost — all 3 fact rows
+take part in the join. What's lost is the **label**: two of the three rows have no value in the column being
+`GROUP BY`ed.
 
-Câu hỏi tách bạch: *"đếm số dòng sau join có bằng số dòng fact không?"* Bằng. Vậy vấn đề
-không nằm ở join, mà ở cột được nhóm theo.
+The clarifying question: *"does the row count after the join equal the fact's row count?"* It does. So the problem
+isn't the join, it's the column being grouped by.
 
-## Nguyên nhân thật
+## The real cause
 
-Cây **ragged** (độ sâu 1–3) bị mô hình hoá bằng cấu trúc **fixed depth** (đúng 3 cấp).
+A **ragged** tree (1–3 levels deep) was modelled with a **fixed depth** structure (exactly 3 levels).
 
-Sản phẩm gắn ở node cấp 2 (`Phu kien`) hay cấp 1 (`Thoi trang`) không có giá trị `cap_3`.
-Chúng nhận `NULL`, và:
+A product attached to a level-2 node (`Phu kien`) or a level-1 node (`Thoi trang`) has no `cap_3` value.
+They get `NULL`, and:
 
-- BI mặc định ẩn nhóm `NULL`, hoặc
-- người viết query thêm `WHERE cap_3 IS NOT NULL` cho "sạch báo cáo".
+- BI hides the `NULL` group by default, or
+- whoever wrote the query added `WHERE cap_3 IS NOT NULL` "to clean the report up".
 
-Cả hai đường đều dẫn tới cùng kết quả: dữ liệu bị loại một cách hợp lệ về mặt SQL, và
-không có gì báo.
+Both routes lead to the same result: data excluded in a way that's entirely valid SQL, with
+nothing reported.
 
-Điểm cốt lõi: **`NULL` ở đây không có nghĩa "thiếu dữ liệu"**, nó có nghĩa "nhánh này chỉ
-sâu tới đó". Hai nghĩa hoàn toàn khác nhau bị nhét vào cùng một giá trị.
+The crucial point: **`NULL` here doesn't mean "data missing"**, it means "this branch is only that
+deep". Two completely different meanings crammed into the same value.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `dm_id` của fact | ✅ xanh |
-| `relationships` fact → dim danh mục | ✅ xanh |
-| `not_null` trên `cap_1` | ✅ xanh |
-| `not_null` trên `cap_3` | ❌ — nên **không ai đặt test này**, vì `NULL` là hợp lệ |
-| Tổng fact khớp nguồn | ✅ xanh |
+| `not_null` on the fact's `dm_id` | ✅ green |
+| `relationships` fact → the category dim | ✅ green |
+| `not_null` on `cap_1` | ✅ green |
+| `not_null` on `cap_3` | ❌ — so **nobody writes this test**, because `NULL` is legitimate |
+| The fact total matching the source | ✅ green |
 
-Dòng thứ tư là mấu chốt. Ai cũng biết `cap_3` được phép `NULL`, nên không có test nào ở
-đó. Và vì `NULL` hợp lệ, không có ngưỡng nào để báo động khi tỷ lệ `NULL` là 50%.
+The fourth row is the crux. Everybody knows `cap_3` is allowed to be `NULL`, so there's no test
+there. And because `NULL` is legitimate, there's no threshold to alarm on when the `NULL` rate hits 50%.
 
-Test đúng phải hỏi ở tầng khác: *"tổng của báo cáo phân nhóm có bằng tổng của fact
-không?"*
+The correct test has to ask at a different layer: *"does the grouped report's total equal the fact's
+total?"*
 
-## Cách sửa
+## The fix
 
-Hai đường, tuỳ cây lệch tới đâu.
+Two routes, depending on how ragged the tree is.
 
-### Nếu cây chỉ hơi lệch — kéo cấp cha xuống
+### If the tree is only slightly ragged — pull the parent level down
 
 ```sql
 CREATE TABLE dim_dm_keo AS
@@ -173,10 +172,10 @@ FROM dim_dm_det;
 └────────────┴───────────┘
 ```
 
-Tổng khớp 1.000, BI chạy nguyên như cũ. Cái mất: cột `cap_3` giờ chứa cả node không phải
-cấp 3 thật, nên *"có bao nhiêu danh mục cấp 3"* không còn hỏi được từ bảng này.
+The total matches 1,000 and BI keeps working as before. What you lose: the `cap_3` column now contains nodes that aren't
+genuinely level 3, so *"how many level-3 categories are there"* can no longer be asked of this table.
 
-### Nếu cây sâu tuỳ ý — bridge đường đi
+### If the tree is arbitrarily deep — a path bridge
 
 ```sql
 CREATE TABLE bridge_dm AS
@@ -208,11 +207,11 @@ GROUP BY 1 ORDER BY 2 DESC;
 └────────────┴────────────────────┘
 ```
 
-Rollup đúng cho **mọi node**, ở mọi độ sâu. `Dien tu` = 800 = 500 (cách 2 cấp) + 300
-(cách 1 cấp).
+Correct rollup for **every node**, at every depth. `Dien tu` = 800 = 500 (2 levels away) + 300
+(1 level away).
 
-Đổi lại phải nhớ: bảng bridge **cố tình nhân bản dòng**, nên `SUM` toàn bảng ra 2.300.
-Muốn tổng đúng thì lọc về một mức:
+In exchange you must remember: the bridge table **deliberately duplicates rows**, so a whole-table `SUM` gives 2,300.
+For a correct total, filter down to one level:
 
 ```sql
 SELECT sum(f.doanh_thu) AS tong_qua_bridge
@@ -230,15 +229,15 @@ WHERE t.cha_id IS NULL;
 └─────────────────┘
 ```
 
-| | Dẹt cố định | Kéo cấp cha | Bridge |
+| | Fixed flattening | Pulling the parent down | A bridge |
 |---|---|---|---|
-| Doanh thu báo cáo cấp lá | 500 (**mất 50%**) | 1.000 | 1.000 |
-| Thêm một cấp mới | Sửa DDL + mọi báo cáo | Sửa DDL | Không sửa gì |
-| Rủi ro đếm trùng | Không | Không | **Có** |
+| Leaf-level reported revenue | 500 (**50% lost**) | 1,000 | 1,000 |
+| Adding a new level | Change the DDL + every report | Change the DDL | Change nothing |
+| Double-counting risk | No | No | **Yes** |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Đo tỷ lệ `NULL` ở cấp sâu nhất — con số này đáng đặt thành test `severity: warn`:
+1. Measure the `NULL` rate at the deepest level — that number is worth making a `severity: warn` test:
 
 ```sql
 SELECT count(*)                                  AS tong,
@@ -247,17 +246,17 @@ SELECT count(*)                                  AS tong,
 FROM dim_dm_det;
 ```
 
-2. Đối chiếu tổng của báo cáo phân nhóm với tổng của fact. Lệch = có nhóm bị lọc mất.
+2. Reconcile the grouped report's total against the fact's total. A difference = a group is being filtered out.
 
-3. Hỏi nghiệp vụ: *"cây này có nhánh nào nông hơn nhánh khác không?"* Có = đừng dẹt cố
-   định.
+3. Ask the business: *"does this tree have branches shallower than others?"* Yes = don't flatten to a fixed
+   depth.
 
-4. Trong codebase xuất hiện `WHERE cap_N IS NOT NULL` — đó là chỗ mất dữ liệu được viết
-   thành code.
+4. `WHERE cap_N IS NOT NULL` appearing in the codebase — that's data loss written into
+   code.
 
 ## Related Topics
 
-- [Cây phân cấp](../skills/hierarchy.md) — ba loại cây và cách dựng từng loại
-- [Bridge table](../skills/bridge-table.md) — cùng cơ chế nhân bản dòng
-- [Grain](../reference/grain.md) — join bridge làm grain kết quả đổi
-- [CS: một nửa số đơn biến mất](don-dang-giao-bien-mat.md) — cũng là dữ liệu mất âm thầm, khác cơ chế
+- [Hierarchies](../skills/hierarchy.md) — the three tree kinds and how to build each
+- [Bridge tables](../skills/bridge-table.md) — the same row-duplicating mechanism
+- [Grain](../reference/grain.md) — joining a bridge changes the result's grain
+- [CS: half the orders vanished](don-dang-giao-bien-mat.md) — also silent data loss, by a different mechanism

@@ -1,8 +1,7 @@
 ---
-title: Doanh thu Miền Bắc bằng 0, và 28% doanh thu biến mất
-i18n_status: untranslated
+title: The North's revenue is zero, and 28% of revenue has vanished
 sidebar_position: 11
-description: "ETL join dimension bằng la_hien_tai: giao dịch về muộn bị gán khu vực hiện tại, còn khách chưa có hồ sơ thì bị JOIN ném đi."
+description: "The ETL joins the dimension by la_hien_tai: late-arriving transactions get the current region, while customers with no record yet are thrown away by the JOIN."
 tags: [case-study, late-arriving, scd, etl, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,20 +12,20 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Doanh thu Miền Bắc bằng 0, và 28% doanh thu biến mất
+# The North's revenue is zero, and 28% of revenue has vanished
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** một dòng `AND d.la_hien_tai` trong ETL vứt bỏ toàn bộ giá trị của SCD Type 2,
-> và một `INNER JOIN` với dimension vứt bỏ mọi fact đến trước hồ sơ của nó. Hai lỗi này
-> gần như luôn đi cùng nhau — xem [dữ liệu về muộn](../skills/late-arriving.md).
+> **Takeaway:** one line of `AND d.la_hien_tai` in the ETL throws away all of SCD Type 2's value,
+> and an `INNER JOIN` to the dimension throws away every fact arriving before its record. These two bugs
+> almost always travel together — see [late-arriving data](../skills/late-arriving.md).
 
-## Bối cảnh
+## Context
 
-Kho đã làm đúng phần khó: `dim_khach` là [SCD](../skills/scd.md) Type 2, giữ đầy đủ lịch
-sử khu vực. Khách `C1` chuyển từ Miền Bắc sang Miền Nam ngày 01/02/2026, cả hai phiên bản
-đều còn nguyên trong bảng.
+The warehouse got the hard part right: `dim_khach` is [SCD](../skills/scd.md) Type 2, keeping the full
+region history. Customer `C1` moved from the North to the South on 2026-02-01, and both versions
+are intact in the table.
 
 ```sql
 CREATE TABLE dim_khach AS
@@ -45,14 +44,14 @@ SELECT * FROM (VALUES
 ) t(ma_ban, khach_id, ngay_gd, ngay_nhan, doanh_thu);
 ```
 
-Sự thật: **2.500** trên 4 dòng.
+The truth: **2,500** across 4 rows.
 
-Hai chi tiết đời thường: chi nhánh gửi dữ liệu chậm nên `B1` xảy ra 10/01 mà 05/03 mới về
-kho; và `B4` thuộc khách `C3` mà hệ CRM chưa đồng bộ hồ sơ sang.
+Two mundane details: the branch sends data slowly, so `B1` happened on 10 January but only reached the
+warehouse on 5 March; and `B4` belongs to customer `C3` whose CRM record hasn't synced across yet.
 
-## Triệu chứng
+## Symptoms
 
-Báo cáo doanh thu theo khu vực, tháng 3:
+The revenue-by-region report in March:
 
 ```text
 ┌──────────┬───────────┬─────────┐
@@ -62,11 +61,11 @@ Báo cáo doanh thu theo khu vực, tháng 3:
 └──────────┴───────────┴─────────┘
 ```
 
-Ba thứ sai cùng lúc, và không thứ nào tự tố cáo mình:
+Three things wrong at once, and none of them announces itself:
 
-1. **Miền Bắc biến mất khỏi báo cáo** — không phải bằng 0, mà là không có dòng nào.
-2. Tổng chỉ còn 1.800 trên 2.500 — **hụt 28%**.
-3. Doanh thu tháng 1 của Miền Bắc đã bị chuyển sang Miền Nam, nên Miền Nam trông tốt lên.
+1. **The North has vanished from the report** — not showing zero, but having no row at all.
+2. The total is down to 1,800 out of 2,500 — **28% short**.
+3. The North's January revenue has been moved to the South, so the South looks better.
 
 ```sql
 SELECT sum(s.doanh_thu) AS tong_vao_kho, 4 - count(*) AS dong_bi_mat
@@ -81,62 +80,62 @@ FROM stg_ban s JOIN dim_khach d ON d.khach_id = s.khach_id AND d.la_hien_tai;
 └──────────────┴─────────────┘
 ```
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Miền Bắc thật sự không bán được gì | Hỏi chi nhánh: tháng 1 có bán, có hoá đơn |
-| Bộ lọc trên dashboard chặn Miền Bắc | Bỏ hết bộ lọc, vẫn không có dòng nào |
-| `dim_khach` mất dòng Miền Bắc | `SELECT * FROM dim_khach` — dòng còn nguyên, `khach_sk = 1` |
-| Fact chưa nạp đủ | `count(*) FROM stg_ban` = 4, staging đủ |
+| The North genuinely sold nothing | Asked the branch: January had sales and invoices |
+| A dashboard filter blocking the North | Removing every filter still shows no row |
+| `dim_khach` lost the North row | `SELECT * FROM dim_khach` — the row is intact, `khach_sk = 1` |
+| The fact loaded incompletely | `count(*) FROM stg_ban` = 4, staging is complete |
 
-Chỗ mất thời gian dài nhất: **dimension có đủ dữ liệu, staging có đủ dữ liệu, nhưng kho
-thì không.** Nghĩa là mất mát xảy ra ở chính bước nạp — nơi ít ai nghĩ tới vì nó "chỉ là
-một câu join".
+Where the longest stretch of time goes: **the dimension has all the data, staging has all the data, but the
+warehouse doesn't.** Meaning the loss happens in the load step itself — where few people look because it's
+"just one join".
 
-Câu hỏi rẽ hướng: *"vì sao dòng Miền Bắc trong `dim_khach` không được dùng lần nào?"*
+The redirecting question: *"why was the North row in `dim_khach` never used once?"*
 
-## Nguyên nhân thật
+## The real cause
 
-Câu join của ETL:
+The ETL's join:
 
 ```sql
 FROM stg_ban s JOIN dim_khach d
   ON d.khach_id = s.khach_id AND d.la_hien_tai
 ```
 
-Hai chữ trong câu đó gây ra cả hai lỗi:
+Two words in that statement cause both bugs:
 
-**`AND d.la_hien_tai`** — ETL hỏi *"C1 **bây giờ** ở khu vực nào"*. Với `B1` (giao dịch
-10/01), câu trả lời đúng phải là *"lúc đó C1 ở Miền Bắc"*. Toàn bộ mục đích của Type 2 bị
-vô hiệu hoá bằng một mệnh đề.
+**`AND d.la_hien_tai`** — the ETL asks *"which region is C1 in **now**"*. For `B1` (a 10 January
+transaction), the correct answer is *"C1 was in the North then"*. The entire purpose of Type 2 is
+nullified by one clause.
 
-Lỗi này chỉ lộ ra với fact về muộn: `B1` được nạp ngày 05/03, sau khi `C1` đã chuyển vùng.
-Nếu dữ liệu về đúng ngày, mệnh đề sai này vẫn cho kết quả đúng — nên nó **sống sót qua
-mọi lần kiểm thử**.
+That bug only surfaces with a late-arriving fact: `B1` was loaded on 5 March, after `C1` had already moved.
+If the data arrives on time, this wrong clause still gives the right answer — so it **survives
+every round of testing**.
 
-**`JOIN`** (inner) — `C3` chưa có trong `dim_khach`, nên `B4` không khớp dòng nào và bị
-ném đi lặng lẽ. Cùng cơ chế với [một nửa số đơn biến mất](don-dang-giao-bien-mat.md).
+**`JOIN`** (inner) — `C3` isn't in `dim_khach`, so `B4` matches no row and is
+thrown away silently. The same mechanism as [half the orders vanishing](don-dang-giao-bien-mat.md).
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique` trên `dim_khach.khach_sk` | ✅ xanh |
-| `not_null` trên mọi khoá của fact | ✅ xanh |
-| `relationships` fact → `dim_khach` | ✅ xanh — **các dòng bị loại không còn ở đó để kiểm** |
-| Không chồng lấn khoảng hiệu lực | ✅ xanh |
-| `accepted_values` cho `khu_vuc` | ✅ xanh |
+| `unique` on `dim_khach.khach_sk` | ✅ green |
+| `not_null` on every fact key | ✅ green |
+| `relationships` fact → `dim_khach` | ✅ green — **the excluded rows aren't there to be checked** |
+| No overlapping validity intervals | ✅ green |
+| `accepted_values` for `khu_vuc` | ✅ green |
 
-Dòng thứ ba là cái bẫy đáng nhớ nhất: test toàn vẹn tham chiếu chỉ kiểm **những dòng đã
-vào kho**. Dòng bị `INNER JOIN` loại đi không bao giờ được kiểm, vì nó không tồn tại.
+The third row is the most memorable trap: a referential-integrity test only checks **the rows that made it into
+the warehouse**. A row discarded by an `INNER JOIN` is never checked, because it doesn't exist.
 
-Test duy nhất bắt được: **đối chiếu số dòng và tổng tiền giữa staging và kho** — thứ phải
-tự viết, không có sẵn trong bộ test chuẩn.
+The only test that catches it: **reconciling the row count and the total amount between staging and the warehouse** —
+something you must write yourself, absent from the standard test set.
 
-## Cách sửa
+## The fix
 
-### Sửa 1 — join theo ngày giao dịch
+### Fix 1 — join on the transaction date
 
 ```sql
 SELECT d.khu_vuc, sum(s.doanh_thu) AS doanh_thu, count(*) AS so_dong
@@ -155,9 +154,9 @@ GROUP BY 1 ORDER BY 1;
 └──────────┴───────────┴─────────┘
 ```
 
-Miền Bắc quay lại với đúng 1.000.
+The North is back with exactly 1,000.
 
-### Sửa 2 — inferred member cho khách chưa có hồ sơ
+### Fix 2 — an inferred member for the customer with no record
 
 ```sql
 INSERT INTO dim_khach VALUES
@@ -182,11 +181,11 @@ INSERT INTO dim_khach VALUES
 └────────┴─────────┘
 ```
 
-**2.500 / 4 dòng** — khớp nguồn.
+**2,500 / 4 rows** — matching the source.
 
-Điểm quan trọng: nhóm `Chua biet` **hiện trên báo cáo**. Dữ liệu thiếu trở thành thứ nhìn
-thấy được, thay vì một khoảng trống không ai biết. Khi hồ sơ `C3` về, ghi đè tại chỗ
-(Type 1) và fact không phải nạp lại:
+The important point: the `Chua biet` group **appears on the report**. Missing data becomes something
+visible instead of a gap nobody knows about. When `C3`'s record arrives, overwrite in place
+(Type 1) and the fact needn't be reloaded:
 
 ```sql
 UPDATE dim_khach SET khu_vuc = 'Mien Trung' WHERE khach_id = 'C3';
@@ -202,27 +201,27 @@ UPDATE dim_khach SET khu_vuc = 'Mien Trung' WHERE khach_id = 'C3';
 └────────────┴───────────┘
 ```
 
-### Trước và sau
+### Before and after
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Tổng doanh thu | 1.800 (**hụt 28%**) | 2.500 |
-| Miền Bắc | Không có dòng | 1.000 |
-| Khách chưa có hồ sơ | Mất dòng | Hiện thành `Chua biet` |
-| Giá trị của Type 2 | Bị vô hiệu hoá | Được dùng đúng mục đích |
+| Total revenue | 1,800 (**28% short**) | 2,500 |
+| The North | No row | 1,000 |
+| Customers with no record | Rows lost | Shown as `Chua biet` |
+| Type 2's value | Nullified | Used for its actual purpose |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Grep cả codebase** — đây là kiểm tra rẻ nhất và bắt được nhiều nhất:
+1. **Grep the whole codebase** — the cheapest check and the one that catches the most:
 
 ```bash
 grep -rn "la_hien_tai\|is_current\|dbt_valid_to is null" models/
 ```
 
-Mỗi lần xuất hiện trong một model **fact** đều đáng xem lại. Trong model *view hiện
-trạng* thì đúng; trong model nạp fact lịch sử thì gần như luôn sai.
+Every occurrence inside a **fact** model deserves review. Inside a *current-state view* model it's
+correct; inside a historical fact-loading model it's almost always wrong.
 
-2. Đo độ trễ dữ liệu — biến giả định "về đúng lúc" thành một con số:
+2. Measure the data delay — turning the "arrives on time" assumption into a number:
 
 ```sql
 SELECT round(100.0 * sum(doanh_thu) FILTER (WHERE date_trunc('month', ngay_nhan)
@@ -239,24 +238,24 @@ FROM stg_ban;
 └────────────────────────┘
 ```
 
-**40% doanh thu về sau khi kỳ đã chốt.** Con số này quyết định cửa sổ nạp lại của mô hình
-incremental — xem [materializations](../../etl/dbt/reference/materializations.md).
+**40% of revenue arrives after the period is closed.** That number decides the reload window of an
+incremental model — see [materializations](../../etl/dbt/reference/materializations.md).
 
-3. Đối chiếu staging ↔ kho sau mỗi lần nạp:
+3. Reconcile staging ↔ warehouse after every load:
 
 ```sql
 SELECT (SELECT count(*) FROM stg_ban) AS staging,
        (SELECT count(*) FROM fct_ban) AS kho;
 ```
 
-Lệch một dòng là có dòng bị `JOIN` ném đi.
+A difference of one row means a row was thrown away by the `JOIN`.
 
-4. Chụp tổng của các kỳ **đã đóng sổ** và so mỗi lần chạy. Đổi = có dữ liệu về muộn.
+4. Snapshot the totals of **closed** periods and compare on each run. A change = late-arriving data.
 
 ## Related Topics
 
-- [Dữ liệu về muộn](../skills/late-arriving.md) — kỹ thuật bị bỏ qua ở đây
-- [SCD](../skills/scd.md) — Type 2 chỉ có giá trị nếu ETL join theo ngày giao dịch
-- [Date dimension](../reference/date-dimension.md) — dòng `-1` cho mốc chưa xảy ra
-- [CS: một nửa số đơn biến mất](don-dang-giao-bien-mat.md) — cùng cơ chế `INNER JOIN` loại dòng
-- [CS: báo cáo quá khứ tự đổi số](bao-cao-qua-khu-tu-doi-so.md) — hậu quả ngược lại của cùng một quyết định
+- [Late-arriving data](../skills/late-arriving.md) — the technique skipped here
+- [SCD](../skills/scd.md) — Type 2 only has value if the ETL joins on the transaction date
+- [The date dimension](../reference/date-dimension.md) — the `-1` row for a milestone that hasn't happened
+- [CS: half the orders vanished](don-dang-giao-bien-mat.md) — the same `INNER JOIN` row-dropping mechanism
+- [CS: historical reports changing their own numbers](bao-cao-qua-khu-tu-doi-so.md) — the inverse consequence of the same decision
