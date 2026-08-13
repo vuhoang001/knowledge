@@ -1,8 +1,7 @@
 ---
-title: "Bài tập bộ 5 — Fact nâng cao: phân bổ, luỹ kế, bảng tổng hợp, hành vi"
-i18n_status: untranslated
+title: "Exercise set 5 — Advanced facts: allocation, cumulatives, summary tables, behaviour"
 sidebar_position: 14
-description: "19 bài tự viết: phân bổ mất 1 đồng rồi khép kín lại, cột YTD phồng 3,38 lần, avg-của-avg lệch 5,7%, và khách Kim cương chi tiêu thấp nhất."
+description: "19 exercises to write yourself: an allocation losing 1 dong then closing exactly, a YTD column inflating 3.38×, avg-of-avg 5.7% out, and the Diamond-tier customer with the lowest spend."
 tags: [tutorial, bai-tap, allocated-facts, ytd-timespan-facts, aggregate-fact-table, behavior-dimension, duckdb, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,38 +12,38 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bài tập bộ 5 — Fact nâng cao
+# Exercise set 5 — Advanced facts
 
-> **Chốt:** bốn kỹ thuật ở đây đều là **số nằm sai grain**. Không số nào sai giá trị;
-> chúng chỉ không cộng được theo cách người ta sẽ cộng — và `sum()` không bao giờ từ chối.
+> **Takeaway:** the four techniques here are all about **numbers sitting at the wrong grain**. None holds a wrong value;
+> they just don't add up the way people are going to add them — and `sum()` never refuses.
 
-## Kỹ thuật được luyện trong bộ này
+## Techniques practised in this set
 
-| # | Kỹ thuật | Tài liệu gốc | Số bài |
+| # | Technique | Source document | Exercises |
 |---|---|---|---|
-| 1 | Header/line và phân bổ fact | [Header/line và phân bổ fact](../skills/allocated-facts.md) | 5 |
-| 2 | Year-to-date và timespan | [Year-to-date và timespan](../skills/ytd-timespan-facts.md) | 5 |
-| 3 | Aggregate fact table | [Aggregate fact table](../skills/aggregate-fact-table.md) | 4 |
-| 4 | Đưa hành vi vào dimension | [Đưa hành vi vào dimension](../skills/behavior-dimension.md) | 5 |
+| 1 | Header/line and allocating facts | [Header/line and allocating facts](../skills/allocated-facts.md) | 5 |
+| 2 | Year-to-date and timespan | [Year-to-date and timespan](../skills/ytd-timespan-facts.md) | 5 |
+| 3 | Aggregate fact tables | [Aggregate fact tables](../skills/aggregate-fact-table.md) | 4 |
+| 4 | Putting behaviour into a dimension | [Putting behaviour into a dimension](../skills/behavior-dimension.md) | 5 |
 
-## Chuẩn bị
+## Preparation
 
 ```bash
 cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
-Mốc: **10 đơn · 15 dòng · doanh thu 10.215.000 · phí ship 400.000**.
+The benchmark: **10 orders · 15 lines · revenue 10,215,000 · shipping fees 400,000**.
 
 ---
 
-## Bộ A — Phân bổ số đo cấp header
+## Group A — Allocating a header-level measure
 
-### Bài A.1 — Phân bổ theo tiền hàng, và một đồng biến mất
+### Exercise A.1 — Allocate by goods amount, and one dong disappears
 
-**Đề:** `phi_ship` nằm ở cấp **đơn**, số đo khác ở cấp **dòng**. Phân bổ phí ship xuống
-từng dòng theo tỷ trọng tiền hàng, rồi cộng lại và so với 400.000.
+**The task:** `phi_ship` sits at **order** level, the other measures at **line** level. Allocate the shipping fee onto
+each line in proportion to the goods amount, then sum it up and compare against 400,000.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬───────────┬────────┐
@@ -54,10 +53,10 @@ từng dòng theo tỷ trọng tiền hàng, rồi cộng lại và so với 400
 └──────────────┴───────────┴────────┘
 ```
 
-**Thiếu đúng một đồng.** Nghe vô hại — bài A.2 giải thích vì sao không phải.
+**Exactly one dong short.** Sounds harmless — exercise A.2 explains why it isn't.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with pb as (
@@ -68,7 +67,7 @@ with pb as (
 select sum(phi_pb) tong_phan_bo, 400000 tong_that, sum(phi_pb) - 400000 chenh from pb;
 ```
 
-Thủ phạm là `round()`. `DH003` có phí 90.000 chia cho ba dòng theo tỷ lệ 900k : 450k :
+The culprit is `round()`. `DH003`'s 90,000 fee divided across three lines in the ratio 900k : 450k :
 600k:
 
 ```text
@@ -79,24 +78,24 @@ Thủ phạm là `round()`. `DH003` có phí 90.000 chia cho ba dòng theo tỷ 
                           89999   ← thieu 1
 ```
 
-Không có cách chọn số nguyên nào cho ba dòng mà tổng bằng đúng 90.000 **và** mỗi dòng
-đều là làm tròn của tỷ lệ đúng. Đó là **tính chất toán học**, không phải bug — nên không
-sửa được bằng cách viết `round` khéo hơn.
+There's no choice of integers for the three lines whose total is exactly 90,000 **and** where each line
+is the rounding of the correct proportion. That's a **mathematical property**, not a bug — so it can't be
+fixed by writing `round` more cleverly.
 
-Vì sao 1 đồng lại nghiêm trọng: nó làm test đối soát **đỏ mỗi lần chạy**. Và test đỏ
-thường xuyên thì trong vòng một tháng sẽ có người nới ngưỡng lên `abs(chenh) < 100`, rồi
-`< 10000` — và từ đó test không bắt được gì nữa.
+Why 1 dong is serious: it makes the reconciliation test **red on every run**. And a habitually red test
+means somebody will, within a month, loosen the threshold to `abs(chenh) < 100`, then
+`< 10000` — and from then on the test catches nothing.
 
-Bài A.2 sửa cho khép kín tuyệt đối.
+Exercise A.2 fixes it to close exactly.
 
 </details>
 
-### Bài A.2 — Gom sai số về dòng lớn nhất
+### Exercise A.2 — Push the rounding error onto the largest line
 
-**Đề:** sửa để `sum(phi_phan_bo)` bằng **đúng** 400.000, bằng cách dồn phần dư vào dòng
-có tiền hàng lớn nhất của mỗi đơn.
+**The task:** fix it so `sum(phi_phan_bo)` equals **exactly** 400,000, by pushing the remainder onto the line
+with the largest goods amount in each order.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬───────────┬────────┐
@@ -107,7 +106,7 @@ có tiền hàng lớn nhất của mỗi đơn.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with pb as (
@@ -125,40 +124,40 @@ sua as (
 select sum(phi_cuoi) tong_phan_bo, 400000 tong_that, sum(phi_cuoi) - 400000 chenh from sua;
 ```
 
-Kỹ thuật này có tên: **largest remainder** — chọn một dòng làm "dòng gánh", đẩy toàn bộ
-sai số làm tròn vào đó.
+This technique has a name: **largest remainder** — pick one line as the "carrier line" and push the whole
+rounding error onto it.
 
-Ba yêu cầu, thiếu cái nào cũng hỏng:
+Three requirements; miss any one and it breaks:
 
-**1. Dòng gánh phải lớn nhất.** Dồn 1 đồng vào dòng 41.538 là sai lệch 0,002%; dồn vào
-dòng 100 đồng là sai lệch 1%. Chọn dòng lớn nhất là tối thiểu hoá sai lệch tương đối.
+**1. The carrier line must be the largest.** Pushing 1 dong onto the 41,538 line is a 0.002% distortion; pushing it onto
+a 100-dong line is a 1% distortion. Choosing the largest line minimises the relative distortion.
 
-**2. Thứ tự phải tất định.** `order by tien_hang desc, dong` — cột `dong` là để phá hoà.
-Không có nó thì hai dòng cùng tiền hàng có thể đổi chỗ giữa các lần chạy, và **cùng một
-dữ liệu cho hai kết quả khác nhau**. Trên bảng incremental, đó là dữ liệu tự đổi số.
+**2. The ordering must be deterministic.** `order by tien_hang desc, dong` — the `dong` column is the tie-breaker.
+Without it, two lines with the same goods amount can swap between runs, and **the same
+data gives two different results**. On an incremental table, that's data changing its own numbers.
 
-**3. Phải chốt vào bảng, không tính lại lúc đọc.** Cột `phi_ship_phan_bo` là dữ liệu đã
-quyết định, phải nằm trong fact. Tính lại mỗi lần đọc là mỗi báo cáo tự chọn dòng gánh
-riêng.
+**3. It must be frozen into the table, not recomputed at read time.** The `phi_ship_phan_bo` column is a decided
+value and must live in the fact. Recomputing on each read means each report picks its own carrier
+line.
 
-Bây giờ test đối soát mới dùng được:
+Now the reconciliation test becomes usable:
 
 ```sql
--- test: phan bo phai khep kin TUYET DOI
+-- test: the allocation must close EXACTLY
 select don_hang_id from fct_ban_hang
 group by 1 having sum(phi_ship_phan_bo) <> max(phi_ship_goc);
 ```
 
-`<>` chứ không phải `abs(...) < nguong` — vì giờ đã khép kín thật.
+`<>` rather than `abs(...) < threshold` — because now it genuinely closes.
 
 </details>
 
-### Bài A.3 — Đổi tiêu chí phân bổ, đổi kết quả
+### Exercise A.3 — Change the allocation basis, change the result
 
-**Đề:** phân bổ phí ship theo **số lượng** thay vì theo tiền hàng, rồi so hai kết quả
-theo mặt hàng.
+**The task:** allocate the shipping fee by **quantity** instead of by goods amount, then compare the two results
+per item.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────┬───────────────┬──────────┐
@@ -171,11 +170,11 @@ theo mặt hàng.
 └─────────┴───────────┴───────────────┴──────────┘
 ```
 
-`SP-C` chênh **-26.538** — giảm 31%. Cùng một khoản 400.000, hai cách chia, hai kết luận
-về lãi lỗ theo sản phẩm.
+`SP-C` differs by **-26,538** — down 31%. The same 400,000, two ways of dividing it, two conclusions
+about per-product profitability.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tien as (
@@ -191,55 +190,55 @@ select ma_hang, round(sum(theo_tien)) theo_tien, round(sum(theo_so_luong)) theo_
 from pb group by 1 order by 1;
 ```
 
-Cả hai cột đều cộng lại bằng 400.000. Cả hai đều "đúng". Nhưng chúng trả lời hai câu khác
-nhau, và **quyết định nghiệp vụ dựa trên chúng sẽ ngược nhau**:
+Both columns total 400,000. Both are "right". But they answer two different questions,
+and **the business decisions based on them will be opposites**:
 
-`SP-C` (Laptop, 900.000/cái, bán 3 cái) gánh **86.538** theo tiền nhưng chỉ **60.000**
-theo số lượng. Nếu biên lợi nhuận của SP-C mỏng, hai cách chia này quyết định nó lãi hay
-lỗ trên báo cáo P&L theo sản phẩm.
+`SP-C` (a laptop, 900,000 each, 3 sold) carries **86,538** by amount but only **60,000**
+by quantity. If SP-C's margin is thin, these two divisions decide whether it shows a profit or a
+loss on a per-product P&L.
 
-Chọn tiêu chí là **quyết định nghiệp vụ**, và mỗi loại chi phí có tiêu chí riêng:
+Choosing the basis is a **business decision**, and each cost type has its own basis:
 
-| Số đo ở header | Tiêu chí | Vì sao |
+| A header measure | The basis | Why |
 |---|---|---|
-| Phí vận chuyển | **trọng lượng / thể tích** | hãng tính theo cân, không theo tiền |
-| Chiết khấu toàn đơn | **tiền hàng** | chiết khấu tính trên giá trị |
-| Chi phí đóng gói | **số lượng món** | mỗi món một thao tác |
-| Phí xử lý đơn | **chia đều** | chi phí không phụ thuộc nội dung |
+| Shipping fee | **weight / volume** | the carrier charges by weight, not by money |
+| Whole-order discount | **goods amount** | the discount is computed on value |
+| Packing cost | **item count** | each item is one operation |
+| Order handling fee | **divided evenly** | the cost doesn't depend on the contents |
 
-Ở lab này không có `trong_luong_kg` nên phân bổ theo tiền là xấp xỉ. **Ghi lý do chọn
-ngay cạnh code** — sáu tháng sau không ai nhớ vì sao chọn tiền hàng, và người kế nhiệm sẽ
-đổi nó vì "theo cân hợp lý hơn", rồi mọi báo cáo lịch sử đổi số.
+This lab has no `trong_luong_kg` so allocating by amount is an approximation. **Record the reason for the choice
+right beside the code** — six months later nobody remembers why goods amount was chosen, and a successor will
+change it because "by weight makes more sense", and then every historical report changes its numbers.
 
 </details>
 
-### Bài A.4 — Không phân bổ: giữ hai fact table
+### Exercise A.4 — Don't allocate: keep two fact tables
 
-**Đề:** không có SQL bắt buộc. Thay vì phân bổ, giữ hai fact ở hai grain. Nêu cách làm và
-khi nào nên chọn.
+**The task:** no SQL required. Instead of allocating, keep two facts at two grains. State how, and
+when to choose it.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- fact 1: grain DONG — chi so do cap dong
+-- fact 1: LINE grain — only line-level measures
 create or replace table fct_dong as
 select don_hang_id, dong, ma_hang, ngay, so_luong, don_gia, so_luong*don_gia tien_hang
 from don_hang_chi_tiet;
 
--- fact 2: grain DON — chi so do cap don
+-- fact 2: ORDER grain — only order-level measures
 create or replace table fct_don as
 select don_hang_id, khach_id, ngay_dat, ngay_giao, ngay_nhan, phi_ship
 from don_hang;
 ```
 
-Mỗi số đo nằm đúng **một** chỗ, ở đúng grain của nó. Không phân bổ, không sai số làm
-tròn, không phải chọn tiêu chí.
+Each measure lives in exactly **one** place, at its own grain. No allocation, no rounding
+error, no basis to choose.
 
-Câu hỏi cắt ngang hai grain thì gom **trước khi** join:
+Questions crossing the two grains aggregate **before** joining:
 
 ```sql
--- DUNG: gom moi ben ve grain don, roi moi ghep
+-- RIGHT: aggregate each side to the order grain, then combine
 select d.khach_id, sum(l.tien_hang) tien_hang, sum(d.phi_ship) phi_ship
 from fct_don d
 join (select don_hang_id, sum(tien_hang) tien_hang from fct_dong group by 1) l
@@ -247,55 +246,55 @@ join (select don_hang_id, sum(tien_hang) tien_hang from fct_dong group by 1) l
 group by 1;
 ```
 
-**Khi nào chọn cách này:**
+**When to choose this:**
 
-| | Phân bổ | Hai fact |
+| | Allocation | Two facts |
 |---|---|---|
-| Cần P&L **theo sản phẩm** | **bắt buộc** | không làm được |
-| Chỉ cần tổng chi phí theo đơn/khách/tháng | thừa | **đúng và rẻ** |
-| Tiêu chí phân bổ **gây tranh cãi** | mỗi phòng một số | **né được tranh cãi** |
-| Đối soát với sổ kế toán | phải kiểm khép kín | **luôn khớp** |
+| You need a **per-product** P&L | **mandatory** | impossible |
+| You only need total cost by order/customer/month | overkill | **right and cheap** |
+| The allocation basis is **contentious** | one number per department | **avoids the argument** |
+| Reconciling with the accounting ledger | requires a closure check | **always matches** |
 
-Dòng thứ ba đáng cân nhắc nhất. Phân bổ luôn kèm một giả định nghiệp vụ, và giả định đó
-sẽ bị chất vấn — thường là vào lúc báo cáo đang được dùng để đánh giá ai đó.
+The third row deserves the most thought. An allocation always carries a business assumption, and that assumption
+will be challenged — usually just when the report is being used to evaluate somebody.
 
-**Quy tắc:** đừng phân bổ cho tới khi có người **thật sự hỏi** câu cần phân bổ mới trả
-lời được. Phân bổ sẵn "cho đủ" là tự tạo ra một con số phải bảo vệ mãi mãi. Xem
-[case study phí ship phồng 133%](../case-studies/phi-ship-phong-133-phan-tram.md).
+**The rule:** don't allocate until somebody **actually asks** a question that requires allocation to
+answer. Allocating pre-emptively "for completeness" creates a number you'll defend forever. See
+[the case study on shipping fees 133% inflated](../case-studies/phi-ship-phong-133-phan-tram.md).
 
 </details>
 
-### Bài A.5 — Ba phép kiểm bắt buộc cho mọi phân bổ
+### Exercise A.5 — Three mandatory checks for every allocation
 
-**Đề:** viết ba test cho cột phân bổ: khép kín theo đơn, không âm, và không mất dòng.
+**The task:** write three tests for an allocated column: closure per order, non-negativity, and no lost rows.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- 1. KHEP KIN: tong phan bo cua moi don = so goc
+-- 1. CLOSURE: each order's allocated total = the original figure
 select don_hang_id, sum(phi_ship_phan_bo) tong_pb, max(phi_ship_goc) goc
 from fct_ban_hang group by 1 having sum(phi_ship_phan_bo) <> max(phi_ship_goc);
 
--- 2. KHONG AM: he so am hoac mau so 0 sinh gia tri vo nghia
+-- 2. NON-NEGATIVE: a negative factor or a 0 denominator produces a meaningless value
 select don_hang_id, dong, phi_ship_phan_bo
 from fct_ban_hang where phi_ship_phan_bo < 0;
 
--- 3. KHONG MAT DONG: moi dong fact deu co gia tri phan bo
+-- 3. NO LOST ROWS: every fact row has an allocated value
 select count(*) so_dong_thieu from fct_ban_hang where phi_ship_phan_bo is null;
 ```
 
-Test 3 bắt cái bẫy tinh vi nhất: **đơn có tổng tiền hàng bằng 0**. Lúc đó mẫu số của tỷ
-lệ phân bổ là 0, và:
+Test 3 catches the subtlest trap: **an order whose total goods amount is zero**. Then the allocation ratio's
+denominator is 0, and:
 
 ```text
 90000 * 0 / 0  →  NaN hoac NULL, tuy engine
 ```
 
-Đơn tiền hàng 0 nghe vô lý nhưng có thật: đơn quà tặng, đơn đổi bảo hành, đơn giá trị
-100% chiết khấu. Chúng vẫn có phí ship.
+A zero-goods order sounds absurd but is real: gift orders, warranty-exchange orders, orders discounted
+100%. They still have a shipping fee.
 
-Cách chữa phải quyết định **trước**:
+The cure must be decided **in advance**:
 
 ```sql
 case when sum(tien_hang) over (partition by don_hang_id) = 0
@@ -304,24 +303,24 @@ case when sum(tien_hang) over (partition by don_hang_id) = 0
 end
 ```
 
-Chia đều là lựa chọn hợp lý cho trường hợp này, nhưng **phải là lựa chọn có ý thức**,
-không phải `NULL` rơi ra rồi ai đó `coalesce(..., 0)` cho hết đỏ.
+Dividing evenly is a reasonable choice here, but it **must be a conscious choice**,
+not a `NULL` falling out and somebody `coalesce(..., 0)`ing everything back to green.
 
-Ba test này phải chạy **trước** khi bảng được công bố, không phải sau khi có người báo
-số lệch.
+These three tests must run **before** the table is published, not after somebody reports
+a divergent number.
 
 </details>
 
 ---
 
-## Bộ B — Year-to-date và timespan
+## Group B — Year-to-date and timespan
 
-### Bài B.1 — Cột luỹ kế phồng 3,38 lần
+### Exercise B.1 — The cumulative column inflating 3.38×
 
-**Đề:** dựng bảng theo ngày có sẵn cột `dt_ytd`, rồi cộng cột đó lại — đúng thao tác mà
-mọi công cụ BI làm khi kéo cột vào ô tổng.
+**The task:** build a per-day table with a `dt_ytd` column, then sum that column — exactly what
+every BI tool does when the column is dragged into a total cell.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────────┬─────────────┬───────────────┐
@@ -332,7 +331,7 @@ mọi công cụ BI làm khi kéo cột vào ô tổng.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with theo_ngay as (select ngay, sum(so_luong*don_gia) dt from don_hang_chi_tiet group by 1),
@@ -343,31 +342,31 @@ select (select sum(dt) from theo_ngay) doanh_thu_that,
 from ytd;
 ```
 
-Bảng `ytd` **đúng ở mọi dòng** — ngày 05/07 luỹ kế 10.215.000, chính xác. Nó chỉ hỏng khi
-bị cộng.
+The `ytd` table is **correct on every row** — 05/07's cumulative is 10,215,000, exactly right. It only breaks when
+it's summed.
 
-Hệ số phồng 3,38 với 5 ngày. Với `n` kỳ, hệ số xấp xỉ `(n+1)/2` — 12 tháng cho **~6,5
-lần**, 365 ngày cho **~183 lần**. Và vì hệ số **đổi theo số kỳ đang xem**, không có tỷ lệ
-cố định nào để nhận ra bằng mắt.
+The inflation factor is 3.38 over 5 days. With `n` periods the factor is about `(n+1)/2` — 12 months gives **~6.5×**,
+365 days gives **~183×**. And because the factor **changes with the number of periods on screen**, there's no fixed
+ratio to recognise by eye.
 
-So sánh với số dư ngân hàng — cũng non-additive theo thời gian — cho thấy vì sao YTD nguy
-hiểm hơn:
+Comparing with a bank balance — also non-additive across time — shows why YTD is more
+dangerous:
 
-| | Số dư tài khoản | `doanh_thu_ytd` |
+| | An account balance | `doanh_thu_ytd` |
 |---|---|---|
-| Cộng qua thời gian | vô nghĩa | vô nghĩa |
-| Người dùng **nhận ra** là vô nghĩa | có — "cộng số dư 5 ngày" nghe sai ngay | **không** — trông y hệt `doanh_thu` |
+| Summing across time | meaningless | meaningless |
+| Does the user **recognise** it as meaningless | yes — "summing 5 days of balances" sounds wrong immediately | **no** — it looks exactly like `doanh_thu` |
 
-Đó là khác biệt chí mạng. Tên cột `doanh_thu_ytd` gợi ý nó là doanh thu, và doanh thu thì
-cộng được. Xem [case study cộng cột luỹ kế](../case-studies/cong-cot-luy-ke.md).
+That's the fatal difference. The column name `doanh_thu_ytd` suggests it's revenue, and revenue
+is summable. See [the case study on summing a cumulative column](../case-studies/cong-cot-luy-ke.md).
 
 </details>
 
-### Bài B.2 — Tính luỹ kế lúc đọc
+### Exercise B.2 — Compute the cumulative at read time
 
-**Đề:** bỏ cột YTD khỏi bảng, tính bằng window function lúc đọc.
+**The task:** drop the YTD column from the table and compute it with a window function at read time.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────┬─────────┬──────────┐
@@ -381,48 +380,48 @@ cộng được. Xem [case study cộng cột luỹ kế](../case-studies/cong-c
 └────────────┴─────────┴──────────┘
 ```
 
-Dòng cuối = **10.215.000**. Đó là phép kiểm: luỹ kế cuối kỳ phải bằng tổng.
+The last row = **10,215,000**. That's the check: the closing cumulative must equal the total.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with theo_ngay as (select ngay, sum(so_luong*don_gia) dt from don_hang_chi_tiet group by 1)
 select ngay, dt, sum(dt) over (order by ngay) dt_ytd from theo_ngay order by ngay;
 ```
 
-Cùng con số, khác chỗ tính. Và khác biệt quan trọng: **cột `dt` cộng được, cột `dt_ytd`
-không** — nhưng giờ `dt_ytd` chỉ tồn tại trong kết quả truy vấn, không nằm trong bảng để
-ai đó kéo nhầm.
+Same numbers, computed elsewhere. And the important difference: **the `dt` column is summable, the `dt_ytd` column
+isn't** — but now `dt_ytd` exists only in the query result, not in a table for somebody to
+drag by mistake.
 
-Luật cho mọi số luỹ kế:
+The rule for every cumulative:
 
 ```text
 Luy ke (YTD, MTD, running total)  →  DUNG luu. Tinh luc doc.
 Khoang hieu luc (tu ... den ...)  →  PHAI luu. Khong tinh lai duoc.
 ```
 
-Hai vế ngược nhau và đó là lý do chúng nằm chung một bài. Luỹ kế là **hàm của dữ liệu đã
-có**, tính lại lúc nào cũng ra; khoảng hiệu lực là **sự thật lịch sử**, mất là mất vĩnh
-viễn.
+The two halves are opposites, and that's why they share one exercise. A cumulative is a **function of data you
+already have**, recomputable at any time; a validity interval is a **historical fact**, and losing it loses it
+forever.
 
-Nếu YTD thật sự cần vì lý do hiệu năng, thì đặt tên cho nó không thể cộng nhầm:
+If YTD genuinely is needed for performance reasons, name it so it can't be summed by mistake:
 
 ```text
 doanh_thu_ytd                    ← nguy hiem
 doanh_thu_luy_ke_khong_duoc_cong ← xau, nhung an toan
 ```
 
-Hoặc tốt hơn: để nó trong một view riêng mà công cụ BI không import.
+Or better: keep it in a separate view the BI tool doesn't import.
 
 </details>
 
-### Bài B.3 — Timespan: khoảng hiệu lực cứu đơn `DN03`
+### Exercise B.3 — Timespan: validity intervals rescue order `DN03`
 
-**Đề:** `ty_gia` **thiếu dòng EUR ngày 04/07**, nên `join` bằng làm mất đơn `DN03`. Dựng
-tỷ giá dạng **khoảng hiệu lực** rồi join `between`.
+**The task:** `ty_gia` **has no EUR row for 04/07**, so an equality `join` loses order `DN03`. Build the
+rate table as **validity intervals** and join with `between`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────────┬────────────┬─────────┬─────────┬────────┬─────────────┬──────────────┬─────────────┐
@@ -438,11 +437,11 @@ tỷ giá dạng **khoảng hiệu lực** rồi join `between`.
 └──────────────┴────────────┴─────────┴─────────┴────────┴─────────────┴──────────────┴─────────────┘
 ```
 
-`DN03` **được cứu** — nó lấy tỷ giá ngày 03/07, có hiệu lực tới hết 04/07. `DN07` vẫn
-`NULL`, và đó là bài của [bộ 6](bt-06-tich-hop.md).
+`DN03` is **rescued** — it takes the 03/07 rate, in effect through 04/07. `DN07` is still
+`NULL`, and that's [set 6](bt-06-tich-hop.md)'s exercise.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tg as (
@@ -459,33 +458,33 @@ left join tg on tg.tien_te = d.tien_te
 order by d.don_ngoai_id;
 ```
 
-Đây là **biến bảng sự kiện thành bảng khoảng** — cùng kỹ thuật đã dùng để dựng
-[dim Type 2 ở bộ 1](bt-01-nen-tang.md#bài-c2--dựng-dimension-type-2-từ-bản-trích-hàng-ngày),
-lần này áp cho tỷ giá.
+This is **turning an event table into an interval table** — the same technique used to build the
+[Type 2 dim in set 1](bt-01-nen-tang.md#exercise-c2--build-a-type-2-dimension-from-daily-extracts),
+applied here to exchange rates.
 
-Chú ý dòng `DN03`: `hieu_luc_tu = 03/07`, `hieu_luc_den = 04/07` — khoảng **dài hai
-ngày**, vì ngày 04/07 không có dòng tỷ giá mới. Đó chính xác là ngữ nghĩa đúng của tỷ
-giá: **giữ nguyên cho tới khi có giá mới**.
+Note the `DN03` row: `hieu_luc_tu = 03/07`, `hieu_luc_den = 04/07` — an interval **two days
+long**, because 04/07 has no new rate row. That's exactly the correct semantics of a
+rate: **it stays in force until a new price arrives**.
 
-Nếu dùng `join` bằng `on tg.ngay = d.ngay_dat`, `DN03` biến mất **không dấu vết**. Và đây
-là hình dạng chung của cả một lớp lỗi:
+With an equality `join` on `tg.ngay = d.ngay_dat`, `DN03` vanishes **without a trace**. And this
+is the general shape of an entire class of bug:
 
-| Loại dữ liệu | Bản chất | Join đúng |
+| The data type | Its nature | The right join |
 |---|---|---|
-| Tỷ giá, giá bán, thuế suất | **khoảng** — có hiệu lực tới khi đổi | `between` |
-| Giao dịch, sự kiện | **điểm** — xảy ra một lần | `=` |
+| Exchange rates, list prices, tax rates | **intervals** — in force until changed | `between` |
+| Transactions, events | **points** — happening once | `=` |
 
-Nhầm khoảng thành điểm là mất dòng mỗi khi nguồn không gửi giá trị cho một ngày — cuối
-tuần, ngày lễ, hoặc đơn giản là job nguồn lỗi một hôm.
+Mistaking an interval for a point loses rows whenever the source doesn't send a value for a day — a
+weekend, a public holiday, or simply the source job failing one day.
 
 </details>
 
-### Bài B.4 — Số dư: semi-additive theo thời gian
+### Exercise B.4 — Balances: semi-additive across time
 
-**Đề:** với `kho_hang` (tồn cuối ngày), tính ba cách gộp theo thời gian và chỉ ra cách
-nào dùng được.
+**The task:** with `kho_hang` (end-of-day stock), compute three ways of aggregating across time and point out which
+one is usable.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌─────────┬───────────────┬─────────────┬────────┐
@@ -499,7 +498,7 @@ nào dùng được.
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select ma_hang, sum(ton_cuoi_ngay) cong_bay_ngay,
@@ -508,9 +507,9 @@ select ma_hang, sum(ton_cuoi_ngay) cong_bay_ngay,
 from kho_hang group by 1 order by 1;
 ```
 
-Bài này lặp lại [bộ 1 bài A.4](bt-01-nen-tang.md#bài-a4--snapshot-cộng-dọc-thời-gian-là-vô-nghĩa)
-có chủ ý — vì `ton_cuoi_ngay` và `doanh_thu_ytd` là **cùng một loại bệnh**, và nhận ra
-điều đó quan trọng hơn nhớ từng ca:
+This exercise deliberately repeats [set 1, exercise A.4](bt-01-nen-tang.md#exercise-a4--snapshots-summing-along-time-is-meaningless)
+— because `ton_cuoi_ngay` and `doanh_thu_ytd` are **the same illness**, and recognising
+that matters more than remembering each individual case:
 
 ```text
 Additive        : cong duoc theo MOI chieu           (doanh_thu, so_luong)
@@ -518,8 +517,8 @@ Semi-additive   : cong duoc TRU chieu thoi gian      (ton kho, so du, YTD)
 Non-additive    : khong cong duoc theo chieu nao     (ty le, don gia, lai suat)
 ```
 
-Ba loại này phải được **ghi vào tài liệu bảng cho từng cột số**, vì SQL không phân biệt.
-Cách thực dụng nhất là ghi ngay trong `schema.yml` của dbt:
+These three categories must be **documented per numeric column**, because SQL doesn't distinguish them.
+The most practical way is to record it in dbt's `schema.yml`:
 
 ```yaml
 columns:
@@ -529,54 +528,53 @@ columns:
       KHONG cong duoc theo ngay — dung max_by(ngay) hoac avg.
 ```
 
-Và cưỡng chế ở tầng BI bằng cách khai `aggregation: last_value` cho cột đó, nếu công cụ
-hỗ trợ. Không cưỡng chế được thì ít nhất phải có tài liệu — vì cột này sẽ bị cộng nhầm,
-vấn đề chỉ là khi nào.
+And enforce it at the BI layer by declaring `aggregation: last_value` for that column, if the tool
+supports it. Where you can't enforce it, at least document it — because this column will be summed by
+mistake; the only question is when.
 
 </details>
 
-### Bài B.5 — Số nào lưu, số nào tính
+### Exercise B.5 — Which numbers to store, which to compute
 
-**Đề:** không có SQL. Lập bảng quyết định cho sáu số đo.
+**The task:** no SQL. Build a decision table for six measures.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Số đo | Lưu hay tính | Vì sao |
+| Measure | Store or compute | Why |
 |---|---|---|
-| `tien_hang` (số lượng × đơn giá) | **lưu** | atomic, additive, là nguồn của mọi thứ khác |
-| `doanh_thu_ytd` | **tính** | hàm của dữ liệu đã có; lưu là mời người ta cộng nhầm |
-| `phi_ship_phan_bo` | **lưu** | kết quả của một **quyết định** (tiêu chí, dòng gánh) — tính lại có thể ra khác |
-| `ty_le_tra_hang` | **tính** | non-additive; lưu tỷ lệ là mất tử số/mẫu số |
-| `hieu_luc_tu` / `hieu_luc_den` | **lưu** | sự thật lịch sử, mất là không dựng lại được |
-| `ton_cuoi_ngay` | **lưu** | không suy ra được từ giao dịch nếu có nhập/xuất ngoài hệ thống |
+| `tien_hang` (quantity × unit price) | **store** | atomic, additive, the source of everything else |
+| `doanh_thu_ytd` | **compute** | a function of existing data; storing it invites mis-summing |
+| `phi_ship_phan_bo` | **store** | the result of a **decision** (the basis, the carrier line) — recomputing may differ |
+| `ty_le_tra_hang` | **compute** | non-additive; storing the ratio loses the numerator/denominator |
+| `hieu_luc_tu` / `hieu_luc_den` | **store** | a historical fact, unrecoverable once lost |
+| `ton_cuoi_ngay` | **store** | not derivable from transactions if there are receipts/issues outside the system |
 
-Quy tắc rút ra, ba câu:
+The rules that fall out, in three sentences:
 
-**Lưu thứ không tính lại được.** Khoảng hiệu lực, snapshot, kết quả của quyết định nghiệp
-vụ.
+**Store what can't be recomputed.** Validity intervals, snapshots, the results of business decisions.
 
-**Tính thứ tính lại được.** Luỹ kế, tỷ lệ, xếp hạng, phân vị.
+**Compute what can be recomputed.** Cumulatives, ratios, rankings, percentiles.
 
-**Nghi ngờ thì lưu tử số và mẫu số, đừng lưu thương.** `ty_le_tra_hang` = 0,12 là ngõ
-cụt; lưu `gia_tri_tra` và `doanh_thu` thì tính được tỷ lệ ở **mọi** mức tổng hợp. Bài
-C.2 chứng minh bằng số.
+**When in doubt, store the numerator and the denominator, not the quotient.** `ty_le_tra_hang` = 0.12 is a dead
+end; storing `gia_tri_tra` and `doanh_thu` lets you compute the ratio at **any** aggregation level. Exercise
+C.2 proves it numerically.
 
-Ngoại lệ duy nhất cho "tính thứ tính lại được": khi tính lại quá đắt và kết quả **bất
-biến**. Lúc đó lưu, nhưng phải đặt tên cột và ghi tài liệu sao cho không ai cộng nhầm.
+The only exception to "compute what can be recomputed": when recomputing is too expensive and the result is
+**immutable**. Then store it, but name the column and document it so nobody sums it wrongly.
 
 </details>
 
 ---
 
-## Bộ C — Aggregate fact table
+## Group C — Aggregate fact tables
 
-### Bài C.1 — Bảng tổng hợp lưu `avg`: lệch 5,7%
+### Exercise C.1 — A summary table storing `avg`: 5.7% out
 
-**Đề:** dựng bảng tổng hợp theo ngày lưu sẵn `avg`, rồi tính trung bình toàn kỳ từ đó và
-so với số tính từ bảng atomic.
+**The task:** build a per-day summary table with `avg` pre-stored, then compute the whole-period average from it and
+compare against the figure from the atomic table.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌────────────────────────────────┬─────────────┐
@@ -588,10 +586,10 @@ so với số tính từ bảng atomic.
 └────────────────────────────────┴─────────────┘
 ```
 
-**642.500 so với 681.000 — lệch 5,7%.**
+**642,500 against 681,000 — 5.7% out.**
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table agg_ngay as
@@ -604,35 +602,35 @@ union all select 'tu agg: sum(tong)/sum(so_dong)', round(sum(tong_tien)*1.0/sum(
 union all select 'tu agg: avg(tong/so_dong) SAI', round(avg(tong_tien*1.0/so_dong),1) from agg_ngay;
 ```
 
-**Avg-của-avg sai vì mỗi ngày có số dòng khác nhau.** Ngày 05/07 chỉ có 2 dòng nhưng
-được tính trọng số bằng ngày 02/07 có 4 dòng.
+**Avg-of-avg is wrong because each day has a different line count.** 05/07 has only 2 lines but is
+weighted the same as 02/07 with 4.
 
 ```text
 avg(a/b) ≠ sum(a)/sum(b)   khi b khong deu nhau
 ```
 
-Đây là lý do bảng tổng hợp **phải lưu tử số và mẫu số riêng**, không lưu thương:
+That's why a summary table **must store the numerator and denominator separately**, never the quotient:
 
-| Lưu gì | Tính lại được `avg` đúng? |
+| What you store | Can you recompute the correct `avg`? |
 |---|---|
-| `avg_tien` | **không** — đã mất mẫu số |
-| `tong_tien` + `so_dong` | **có** — `sum/sum` |
+| `avg_tien` | **no** — the denominator is gone |
+| `tong_tien` + `so_dong` | **yes** — `sum/sum` |
 
-Nguyên tắc tổng quát: **bảng tổng hợp chỉ được lưu số additive**. `sum`, `count`, `min`,
-`max` thì được. `avg`, tỷ lệ, phần trăm, phân vị thì không — chúng phải được **suy ra**
-từ các số additive lúc đọc.
+The general principle: **a summary table may only store additive numbers**. `sum`, `count`, `min`,
+`max` are fine. `avg`, ratios, percentages and percentiles are not — they must be **derived**
+from the additive numbers at read time.
 
-`count(distinct ...)` là trường hợp ranh giới đáng nhớ: cột `so_don` trong `agg_ngay`
-**không cộng qua các ngày được** nếu một đơn trải nhiều ngày. Ở đây mỗi đơn nằm gọn một
-ngày nên `sum(so_don)` = 10 tình cờ đúng — bài C.2 kiểm.
+`count(distinct ...)` is the borderline case worth remembering: the `so_don` column in `agg_ngay`
+**can't be summed across days** if an order spans several days. Here each order fits within one
+day so `sum(so_don)` = 10 happens to be right — exercise C.2 checks.
 
 </details>
 
-### Bài C.2 — Đối soát bảng tổng hợp với atomic
+### Exercise C.2 — Reconcile the summary table against atomic
 
-**Đề:** kiểm `agg_ngay` khớp với bảng atomic, cả tổng tiền lẫn số đơn.
+**The task:** check `agg_ngay` matches the atomic table, for both total money and order count.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬───────────┬────────┬─────────────┬─────────────┐
@@ -642,10 +640,10 @@ ngày nên `sum(so_don)` = 10 tình cờ đúng — bài C.2 kiểm.
 └──────────┴───────────┴────────┴─────────────┴─────────────┘
 ```
 
-Cả hai cặp đều khớp. Nhưng cặp thứ hai khớp vì **may**, không vì đúng.
+Both pairs match. But the second pair matches by **luck**, not by correctness.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 select (select sum(tong_tien) from agg_ngay) tu_agg,
@@ -656,106 +654,106 @@ select (select sum(tong_tien) from agg_ngay) tu_agg,
        (select count(distinct don_hang_id) from don_hang_chi_tiet) so_don_that;
 ```
 
-`sum(tong_tien)` khớp vì tiền là **additive** — cộng theo ngày rồi cộng các ngày luôn
-bằng cộng thẳng.
+`sum(tong_tien)` matches because money is **additive** — summing per day then summing the days always
+equals summing directly.
 
-`sum(so_don)` khớp **chỉ vì trong dữ liệu này mọi đơn nằm gọn trong một ngày**. Thêm một
-đơn có dòng ở hai ngày là hai bên lệch ngay: `agg` đếm nó hai lần, atomic đếm một lần.
+`sum(so_don)` matches **only because in this data every order fits inside one day**. Add one
+order with lines on two days and the two sides diverge immediately: `agg` counts it twice, atomic once.
 
-Đó là lý do `count(distinct)` **không được lưu trong bảng tổng hợp** — hoặc nếu lưu thì
-phải ghi rõ nó chỉ dùng được ở đúng mức đã gom, không được cộng lên mức cao hơn.
+That's why `count(distinct)` **must not be stored in a summary table** — or, if it is,
+it must be documented as usable only at exactly the aggregated level, never summed to a higher level.
 
-Ba lối ra khi thật sự cần đếm phân biệt ở nhiều mức:
+Three ways out when you genuinely need distinct counts at several levels:
 
-| Cách | Đánh đổi |
+| The approach | The trade-off |
 |---|---|
-| Bảng tổng hợp riêng cho **mỗi** mức cần | nhiều bảng, tốn chỗ, đúng tuyệt đối |
-| Lưu HyperLogLog sketch | cộng được, sai số ~2% |
-| Về atomic khi cần `distinct` | chậm, nhưng luôn đúng |
+| A separate summary table for **each** level needed | many tables, more space, exactly correct |
+| Store a HyperLogLog sketch | summable, ~2% error |
+| Go back to atomic when you need `distinct` | slow, but always right |
 
-Và test đối soát này phải **chạy mỗi lần build bảng tổng hợp**. Bảng tổng hợp lệch so với
-atomic là loại lỗi tệ nhất: hai báo cáo cùng chủ đề cho hai con số, và người dùng mất
-lòng tin vào cả hai — đúng
-[case study bảng tổng hợp lệch số](../case-studies/bang-tong-hop-lech-so.md).
+And this reconciliation test must **run on every summary-table build**. A summary table diverging from
+atomic is the worst kind of bug: two reports on the same subject give two numbers, and the user loses
+faith in both — exactly
+[the case study on the summary table with divergent numbers](../case-studies/bang-tong-hop-lech-so.md).
 
 </details>
 
-### Bài C.3 — Dimension rút gọn phải sinh từ dimension gốc
+### Exercise C.3 — A shrunken dimension must derive from the source dimension
 
-**Đề:** không có SQL bắt buộc. Bảng tổng hợp theo `nhom` cần một `dim_nhom` rút gọn. Vì
-sao nó **phải** sinh từ `dim_hang_hoa` chứ không dựng riêng?
+**The task:** no SQL required. A summary table by `nhom` needs a shrunken `dim_nhom`. Why
+**must** it derive from `dim_hang_hoa` rather than being built separately?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- DUNG: sinh tu dim goc
+-- RIGHT: derive from the source dim
 create or replace table dim_nhom as
 select distinct nhom_id, ten_nhom from cay_nhom_hang
 where nhom_id in (select nhom_id from hang_hoa_nhom);
 
--- SAI: dung rieng tu nguon khac
+-- WRONG: built separately from another source
 create or replace table dim_nhom_sai as
 select * from (values ('N5','Thiet bi nhap'), ('N6','Man hinh')) t(nhom_id, ten_nhom);
 ```
 
-Bảng thứ hai **hôm nay đúng**. Nó sai vào ngày ai đó đổi tên nhóm trong `cay_nhom_hang`
-mà quên đổi ở đây. Từ hôm đó:
+The second table is **correct today**. It goes wrong the day somebody renames a group in `cay_nhom_hang`
+and forgets to rename it here. From that day on:
 
 ```text
 Bao cao chi tiet (tu dim_hang_hoa)  →  "Thiet bi hien thi"
 Bao cao tong hop (tu dim_nhom_sai)  →  "Man hinh"
 ```
 
-Hai báo cáo, hai nhãn cho cùng một nhóm, và **không ai biết cái nào đúng**. Tệ hơn: nếu
-`nhom_id` cũng lệch thì tổng hai báo cáo khác nhau, và cuộc điều tra sẽ mất vài ngày.
+Two reports, two labels for the same group, and **nobody knows which is right**. Worse: if
+`nhom_id` also diverges, the two reports' totals differ, and the investigation takes days.
 
-Đây là nguyên tắc **shrunken dimension** của Kimball: dimension của bảng tổng hợp phải là
-**tập con thật sự** của dimension chi tiết — cùng khoá, cùng nhãn, sinh ra bằng
-`select distinct` từ bảng gốc.
+This is Kimball's **shrunken dimension** principle: a summary table's dimension must be a
+**genuine subset** of the detailed dimension — the same keys, the same labels, produced by
+`select distinct` from the source table.
 
-Ba điều kiện để bảng tổng hợp gọi là **hợp lệ**:
+Three conditions for a summary table to count as **valid**:
 
-1. **Dimension rút gọn sinh từ dimension gốc**, không dựng riêng.
-2. **Chỉ chứa số additive** (bài C.1).
-3. **Có test đối soát với atomic** (bài C.2).
+1. **The shrunken dimension derives from the source dimension**, not built separately.
+2. **It contains only additive numbers** (exercise C.1).
+3. **It has a reconciliation test against atomic** (exercise C.2).
 
-Thiếu bất kỳ điều nào thì bảng tổng hợp không phải "bản nhanh hơn của sự thật" — nó là
-**một sự thật thứ hai**, và hai sự thật thì luôn có một cái sai.
+Miss any one and the summary table isn't "a faster copy of the truth" — it's
+**a second truth**, and with two truths one is always wrong.
 
 </details>
 
-### Bài C.4 — Bảng tổng hợp có đáng dựng không
+### Exercise C.4 — Is a summary table worth building
 
-**Đề:** không có SQL. Nêu điều kiện để bảng tổng hợp đáng công.
+**The task:** no SQL. State the conditions under which a summary table earns its keep.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**Đo trước, dựng sau.** Bảng tổng hợp là tối ưu hoá, và tối ưu hoá chưa đo là nợ kỹ thuật
-trả trước.
+**Measure first, build second.** A summary table is an optimisation, and an unmeasured optimisation is technical debt
+paid in advance.
 
-Ba số cần đo:
+Three numbers to measure:
 
-| Đo gì | Ngưỡng đáng dựng |
+| What you measure | The threshold for building |
 |---|---|
-| **Hệ số nén** = dòng atomic / dòng tổng hợp | ≥ 10× |
-| **Tần suất** truy vấn ở đúng mức đó | hàng ngày trở lên |
-| **Thời gian truy vấn** hiện tại | đủ chậm để người dùng phàn nàn |
+| **The compression ratio** = atomic rows / summary rows | ≥ 10× |
+| **The frequency** of queries at exactly that level | daily or more |
+| **The current query time** | slow enough for users to complain |
 
-Với lab này: 15 dòng atomic → 5 dòng theo ngày. Hệ số **3×**. Không đáng — và đó là câu
-trả lời trung thực, dù bài tập vừa dựng nó.
+For this lab: 15 atomic rows → 5 rows per day. A ratio of **3×**. Not worth it — and that's the honest
+answer, even though the exercise just built it.
 
-Chi phí thật của bảng tổng hợp không phải dung lượng, mà là **ba thứ phải duy trì mãi**:
+A summary table's real cost isn't storage but **three things you must maintain forever**:
 
-1. **Pipeline thứ hai** phải chạy đúng thứ tự sau atomic, và fail được.
-2. **Test đối soát** phải chạy mỗi lần, và ai đó phải xử lý khi nó đỏ.
-3. **Câu hỏi "dùng bảng nào"** với mọi người viết báo cáo, mãi mãi.
+1. **A second pipeline** that must run in the right order after atomic, and can fail.
+2. **A reconciliation test** that must run every time, and somebody must handle it going red.
+3. **The question "which table do I use"** for every report author, forever.
 
-Điểm 3 là thứ hay bị bỏ qua nhất. Người dùng không biết chọn bảng nào sẽ chọn sai, và
-báo cáo sai sẽ được tin vì "nó ra từ kho dữ liệu".
+Point 3 is the most often overlooked. A user who doesn't know which table to pick will pick wrong, and
+a wrong report will be believed because "it came out of the warehouse".
 
-**Thứ tự nên thử, trước khi dựng bảng tổng hợp:**
+**The order to try, before building a summary table:**
 
 ```text
 1. Phan vung theo ngay + cot hoa (Parquet/Iceberg)  →  thuong du
@@ -764,21 +762,21 @@ báo cáo sai sẽ được tin vì "nó ra từ kho dữ liệu".
 4. Bang tong hop tu quan ly                          →  chi khi 1-3 khong du
 ```
 
-Ba bước đầu **không tạo ra sự thật thứ hai**. Chỉ xuống bước 4 khi đã đo và ba bước trên
-không đủ. Xem [Aggregate fact table](../skills/aggregate-fact-table.md).
+The first three **don't create a second truth**. Only go to step 4 once you've measured and the first three
+aren't enough. See [Aggregate fact tables](../skills/aggregate-fact-table.md).
 
 </details>
 
 ---
 
-## Bộ D — Đưa hành vi vào dimension
+## Group D — Putting behaviour into a dimension
 
-### Bài D.1 — Thuộc tính hành vi tổng hợp từ fact
+### Exercise D.1 — Behavioural attributes aggregated from the fact
 
-**Đề:** dựng `dim_khach_hanh_vi` — dimension khách hàng có thêm thuộc tính **tính từ
-fact**: số đơn, tổng chi, lần mua cuối, phân khúc chi tiêu, số ngày không mua.
+**The task:** build `dim_khach_hanh_vi` — a customer dimension with extra attributes **computed from
+the fact**: order count, total spend, last purchase, spend segment, days since last purchase.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬───────────┬────────┬──────────┬─────────────────────┬───────────────────┐
@@ -791,11 +789,11 @@ fact**: số đơn, tổng chi, lần mua cuối, phân khúc chi tiêu, số ng
 └──────────┴───────────┴────────┴──────────┴─────────────────────┴───────────────────┘
 ```
 
-**`C4` hạng Kim cương nhưng chi tiêu thấp nhất.** Đó không phải lỗi dữ liệu — đó là toàn
-bộ lý do kỹ thuật này tồn tại.
+**`C4` is Diamond tier but spends the least.** That isn't a data bug — it's the entire
+reason this technique exists.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 create or replace table dim_khach_hanh_vi as
@@ -814,35 +812,35 @@ select khach_id, hang, so_don, tong_chi, phan_khuc_chi, so_ngay_khong_mua
 from dim_khach_hanh_vi order by tong_chi desc;
 ```
 
-Hai cột `hang` và `phan_khuc_chi` là **hai loại thuộc tính khác hẳn nhau**:
+The `hang` and `phan_khuc_chi` columns are **two entirely different kinds of attribute**:
 
 | | `hang` | `phan_khuc_chi` |
 |---|---|---|
-| Nguồn | **gán** bởi nghiệp vụ | **tính** từ fact |
-| Đổi khi | có người quyết định | dữ liệu đổi |
-| Tin được không | có, là chính sách | có, là sự thật đo được |
+| Source | **assigned** by the business | **computed** from the fact |
+| Changes when | somebody decides | the data changes |
+| Trustworthy | yes, it's policy | yes, it's a measured fact |
 
-`C4` mâu thuẫn giữa hai cột chính là **phát hiện có giá trị**: khách được xếp Kim cương
-(có thể do lịch sử cũ, do quan hệ, do một đơn lớn năm ngoái) nhưng hiện chi tiêu thấp
-nhất. Không có cột hành vi thì mâu thuẫn này không nhìn thấy được.
+`C4`'s contradiction between the two columns is precisely **a valuable finding**: the customer is classed Diamond
+(perhaps from old history, from a relationship, from one large order last year) but currently spends the
+least. Without the behavioural column this contradiction is invisible.
 
-**Ba cái bẫy phải biết trước khi làm:**
+**Three traps to know before doing this:**
 
-1. **`date '2026-07-05'` bị chôn cứng.** Ngày mai chạy lại, `so_ngay_khong_mua` không đổi
-   — sai. Phải là ngày chạy, hoặc phải là cột tính lúc đọc.
-2. **Dimension giờ phụ thuộc fact.** Thứ tự nạp đảo ngược: fact trước, dimension sau. Đó
-   là ngoại lệ so với luật thường và phải ghi rõ trong pipeline.
-3. **Nó đổi mỗi ngày.** Đúng vấn đề của [bộ 2 bài B.5](bt-02-dimension-thoi-gian.md) —
-   nếu bật Type 2 trên các cột này thì dim phình. Bài D.2 là lối ra.
+1. **`date '2026-07-05'` is hardcoded.** Re-run it tomorrow and `so_ngay_khong_mua` doesn't change
+   — wrong. It must be the run date, or a column computed at read time.
+2. **The dimension now depends on the fact.** The load order inverts: fact first, dimension second. That's
+   an exception to the normal rule and must be stated in the pipeline.
+3. **It changes every day.** Exactly [set 2, exercise B.5](bt-02-dimension-thoi-gian.md)'s problem —
+   turning on Type 2 for these columns bloats the dim. Exercise D.2 is the way out.
 
 </details>
 
-### Bài D.2 — Phân khoảng động lúc đọc
+### Exercise D.2 — Dynamic banding at read time
 
-**Đề:** thay vì chốt phân khúc vào dimension, tính **lúc đọc** bằng `ntile` và
+**The task:** instead of freezing the segment into the dimension, compute it **at read time** with `ntile` and
 `percent_rank`.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌──────────┬──────────┬───────────────┬─────────┐
@@ -856,7 +854,7 @@ nhất. Không có cột hành vi thì mâu thuẫn này không nhìn thấy đ�
 ```
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with tk as (
@@ -868,38 +866,38 @@ select khach_id, tong_chi,
 from tk order by tong_chi desc;
 ```
 
-Khác biệt căn bản với bài D.1:
+The fundamental difference from exercise D.1:
 
-| | Ngưỡng cố định (D.1) | Phân vị động (D.2) |
+| | A fixed threshold (D.1) | A dynamic percentile (D.2) |
 |---|---|---|
-| `C4` là gì | "Chi tiêu thấp" **vĩnh viễn** trong dim | "nửa dưới" **so với tập hiện tại** |
-| Lạm phát làm mọi người vượt ngưỡng | tất cả thành "Chi tiêu cao" | tỷ lệ giữ nguyên |
-| So sánh giữa hai kỳ | **được** | **không** — "nửa trên" mỗi kỳ một nghĩa |
-| Lưu vào dim | được | **không nên** |
+| What `C4` is | "Chi tieu thap" **permanently** in the dim | "the bottom half" **relative to the current set** |
+| Inflation pushing everyone past the threshold | everyone becomes "Chi tieu cao" | the proportions stay the same |
+| Comparing two periods | **possible** | **impossible** — "the top half" means something different each period |
+| Storing it in the dim | fine | **not advisable** |
 
-Dòng thứ ba là lý do quyết định. Phân vị **không so sánh được qua thời gian**: "top 25%
-tháng 6" và "top 25% tháng 7" là hai tập khác nhau với hai ngưỡng khác nhau, và biểu đồ
-đường nối hai điểm đó là biểu đồ vô nghĩa.
+The third row is the decisive reason. Percentiles **aren't comparable across time**: "the top 25%
+in June" and "the top 25% in July" are two different sets with two different thresholds, and a line
+chart connecting those two points is a meaningless chart.
 
-**Quy tắc:**
+**The rule:**
 
 ```text
 Nguong CO DINH (nghiep vu dat)  →  chot vao dim, so sanh duoc qua thoi gian
 Phan vi DONG   (tinh tu du lieu) →  tinh luc doc, KHONG chot vao dim
 ```
 
-Chốt phân vị vào dimension là lỗi nghiêm trọng vì nó **tự thay đổi khi bảng được dựng
-lại**: khách không làm gì cả mà nhảy từ "top 25%" xuống "top 50%" chỉ vì có khách mới
-vào. Báo cáo lịch sử đổi số, và không ai truy được nguyên nhân.
+Freezing a percentile into a dimension is a serious bug because it **changes itself whenever the table is
+rebuilt**: a customer who did nothing jumps from "the top 25%" down to "the top 50%" purely because new customers
+arrived. Historical reports change their numbers, and nobody can trace why.
 
 </details>
 
-### Bài D.3 — Step dimension: vị trí trong phễu
+### Exercise D.3 — A step dimension: position in the funnel
 
-**Đề:** với `su_kien_web`, đánh số bước của từng sự kiện trong phiên (một khách một
-ngày), rồi thống kê loại sự kiện theo từng bước.
+**The task:** with `su_kien_web`, number each event's step within its session (one customer, one
+day), then break down the event types by step.
 
-**Đáp số phải ra:**
+**The answer it must produce:**
 
 ```text
 ┌───────┬────────────┬───────┬──────────┬────────────┐
@@ -915,10 +913,10 @@ ngày), rồi thống kê loại sự kiện theo từng bước.
 └───────┴────────────┴───────┴──────────┴────────────┘
 ```
 
-**Bước 1 luôn là `xem`, bước 2 luôn là `them_gio`.** Từ bước 3 mới phân nhánh.
+**Step 1 is always `xem`, step 2 is always `them_gio`.** Only from step 3 does it branch.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
 with b as (
@@ -934,62 +932,62 @@ select buoc, count(*) so_su_kien,
 from b group by 1 order by 1;
 ```
 
-`buoc` là một **step dimension** — thuộc tính mô tả *vị trí của sự kiện trong chuỗi*,
-không phải bản thân sự kiện.
+`buoc` is a **step dimension** — an attribute describing *the event's position in a sequence*,
+not the event itself.
 
-Nó trả lời được lớp câu hỏi mà bảng sự kiện thô không trả lời được:
+It answers a class of question the raw event table can't:
 
-| Câu hỏi | Cần `buoc` |
+| The question | Needs `buoc` |
 |---|---|
-| Khách bỏ cuộc ở bước thứ mấy? | có |
-| Bao nhiêu bước trước khi chốt đơn? | có |
-| Bước nào rụng nhiều nhất? | có |
-| Tổng số lượt xem | không |
+| At which step do customers give up? | yes |
+| How many steps before an order closes? | yes |
+| Which step loses the most people? | yes |
+| Total view count | no |
 
-Cột `tong_buoc` (đếm ngược) cũng đáng lưu: nó cho phép hỏi *"sự kiện này cách kết thúc
-phiên mấy bước"* — hữu ích để phân tích cái gì xảy ra ngay trước khi bỏ.
+The `tong_buoc` column (a countdown) is also worth storing: it lets you ask *"how many steps was this event from the
+end of the session"* — useful for analysing what happens right before abandonment.
 
-**Bẫy:** `buoc` phụ thuộc **định nghĩa phiên**. Ở đây phiên = khách × ngày; đổi sang cắt
-theo khoảng lặng 30 phút (như
-[bộ 1 bài B.4](bt-01-nen-tang.md#bài-b4--grain-của-phiên-quyết-định-con-số-bỏ-giỏ)) là mọi
-số trong bảng đổi. Nên định nghĩa phiên phải chốt **trước**, và ghi vào tài liệu bảng.
+**The trap:** `buoc` depends on the **session definition**. Here a session = customer × day; switching to a
+30-minute inactivity cut (as in
+[set 1, exercise B.4](bt-01-nen-tang.md#exercise-b4--the-grain-of-a-session-decides-the-cart-abandonment-number)) changes every
+number in the table. So the session definition must be settled **first**, and documented on the table.
 
 </details>
 
-### Bài D.4 — Nhóm nghiên cứu: tập khách bị đóng băng
+### Exercise D.4 — A study group: a frozen set of customers
 
-**Đề:** không có SQL bắt buộc. Marketing muốn theo dõi *"nhóm khách đã mua trong tháng
-7"* suốt 6 tháng tới. Vì sao không được dùng bộ lọc động?
+**The task:** no SQL required. Marketing wants to track *"the customers who bought in July"*
+over the next 6 months. Why can't you use a dynamic filter?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```sql
--- SAI: bo loc dong — tap khach doi moi lan chay
+-- WRONG: a dynamic filter — the customer set changes every run
 select ... from fct_ban_hang f join dim_khach k using (khach_key)
 where k.lan_mua_cuoi between '2026-07-01' and '2026-07-31';
 
--- DUNG: dong bang tap khach thanh mot bang
+-- RIGHT: freeze the customer set into a table
 create or replace table nhom_nc_thang7 as
 select distinct khach_id, date '2026-08-01' ngay_chot,
        'Da mua trong thang 7/2026' tieu_chi
 from don_hang where ngay_dat between date '2026-07-01' and date '2026-07-31';
 ```
 
-Bộ lọc động hỏng vì **tập khách tự thay đổi**:
+A dynamic filter breaks because **the customer set changes itself**:
 
-- Fact về muộn (bộ 2 bài E.1) thêm khách vào nhóm sau khi nghiên cứu đã bắt đầu.
-- Khách bị xoá/gộp ở nguồn rơi khỏi nhóm.
-- Ai đó sửa định nghĩa `lan_mua_cuoi` là cả nhóm đổi.
+- A late-arriving fact (set 2, exercise E.1) adds customers to the group after the study has begun.
+- Customers deleted/merged at the source drop out of the group.
+- Somebody changes the definition of `lan_mua_cuoi` and the whole group changes.
 
-Và khi tập đổi, **so sánh "trước/sau" mất ý nghĩa** — bạn không biết chênh lệch đến từ
-hành vi khách hay từ việc tập đã khác.
+And once the set changes, **the before/after comparison loses its meaning** — you don't know whether the difference comes
+from customer behaviour or from the set having changed.
 
-Đây gọi là **study group** hay *static cohort*: một bảng chỉ chứa khoá, đóng băng tại một
-thời điểm, kèm tiêu chí và ngày chốt.
+This is called a **study group** or *static cohort*: a table holding only keys, frozen at a
+moment in time, with its criteria and its cut-off date.
 
 ```sql
--- dung: join nhu mot dimension
+-- use: join it like a dimension
 select d.thang, count(distinct f.khach_id) khach_con_hoat_dong, sum(f.tien_hang)
 from fct_ban_hang f
 join nhom_nc_thang7 n on n.khach_id = f.khach_id
@@ -997,77 +995,76 @@ join dim_ngay d on d.ngay_key = f.ngay_dat_key
 group by 1 order by 1;
 ```
 
-Ba thứ **bắt buộc** phải lưu cùng: `ngay_chot`, `tieu_chi` bằng lời, và câu SQL đã sinh
-ra nó. Không có ba thứ đó thì sáu tháng sau không ai tái lập được nhóm, và kết quả nghiên
-cứu không kiểm chứng được.
+Three things you **must** store alongside: `ngay_chot`, the `tieu_chi` in words, and the SQL statement that produced
+it. Without all three, nobody can reproduce the group six months later, and the study's results
+can't be verified.
 
-Bảng nhóm nghiên cứu là **bất biến**. Cần nhóm mới thì tạo bảng mới, không sửa bảng cũ.
+A study-group table is **immutable**. Need a new group? Create a new table, don't edit the old one.
 
 </details>
 
-### Bài D.5 — Hành vi vào dimension hay để trong fact
+### Exercise D.5 — Behaviour in the dimension or left in the fact
 
-**Đề:** không có SQL. Khi nào đưa thuộc tính hành vi vào dimension, khi nào để nguyên
-trong fact?
+**The task:** no SQL. When do you put a behavioural attribute into a dimension, and when do you leave it
+in the fact?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Câu hỏi | Chỗ đúng |
+| The question | The right place |
 |---|---|
-| "Doanh thu theo **phân khúc chi tiêu**" | **dimension** — cần lọc/nhóm |
-| "Khách này đã chi bao nhiêu" | **tính từ fact** — đừng lưu |
-| "Doanh thu của khách **lúc mua là VIP**" | dimension **Type 2** |
-| "Diễn biến chi tiêu của khách theo tháng" | **fact riêng** — grain khách × tháng |
+| "Revenue by **spend segment**" | **the dimension** — you need to filter/group |
+| "How much has this customer spent" | **compute from the fact** — don't store it |
+| "Revenue from customers **who were VIP at purchase time**" | a **Type 2** dimension |
+| "A customer's spend trajectory by month" | **its own fact** — grain customer × month |
 
-Phép thử: **thuộc tính hành vi chỉ nên vào dimension khi nó được dùng để *cắt* dữ liệu,
-không phải để *xem*.**
+The test: **a behavioural attribute should only enter a dimension when it's used to *slice* the data,
+not to *view* it.**
 
-Cắt (`group by`, `where`) → dimension. Xem (một con số cho một khách) → tính từ fact.
+Slicing (`group by`, `where`) → the dimension. Viewing (one number for one customer) → compute from the fact.
 
-Ba rủi ro khi đưa hành vi vào dimension, xếp theo mức nguy hiểm:
+Three risks of putting behaviour into a dimension, in order of danger:
 
-**1. Vòng phụ thuộc.** Dimension phụ thuộc fact, fact join dimension. Sai thứ tự nạp là
-báo cáo dùng phân khúc của **hôm qua** trên fact của **hôm nay** — lệch một ngày, im
-lặng.
+**1. A dependency cycle.** The dimension depends on the fact, the fact joins the dimension. The wrong load order means
+the report uses **yesterday's** segments on **today's** fact — one day out, silently.
 
-**2. Số tự đổi.** Phân khúc tính từ dữ liệu đến hiện tại, nên báo cáo tháng 6 chạy hôm
-nay khác báo cáo tháng 6 chạy tháng trước. Đây là
-[case study báo cáo quá khứ tự đổi số](../case-studies/bao-cao-qua-khu-tu-doi-so.md) dưới
-dạng khác.
+**2. Numbers changing themselves.** The segment is computed from data up to the present, so June's report run today
+differs from June's report run last month. This is
+[the case study on historical reports changing their own numbers](../case-studies/bao-cao-qua-khu-tu-doi-so.md) in
+another guise.
 
-**3. Dim phình nếu bật Type 2.** Cột đổi mỗi ngày trong dim Type 2 = một phiên bản mỗi
-ngày cho mỗi khách.
+**3. The dim bloating if Type 2 is on.** A column changing daily in a Type 2 dim = one version per
+day per customer.
 
-Cách né cả ba: **chốt phân khúc vào fact lúc nạp**, như một cột `phan_khuc_luc_mua`. Fact
-bất biến, dimension không phình, và câu *"lúc mua thì khách thuộc phân khúc nào"* trả lời
-được — cùng lời giải với
-[mini-dimension ở bộ 2](bt-02-dimension-thoi-gian.md#bài-c3--fact-trỏ-hai-khoá-và-câu-hỏi-mà-một-dim-không-trả-được).
+The way to avoid all three: **freeze the segment into the fact at load time**, as a `phan_khuc_luc_mua` column. The fact is
+immutable, the dimension doesn't bloat, and the question *"which segment was the customer in at purchase time"* is
+answerable — the same solution as
+[the mini-dimension in set 2](bt-02-dimension-thoi-gian.md#exercise-c3--a-fact-with-two-keys-and-the-question-one-dim-cannot-answer).
 
-Xem [Đưa hành vi vào dimension](../skills/behavior-dimension.md).
+See [Putting behaviour into a dimension](../skills/behavior-dimension.md).
 
 </details>
 
 ---
 
-## Bảng đối chiếu nhanh
+## Quick reconciliation table
 
-| Số | Nghĩa | Bài |
+| The number | What it means | Exercise |
 |---|---|---|
-| 399.999 (thiếu 1 đồng) | làm tròn khi phân bổ | A.1 |
-| 400.000 khép kín | gom sai số về dòng lớn nhất | A.2 |
-| `SP-C` −26.538 | đổi tiêu chí phân bổ, đổi kết luận lãi lỗ | A.3 |
-| 34.560.000 / **3,38 lần** | cộng cột YTD | B.1 |
-| `DN03` được cứu | timespan `between` thay cho join bằng | B.3 |
-| 420 / 78 / 84,0 | semi-additive theo thời gian | B.4 |
-| 681.000 vs **642.500** (−5,7%) | avg-của-avg | C.1 |
-| `sum(so_don)` = 10 | khớp vì may, không vì đúng | C.2 |
-| `C4` Kim cương / chi tiêu thấp | hạng gán ≠ hành vi đo được | D.1 |
-| bước 1 = `xem`, bước 2 = `them_gio` | step dimension | D.3 |
+| 399,999 (1 dong short) | rounding in an allocation | A.1 |
+| 400,000 closing exactly | pushing the error onto the largest line | A.2 |
+| `SP-C` −26,538 | change the allocation basis, change the profit conclusion | A.3 |
+| 34,560,000 / **3.38×** | summing a YTD column | B.1 |
+| `DN03` rescued | a timespan `between` instead of an equality join | B.3 |
+| 420 / 78 / 84.0 | semi-additive across time | B.4 |
+| 681,000 vs **642,500** (−5.7%) | avg-of-avg | C.1 |
+| `sum(so_don)` = 10 | matching by luck, not by correctness | C.2 |
+| `C4` Diamond / lowest spend | an assigned tier ≠ measured behaviour | D.1 |
+| step 1 = `xem`, step 2 = `them_gio` | a step dimension | D.3 |
 
 ## Related Topics
 
-- [Bài tập bộ 4 — Quan hệ và cây](bt-04-quan-he-va-cay.md) — bộ trước
-- [Bài tập bộ 6 — Tích hợp](bt-06-tich-hop.md) — bộ tiếp theo
-- [Lab fact nâng cao](lab-fact-nang-cao.md) — bản chẩn đoán của cùng bốn kỹ thuật
-- [Kỹ năng — Data Modeling](../skills/index.md) — lý thuyết của bốn kỹ thuật trên
+- [Exercise set 4 — Relationships and trees](bt-04-quan-he-va-cay.md) — the previous set
+- [Exercise set 6 — Integration](bt-06-tich-hop.md) — the next set
+- [The advanced fact lab](lab-fact-nang-cao.md) — the diagnostic version of the same four techniques
+- [Skills — Data Modeling](../skills/index.md) — the theory behind the four techniques above
