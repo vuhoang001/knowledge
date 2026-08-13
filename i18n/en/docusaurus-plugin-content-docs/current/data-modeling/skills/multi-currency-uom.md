@@ -1,8 +1,7 @@
 ---
-title: Nhiều loại tiền tệ và nhiều đơn vị đo
-i18n_status: untranslated
+title: Multiple currencies and multiple units of measure
 sidebar_position: 12
-description: "Số đo có đơn vị thì cột số một mình là vô nghĩa: chốt cả giá trị gốc lẫn giá trị quy đổi vào fact, đừng quy đổi lúc đọc."
+description: "A measure with a unit makes the number column alone meaningless: freeze both the original and the converted value into the fact; don't convert at read time."
 tags: [multi-currency, unit-of-measure, fact, additivity, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,16 +12,16 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Nhiều loại tiền tệ và nhiều đơn vị đo
+# Multiple currencies and multiple units of measure
 
-> **Chốt:** một cột số không kèm đơn vị thì `SUM` của nó **luôn chạy** và **thường vô
-> nghĩa**. Cách chữa giống nhau cho cả tiền tệ lẫn đơn vị đo: fact chốt **hai số** —
-> giá trị gốc theo đơn vị nghiệp vụ, và giá trị đã quy đổi theo đơn vị chuẩn, quy đổi
-> bằng hệ số **tại thời điểm giao dịch**.
+> **Takeaway:** a numeric column with no unit attached will `SUM` **successfully** and **usually
+> meaninglessly**. The cure is the same for currencies and units of measure: the fact freezes **two numbers** —
+> the original value in the business unit, and the value converted into the standard unit, converted
+> with the factor **as of the transaction date**.
 
-## Vấn đề — hai lỗi khác nhau
+## The problem — two different bugs
 
-### Lỗi 1: cộng thẳng qua nhiều đơn vị
+### Bug 1: summing straight across several units
 
 ```sql
 CREATE TABLE fct_ban_tho AS
@@ -44,14 +43,14 @@ FROM fct_ban_tho;
 └────────────────────────┴──────────────┘
 ```
 
-**72.001.000** — đơn vị của con số này là gì? Không là gì cả. Nhưng nó là một số hợp lệ,
-render đẹp trên dashboard, và không có gì cảnh báo. Đây là lỗi nguy hiểm nhất trong nhóm
-này vì nó **không bao giờ lỗi**.
+**72,001,000** — what unit is that number in? None at all. But it's a valid number,
+renders beautifully on a dashboard, and nothing warns you. This is the most dangerous bug in this
+group because it **never errors**.
 
-### Lỗi 2: quy đổi lúc đọc, bằng tỷ giá hôm nay
+### Bug 2: converting at read time with today's rate
 
-Tránh được lỗi 1 rồi, cách chữa thường thấy là để tỷ giá ở một bảng riêng và join lúc
-chạy báo cáo. Nếu join nhầm sang tỷ giá **hiện tại**, quá khứ bắt đầu di động.
+Having avoided bug 1, the usual fix is to keep the exchange rates in a separate table and join at
+report time. Join to the **current** rate by mistake and the past starts moving.
 
 ```sql
 CREATE TABLE ty_gia AS
@@ -65,7 +64,7 @@ SELECT * FROM (VALUES
 ) t(thang, tien_te, doi_ra_usd);
 ```
 
-Doanh thu tháng 1 quy ra USD, tính hai kiểu:
+January's revenue in USD, computed two ways:
 
 ```sql
 WITH luc_gd AS (
@@ -93,15 +92,15 @@ SELECT round((SELECT usd FROM luc_gd), 2)  AS thang1_usd_luc_gd,
 └───────────────────┴───────────────────────────┴──────────┘
 ```
 
-Doanh thu tháng 1 **tự giảm 10%** mà không có giao dịch nào thay đổi. Tháng sau tỷ giá
-nhích tiếp, con số lại đổi. Cùng một cơ chế với
-[báo cáo quá khứ tự đổi số](../case-studies/bao-cao-qua-khu-tu-doi-so.md), chỉ khác là ở
-đó thủ phạm là SCD Type 1, ở đây là tỷ giá.
+January's revenue **falls 10% by itself** with no transaction changing. Next month the rate moves
+again and the number changes again. The same mechanism as
+[historical reports changing their own numbers](../case-studies/bao-cao-qua-khu-tu-doi-so.md), except that
+there the culprit was SCD Type 1 and here it's the exchange rate.
 
-## Cách làm — fact chốt cả hai số
+## The approach — the fact freezes both numbers
 
-Kimball nói thẳng: fact table lưu **cả giá trị theo tiền tệ giao dịch lẫn giá trị theo
-tiền tệ chuẩn của tập đoàn**, quy đổi ngay lúc nạp.
+Kimball says it plainly: the fact table stores **both the value in the transaction currency and the value in the
+corporate standard currency**, converted at load time.
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -123,18 +122,18 @@ FROM fct_ban_tho f JOIN ty_gia g
 └─────────┴────────────┴─────────┴─────────────────┴─────────────┴────────────────┘
 ```
 
-Ba cột, ba vai trò khác nhau:
+Three columns, three different roles:
 
-| Cột | Trả lời cho ai | Vì sao phải có |
+| Column | Who it answers for | Why it must exist |
 |---|---|---|
-| `so_tien_ban_dia` | Kế toán chi nhánh, đối chiếu hệ nguồn | Đây mới là **số thật** của giao dịch |
-| `so_tien_usd` | Tập đoàn, so sánh giữa các nước | Cộng được qua mọi quốc gia |
-| `ty_gia_ap_dung` | Người đi kiểm chứng | Không có nó thì không ai tái lập được phép tính |
+| `so_tien_ban_dia` | Branch accounting, reconciling with the source | This is the transaction's **real number** |
+| `so_tien_usd` | Head office, comparing between countries | Summable across every country |
+| `ty_gia_ap_dung` | Whoever verifies it | Without it nobody can reproduce the calculation |
 
-`tien_te` là một [degenerate dimension](degenerate-dimension.md), hoặc trỏ tới
-`dim_tien_te` nếu cần thêm tên, ký hiệu, số chữ số thập phân.
+`tien_te` is a [degenerate dimension](degenerate-dimension.md), or points at
+`dim_tien_te` if you need a name, a symbol, or a decimal-place count.
 
-Báo cáo tập đoàn giờ **bất biến** — chạy lại sau bao lâu vẫn ra một số:
+The corporate report is now **immutable** — re-run it whenever and it gives one number:
 
 ```sql
 SELECT date_trunc('month', ngay)::DATE AS thang, sum(so_tien_usd) AS doanh_thu_usd
@@ -150,7 +149,7 @@ FROM fct_ban GROUP BY 1 ORDER BY 1;
 └────────────┴───────────────┘
 ```
 
-Mà câu hỏi bản địa vẫn nguyên vẹn:
+While the local question stays intact:
 
 ```sql
 SELECT tien_te, sum(so_tien_ban_dia) AS tong_ban_dia
@@ -166,13 +165,13 @@ FROM fct_ban GROUP BY 1 ORDER BY 1;
 └─────────┴───────────────┘
 ```
 
-Luật kèm theo: **không bao giờ `SUM(so_tien_ban_dia)` mà thiếu `GROUP BY tien_te`.**
+The accompanying rule: **never `SUM(so_tien_ban_dia)` without a `GROUP BY tien_te`.**
 
-### Nếu nghiệp vụ cần cả hai kiểu quy đổi
+### If the business needs both conversion styles
 
-Tài chính đôi khi cần cả *"tỷ giá lúc giao dịch"* (theo chuẩn kế toán) lẫn *"tỷ giá cố
-định của kỳ ngân sách"* (để so kế hoạch–thực hiện, loại bỏ ảnh hưởng biến động tỷ giá).
-Đó là **hai fact khác nhau** — thêm cột, không thay cột:
+Finance sometimes needs both *"the rate at transaction time"* (per accounting standards) and *"the budget
+period's fixed rate"* (to compare plan against actual, eliminating exchange-rate movement).
+Those are **two different facts** — add a column, don't replace one:
 
 ```text
 so_tien_ban_dia                 -- goc, khong cong qua tien te
@@ -180,14 +179,14 @@ so_tien_usd_luc_gd              -- ty gia ngay giao dich
 so_tien_usd_ty_gia_ngan_sach    -- ty gia chot dau nam
 ```
 
-Đừng để hai định nghĩa tranh nhau một cột. Đó là cách nhanh nhất để không ai còn tin bảng.
+Don't let two definitions fight over one column. That's the fastest way to make nobody trust the table.
 
-## Nhiều đơn vị đo — cùng bài toán, khác vỏ
+## Multiple units of measure — the same problem in different clothes
 
-Kho hàng đo bằng thùng, bán lẻ đếm bằng lon, sản xuất tính bằng lít. Ba phòng ban, ba đơn
-vị, cùng một sự kiện.
+The warehouse counts in cases, retail counts in cans, manufacturing measures in litres. Three departments, three
+units, one event.
 
-Cách sai phổ biến: **mỗi đơn vị đo một dòng fact**.
+The common wrong approach: **one fact row per unit of measure**.
 
 ```sql
 WITH tach_dong AS (
@@ -207,10 +206,10 @@ FROM tach_dong;
 └─────────┴────────────────────────┘
 ```
 
-3 lô hàng thành 9 dòng, và `SUM` ra 523 — cộng thùng với lon với lít. [Grain](../reference/grain.md)
-của fact vừa bị phá: một dòng không còn là một lô hàng nữa.
+3 shipments become 9 rows, and the `SUM` gives 523 — adding cases to cans to litres. The fact's
+[grain](../reference/grain.md) has just been destroyed: one row is no longer one shipment.
 
-Cách Kimball: **một bộ số duy nhất + các hệ số quy đổi nằm ngay trong dòng fact.**
+Kimball's approach: **one single set of numbers + the conversion factors right in the fact row.**
 
 ```sql
 CREATE TABLE fct_giao_hang AS
@@ -234,12 +233,12 @@ FROM fct_giao_hang;
 └────────┴────────┴───────────────┘
 ```
 
-Grain giữ nguyên **một dòng một lô hàng**, mỗi phòng ban lấy đơn vị của mình bằng một
-phép nhân. Chú ý `G3` có 12 lon/thùng chứ không phải 24 — hệ số **thuộc về từng dòng**,
-không phải hằng số toàn cục. Đó chính là lý do nó phải nằm trong fact: quy cách đóng gói
-đổi theo lô, và lô cũ phải giữ hệ số cũ của nó.
+The grain stays **one row per shipment**, and each department gets its own unit with one
+multiplication. Note that `G3` has 12 cans per case rather than 24 — the factor **belongs to each row**,
+not a global constant. That's exactly why it must live in the fact: packaging specifications
+change per batch, and an old batch must keep its own factor.
 
-Đóng gói lại thành view cho người dùng cuối:
+Wrap it in a view for end users:
 
 ```sql
 CREATE VIEW v_giao_hang AS
@@ -251,37 +250,37 @@ FROM fct_giao_hang;
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Báo cáo quá khứ bất biến | Fact rộng thêm vài cột |
-| Cộng được qua mọi quốc gia / phòng ban | Phải có bảng tỷ giá đúng tại thời điểm nạp |
-| Truy ngược được phép quy đổi (`ty_gia_ap_dung`) | Tỷ giá sửa hồi tố thì phải nạp lại fact |
-| Grain không bị phá | Người đọc phải biết cột nào cộng được |
+| Immutable historical reports | The fact gets a few columns wider |
+| Summable across every country / department | You need a correct rate table at load time |
+| The conversion is traceable (`ty_gia_ap_dung`) | If a rate is retroactively corrected, the fact must be reloaded |
+| The grain isn't destroyed | Readers have to know which column is summable |
 
-Về dòng thứ ba: nếu tỷ giá tháng 1 bị sửa lại vào tháng 3, fact tháng 1 phải nạp lại. Đó
-là đánh đổi có ý thức — đổi lấy việc **mọi lần chạy khác đều cho cùng kết quả**. Ghi lại
-lần nạp lại đó bằng [audit dimension](audit-dimension.md).
+On the third row: if January's rate is corrected in March, January's fact must be reloaded. That's
+a conscious trade-off — in exchange for **every other run giving the same result**. Record that
+reload with an [audit dimension](audit-dimension.md).
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| `SUM` thẳng cột tiền qua nhiều loại tiền tệ | Số vô nghĩa, không có gì báo lỗi |
-| Quy đổi lúc đọc bằng tỷ giá hiện tại | Quá khứ đổi số — [case study](../case-studies/doanh-thu-doi-theo-ty-gia.md) |
-| Chỉ lưu số đã quy đổi, bỏ số bản địa | Không đối chiếu được với hệ nguồn và kế toán chi nhánh |
-| Không lưu `ty_gia_ap_dung` | Không ai tái lập được phép tính khi có tranh cãi |
-| Mỗi đơn vị đo một dòng fact | Grain bị phá, `SUM` cộng lẫn các đơn vị |
-| Coi hệ số quy đổi là hằng số toàn cục | Quy cách đóng gói đổi → toàn bộ lịch sử sai |
+| `SUM`ming the amount column straight across several currencies | A meaningless number, with nothing reporting an error |
+| Converting at read time with the current rate | The past changes its numbers — [case study](../case-studies/doanh-thu-doi-theo-ty-gia.md) |
+| Storing only the converted number and dropping the local one | You can't reconcile with the source or with branch accounting |
+| Not storing `ty_gia_ap_dung` | Nobody can reproduce the calculation when there's a dispute |
+| One fact row per unit of measure | The grain is destroyed and `SUM` mixes units |
+| Treating the conversion factor as a global constant | Packaging specs change → the whole history is wrong |
 
 ## Related Topics
 
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity: cột nào được phép `SUM`
-- [Grain](../reference/grain.md) — tách dòng theo đơn vị đo là phá grain
-- [Degenerate dimension](degenerate-dimension.md) — `tien_te` thường không cần bảng riêng
-- [Audit dimension](audit-dimension.md) — ghi lại lần nạp lại khi tỷ giá bị sửa hồi tố
-- [CS: doanh thu tháng 1 tự đổi theo tỷ giá](../case-studies/doanh-thu-doi-theo-ty-gia.md)
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity: which column may be `SUM`med
+- [Grain](../reference/grain.md) — splitting rows by unit of measure destroys the grain
+- [Degenerate dimensions](degenerate-dimension.md) — `tien_te` usually needs no table of its own
+- [Audit dimensions](audit-dimension.md) — recording the reload when a rate is retroactively corrected
+- [CS: January revenue moving with the exchange rate](../case-studies/doanh-thu-doi-theo-ty-gia.md)
 
 ## References
 
 - Kimball Group — [Multiple Currency Facts / Multiple Units of Measure Facts](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 6 và 12
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 6 and 12

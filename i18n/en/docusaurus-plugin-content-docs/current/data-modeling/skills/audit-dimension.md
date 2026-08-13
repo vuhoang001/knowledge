@@ -1,8 +1,7 @@
 ---
-title: Audit dimension và error event schema
-i18n_status: untranslated
+title: Audit dimensions and error event schemas
 sidebar_position: 13
-description: "Mỗi dòng fact mang một khoá trỏ về lần chạy đã sinh ra nó — khi số sai, bạn xoá đúng thứ phải xoá thay vì xoá theo khoảng ngày."
+description: "Each fact row carries a key pointing back at the run that produced it — so when the numbers are wrong you delete exactly what must be deleted rather than deleting by date range."
 tags: [audit-dimension, error-event, data-quality, lineage, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,16 +12,16 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Audit dimension và error event schema
+# Audit dimensions and error event schemas
 
-> **Chốt:** dữ liệu sẽ sai. Câu hỏi không phải *"làm sao để không bao giờ sai"* mà là
-> *"khi sai thì mất bao lâu để biết dòng nào sai và xoá đúng chừng đó"*. Audit dimension
-> là câu trả lời: mỗi dòng fact mang một khoá trỏ về **lần chạy ETL đã sinh ra nó**.
+> **Takeaway:** the data will be wrong. The question isn't *"how do I never be wrong"* but
+> *"when it is wrong, how long does it take to know which rows are wrong and delete exactly those"*. An audit dimension
+> is the answer: each fact row carries a key pointing back at **the ETL run that produced it**.
 
-## Vấn đề
+## The problem
 
-Sáng ra, doanh thu tháng 1 nhảy từ 2.000 lên 2.500. Không ai sửa gì. Không có test nào
-đỏ.
+You come in one morning and January's revenue has jumped from 2,000 to 2,500. Nobody changed anything. No test is
+red.
 
 ```sql
 SELECT count(*) AS dong_trong_kho, sum(doanh_thu) AS doanh_thu_kho,
@@ -39,11 +38,11 @@ FROM fct_ban;
 └────────────────┴───────────────┴───────────┴────────────────┴───────────┘
 ```
 
-**Phồng 25%.** Nguyên nhân hoá ra rất tầm thường: một file nguồn được nạp hai lần vì có
-người chạy lại tay sau khi job đêm lỗi giữa chừng.
+**25% inflated.** The cause turns out to be entirely mundane: one source file was loaded twice because
+somebody re-ran it by hand after the nightly job failed mid-way.
 
-Giờ tới phần đắt: **xoá cái gì?** Nếu fact không mang dấu vết của lần chạy, thông tin duy
-nhất còn lại là ngày giao dịch. Nên cách xoá duy nhất là theo khoảng ngày:
+Now the expensive part: **what do you delete?** If the fact carries no trace of the run, the only
+remaining information is the transaction date. So the only way to delete is by date range:
 
 ```sql
 SELECT count(*) AS dong_bi_xoa,
@@ -60,13 +59,13 @@ FROM fct_ban WHERE ngay BETWEEN DATE '2026-01-06' AND DATE '2026-01-10';
 └─────────────┴────────────────┴───────────────────┘
 ```
 
-Xoá 10 dòng để diệt 5 dòng rác — **một nửa là dòng tốt**. Rồi phải nạp lại phần đã xoá
-nhầm, và trong lúc nạp lại thì báo cáo hụt. Mỗi sự cố nhỏ thành nửa ngày.
+Deleting 10 rows to kill 5 junk ones — **half of them are good rows**. Then you have to reload what you
+wrongly deleted, and while it's reloading the reports fall short. Every small incident becomes half a day.
 
-## Audit dimension
+## The audit dimension
 
-Một dimension mô tả **lần chạy ETL**, không mô tả nghiệp vụ. Mỗi lần chạy sinh một dòng;
-mỗi dòng fact do lần chạy đó tạo ra mang `audit_sk` tương ứng.
+A dimension describing **an ETL run**, not describing the business. Each run produces one row;
+each fact row created by that run carries the corresponding `audit_sk`.
 
 ```sql
 CREATE TABLE dim_audit AS
@@ -77,7 +76,7 @@ SELECT * FROM (VALUES
 ) t(audit_sk, ma_lan_chay, thoi_diem_chay, file_nguon, phien_ban_code, so_dong_nguon, ghi_chu);
 ```
 
-Cùng câu hỏi "số sai ở đâu", giờ trả lời bằng một `GROUP BY`:
+The same "where are the numbers wrong" question is now answered with one `GROUP BY`:
 
 ```sql
 SELECT a.audit_sk, a.ma_lan_chay, a.file_nguon, a.ghi_chu,
@@ -96,8 +95,8 @@ GROUP BY 1,2,3,4 ORDER BY 1;
 └──────────┴───────────────────┴────────────┴──────────────┴──────────┴───────────┘
 ```
 
-`file_A.csv` xuất hiện hai lần. Và điều đó phát hiện được **tự động**, không cần ai nghi
-ngờ trước:
+`file_A.csv` appears twice. And that's detectable **automatically**, without anybody suspecting it
+beforehand:
 
 ```sql
 SELECT file_nguon, count(*) AS so_lan_nap, list(ma_lan_chay) AS cac_lan
@@ -112,7 +111,7 @@ FROM dim_audit GROUP BY 1 HAVING count(*) > 1;
 └────────────┴────────────┴────────────────────────────────────────┘
 ```
 
-Sửa là một câu lệnh, **chính xác 5 dòng, không đụng dòng nào khác**:
+The fix is one statement, **exactly 5 rows, touching nothing else**:
 
 ```sql
 DELETE FROM fct_ban WHERE audit_sk = 3;
@@ -128,37 +127,36 @@ SELECT count(*) AS dong_con_lai, sum(doanh_thu) AS doanh_thu FROM fct_ban;
 └──────────────┴───────────┘
 ```
 
-**Nửa ngày → một câu lệnh.** Đó là toàn bộ giá trị của kỹ thuật này.
+**Half a day → one statement.** That's the whole value of this technique.
 
-### Những cột đáng có
+### The columns worth having
 
-| Cột | Dùng để |
+| Column | Used for |
 |---|---|
-| `ma_lan_chay` | Nối với log của orchestrator (`run_id` của Airflow / dbt `invocation_id`) |
-| `thoi_diem_chay` | Phân biệt job đêm với lần chạy lại tay |
-| `file_nguon` / `bang_nguon` | Phát hiện nạp trùng |
-| `phien_ban_code` | *"Số đổi từ hôm deploy"* — trả lời được bằng dữ liệu |
-| `so_dong_nguon` | Mẫu số để tính tỷ lệ lỗi |
-| `so_dong_loi`, `diem_chat_luong` | Đánh cờ lô dữ liệu đáng ngờ |
-| `la_nap_lai` | Tách lần chạy bình thường khỏi lần sửa chữa |
+| `ma_lan_chay` | Linking to the orchestrator's log (Airflow's `run_id` / dbt's `invocation_id`) |
+| `thoi_diem_chay` | Distinguishing the nightly job from a manual re-run |
+| `file_nguon` / `bang_nguon` | Detecting a duplicate load |
+| `phien_ban_code` | *"The numbers changed the day we deployed"* — answerable with data |
+| `so_dong_nguon` | The denominator for computing an error rate |
+| `so_dong_loi`, `diem_chat_luong` | Flagging a suspect data batch |
+| `la_nap_lai` | Separating a normal run from a repair run |
 
-Ba cột đầu là mức tối thiểu. Nếu chỉ làm được một cột duy nhất thì làm `ma_lan_chay`.
+The first three are the minimum. If you can only manage one column, make it `ma_lan_chay`.
 
-**Audit dimension là dimension hay fact?** Kimball xếp là dimension vì fact trỏ tới nó
-bằng khoá ngoại và người ta lọc/gộp theo nó. Nhưng grain của nó là *một lần chạy*, và số
-lần chạy tăng theo thời gian — nên đừng ngạc nhiên khi nó lớn hơn dimension nghiệp vụ.
-Nó thuộc loại Type 0: một lần chạy đã xong thì không bao giờ sửa lại mô tả của nó.
+**Is an audit dimension a dimension or a fact?** Kimball classes it as a dimension because facts point at it
+with a foreign key and people filter/group by it. But its grain is *one run*, and the number
+of runs grows with time — so don't be surprised when it's bigger than a business dimension.
+It's Type 0: once a run is done, its description is never edited.
 
-## Error event schema
+## Error event schemas
 
-Audit dimension nói **dòng nào đã vào kho**. Câu hỏi còn lại: **dòng nào không vào được,
-và vì sao?**
+An audit dimension says **which rows got into the warehouse**. The remaining question: **which rows couldn't get in,
+and why?**
 
-Cách xử lý mặc định của mọi pipeline — `WHERE cot IS NOT NULL` rồi đi tiếp — làm dữ liệu
-bị loại **bốc hơi không dấu vết**. Không ai biết đã mất bao nhiêu, mất cái gì, và tỷ lệ
-mất có tăng không.
+Every pipeline's default handling — `WHERE cot IS NOT NULL` and move on — makes the rejected data
+**evaporate without a trace**. Nobody knows how much was lost, what was lost, or whether the loss rate is rising.
 
-Error event schema là một fact riêng cho **sự kiện lỗi**:
+An error event schema is a separate fact for **error events**:
 
 ```sql
 CREATE TABLE fct_loi AS
@@ -182,10 +180,10 @@ FROM fct_loi GROUP BY 1 ORDER BY 2 DESC;
 └──────────────────┴─────────┴──────────────────────────┘
 ```
 
-Cột `chieu_chat_luong` dùng đúng bộ [sáu chiều chất lượng](../../data-quality/six-dimensions.md)
-— để chất lượng dữ liệu đo được bằng cùng một thước ở mọi bảng.
+The `chieu_chat_luong` column uses exactly the [six quality dimensions](../../data-quality/six-dimensions.md)
+— so data quality is measured with the same yardstick across every table.
 
-Kèm theo là phép đối soát khép kín, thứ mà không có error schema thì không tồn tại:
+Alongside it comes a closed-loop reconciliation, which doesn't exist without an error schema:
 
 ```sql
 SELECT (SELECT count(*) FROM fct_ban) AS da_nap,
@@ -202,11 +200,11 @@ SELECT (SELECT count(*) FROM fct_ban) AS da_nap,
 └────────┴─────────┴──────────┴────────────┘
 ```
 
-**Nạp + loại = nguồn.** Đẳng thức này là bất biến mạnh nhất của cả pipeline: nó không thể
-đúng một cách tình cờ. Đặt nó thành test là bắt được mọi kiểu mất dòng âm thầm — kể cả
-kiểu ở [case study một nửa số đơn biến mất](../case-studies/don-dang-giao-bien-mat.md).
+**Loaded + rejected = source.** That equality is the pipeline's strongest invariant: it can't
+hold by accident. Making it a test catches every kind of silent row loss — including
+the kind in the [case study where half the orders vanished](../case-studies/don-dang-giao-bien-mat.md).
 
-Và vì lỗi giờ là dữ liệu, chất lượng thành một chỉ số theo dõi được theo thời gian:
+And because errors are now data, quality becomes a metric trackable over time:
 
 ```sql
 SELECT a.ma_lan_chay, coalesce(l.so_loi, 0) AS so_loi, a.so_dong_nguon,
@@ -226,21 +224,21 @@ ORDER BY ty_le_loi_pct DESC;
 └───────────────────┴────────┴───────────────┴───────────────┘
 ```
 
-Ngưỡng cảnh báo đặt trên cột cuối. Test dbt thường trả lời *"có lỗi hay không"*; cột này
-trả lời *"lỗi đang nhiều lên hay ít đi"* — câu hỏi hữu ích hơn hẳn khi vận hành lâu dài.
+The alert threshold goes on the last column. A dbt test usually answers *"is there an error or not"*; this column
+answers *"are the errors increasing or decreasing"* — a far more useful question for long-term operations.
 
-## Quan hệ với ba tầng của dbt
+## The relationship to dbt's three layers
 
-| Tầng | Công cụ | Trả lời |
+| Layer | Tool | Answers |
 |---|---|---|
-| Chặn trước | `contract`, `not_null`, `unique` | Dữ liệu sai có được vào không |
-| Phát hiện | `dbt test` | Sau khi nạp, có gì bất thường không |
-| **Truy vết** | **audit dimension + error schema** | **Dòng nào, do lần chạy nào, vì sao bị loại** |
+| Block beforehand | `contract`, `not_null`, `unique` | Can wrong data get in |
+| Detect | `dbt test` | After loading, is anything abnormal |
+| **Trace** | **an audit dimension + an error schema** | **Which row, from which run, and why it was rejected** |
 
-Hai tầng đầu là câu hỏi có/không. Tầng ba là thứ quyết định sự cố mất mười phút hay nửa
-ngày. Chi tiết hai tầng đầu ở [Triển khai test](../../etl/dbt/skills/implementing-tests.md).
+The first two layers are yes/no questions. The third is what decides whether an incident takes ten minutes or half
+a day. The first two layers are detailed in [Implementing tests](../../etl/dbt/skills/implementing-tests.md).
 
-Trong dbt, cột audit gắn vào model bằng đúng vài dòng:
+In dbt, the audit columns attach to a model in just a few lines:
 
 ```sql
 SELECT ...,
@@ -251,36 +249,36 @@ FROM {{ ref('stg_ban') }}
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Xoá đúng thứ phải xoá — một câu lệnh | Mỗi fact rộng thêm 1 cột khoá |
-| Phát hiện nạp trùng tự động | Phải sinh và giữ `dim_audit` |
-| *"Số đổi từ hôm deploy nào"* trả lời được | Dòng audit tăng theo số lần chạy, không theo nghiệp vụ |
-| Dữ liệu bị loại không biến mất | Thêm một bảng lỗi phải dọn định kỳ |
+| Deleting exactly what must be deleted — one statement | Each fact gets 1 key column wider |
+| Automatic detection of a duplicate load | You have to generate and maintain `dim_audit` |
+| *"Which deploy changed the numbers"* becomes answerable | Audit rows grow with the run count, not with the business |
+| Rejected data doesn't disappear | Another error table to clean up periodically |
 
-Chi phí thật sự thấp: một cột `INT` trong fact, và một bảng nhỏ. So với nửa ngày mỗi lần
-có sự cố thì nó hoàn vốn ngay lần đầu.
+The real cost is low: one `INT` column in the fact and one small table. Against half a day per
+incident, it pays for itself the first time.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Không có dấu vết lần chạy trong fact | Xoá theo khoảng ngày, mất luôn dòng tốt — [case study](../case-studies/nap-hai-lan-khong-truy-duoc.md) |
-| Chỉ ghi log ra file, không ghi vào bảng | Không join được với fact, không truy được dòng nào |
-| `WHERE … IS NOT NULL` rồi đi tiếp | Dữ liệu bị loại bốc hơi, không ai biết mất bao nhiêu |
-| Có bảng lỗi nhưng không ai nhìn | Thành bãi rác — phải có ngưỡng cảnh báo trên tỷ lệ |
-| Ghi audit vào dimension nghiệp vụ | Trộn metadata kỹ thuật với thuộc tính nghiệp vụ |
-| Không lưu `so_dong_nguon` | Không có mẫu số, không tính được tỷ lệ lỗi |
+| No run trace in the fact | Deleting by date range and losing good rows too — [case study](../case-studies/nap-hai-lan-khong-truy-duoc.md) |
+| Only logging to a file, not into a table | You can't join it with the fact and can't trace which row |
+| `WHERE … IS NOT NULL` and moving on | Rejected data evaporates and nobody knows how much was lost |
+| Having an error table nobody looks at | It becomes a rubbish tip — you need an alert threshold on the rate |
+| Writing audit data into a business dimension | Technical metadata mixed with business attributes |
+| Not storing `so_dong_nguon` | No denominator, so no error rate |
 
 ## Related Topics
 
-- [Six dimensions of data quality](../../data-quality/six-dimensions.md) — bộ nhãn cho `chieu_chat_luong`
-- [Triển khai test trong dbt](../../etl/dbt/skills/implementing-tests.md) — hai tầng chặn và phát hiện
-- [Dữ liệu về muộn](late-arriving.md) — nguyên nhân hay gặp của việc nạp lại
-- [Aggregate fact table](aggregate-fact-table.md) — nạp lại bảng tổng hợp cũng cần dấu vết
-- [CS: nạp hai lần, không truy được dòng nào](../case-studies/nap-hai-lan-khong-truy-duoc.md)
+- [The six dimensions of data quality](../../data-quality/six-dimensions.md) — the label set for `chieu_chat_luong`
+- [Implementing tests in dbt](../../etl/dbt/skills/implementing-tests.md) — the blocking and detecting layers
+- [Late-arriving data](late-arriving.md) — a common reason for reloading
+- [Aggregate fact tables](aggregate-fact-table.md) — reloading a summary table also needs a trace
+- [CS: loaded twice with no way to trace which rows](../case-studies/nap-hai-lan-khong-truy-duoc.md)
 
 ## References
 
 - Kimball Group — [Audit Dimensions / Error Event Schemas](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 19
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 19
