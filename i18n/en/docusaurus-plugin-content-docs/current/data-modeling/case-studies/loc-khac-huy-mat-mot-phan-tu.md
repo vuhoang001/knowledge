@@ -1,8 +1,7 @@
 ---
-title: Lọc "khác huỷ" làm mất một phần tư doanh thu
-i18n_status: untranslated
+title: Filtering "not cancelled" losing a quarter of the revenue
 sidebar_position: 15
-description: "WHERE trang_thai <> 'huy' loại luôn các dòng NULL, vì logic ba trị coi 'không biết' khác 'đúng'."
+description: "WHERE trang_thai <> 'huy' also excludes the NULL rows, because three-valued logic treats 'unknown' as distinct from 'true'."
 tags: [case-study, null-handling, filter, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,17 +12,17 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Lọc "khác huỷ" làm mất một phần tư doanh thu
+# Filtering "not cancelled" losing a quarter of the revenue
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** `NULL <> 'huy'` không trả về `TRUE`, nó trả về `UNKNOWN` — và `WHERE` chỉ
-> giữ `TRUE`. Xem [NULL trong fact và dimension](../skills/null-handling.md).
+> **Takeaway:** `NULL <> 'huy'` doesn't return `TRUE`, it returns `UNKNOWN` — and `WHERE` only
+> keeps `TRUE`. See [NULLs in facts and dimensions](../skills/null-handling.md).
 
-## Bối cảnh
+## Context
 
-Năm đơn hàng. Một đơn (`D4`) mới tạo, chưa qua bước duyệt nên `trang_thai` còn trống.
+Five orders. One (`D4`) was just created and hasn't been through approval, so its `trang_thai` is still empty.
 
 ```sql
 CREATE TABLE fct_don AS
@@ -36,12 +35,12 @@ SELECT * FROM (VALUES
 ) t(so_don, trang_thai, doanh_thu, giam_gia);
 ```
 
-Sự thật: **5 đơn, 1.000 doanh thu**. Trong đó đúng 1 đơn bị huỷ (200), nên doanh thu
-"không bị huỷ" phải là **800**.
+The truth: **5 orders, 1,000 of revenue**. Exactly 1 order was cancelled (200), so the
+"not cancelled" revenue should be **800**.
 
-## Triệu chứng
+## Symptoms
 
-Dashboard doanh thu ghi **600**. Báo cáo của kế toán ghi 800.
+The revenue dashboard says **600**. Accounting's report says 800.
 
 ```sql
 SELECT count(*) AS so_dong, sum(doanh_thu) AS doanh_thu
@@ -56,53 +55,53 @@ FROM fct_don WHERE trang_thai <> 'huy';
 └─────────┴───────────┘
 ```
 
-Ba dòng thay vì bốn. Hụt **25%**, và độ hụt thay đổi mỗi ngày theo số đơn đang chờ duyệt
-— nên không ai tìm ra quy luật.
+Three rows instead of four. **25% short**, and the shortfall changes daily with the number of orders awaiting approval
+— so nobody finds a pattern.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Có đơn bị huỷ mà kế toán chưa cập nhật | Đối chiếu: đúng 1 đơn huỷ ở cả hai bên |
-| Dashboard lọc thêm điều kiện ngày | Bỏ hết bộ lọc khác, vẫn 600 |
-| ETL chưa nạp đủ | `count(*) FROM fct_don` = 5, đủ |
-| Có đơn trùng bị dedupe nhầm | Không có đơn trùng |
+| A cancelled order accounting hasn't updated | Reconciled: exactly 1 cancelled order on both sides |
+| The dashboard adds a date condition | Removing every other filter still gives 600 |
+| The ETL loaded incompletely | `count(*) FROM fct_don` = 5, complete |
+| A duplicate order wrongly deduplicated | There are no duplicates |
 
-Chỗ mất thời gian: cả buổi soi **dữ liệu**, trong khi lỗi nằm ở **câu lọc**. Ai đọc
-`WHERE trang_thai <> 'huy'` cũng gật đầu — nó đọc y hệt câu tiếng Việt "trạng thái khác
-huỷ".
+Where the time goes: a whole session examining the **data**, while the bug is in the **filter**. Anybody reading
+`WHERE trang_thai <> 'huy'` nods along — it reads exactly like the English "status other than
+cancelled".
 
-Câu hỏi rẽ hướng: *"cộng doanh thu của mọi nhóm trạng thái lại có ra 1.000 không?"*
+The redirecting question: *"does adding up the revenue of every status group give 1,000?"*
 
-## Nguyên nhân thật
+## The real cause
 
-SQL dùng **logic ba trị**: `TRUE`, `FALSE`, `UNKNOWN`.
+SQL uses **three-valued logic**: `TRUE`, `FALSE`, `UNKNOWN`.
 
-`NULL <> 'huy'` không phải `TRUE` mà là `UNKNOWN` — vì không biết trạng thái là gì thì
-không khẳng định được nó khác `'huy'`. Mệnh đề `WHERE` chỉ giữ dòng cho `TRUE`, nên `D4`
-bị loại cùng với `D3`.
+`NULL <> 'huy'` isn't `TRUE` but `UNKNOWN` — because if you don't know the status, you can't assert
+it differs from `'huy'`. The `WHERE` clause keeps only rows evaluating to `TRUE`, so `D4`
+is excluded along with `D3`.
 
-Điều này **không phải lỗi của SQL** — nó nhất quán với logic. Nó chỉ không khớp với cách
-người đọc câu lệnh đó hiểu.
+This **isn't SQL's fault** — it's consistent with the logic. It just doesn't match how a person reading
+that statement understands it.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `doanh_thu` | ✅ xanh |
-| `not_null` trên `trang_thai` | ❌ — nhưng **không ai đặt**, vì trống là hợp lệ |
-| `accepted_values` cho `trang_thai` | ✅ xanh (bỏ qua `NULL` mặc định) |
-| Tổng `fct_don` khớp nguồn | ✅ xanh |
-| Số dòng khớp nguồn | ✅ xanh |
+| `not_null` on `doanh_thu` | ✅ green |
+| `not_null` on `trang_thai` | ❌ — but **nobody declares it**, because empty is legitimate |
+| `accepted_values` for `trang_thai` | ✅ green (skipping `NULL` by default) |
+| The `fct_don` total matching the source | ✅ green |
+| The row count matching the source | ✅ green |
 
-Dòng thứ ba đáng nhớ: `accepted_values` của dbt **bỏ qua `NULL`** trừ khi cấu hình khác.
-Nên ngay cả test danh sách giá trị cũng không thấy vấn đề.
+The third row is worth remembering: dbt's `accepted_values` **skips `NULL`** unless configured otherwise.
+So even the value-list test doesn't see the problem.
 
-Bảng nguồn hoàn toàn đúng. Lỗi sinh ra ở lớp báo cáo, nơi test dữ liệu không với tới.
+The source table is entirely correct. The bug arises in the reporting layer, where data tests can't reach.
 
-## Cách sửa
+## The fix
 
-### Sửa ngay — nói rõ NULL đi đâu
+### The immediate fix — say explicitly where NULL goes
 
 ```sql
 SELECT count(*) AS so_dong, sum(doanh_thu) AS doanh_thu
@@ -117,7 +116,7 @@ FROM fct_don WHERE trang_thai IS DISTINCT FROM 'huy';
 └─────────┴───────────┘
 ```
 
-### Sửa gốc — nhóm rồi nhìn, đừng lọc rồi tin
+### The root fix — group and look, don't filter and trust
 
 ```sql
 SELECT coalesce(trang_thai, '(chua xac dinh)') AS trang_thai,
@@ -135,23 +134,23 @@ FROM fct_don GROUP BY 1 ORDER BY 3 DESC;
 └─────────────────┴────────┴───────────┘
 ```
 
-600 + 200 + 200 = 1.000. Nhóm `(chua xac dinh)` **hiện ra** thay vì biến mất, và người
-xem tự quyết định nó thuộc về đâu.
+600 + 200 + 200 = 1,000. The `(chua xac dinh)` group **appears** rather than vanishing, and the
+viewer decides for themselves where it belongs.
 
-### Sửa tận gốc — đừng để NULL vào dimension
+### The deepest fix — don't let NULL into the dimension
 
-Trạng thái chưa xác định nên là **một giá trị** (`'cho_duyet'`), không phải `NULL`. Xem
-[thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md).
+An undetermined status should be **a value** (`'cho_duyet'`), not `NULL`. See
+[designing dimension attributes](../skills/dimension-attribute-design.md).
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Doanh thu báo cáo | 600 (**hụt 25%**) | 800 |
-| Đơn chờ duyệt | Biến mất | Hiện thành một nhóm |
-| Phát hiện lệch bằng | Kế toán đối chiếu | Tổng các nhóm khớp tổng bảng |
+| Reported revenue | 600 (**25% short**) | 800 |
+| Orders awaiting approval | Vanished | Shown as a group |
+| Divergence detected by | Accounting reconciling | The group totals matching the table total |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Bất biến quan trọng nhất:** tổng của mọi nhóm phải bằng tổng của bảng.
+1. **The most important invariant:** the sum of all the groups must equal the table's total.
 
 ```sql
 SELECT (SELECT sum(doanh_thu) FROM fct_don) AS tong_bang,
@@ -159,19 +158,19 @@ SELECT (SELECT sum(doanh_thu) FROM fct_don) AS tong_bang,
      + (SELECT sum(doanh_thu) FROM fct_don WHERE trang_thai = 'huy') AS tong_cac_nhom;
 ```
 
-Hai số khác nhau = có dòng đang rơi ra ngoài mọi nhóm.
+Two different numbers = rows are falling outside every group.
 
-2. Grep tìm bộ lọc phủ định trên cột cho phép `NULL`:
+2. Grep for negative filters on nullable columns:
 
 ```bash
 grep -rn "<>\|!=\|NOT IN" models/marts/ | head
 ```
 
-3. Đếm `NULL` ở mọi cột dùng để lọc — đặt thành test `severity: warn` với ngưỡng.
+3. Count the `NULL`s in every column used for filtering — make it a `severity: warn` test with a threshold.
 
 ## Related Topics
 
-- [NULL trong fact và dimension](../skills/null-handling.md) — bốn bẫy của logic ba trị
-- [Thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md) — nhãn thay cho `NULL`
-- [Six dimensions of data quality](../../data-quality/six-dimensions.md) — completeness
-- [CS: một nửa số đơn biến mất](don-dang-giao-bien-mat.md) — cùng họ: dòng mất âm thầm
+- [NULLs in facts and dimensions](../skills/null-handling.md) — the four traps of three-valued logic
+- [Designing dimension attributes](../skills/dimension-attribute-design.md) — a label instead of `NULL`
+- [The six dimensions of data quality](../../data-quality/six-dimensions.md) — completeness
+- [CS: half the orders vanished](don-dang-giao-bien-mat.md) — the same family: rows lost silently

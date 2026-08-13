@@ -1,8 +1,7 @@
 ---
-title: Phí ship phồng 133% — một cột đúng, một cột sai, cùng một bảng
-i18n_status: untranslated
+title: Shipping fees 133% inflated — one right column, one wrong, in the same table
 sidebar_position: 18
-description: "Số đo ở cấp đơn hàng bị nhân bản xuống từng dòng đơn; tiền hàng vẫn khớp nên không ai nghi cả bảng."
+description: "An order-level measure replicated onto every order line; the goods amount still matches, so nobody suspects the table."
 tags: [case-study, allocated-facts, header-line, grain, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,18 +12,18 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Phí ship phồng 133% — một cột đúng, một cột sai, cùng một bảng
+# Shipping fees 133% inflated — one right column, one wrong, in the same table
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** đơn hàng có số đo ở hai cấp. Kéo số cấp đơn xuống từng dòng đơn là nhân nó
-> lên bằng số dòng — xem [header/line và phân bổ fact](../skills/allocated-facts.md).
+> **Takeaway:** an order has measures at two levels. Pulling an order-level number down onto each order line
+> multiplies it by the line count — see [header/line and allocating facts](../skills/allocated-facts.md).
 
-## Bối cảnh
+## Context
 
-Grain của `fct_ban` là **một dòng đơn hàng** — quyết định đúng, mịn nhất mà nguồn cho
-phép. Nhưng phí ship nằm ở **cấp đơn**, không ở cấp dòng.
+`fct_ban`'s grain is **one order line** — the right decision, the finest the source
+permits. But the shipping fee sits at **order level**, not line level.
 
 ```sql
 CREATE TABLE src_header AS
@@ -39,9 +38,9 @@ SELECT * FROM (VALUES
 ) t(so_don, dong_so, san_pham, tien_hang);
 ```
 
-Sự thật: phí ship **150.000**, tiền hàng 1.500.000.
+The truth: shipping fees **150,000**, goods 1,500,000.
 
-Cách nạp: join header vào line để "có đủ thông tin trong một bảng".
+How it's loaded: join the header onto the lines so as to "have all the information in one table".
 
 ```sql
 CREATE TABLE fct_sai AS
@@ -49,9 +48,9 @@ SELECT l.so_don, l.dong_so, l.san_pham, l.tien_hang, h.phi_ship
 FROM src_line l JOIN src_header h USING (so_don);
 ```
 
-## Triệu chứng
+## Symptoms
 
-Báo cáo chi phí vận chuyển tháng ghi **350.000**; hoá đơn của hãng vận chuyển ghi 150.000.
+The monthly shipping-cost report says **350,000**; the carrier's invoice says 150,000.
 
 ```sql
 SELECT sum(tien_hang) AS tien_hang, sum(phi_ship) AS phi_ship_bao_cao,
@@ -69,56 +68,56 @@ FROM fct_sai;
 └───────────┴──────────────────┴────────────┴───────────┘
 ```
 
-Điểm làm ca này khó chịu: **`tien_hang` hoàn toàn đúng** (1.500.000, khớp nguồn). Một cột
-đúng, một cột sai, trong cùng một bảng, cùng một `SELECT`.
+What makes this case irritating: **`tien_hang` is entirely correct** (1,500,000, matching the source). One
+right column, one wrong one, in the same table, from the same `SELECT`.
 
-Người kiểm mở bảng, thấy doanh thu khớp, kết luận bảng ổn.
+The reviewer opens the table, sees revenue matching, and concludes the table is fine.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Hãng vận chuyển tính thiếu | Đối chiếu vận đơn: hãng đúng |
-| Có đơn ship nhiều lần | Kiểm: mỗi đơn một lần giao |
-| Có phụ phí chưa vào hoá đơn | Không có phụ phí nào |
-| ETL nạp trùng | `count(*)` = 4 dòng, đúng bằng số dòng đơn |
-| Sai ở bảng header | `sum(phi_ship)` trên header = 150.000, đúng |
+| The carrier undercharged | Reconciled against the waybills: the carrier is right |
+| Some order shipped several times | Checked: one delivery per order |
+| A surcharge missing from the invoice | There are no surcharges |
+| The ETL loaded duplicates | `count(*)` = 4 rows, exactly the number of order lines |
+| The header table being wrong | `sum(phi_ship)` on the header = 150,000, correct |
 
-Chỗ mất thời gian: giả thuyết "ETL nạp trùng" bị loại quá sớm, vì **số dòng đúng**. Không
-có dòng nào thừa — chỉ có một **giá trị** bị lặp qua nhiều dòng.
+Where the time goes: the "ETL loaded duplicates" hypothesis is dismissed too early, because **the row count is
+right**. No row is surplus — only a **value** is repeated across several rows.
 
-Câu hỏi rẽ hướng: *"phí ship là số đo của cái gì — của dòng đơn hay của đơn?"*
+The redirecting question: *"the shipping fee is a measure of what — of the order line or of the order?"*
 
-## Nguyên nhân thật
+## The real cause
 
-Grain của `fct_sai` là **một dòng đơn**. `phi_ship` là số đo ở grain **một đơn**.
+`fct_sai`'s grain is **one order line**. `phi_ship` is a measure at the grain of **one order**.
 
-Trộn hai grain vào một bảng nghĩa là số của grain thô bị lặp lại ở mọi dòng của grain
-mịn. `DH-001` có 3 dòng → phí ship 100.000 được đếm ba lần.
+Mixing two grains into one table means the coarser grain's number is repeated across every row of the finer
+grain. `DH-001` has 3 lines → its 100,000 shipping fee is counted three times.
 
-350.000 = 100.000 × 3 + 50.000 × 1.
+350,000 = 100,000 × 3 + 50,000 × 1.
 
-Đây là biến thể của cùng một bệnh với
-[join hai fact làm phồng tổng](join-hai-fact-lam-phong-tong.md) — chỉ khác là ở đây việc
-trộn grain xảy ra **lúc nạp**, nên không ai thấy câu join nguy hiểm trong lớp báo cáo.
+This is a variant of the same illness as
+[joining two facts inflating the total](join-hai-fact-lam-phong-tong.md) — the difference being that here the grain
+mixing happens **at load time**, so nobody sees a dangerous join in the reporting layer.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique_combination_of_columns [so_don, dong_so]` | ✅ xanh — grain **đúng** |
-| `not_null` trên mọi cột | ✅ xanh |
-| `sum(tien_hang)` khớp nguồn | ✅ xanh |
-| `relationships` sang `dim_san_pham` | ✅ xanh |
-| `sum(phi_ship)` khớp `src_header` | ❌ — **không ai viết** |
+| `unique_combination_of_columns [so_don, dong_so]` | ✅ green — the grain is **right** |
+| `not_null` on every column | ✅ green |
+| `sum(tien_hang)` matching the source | ✅ green |
+| `relationships` to `dim_san_pham` | ✅ green |
+| `sum(phi_ship)` matching `src_header` | ❌ — **nobody writes it** |
 
-Dòng đầu là cái bẫy: test grain **xanh**, vì grain của bảng thật sự là `(so_don, dong_so)`
-và nó duy nhất. Grain đúng không bảo đảm **mọi cột đều thuộc grain đó**.
+The first row is the trap: the grain test is **green**, because the table's grain really is `(so_don, dong_so)`
+and it is unique. A correct grain doesn't guarantee **every column belongs to that grain**.
 
-Đây là loại lỗi cần một test cho **từng cột số đo đến từ cấp cao hơn**, không phải một
-test cho cả bảng.
+This is the kind of bug that needs a test for **each measure column coming from a higher level**, not one
+test for the whole table.
 
-## Cách sửa — phân bổ theo tỷ trọng
+## The fix — allocate proportionally
 
 ```sql
 CREATE TABLE fct_dung AS
@@ -147,8 +146,8 @@ FROM src_line l JOIN src_header h USING (so_don);
 └──────────────┴───────────┴────────────────┘
 ```
 
-**150.000, khớp hoá đơn.** Và giờ cộng theo chiều nào cũng đúng — kể cả chiều mà trước
-đây không hỏi được:
+**150,000, matching the invoice.** And now it adds up correctly along any dimension — including one that
+previously couldn't be asked:
 
 ```text
 ┌──────────┬───────────┬──────────┬───────────────┐
@@ -160,39 +159,39 @@ FROM src_line l JOIN src_header h USING (so_don);
 └──────────┴───────────┴──────────┴───────────────┘
 ```
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Phí ship báo cáo | 350.000 (**phồng 133%**) | 150.000 |
-| Đổi tên cột | `phi_ship` | `phi_ship_phan_bo` — tên nói rõ đây là số đã phân bổ |
-| Phí ship theo sản phẩm | Không tính được | Tính được |
+| Reported shipping fees | 350,000 (**133% inflated**) | 150,000 |
+| Column renamed | `phi_ship` | `phi_ship_phan_bo` — the name says this is an allocated number |
+| Shipping fees by product | Not computable | Computable |
 
-Đổi tên cột là phần dễ bỏ qua nhưng quan trọng: `phi_ship_phan_bo` cho người đọc biết đây
-là con số **theo một quy ước**, không phải số đo trực tiếp.
+Renaming the column is the easily-skipped but important part: `phi_ship_phan_bo` tells the reader this is a
+number **following a convention**, not a direct measure.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Bất biến cho mỗi cột đến từ cấp cao hơn** — đây là test phải có:
+1. **An invariant for every column coming from a higher level** — this is the must-have test:
 
 ```sql
 SELECT (SELECT sum(phi_ship_phan_bo) FROM fct_dung) AS trong_fact,
        (SELECT sum(phi_ship) FROM src_header)       AS trong_nguon;
 ```
 
-2. Trong fact có cột nào **giống nhau ở mọi dòng cùng một đơn** không:
+2. Whether the fact has any column that's **identical across every row of the same order**:
 
 ```sql
 SELECT so_don, count(*) AS so_dong, count(DISTINCT phi_ship) AS so_gia_tri_phi_ship
 FROM fct_sai GROUP BY 1 HAVING count(*) > 1;
 ```
 
-`so_gia_tri_phi_ship = 1` với `so_dong > 1` là dấu hiệu của số đo cấp cao hơn đang bị lặp.
+`so_gia_tri_phi_ship = 1` with `so_dong > 1` is the sign of a higher-level measure being repeated.
 
-3. Hỏi cho từng cột số đo: *"số này là số đo của một dòng đơn, hay của cả đơn?"* Câu trả
-   lời "của cả đơn" mà cột vẫn nằm trong bảng grain dòng đơn = phải phân bổ hoặc bỏ ra.
+3. Ask, for each measure column: *"is this a measure of one order line, or of the whole order?"* An answer
+   of "the whole order" while the column sits in an order-line-grain table = allocate it or take it out.
 
 ## Related Topics
 
-- [Header/line và phân bổ fact](../skills/allocated-facts.md) — kỹ thuật bị bỏ qua ở đây
-- [Grain](../reference/grain.md) — mọi cột số đo phải thuộc đúng grain đã khai
-- [Bridge table](../skills/bridge-table.md) — cùng cơ chế hệ số phân bổ
-- [CS: join hai fact làm phồng tổng](join-hai-fact-lam-phong-tong.md) — cùng bệnh trộn grain
+- [Header/line and allocating facts](../skills/allocated-facts.md) — the technique skipped here
+- [Grain](../reference/grain.md) — every measure column must belong to the declared grain
+- [Bridge tables](../skills/bridge-table.md) — the same allocation-factor mechanism
+- [CS: joining two facts inflating the total](join-hai-fact-lam-phong-tong.md) — the same grain-mixing illness

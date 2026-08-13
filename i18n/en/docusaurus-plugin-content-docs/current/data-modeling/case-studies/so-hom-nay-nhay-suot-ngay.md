@@ -1,8 +1,7 @@
 ---
-title: Doanh thu trung bình mỗi ngày nhảy từ 862 lên 1.050 trong cùng một ngày
-i18n_status: untranslated
+title: Average revenue per day jumping from 862 to 1,050 within the same day
 sidebar_position: 23
-description: "Ngày hôm nay chưa đầy nhưng mẫu số vẫn đếm nó là một ngày trọn vẹn; chỉ số ổn định lúc nửa đêm rồi sáng hôm sau lại tụt."
+description: "Today isn't full yet but the denominator still counts it as a whole day; the metric settles at midnight and drops again the next morning."
 tags: [case-study, real-time, partition, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,36 +12,36 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Doanh thu trung bình mỗi ngày nhảy từ 862 lên 1.050 trong cùng một ngày
+# Average revenue per day jumping from 862 to 1,050 within the same day
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** dữ liệu thời gian thực không phá mô hình chiều, nó phá một giả định ngầm mà
-> mọi báo cáo dựa vào — *"mỗi ngày trong bảng là một ngày đã đầy"*. Xem
-> [real-time fact table](../skills/real-time-fact.md).
+> **Takeaway:** real-time data doesn't break dimensional modelling, it breaks an implicit assumption every
+> report relies on — *"every day in the table is a day already complete"*. See
+> [real-time fact tables](../skills/real-time-fact.md).
 
-## Bối cảnh
+## Context
 
-Kho vừa nối thêm luồng streaming để lãnh đạo xem doanh thu trong ngày. Cách nối đơn giản
-nhất: đẩy sự kiện vào cùng bảng fact mà báo cáo đang dùng.
+The warehouse has just connected a streaming feed so executives can watch intraday revenue. The simplest way
+to connect it: push events into the same fact table the reports already use.
 
 ```sql
-CREATE TABLE fct_ban_chot AS       -- lich su, da chot
+CREATE TABLE fct_ban_chot AS       -- history, closed
 SELECT * FROM (VALUES
   (DATE '2026-08-01', 1000), (DATE '2026-08-02', 1200), (DATE '2026-08-03', 900)
 ) t(ngay, doanh_thu);
 
-CREATE TABLE fct_ban_nong AS       -- hom nay, van dang chay vao
+CREATE TABLE fct_ban_nong AS       -- today, still flowing in
 SELECT * FROM (VALUES
   (DATE '2026-08-04', TIME '09:00:00', 200),
   (DATE '2026-08-04', TIME '11:00:00', 150)
 ) t(ngay, gio, doanh_thu);
 ```
 
-## Triệu chứng
+## Symptoms
 
-Dashboard *"doanh thu trung bình mỗi ngày"*, chụp lúc **11h**:
+The *"average revenue per day"* dashboard, captured at **11:00**:
 
 ```text
 ┌─────────┬────────┬─────────────┐
@@ -52,7 +51,7 @@ Dashboard *"doanh thu trung bình mỗi ngày"*, chụp lúc **11h**:
 └─────────┴────────┴─────────────┘
 ```
 
-Cùng dashboard, cùng query, chụp lúc **21h**:
+The same dashboard, the same query, captured at **21:00**:
 
 ```text
 ┌─────────┬────────┬─────────────┐
@@ -62,28 +61,28 @@ Cùng dashboard, cùng query, chụp lúc **21h**:
 └─────────┴────────┴─────────────┘
 ```
 
-**862,5 → 1.050,0** trong cùng một ngày, không ai sửa gì.
+**862.5 → 1,050.0** within the same day, with nobody changing anything.
 
-Hệ quả vận hành: cuộc họp sáng dùng một con số, báo cáo gửi tối dùng con số khác. Và mỗi
-sáng chỉ số lại "tụt" so với tối hôm trước — nên đội kinh doanh liên tục hỏi *"hôm qua có
-chuyện gì?"* trong khi không có chuyện gì cả.
+The operational consequence: the morning meeting uses one number, the report sent that evening uses another. And every
+morning the metric "drops" against the previous evening — so the sales team keeps asking *"what happened
+yesterday?"* when nothing happened at all.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Luồng streaming mất dữ liệu buổi sáng | Đếm sự kiện: không mất, chỉ là chưa tới |
-| Có job xoá rồi nạp lại giữa ngày | Log: không có job nào chạy giữa hai lần chụp |
-| Cache của BI trả số cũ | Xoá cache: không đổi |
-| Múi giờ lệch giữa hai nguồn | Kiểm: cùng múi giờ |
-| Doanh thu thật sự biến động mạnh | Đúng — nhưng đó là **bản chất trong ngày**, không phải lỗi |
+| The streaming feed losing the morning's data | Counted the events: nothing lost, it just hasn't arrived |
+| A job deleting and reloading mid-day | The log: no job ran between the two captures |
+| The BI cache returning a stale number | Cleared the cache: unchanged |
+| A timezone offset between the two sources | Checked: the same timezone |
+| Revenue genuinely being volatile | True — but that's **the nature of intraday**, not a bug |
 
-Chỗ mất thời gian dài nhất: giả thuyết "mất dữ liệu". Cả đội đi kiểm luồng streaming ba
-ngày, và luồng hoàn toàn khoẻ.
+Where the longest stretch of time goes: the "data loss" hypothesis. The whole team checks the streaming feed for
+three days, and the feed is perfectly healthy.
 
-Câu hỏi rẽ hướng: *"mẫu số của phép chia này là gì?"*
+The redirecting question: *"what is the denominator of this division?"*
 
-## Nguyên nhân thật
+## The real cause
 
 ```text
 ┌────────────┬───────────┬────────────┐
@@ -96,36 +95,36 @@ Câu hỏi rẽ hướng: *"mẫu số của phép chia này là gì?"*
 └────────────┴───────────┴────────────┘
 ```
 
-Mẫu số `count(DISTINCT ngay)` = 4. Nhưng ngày 04/08 **mới đầy một phần** — lúc 11h nó mới
-có 350 trên tổng 1.100 cuối ngày.
+The denominator `count(DISTINCT ngay)` = 4. But 4 August is only **partly full** — at 11:00 it has
+only 350 of its eventual 1,100.
 
-Tử số tăng suốt ngày, mẫu số đứng yên ở 4 → thương số tăng suốt ngày.
+The numerator rises all day, the denominator sits still at 4 → the quotient rises all day.
 
-Đây không phải lỗi dữ liệu và cũng không phải lỗi query. Nó là **một giả định ngầm bị phá
-vỡ**: mọi công thức dạng "trung bình mỗi ngày", "tỷ lệ trên tổng", "so với kỳ trước" đều
-ngầm giả định mọi ngày trong tập đều đã kết thúc.
+This is neither a data bug nor a query bug. It's **an implicit assumption being broken**: every
+formula of the form "average per day", "share of total", "versus the prior period" implicitly
+assumes every day in the set has ended.
 
-Giả định đó đúng suốt nhiều năm khi kho chỉ nạp theo lô hằng đêm — và nó chết ngay ngày
-nối luồng streaming.
+That assumption held for years while the warehouse only loaded in nightly batches — and it died the day
+the streaming feed was connected.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên mọi cột | ✅ xanh |
-| Không thiếu ngày nào trong chuỗi | ✅ xanh |
-| `doanh_thu > 0` | ✅ xanh |
-| Tổng khớp luồng nguồn | ✅ xanh |
-| Dữ liệu hôm nay đã đầy chưa | ❌ — **không có khái niệm này trong kho** |
+| `not_null` on every column | ✅ green |
+| No day missing from the series | ✅ green |
+| `doanh_thu > 0` | ✅ green |
+| The total matching the source feed | ✅ green |
+| Whether today's data is complete | ❌ — **no such concept exists in the warehouse** |
 
-Bốn test đầu xanh vì dữ liệu đúng. Dòng cuối không tồn tại vì kho **không lưu ở đâu** cái
-mốc "ngày này đã chốt".
+The first four are green because the data is correct. The last row doesn't exist because the warehouse
+**stores nowhere** the marker "this day is closed".
 
-Test chạy lúc 2h sáng cũng xanh, và lúc đó nó thậm chí đúng — vì ngày hôm trước đã đầy.
+A test running at 02:00 is green too, and at that hour it's even right — because the previous day is full.
 
-## Cách sửa
+## The fix
 
-### Sửa 1 — đánh dấu phân vùng nóng, mang nhãn tới tận báo cáo
+### Fix 1 — mark the hot partition, and carry the label all the way to the report
 
 ```sql
 WITH tat_ca AS (
@@ -148,10 +147,10 @@ FROM tat_ca;
 └─────────────────┴──────────────┴─────────────────────┴──────────────────┘
 ```
 
-**1.033,3 không đổi theo giờ.** Số hôm nay vẫn hiện, nhưng ở cột riêng có nhãn *tạm tính*
-— lãnh đạo vẫn theo dõi được trong ngày mà không nhầm nó với chỉ số ổn định.
+**1,033.3, unchanged hour to hour.** Today's number still shows, but in its own column labelled *provisional*
+— executives can still follow it intraday without confusing it with the stable metric.
 
-### Sửa 2 — so cùng khung giờ, không so cả ngày
+### Fix 2 — compare the same time window, not whole days
 
 ```sql
 SELECT 'hom nay den 11h' AS moc,
@@ -170,35 +169,34 @@ SELECT 'hom nay den 21h',
 └─────────────────┴───────────┘
 ```
 
-Muốn biết hôm nay tốt hay xấu thì so **tới cùng thời điểm** của các ngày trước. Điều kiện:
-fact phải có **giờ**, không chỉ ngày.
+To know whether today is good or bad, compare it **up to the same moment** in earlier days. The precondition:
+the fact must carry **a time**, not just a date.
 
-### Sửa 3 — mốc chốt sổ phải là dữ liệu
+### Fix 3 — the closing marker must be data
 
 ```text
 dim_ky_bao_cao(ngay, da_chot, thoi_diem_chot, ai_chot)
 ```
 
-Không có bảng này thì mỗi báo cáo tự định nghĩa "hôm nay" một kiểu.
+Without this table, every report defines "today" its own way.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Chỉ số buổi sáng vs buổi tối | 862,5 vs 1.050,0 | **1.033,3 cả ngày** |
-| Số hôm nay | Trộn lẫn, không nhãn | Cột riêng, nhãn *tạm tính* |
-| So với hôm qua | Luôn thấy "giảm" tới cuối ngày | So cùng khung giờ |
+| The morning vs evening metric | 862.5 vs 1,050.0 | **1,033.3 all day** |
+| Today's number | Mixed in, unlabelled | Its own column, labelled *provisional* |
+| Versus yesterday | Always looks "down" until end of day | Compared over the same window |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Chạy cùng một dashboard hai lần cách nhau vài giờ, so số. Chỉ số ổn định phải **không
-   đổi**.
+1. Run the same dashboard twice a few hours apart and compare. A stable metric must be **unchanged**.
 
-2. Tìm mọi chỗ dùng `count(DISTINCT ngay)` hay `count(*)` ngày làm mẫu số:
+2. Find every place using `count(DISTINCT ngay)` or a day `count(*)` as a denominator:
 
 ```bash
 grep -rn "count(distinct.*ngay\|count(distinct.*date" models/marts/
 ```
 
-3. Kiểm ngày cuối cùng trong fact có phải hôm nay không:
+3. Check whether the last day in the fact is today:
 
 ```sql
 SELECT max(ngay) AS ngay_moi_nhat, current_date AS hom_nay,
@@ -206,13 +204,13 @@ SELECT max(ngay) AS ngay_moi_nhat, current_date AS hom_nay,
 FROM fct_ban;
 ```
 
-`true` mà không có cột `da_chot` = đang mắc ca này.
+`true` with no `da_chot` column = you're in this case.
 
-4. Hỏi: *"kho có chỗ nào ghi ngày nào đã chốt không?"* Không có = mỗi báo cáo tự đoán.
+4. Ask: *"does the warehouse record anywhere which days are closed?"* No = every report guesses for itself.
 
 ## Related Topics
 
-- [Real-time fact table](../skills/real-time-fact.md) — kỹ thuật bị bỏ qua ở đây
-- [Dữ liệu về muộn](../skills/late-arriving.md) — vấn đề song song, ảnh hưởng ngày đã chốt
-- [Date dimension](../reference/date-dimension.md) — dimension giờ trong ngày tách riêng
-- [Conformed facts](../skills/conformed-facts.md) — hai hệ thống thì chỉ số phải conform
+- [Real-time fact tables](../skills/real-time-fact.md) — the technique skipped here
+- [Late-arriving data](../skills/late-arriving.md) — the parallel problem, affecting closed days
+- [The date dimension](../reference/date-dimension.md) — a separate time-of-day dimension
+- [Conformed facts](../skills/conformed-facts.md) — with two systems, the metrics must conform

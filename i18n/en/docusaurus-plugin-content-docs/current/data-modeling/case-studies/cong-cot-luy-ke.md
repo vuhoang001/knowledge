@@ -1,8 +1,7 @@
 ---
-title: Cột luỹ kế bị kéo vào ô "tổng" — doanh thu phồng 2,13 lần
-i18n_status: untranslated
+title: A cumulative column dragged into the "total" cell — revenue inflated 2.13×
 sidebar_position: 20
-description: "Cột YTD lưu sẵn trong fact trông y hệt cột doanh thu thường, và người dùng BI kéo cả hai vào cùng một chỗ."
+description: "A YTD column pre-stored in the fact looks exactly like an ordinary revenue column, and the BI user drags both into the same place."
 tags: [case-study, year-to-date, additivity, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Cột luỹ kế bị kéo vào ô "tổng" — doanh thu phồng 2,13 lần
+# A cumulative column dragged into the "total" cell — revenue inflated 2.13×
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** `doanh_thu_ytd` là số **non-additive theo thời gian** nằm ngay cạnh một số
-> additive, và **trông y hệt nó**. Xem
-> [year-to-date và timespan](../skills/ytd-timespan-facts.md).
+> **Takeaway:** `doanh_thu_ytd` is a number that's **non-additive across time** sitting right beside an
+> additive one, and **looking exactly like it**. See
+> [year-to-date and timespan](../skills/ytd-timespan-facts.md).
 
-## Bối cảnh
+## Context
 
-Ban giám đốc muốn xem luỹ kế từ đầu năm. Công cụ BI đang dùng không hỗ trợ window
-function, nên đội dữ liệu tính sẵn và lưu vào fact — một quyết định hợp lý ở thời điểm đó.
+The board wants to see the year-to-date figure. The BI tool in use doesn't support window
+functions, so the data team precomputes it and stores it in the fact — a reasonable decision at the time.
 
 ```sql
 CREATE TABLE fct_thang AS
@@ -45,12 +44,12 @@ FROM (VALUES (1, 100), (2, 200), (3, 150), (4, 300)) t(thang, doanh_thu);
 └───────┴───────────┴───────────────┘
 ```
 
-Bảng này **đúng ở mọi dòng**. Dashboard luỹ kế chạy tốt sáu tháng.
+This table is **correct on every row**. The YTD dashboard runs well for six months.
 
-## Triệu chứng
+## Symptoms
 
-Một dashboard mới ra đời. Người dựng kéo `doanh_thu_ytd` vào ô tổng — vì tên nó có chữ
-"doanh thu", và nó là một cột số.
+A new dashboard is born. Its author drags `doanh_thu_ytd` into the total cell — because the name has
+"revenue" in it, and it's a numeric column.
 
 ```sql
 SELECT sum(doanh_thu)     AS doanh_thu_that,
@@ -67,61 +66,61 @@ FROM fct_thang;
 └────────────────┴─────────────────┴───────────────┘
 ```
 
-**Phồng 2,13 lần** trên 4 tháng. Với 12 tháng, hệ số phồng khoảng 6,5 — và nó **thay đổi
-theo số tháng đang xem**, nên không có tỷ lệ cố định nào để nhận ra.
+**2.13× inflated** across 4 months. With 12 months, the inflation factor is about 6.5 — and it **changes
+with the number of months on screen**, so there's no fixed ratio to recognise.
 
-Lọc 3 tháng thì phồng khác, lọc 12 tháng thì phồng khác. Đây là lý do không ai phát hiện
-bằng cách "thấy con số quen thuộc bị lệch một tỷ lệ cố định".
+Filter to 3 months and the inflation differs; filter to 12 months and it differs again. That's why nobody spots
+it by "seeing a familiar number off by a fixed proportion".
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Fact bị nạp trùng | `count(*)` = 4, đúng |
-| Join nào đó gây fan-out | Query chỉ có một bảng, không join gì |
-| Có đơn hàng bị ghi hai lần | Đối chiếu nguồn: sạch |
-| Bộ lọc ngày bị chồng lấn | Không có bộ lọc ngày |
+| The fact loaded duplicates | `count(*)` = 4, correct |
+| Some join causing fan-out | The query has one table and no joins at all |
+| An order recorded twice | Reconciled against the source: clean |
+| Overlapping date filters | There are no date filters |
 
-Chỗ mất thời gian: phản xạ "phồng số = nhân bản dòng" dẫn cả cuộc điều tra đi tìm dòng
-thừa. Không có dòng thừa nào — **cột mới là thứ sai**, và nó sai theo bản chất chứ không
-theo dữ liệu.
+Where the time goes: the reflex "inflated number = duplicated rows" leads the whole investigation to hunt for
+surplus rows. There are none — **the column is the wrong thing**, and it's wrong by nature rather than
+because of the data.
 
-Câu hỏi rẽ hướng: *"cột này cộng lên thì có nghĩa gì không?"*
+The redirecting question: *"does adding this column up mean anything?"*
 
-## Nguyên nhân thật
+## The real cause
 
-`doanh_thu_ytd` đã **chứa sẵn** giá trị của các tháng trước. Cộng cả cột lại là đếm tháng
-1 bốn lần, tháng 2 ba lần, tháng 3 hai lần.
+`doanh_thu_ytd` already **contains** the earlier months' values. Adding the whole column up counts
+January four times, February three times and March twice.
 
-1.600 = 100 + 300 + 450 + 750.
+1,600 = 100 + 300 + 450 + 750.
 
-Về mặt phân loại, đây là số **non-additive theo chiều thời gian** — cùng loại với số dư
-của [periodic snapshot](../reference/fact-and-dimension.md). Nhưng có một khác biệt làm
-nó nguy hiểm hơn nhiều:
+By classification, this is a number **non-additive across the time dimension** — the same kind as a
+[periodic snapshot](../reference/fact-and-dimension.md) balance. But one difference makes
+it far more dangerous:
 
-> Ai cũng biết cộng **số dư** 12 tháng là vô lý. Không ai nghĩ cộng **doanh thu luỹ kế**
-> là vô lý — vì cái tên chứa chữ "doanh thu".
+> Everybody knows adding up 12 months of **balances** is nonsense. Nobody thinks adding up **cumulative
+> revenue** is nonsense — because the name contains the word "revenue".
 
-Tên cột đã che mất tính chất của nó.
+The column name has hidden its own nature.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `doanh_thu_ytd` | ✅ xanh |
-| `doanh_thu_ytd >= doanh_thu` | ✅ xanh |
-| `doanh_thu_ytd` tăng dần theo tháng | ✅ xanh |
-| Giá trị tháng 12 khớp tổng năm | ✅ xanh |
-| Người dùng có cộng cột này không | ❌ — **không kiểm được từ phía dữ liệu** |
+| `not_null` on `doanh_thu_ytd` | ✅ green |
+| `doanh_thu_ytd >= doanh_thu` | ✅ green |
+| `doanh_thu_ytd` increasing month by month | ✅ green |
+| December's value matching the annual total | ✅ green |
+| Whether users add the column up | ❌ — **not checkable from the data side** |
 
-Bốn test đầu đều xanh vì **cột hoàn toàn đúng**. Lỗi phát sinh ở nơi người dùng quyết
-định làm gì với nó — chỗ mà không test dữ liệu nào với tới.
+The first four tests are green because **the column is entirely correct**. The bug arises where a user decides
+what to do with it — a place no data test reaches.
 
-Cách phòng duy nhất là **thiết kế sao cho không thể dùng sai**.
+The only prevention is **designing so it can't be misused**.
 
-## Cách sửa
+## The fix
 
-### Sửa gốc — bỏ cột, tính lúc đọc
+### The root fix — drop the column, compute at read time
 
 ```sql
 SELECT thang, doanh_thu,
@@ -140,17 +139,17 @@ FROM fct_thang ORDER BY thang;
 └───────┴───────────┴──────────────────┘
 ```
 
-Cùng kết quả cho dashboard luỹ kế, nhưng cột **không tồn tại trong bảng** nên không ai
-kéo nhầm được. Công cụ BI ngày nay đều hỗ trợ window function — lý do ban đầu để lưu sẵn
-đã hết hiệu lực.
+The same result for the YTD dashboard, but the column **doesn't exist in the table** so nobody can drag it
+by mistake. Every BI tool today supports window functions — the original reason for pre-storing it
+has expired.
 
-### Nếu buộc phải lưu
+### If you must store it
 
-Ba biện pháp, làm cả ba:
+Three measures, do all three:
 
-1. **Tách sang bảng riêng** `agg_ytd_thang`, không trộn vào fact atomic.
-2. **Đặt tên tự tố cáo**: `doanh_thu_luy_ke_khong_cong`.
-3. **Chỉ đọc một dòng, không gộp**:
+1. **Move it to its own table** `agg_ytd_thang`, don't mix it into the atomic fact.
+2. **Give it a self-incriminating name**: `doanh_thu_luy_ke_khong_cong`.
+3. **Read one row only, never aggregate**:
 
 ```sql
 SELECT thang, doanh_thu_ytd FROM fct_thang WHERE thang = 4;
@@ -164,36 +163,36 @@ SELECT thang, doanh_thu_ytd FROM fct_thang WHERE thang = 4;
 └───────┴───────────────┘
 ```
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Tổng trên dashboard mới | 1.600 (**phồng 2,13 lần**) | 750 |
-| Cột non-additive trong fact | Có, không nhãn | Không có |
-| Dashboard luỹ kế | Chạy | Vẫn chạy |
+| The new dashboard's total | 1,600 (**2.13× inflated**) | 750 |
+| Non-additive columns in the fact | Present, unlabelled | None |
+| The YTD dashboard | Works | Still works |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Tìm cột non-additive nằm trong fact — luỹ kế, số dư, trung bình, tỷ lệ:
+1. Look for non-additive columns sitting in a fact — cumulatives, balances, averages, ratios:
 
 ```bash
 grep -rn "ytd\|luy_ke\|running_\|cumulative\|_avg\|_rate\|_pct" models/marts/*.sql
 ```
 
-2. **Phép thử một câu cho mọi cột số mới:** *"cộng cột này qua hai dòng bất kỳ thì kết
-   quả có nghĩa gì không?"* Không có nghĩa → không được nằm cạnh cột additive mà không có
-   nhãn.
+2. **The one-sentence test for every new numeric column:** *"does adding this column across any two rows
+   produce a meaningful result?"* Meaningless → it mustn't sit beside an additive column without a
+   label.
 
-3. Đối chiếu tổng của mọi cột số với nguồn:
+3. Reconcile the total of every numeric column against the source:
 
 ```sql
 SELECT sum(doanh_thu) AS cong_duoc, sum(doanh_thu_ytd) AS khong_cong_duoc
 FROM fct_thang;
 ```
 
-Cột nào cộng ra số không khớp bất kỳ con số nghiệp vụ nào = cột đó không nên được cộng.
+Any column whose sum matches no business figure at all = a column that shouldn't be summed.
 
 ## Related Topics
 
-- [Year-to-date và timespan](../skills/ytd-timespan-facts.md) — kỹ thuật bị bỏ qua ở đây
-- [Fact và Dimension](../reference/fact-and-dimension.md) — ba mức additivity
-- [Aggregate fact table](../skills/aggregate-fact-table.md) — cùng luật: chỉ lưu số cộng được
-- [CS: bảng tổng hợp lệch số](bang-tong-hop-lech-so.md) — cùng bệnh với cột `avg`
+- [Year-to-date and timespan](../skills/ytd-timespan-facts.md) — the technique skipped here
+- [Facts and dimensions](../reference/fact-and-dimension.md) — the three levels of additivity
+- [Aggregate fact tables](../skills/aggregate-fact-table.md) — the same rule: store only summable numbers
+- [CS: the summary table with divergent numbers](bang-tong-hop-lech-so.md) — the same illness with an `avg` column

@@ -1,8 +1,7 @@
 ---
-title: Năm quy trình, năm mart, và không mart nào ghép được với mart nào
-i18n_status: untranslated
+title: Five processes, five marts, and no mart joins to any other
 sidebar_position: 24
-description: "Mỗi đội dựng mart của mình rất nhanh; đến khi cần một câu hỏi cắt ngang chuỗi giá trị thì phải làm lại từ đầu."
+description: "Each team builds its own mart very fast; when a question crossing the value chain finally comes up, it all has to be redone from scratch."
 tags: [case-study, bus-matrix, conformed-dimension, value-chain, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,57 +12,57 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Năm quy trình, năm mart, và không mart nào ghép được với mart nào
+# Five processes, five marts, and no mart joins to any other
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** dựng từng mart một là đúng. Dựng từng mart một **mà không thống nhất dimension
-> trước** là mua tốc độ hôm nay bằng việc phải làm lại toàn bộ sau một năm — xem
+> **Takeaway:** building one mart at a time is right. Building one mart at a time **without agreeing the
+> dimensions first** buys today's speed by having to redo everything a year later — see
 > [bus architecture](../reference/bus-architecture.md).
 
-## Bối cảnh
+## Context
 
-Công ty bán lẻ, năm quy trình nghiệp vụ: mua hàng, nhập kho, tồn kho, bán hàng, trả hàng.
+A retail company, five business processes: purchasing, goods receipt, inventory, sales, returns.
 
-Cách làm được chọn: mỗi đội dựng mart của mình, giao nhanh, chứng minh giá trị. Không có
-bước thống nhất dimension — bước đó "làm chậm dự án đầu tiên".
+The approach chosen: each team builds its own mart, delivers fast, proves value. No
+dimension-agreement step — that step "slows down the first project".
 
-Sau một năm: năm mart, năm dashboard, tất cả đều chạy, tất cả đều được dùng. Mỗi mart có
-`dim_san_pham` riêng và `dim_khach` riêng, sinh từ nguồn riêng, khoá riêng.
+After a year: five marts, five dashboards, all working, all in use. Each mart has its own
+`dim_san_pham` and its own `dim_khach`, derived from its own source, with its own keys.
 
-## Triệu chứng
+## Symptoms
 
-Ban giám đốc hỏi ba câu:
+The board asks three questions:
 
-1. *"Mua 100 cái, bán được bao nhiêu, còn tồn bao nhiêu, hao hụt bao nhiêu?"*
-2. *"Biên tệ theo sản phẩm là bao nhiêu?"*
-3. *"Sản phẩm nào bị trả nhiều nhất so với lượng bán?"*
+1. *"We bought 100, how many sold, how many left in stock, how much shrinkage?"*
+2. *"What's the margin by product?"*
+3. *"Which product is returned most relative to how much it sells?"*
 
-Cả ba đều **không trả lời được**. Mỗi mart trả lời được một mảnh, và các mảnh không ghép
-lại được vì khoá sản phẩm ở mart mua hàng không khớp khoá ở mart bán hàng.
+None of the three **can be answered**. Each mart answers a fragment, and the fragments can't be
+reassembled because the product key in the purchasing mart doesn't match the key in the sales mart.
 
-Ước lượng ban đầu cho câu 1: "hai ngày". Thực tế: phải dựng lại `dim_san_pham` chung, ánh
-xạ khoá cũ, nạp lại năm fact — vài tháng.
+The initial estimate for question 1: "two days". The reality: rebuild a shared `dim_san_pham`, map the
+old keys, reload five facts — several months.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Chỉ cần một câu join giữa các mart | Khoá không khớp — mỗi mart một hệ khoá |
-| Ánh xạ khoá bằng bảng trung gian | Làm được, nhưng phải làm cho **mọi cặp mart** |
-| Dùng mã sản phẩm nghiệp vụ để join | Mỗi mart chuẩn hoá mã một kiểu (viết hoa, khoảng trắng, tiền tố) |
-| Dựng một mart tổng hợp mới | Chính là phải làm lại — chỉ đặt tên khác |
+| Just needing one join between the marts | The keys don't match — one key system per mart |
+| Mapping keys via an intermediate table | Doable, but it has to be done for **every pair of marts** |
+| Joining on the business product code | Each mart standardises the code differently (upper case, whitespace, prefixes) |
+| Building a new consolidated mart | That *is* redoing it — just under a different name |
 
-Chỗ mất thời gian: hai tháng đầu tin rằng đây là **vấn đề tích hợp** giải bằng ánh xạ.
-Với 5 mart, số cặp phải ánh xạ là 10, và mỗi ánh xạ phải bảo trì mãi mãi. Chi phí đó lớn
-hơn việc dựng conformed dimension ngay từ đầu.
+Where the time goes: the first two months believing this is an **integration problem** solved by mapping.
+With 5 marts, the number of pairs to map is 10, and every mapping must be maintained forever. That cost is larger
+than building conformed dimensions from the start.
 
-## Nguyên nhân thật
+## The real cause
 
-Không có bước **thiết kế dimension trước fact**.
+There's no step for **designing the dimensions before the facts**.
 
-Bus matrix — nếu có — sẽ cho thấy ngay từ tuần đầu rằng `San pham` gắn cả 5 quy trình:
+A bus matrix — had one existed — would have shown in the first week that `San pham` attaches to all 5 processes:
 
 ```sql
 SELECT dimension, count(*) FILTER (WHERE co_dung) AS so_quy_trinh_dung
@@ -82,31 +81,31 @@ FROM bus_matrix GROUP BY 1 ORDER BY 2 DESC;
 └──────────────┴───────────────────┘
 ```
 
-`Ngay` và `San pham` là **xương sống của cả kho**. Làm hỏng hai cái này là hỏng mọi câu
-hỏi cắt ngang — và chúng đáng được thiết kế một lần cho toàn doanh nghiệp trước khi ai
-viết fact đầu tiên.
+`Ngay` and `San pham` are **the warehouse's backbone**. Getting these two wrong breaks every cross-cutting
+question — and they deserve to be designed once for the whole enterprise before anybody
+writes the first fact.
 
-Chi phí của bước đó: có lẽ hai tuần ở dự án đầu tiên. Chi phí bỏ qua nó: vài tháng sau
-một năm.
+The cost of that step: perhaps two weeks on the first project. The cost of skipping it: several months, a
+year later.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| Mỗi mart khớp hệ nguồn của nó | ✅ xanh cả năm |
-| `unique`, `not_null` mọi khoá | ✅ xanh |
-| `relationships` trong từng mart | ✅ xanh |
-| Grain đúng ở từng fact | ✅ xanh |
-| Các mart có dùng chung dimension không | ❌ — **không phải test dữ liệu** |
+| Each mart matching its own source system | ✅ green all year |
+| `unique`, `not_null` on every key | ✅ green |
+| `relationships` within each mart | ✅ green |
+| The grain being right in each fact | ✅ green |
+| Whether the marts share dimensions | ❌ — **not a data test** |
 
-Mọi mart đều **đúng một cách hoàn hảo trong phạm vi của nó**. Đây là lỗi kiến trúc, và nó
-chỉ lộ ra khi có người hỏi một câu vượt qua ranh giới mart.
+Every mart is **perfectly correct within its own scope**. This is an architectural bug, and it
+only surfaces when somebody asks a question crossing a mart boundary.
 
-Thứ bắt được nó là bus matrix, và bus matrix phải tồn tại **trước** khi có mart.
+What catches it is the bus matrix, and the bus matrix must exist **before** any mart does.
 
-## Cách sửa
+## The fix
 
-### Bước 1 — bus matrix thành một bảng trong kho
+### Step 1 — make the bus matrix a table in the warehouse
 
 ```sql
 CREATE TABLE bus_matrix AS
@@ -138,10 +137,10 @@ PIVOT bus_matrix ON dimension USING bool_or(co_dung) GROUP BY quy_trinh;
 └───────────┴────────────┴─────────┴─────────┴──────────────┴──────────┘
 ```
 
-Bảng này cũng trả lời luôn câu *"câu hỏi nào bất khả thi"*: không thể hỏi "tồn kho theo
-khách hàng" — ô đó `false` vì tồn kho không có chiều khách hàng.
+This table also answers *"which questions are impossible"*: you can't ask "inventory by
+customer" — that cell is `false` because inventory has no customer dimension.
 
-### Bước 2 — độ phủ thành chỉ số theo dõi được
+### Step 2 — turn coverage into a metric you can track
 
 ```sql
 SELECT count(*) FILTER (WHERE co_dung) AS o_can_conform,
@@ -158,7 +157,7 @@ FROM bus_matrix;
 └───────────────┴──────────┴────────────┘
 ```
 
-### Bước 3 — sau khi conform, ba câu hỏi trả lời được bằng drill-across
+### Step 3 — once conformed, the three questions are answerable by drill-across
 
 ```text
 ┌──────────┬───────┬──────────┬─────────┬────────┬────────┬────────────────────┬──────────────────────┐
@@ -169,9 +168,9 @@ FROM bus_matrix;
 └──────────┴───────┴──────────┴─────────┴────────┴────────┴────────────────────┴──────────────────────┘
 ```
 
-`hao_hut_van_chuyen = 2` cho `SP-A` — mua 100, nhập kho 98 — là câu hỏi **không quy trình
-đơn lẻ nào trả lời được**. Nó chỉ xuất hiện khi đặt hai fact cạnh nhau qua một dimension
-chung.
+`hao_hut_van_chuyen = 2` for `SP-A` — bought 100, received 98 — is a question **no single process
+can answer**. It only appears when two facts are placed side by side through a shared
+dimension.
 
 ```text
 ┌──────────┬──────────┬───────────────┬───────┬──────────┐
@@ -182,16 +181,16 @@ chung.
 └──────────┴──────────┴───────────────┴───────┴──────────┘
 ```
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Ba câu hỏi cắt ngang | Bất khả thi | Trả lời bằng drill-across |
-| Số ánh xạ khoá phải bảo trì | 10 cặp | 0 |
-| Thêm quy trình thứ sáu | Thêm 5 ánh xạ mới | Cắm vào bus có sẵn |
-| Chi phí trả trước | 0 | ~2 tuần ở dự án đầu |
+| The three cross-cutting questions | Impossible | Answered by drill-across |
+| Key mappings to maintain | 10 pairs | 0 |
+| Adding a sixth process | 5 new mappings | Plug into the existing bus |
+| Cost paid up front | 0 | ~2 weeks on the first project |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Đếm số bảng có tên giống nhau ở các schema khác nhau** — dấu hiệu rõ nhất:
+1. **Count tables sharing a name across different schemas** — the clearest sign:
 
 ```sql
 SELECT table_name, count(DISTINCT table_schema) AS so_schema, list(table_schema) AS o_dau
@@ -200,20 +199,19 @@ WHERE table_name LIKE 'dim_%'
 GROUP BY 1 HAVING count(DISTINCT table_schema) > 1;
 ```
 
-Có `dim_san_pham` ở ba schema = ba định nghĩa sản phẩm.
+Having `dim_san_pham` in three schemas = three definitions of a product.
 
-2. Hỏi: *"kho có bus matrix không, và nó cập nhật lần cuối khi nào?"*
+2. Ask: *"does the warehouse have a bus matrix, and when was it last updated?"*
 
-3. Thử một câu hỏi cắt ngang hai mart bất kỳ. Không trả lời được trong một ngày = chưa
-   conform.
+3. Try any question crossing two marts. Unanswerable within a day = not conformed.
 
-4. Trước khi dựng mart mới, hỏi *"mart này dùng dimension nào, và những dimension đó đã
-   tồn tại chưa?"* — nếu câu trả lời là "sẽ dựng mới", dừng lại.
+4. Before building a new mart, ask *"which dimensions does this mart use, and do those dimensions already
+   exist?"* — if the answer is "we'll build new ones", stop.
 
 ## Related Topics
 
-- [Bus architecture, bus matrix và value chain](../reference/bus-architecture.md) — kỹ thuật bị bỏ qua ở đây
-- [Conformed dimension](../skills/conformed-dimension.md) — thứ mà "bus" thật sự là
-- [Conformed facts](../skills/conformed-facts.md) — ghép được rồi còn phải so được
-- [CS: hai mart không ghép được](hai-mart-khong-ghep-duoc.md) — cùng bệnh, quy mô nhỏ hơn
-- [CS: hai phòng hai doanh thu](hai-phong-hai-doanh-thu.md) — conform dimension rồi vẫn lệch số
+- [Bus architecture, the bus matrix and the value chain](../reference/bus-architecture.md) — the technique skipped here
+- [Conformed dimensions](../skills/conformed-dimension.md) — what the "bus" actually is
+- [Conformed facts](../skills/conformed-facts.md) — being joinable still isn't being comparable
+- [CS: two marts that can't be joined](hai-mart-khong-ghep-duoc.md) — the same illness at a smaller scale
+- [CS: two departments, two revenue numbers](hai-phong-hai-doanh-thu.md) — conformed dimensions and still divergent numbers

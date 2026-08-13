@@ -1,8 +1,7 @@
 ---
-title: Dashboard đầy Y, N và y — một khái niệm nhị phân thành ba nhóm
-i18n_status: untranslated
+title: A dashboard full of Y, N and y — one binary concept becoming three groups
 sidebar_position: 17
-description: "Cờ dạng mã đi thẳng từ hệ nguồn ra báo cáo; hoa thường và hoa hoa tách thành hai dòng, và không ai đọc được cột nào nghĩa gì."
+description: "Coded flags go straight from the source system onto the report; lower case and upper case split into two rows, and nobody can read what any column means."
 tags: [case-study, dimension, attribute, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Dashboard đầy `Y`, `N` và `y` — một khái niệm nhị phân thành ba nhóm
+# A dashboard full of `Y`, `N` and `y` — one binary concept becoming three groups
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** dimension là **giao diện người dùng của kho dữ liệu**. Chuyển thẳng mã hệ
-> nguồn ra báo cáo là bắt mọi người đọc báo cáo phải học ngôn ngữ của hệ nguồn — xem
-> [thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md).
+> **Takeaway:** a dimension is **the data warehouse's user interface**. Passing source-system codes
+> straight onto reports forces everyone reading a report to learn the source system's language — see
+> [designing dimension attributes](../skills/dimension-attribute-design.md).
 
-## Bối cảnh
+## Context
 
-`dim_san_pham` được nạp bằng `SELECT *` từ bảng sản phẩm của hệ ERP. Nhanh, ít code, và
-mọi cột nguồn đều có mặt.
+`dim_san_pham` is loaded with `SELECT *` from the ERP's product table. Fast, little code, and
+every source column is present.
 
 ```sql
 CREATE TABLE dim_sp_ma AS
@@ -35,9 +34,9 @@ SELECT * FROM (VALUES
 ) t(sp_sk, san_pham, hang_moi, khuyen_mai, phan_loai_abc);
 ```
 
-## Triệu chứng
+## Symptoms
 
-Báo cáo *"doanh thu theo tình trạng hàng và khuyến mãi"*:
+The *"revenue by stock condition and promotion"* report:
 
 ```text
 ┌──────────┬────────────┬───────────┐
@@ -49,26 +48,26 @@ Báo cáo *"doanh thu theo tình trạng hàng và khuyến mãi"*:
 └──────────┴────────────┴───────────┘
 ```
 
-Ba vấn đề trong ba dòng:
+Three problems in three rows:
 
-1. **`Y` và `y` là hai nhóm riêng.** Cùng một khái niệm, doanh thu bị chia đôi.
-2. `khuyen_mai` là `1`/`0` — người đọc phải đoán chiều nào là "có".
-3. Không dòng nào tự giải thích. `N` nghĩa là "không phải hàng mới" hay "chưa xác định"?
+1. **`Y` and `y` are separate groups.** One concept, its revenue split in two.
+2. `khuyen_mai` is `1`/`0` — the reader has to guess which direction means "yes".
+3. No row explains itself. Does `N` mean "not new stock" or "undetermined"?
 
-Giám đốc kinh doanh hỏi *"hàng mới đóng góp bao nhiêu"*. Câu trả lời trên dashboard là
-700 — thiếu 100 của dòng `y`.
+The sales director asks *"how much do new products contribute"*. The dashboard's answer is
+700 — 100 short, the `y` row.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Có sản phẩm chưa gán cờ | Kiểm: cả 4 sản phẩm đều có giá trị |
-| BI tự tách nhóm do khoảng trắng | `trim()` không đổi gì |
-| ETL nạp lỗi một dòng | Đối chiếu nguồn: nguồn đúng là `'y'` |
-| Hệ nguồn có hai trường tương tự | Chỉ có một cột |
+| Some product has no flag assigned | Checked: all 4 products have a value |
+| BI splitting groups because of whitespace | `trim()` changes nothing |
+| The ETL loading one row wrongly | Reconciled against the source: the source really is `'y'` |
+| The source system having two similar fields | There's only one column |
 
-Chỗ mất thời gian: mọi người tìm **lỗi kỹ thuật**. Không có lỗi kỹ thuật nào — hệ nguồn
-thật sự chứa `'y'` viết thường ở một dòng, do người nhập liệu gõ tay từ nhiều năm trước.
+Where the time goes: everybody looks for a **technical bug**. There is none — the source system
+genuinely holds a lower-case `'y'` in one row, typed by hand by a data-entry clerk years ago.
 
 ```sql
 SELECT count(DISTINCT hang_moi) AS so_gia_tri_hang_moi,
@@ -84,37 +83,37 @@ FROM dim_sp_ma;
 └─────────────────────┴─────────────────────┘
 ```
 
-**Ba giá trị cho một khái niệm nhị phân.** Câu query này là thứ nên chạy ngay từ đầu.
+**Three values for a binary concept.** This query is the thing to have run at the very start.
 
-## Nguyên nhân thật
+## The real cause
 
-Dimension được nạp **nguyên trạng** từ hệ nguồn, không có tầng chuẩn hoá.
+The dimension is loaded **as-is** from the source system, with no standardisation layer.
 
-Hệ nguồn được phép lộn xộn — nó tối ưu cho việc ghi, và nó đã sống 10 năm với dữ liệu
-nhập tay. Kho dữ liệu **không** được phép lộn xộn, vì nó tối ưu cho việc đọc và mỗi giá
-trị lạ là một dòng thừa trên báo cáo của giám đốc.
+The source system is allowed to be messy — it's optimised for writing, and it has lived 10 years with
+hand-typed data. The warehouse is **not** allowed to be messy, because it's optimised for reading and every
+odd value is a surplus row on the director's report.
 
-Chỗ chuẩn hoá đúng là **tầng dimension**, một lần, cho mọi báo cáo về sau.
+The right place to standardise is **the dimension layer**, once, for every report thereafter.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `hang_moi` | ✅ xanh |
-| `unique` trên `sp_sk` | ✅ xanh |
-| `relationships` fact → dim | ✅ xanh |
-| `accepted_values: ['Y','N']` | ❌ đỏ — **nếu có ai đặt** |
-| Tổng doanh thu khớp nguồn | ✅ xanh |
+| `not_null` on `hang_moi` | ✅ green |
+| `unique` on `sp_sk` | ✅ green |
+| `relationships` fact → dim | ✅ green |
+| `accepted_values: ['Y','N']` | ❌ red — **if anybody declares it** |
+| Total revenue matching the source | ✅ green |
 
-Dòng thứ tư là test duy nhất bắt được, và nó gần như không bao giờ được đặt cho cột cờ —
-người ta đặt `accepted_values` cho trạng thái đơn hàng, hiếm khi cho một cột `Y/N` trông
-có vẻ hiển nhiên.
+The fourth row is the only test that catches it, and it's almost never declared for a flag column —
+people set `accepted_values` for order statuses, rarely for a `Y/N` column that looks
+self-evident.
 
-Tổng doanh thu vẫn đúng 1.100. Không có dòng nào mất; chúng chỉ bị **chia sai nhóm**.
+Total revenue is still exactly 1,100. No row is lost; they're just **grouped wrongly**.
 
-## Cách sửa
+## The fix
 
-### Giải mã ngay ở tầng dimension
+### Decode right in the dimension layer
 
 ```sql
 CREATE TABLE dim_sp AS
@@ -137,23 +136,23 @@ FROM dim_sp_ma;
 └─────────────────┴──────────────────┴───────────┘
 ```
 
-`upper()` gộp `Y` và `y`. Câu trả lời cho giám đốc giờ là **800**, và không cần chú thích
-kèm theo.
+`upper()` merges `Y` and `y`. The answer for the director is now **800**, and needs no accompanying
+footnote.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Doanh thu "hàng mới" | 700 (thiếu 100) | **800** |
-| Số nhóm cho một khái niệm nhị phân | 3 | 2 |
-| Người đọc cần bảng chú thích | Có | Không |
-| Chỗ giải mã | Mỗi dashboard tự làm | Một chỗ, tầng dimension |
+| "New stock" revenue | 700 (100 short) | **800** |
+| Groups for one binary concept | 3 | 2 |
+| The reader needing a legend | Yes | No |
+| Where decoding happens | Every dashboard does its own | One place, the dimension layer |
 
-Kèm theo: **giữ cột mã gốc** (`ma_hang_moi`) trong dimension để đối chiếu hệ nguồn, nhưng
-không đưa cho người dùng cuối.
+Alongside: **keep the original code column** (`ma_hang_moi`) in the dimension for reconciling against the source
+system, but don't hand it to end users.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Liệt kê giá trị phân biệt của mọi cột cờ trong dimension — chạy một lần khi dựng, và
-   đặt thành test sau đó:
+1. List the distinct values of every flag column in the dimension — run it once while building, and
+   make it a test afterwards:
 
 ```sql
 SELECT 'hang_moi' AS cot, count(DISTINCT hang_moi) AS so_gia_tri,
@@ -161,21 +160,21 @@ SELECT 'hang_moi' AS cot, count(DISTINCT hang_moi) AS so_gia_tri,
 FROM dim_sp_ma;
 ```
 
-Số giá trị lớn hơn kỳ vọng = đã có phân mảnh.
+More values than expected = fragmentation already present.
 
-2. Có `accepted_values` cho mọi cột cờ và cột mã trong dimension.
+2. Have `accepted_values` on every flag and code column in the dimension.
 
-3. Grep tìm `CASE WHEN` trong lớp dashboard — mỗi cái là một định nghĩa nằm sai chỗ:
+3. Grep for `CASE WHEN` in the dashboard layer — each one is a definition living in the wrong place:
 
 ```bash
 grep -rn "CASE WHEN" dashboards/ | wc -l
 ```
 
-4. Nhìn một báo cáo bất kỳ: có ô nào cần bảng chú thích để đọc không?
+4. Look at any report at all: is there a cell that needs a legend to read?
 
 ## Related Topics
 
-- [Thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md) — kỹ thuật bị bỏ qua ở đây
-- [Junk dimension](../skills/junk-dimension.md) — chỗ gom nhiều cờ cardinality thấp
-- [NULL trong fact và dimension](../skills/null-handling.md) — nhãn cho giá trị trống
-- [CS: thêm trạng thái thứ tám](them-trang-thai-thu-tam.md) — cùng bệnh: mã nghiệp vụ không được quản
+- [Designing dimension attributes](../skills/dimension-attribute-design.md) — the technique skipped here
+- [Junk dimensions](../skills/junk-dimension.md) — where to gather many low-cardinality flags
+- [NULLs in facts and dimensions](../skills/null-handling.md) — a label for an empty value
+- [CS: adding an eighth status](them-trang-thai-thu-tam.md) — the same illness: unmanaged business codes

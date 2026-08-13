@@ -1,8 +1,7 @@
 ---
-title: dim_san_pham 67% ô trống — và không cột nào đặt được NOT NULL
-i18n_status: untranslated
+title: dim_san_pham 67% empty cells — and no column can be made NOT NULL
 sidebar_position: 22
-description: "Sổ tiết kiệm, bảo hiểm và điện thoại nhét chung một dimension; mỗi dòng sản phẩm mới thêm một nhúm cột mà 90% dòng cũ không dùng."
+description: "Savings accounts, insurance policies and mobile phones crammed into one dimension; each new product line adds a clutch of columns 90% of the existing rows don't use."
 tags: [case-study, supertype, subtype, null-handling, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# `dim_san_pham` 67% ô trống — và không cột nào đặt được `NOT NULL`
+# `dim_san_pham` 67% empty cells — and no column can be made `NOT NULL`
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** khi các "sản phẩm" trong cùng một dimension không chung thuộc tính, nhét
-> chung một bảng là chọn cách tệ nhất trong các cách tệ — xem
-> [thực thể không đồng nhất](../skills/heterogeneous-schema.md).
+> **Takeaway:** when the "products" in one dimension share no attributes, cramming them into one
+> table picks the worst of the bad options — see
+> [heterogeneous entities](../skills/heterogeneous-schema.md).
 
-## Bối cảnh
+## Context
 
-Một tập đoàn tài chính bán sổ tiết kiệm, bảo hiểm nhân thọ và điện thoại trả góp. Quy tắc
-Kimball được áp đúng chữ: *"một conformed `dim_san_pham` cho toàn doanh nghiệp"*.
+A financial group sells savings accounts, life insurance and mobile phones on instalments. Kimball's rule
+is applied to the letter: *"one conformed `dim_san_pham` for the whole enterprise"*.
 
 ```sql
 CREATE TABLE dim_sp_gop AS
@@ -38,11 +37,11 @@ SELECT * FROM (VALUES
     lai_suat, ky_han_thang, so_tien_bao_hiem, tuoi_toi_da, trong_luong_kg, mau_sac);
 ```
 
-Ý định đúng: mọi fact trỏ về một dimension, nên drill-across được giữa mọi quy trình.
+The intent is right: every fact points at one dimension, so drill-across works between all the processes.
 
-## Triệu chứng
+## Symptoms
 
-Không có số nào sai. Triệu chứng là bảng **không dùng được**, và nó xấu đi theo thời gian.
+No number is wrong. The symptom is that the table is **unusable**, and it gets worse over time.
 
 ```sql
 SELECT count(*) AS so_dong,
@@ -64,67 +63,68 @@ FROM dim_sp_gop;
 └─────────┴──────────┴──────────────────┴─────────────┴─────────────┘
 ```
 
-**66,7% số ô trống**, và sau ba năm với 40 cột thì con số đó lên trên 90%.
+**66.7% of cells empty**, and after three years with 40 columns that number is above 90%.
 
-Hậu quả theo thứ tự xuất hiện:
+The consequences, in the order they appear:
 
-1. Người dùng mở bảng, thấy 40 cột, không biết cột nào áp dụng cho sản phẩm nào.
-2. **Không cột đặc thù nào đặt được `NOT NULL`** — mất tầng kiểm tra rẻ nhất trong kho.
-3. `NULL` ở đây nghĩa *"không áp dụng"* nhưng trông y hệt *"thiếu dữ liệu"* — không phân
-   biệt được lỗi nạp với lỗi thiết kế.
-4. Mỗi dòng sản phẩm mới là một `ALTER TABLE` trên bảng mà mọi báo cáo đang dùng.
+1. A user opens the table, sees 40 columns, and doesn't know which column applies to which product.
+2. **No type-specific column can be made `NOT NULL`** — losing the cheapest layer of checking in the warehouse.
+3. `NULL` here means *"not applicable"* but looks exactly like *"missing data"* — you can't
+   distinguish a load bug from a design bug.
+4. Every new product line means an `ALTER TABLE` on the table every report is using.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| ETL nạp thiếu thuộc tính | Kiểm nguồn: hệ bảo hiểm **không có** khái niệm lãi suất |
-| Cần bổ sung dữ liệu từ hệ nguồn khác | Không hệ nào có — thuộc tính đó không tồn tại cho loại đó |
-| Thiếu quy trình quản lý dữ liệu chủ | Có ích, nhưng không giải quyết ô trống |
-| Nên thêm giá trị mặc định cho NULL | **Tệ hơn** — lãi suất 0 cho bảo hiểm là số sai, không phải số trống |
+| The ETL failed to load an attribute | Checked the source: the insurance system **has no** notion of an interest rate |
+| Needing to supplement the data from another source system | No system has it — that attribute doesn't exist for that type |
+| A missing master-data management process | Useful, but it doesn't address the empty cells |
+| Adding a default value in place of NULL | **Worse** — an interest rate of 0 for insurance is a wrong number, not a blank one |
 
-Chỗ mất thời gian: coi ô trống là **vấn đề chất lượng dữ liệu**. Nó không phải. Không có
-dữ liệu nào thiếu — thuộc tính đó **không tồn tại** cho loại sản phẩm đó.
+Where the time goes: treating the empty cells as a **data quality problem**. They aren't. No
+data is missing — the attribute **doesn't exist** for that product type.
 
-Câu hỏi rẽ hướng: *"lãi suất của một cái điện thoại là bao nhiêu?"* Câu hỏi vô nghĩa, và
-đó chính là câu trả lời.
+The redirecting question: *"what's the interest rate of a mobile phone?"* A meaningless question, and
+that's exactly the answer.
 
-## Nguyên nhân thật
+## The real cause
 
-Một dimension đang cố mô tả **nhiều loại thực thể có tập thuộc tính rời nhau**.
+One dimension is trying to describe **several entity types with disjoint attribute sets**.
 
-Kimball có tên riêng cho tình huống này — *heterogeneous products* — và cách xử lý không
-phải là chọn một trong hai thái cực (một bảng gộp / mỗi loại một bảng độc lập), mà là
-**cả hai cùng lúc**: supertype cho phần chung, subtype cho phần riêng.
+Kimball has a name for this situation — *heterogeneous products* — and the treatment isn't
+choosing one of the two extremes (one merged table / one independent table per type), but
+**both at once**: a supertype for the common part, subtypes for the specific parts.
 
-Quy tắc "một conformed dimension" vẫn đúng — nó chỉ áp cho **phần thuộc tính chung**.
+The "one conformed dimension" rule still holds — it just applies to **the common attributes**.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique` trên `sp_sk` | ✅ xanh |
-| `not_null` trên `ma_sp`, `loai_sp` | ✅ xanh |
-| `not_null` trên `lai_suat` | ❌ — **không ai đặt được**, vì `NULL` là hợp lệ |
-| `relationships` fact → dim | ✅ xanh |
-| Tổng doanh thu khớp nguồn | ✅ xanh |
+| `unique` on `sp_sk` | ✅ green |
+| `not_null` on `ma_sp`, `loai_sp` | ✅ green |
+| `not_null` on `lai_suat` | ❌ — **nobody can declare it**, because `NULL` is legitimate |
+| `relationships` fact → dim | ✅ green |
+| Total revenue matching the source | ✅ green |
 
-Dòng thứ ba là toàn bộ vấn đề: vì `NULL` hợp lệ ở phần lớn cột, **không đặt được ràng
-buộc nào có ý nghĩa**. Bảng đúng theo mọi test, và không test nào phát biểu được điều
-người ta thật sự muốn: *"sản phẩm tiết kiệm thì bắt buộc phải có lãi suất"*.
+The third row is the whole problem: because `NULL` is legitimate in most columns, **no meaningful
+constraint can be declared**. The table passes every test, and no test can state what
+people actually want: *"a savings product must have an interest rate"*.
 
-Sau khi tách subtype, câu đó **đặt được**, và đó là lợi ích lớn nhất của việc tách.
+After splitting out the subtypes, that sentence **can be declared**, and that's the biggest benefit of
+splitting.
 
-## Cách sửa
+## The fix
 
-### Supertype — chỉ thuộc tính mọi loại đều có
+### Supertype — only the attributes every type has
 
 ```sql
 CREATE TABLE dim_sp AS
 SELECT sp_sk, ma_sp, loai_sp, nhom_lon FROM dim_sp_gop;
 ```
 
-Fact trỏ vào bảng này. Câu hỏi cắt ngang chạy trên đây, mọi loại đều có mặt:
+The fact points at this table. Cross-cutting questions run here, with every type present:
 
 ```text
 ┌───────────┬────────────┬───────────┐
@@ -136,7 +136,7 @@ Fact trỏ vào bảng này. Câu hỏi cắt ngang chạy trên đây, mọi lo
 └───────────┴────────────┴───────────┘
 ```
 
-### Subtype — một bảng mỗi loại, cùng khoá
+### Subtypes — one table per type, sharing the key
 
 ```sql
 CREATE TABLE dim_sp_tiet_kiem AS
@@ -155,9 +155,9 @@ SELECT sp_sk, ma_sp, so_tien_bao_hiem, tuoi_toi_da FROM dim_sp_gop WHERE loai_sp
 └─────────┴──────────────┴──────────────┴───────────┘
 ```
 
-**Không còn ô trống nào**, và `NOT NULL` đặt được cho cả `lai_suat` lẫn `ky_han_thang`.
+**No empty cells left**, and `NOT NULL` can be declared for both `lai_suat` and `ky_han_thang`.
 
-### Bất biến bắt buộc
+### The mandatory invariant
 
 ```text
 ┌───────────────┬───────────┐
@@ -167,20 +167,20 @@ SELECT sp_sk, ma_sp, so_tien_bao_hiem, tuoi_toi_da FROM dim_sp_gop WHERE loai_sp
 └───────────────┴───────────┘
 ```
 
-Supertype phải phủ **100%** sản phẩm. Thiếu một loại là loại đó biến mất khỏi mọi báo cáo
-cắt ngang.
+The supertype must cover **100%** of the products. A missing type is a type that vanishes from every
+cross-cutting report.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Tỷ lệ ô trống | 66,7% (và tăng) | 0% ở mỗi bảng |
-| `NOT NULL` đặt được | Không cột đặc thù nào | Mọi cột trong subtype |
-| Thêm dòng sản phẩm mới | `ALTER TABLE` bảng chung | Thêm một bảng subtype |
-| Câu hỏi cắt ngang | Được | Được (qua supertype) |
-| Câu hỏi chuyên sâu | Được, nhưng đầy `NULL` | Được, bảng sạch |
+| Empty-cell ratio | 66.7% (and rising) | 0% in each table |
+| `NOT NULL` declarable | On no type-specific column | On every column in a subtype |
+| Adding a new product line | `ALTER TABLE` on the shared table | Add one subtype table |
+| Cross-cutting questions | Possible | Possible (via the supertype) |
+| Deep-dive questions | Possible, but full of `NULL` | Possible, on a clean table |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Đo tỷ lệ ô trống của dimension** — chạy định kỳ, đặt ngưỡng cảnh báo:
+1. **Measure the dimension's empty-cell ratio** — run it periodically, set a warning threshold:
 
 ```sql
 SELECT count(*) AS so_dong,
@@ -189,18 +189,18 @@ SELECT count(*) AS so_dong,
 FROM dim_sp_gop;
 ```
 
-Cột nào trống trên 50% là ứng viên tách subtype.
+Any column over 50% empty is a candidate for a subtype split.
 
-2. Trong dimension có cột `loai_*` mà **cụm cột khác chỉ có giá trị khi `loai_*` bằng một
-   giá trị nhất định** — đó chính là định nghĩa của subtype.
+2. The dimension has a `loai_*` column where **another cluster of columns only holds values when `loai_*`
+   equals a particular value** — that's precisely the definition of a subtype.
 
-3. Đếm số cột đặt được `NOT NULL`. Rất ít = bảng đang mô tả nhiều loại thực thể.
+3. Count the columns that can be made `NOT NULL`. Very few = the table is describing several entity types.
 
-4. Mỗi lần ra sản phẩm mới lại phải `ALTER TABLE` bảng dimension chung.
+4. Every new product release requires an `ALTER TABLE` on the shared dimension table.
 
 ## Related Topics
 
-- [Thực thể không đồng nhất](../skills/heterogeneous-schema.md) — kỹ thuật bị bỏ qua ở đây
-- [NULL trong fact và dimension](../skills/null-handling.md) — "không áp dụng" khác "thiếu dữ liệu"
-- [Conformed dimension](../skills/conformed-dimension.md) — supertype mới là phần phải conform
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — subtype là snowflake có chủ đích
+- [Heterogeneous entities](../skills/heterogeneous-schema.md) — the technique skipped here
+- [NULLs in facts and dimensions](../skills/null-handling.md) — "not applicable" differs from "missing data"
+- [Conformed dimensions](../skills/conformed-dimension.md) — the supertype is the part that must conform
+- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — a subtype is a deliberate snowflake

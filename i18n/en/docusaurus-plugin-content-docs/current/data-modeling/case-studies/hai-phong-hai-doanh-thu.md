@@ -1,8 +1,7 @@
 ---
-title: Hai phòng, hai con số doanh thu, cùng một cột tên "doanh_thu"
-i18n_status: untranslated
+title: Two departments, two revenue numbers, the same column named "doanh_thu"
 sidebar_position: 16
-description: "Mart bán hàng và mart tài chính đều đúng theo định nghĩa của mình; ghép lại lệch 11,9% và tỷ lệ tính ra từ hai nguồn thì vô nghĩa."
+description: "The sales mart and the finance mart are each correct by their own definition; together they differ by 11.9%, and a ratio computed across the two means nothing."
 tags: [case-study, conformed-facts, metric, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,18 +12,18 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Hai phòng, hai con số doanh thu, cùng một cột tên `doanh_thu`
+# Two departments, two revenue numbers, the same column named `doanh_thu`
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** [conformed dimension](../skills/conformed-dimension.md) làm hai mart **ghép
-> được**. Không có [conformed fact](../skills/conformed-facts.md) thì chúng ghép được mà
-> **không so được** — và đó là trạng thái nguy hiểm hơn hẳn bế tắc.
+> **Takeaway:** [conformed dimensions](../skills/conformed-dimension.md) make two marts **joinable**.
+> Without [conformed facts](../skills/conformed-facts.md) they're joinable but
+> **not comparable** — and that's a far more dangerous state than being stuck.
 
-## Bối cảnh
+## Context
 
-Hai mart, dựng cách nhau sáu tháng, hai đội khác nhau, cùng một bảng nguồn.
+Two marts, built six months apart, by two different teams, from the same source table.
 
 ```sql
 CREATE TABLE src_don AS
@@ -38,12 +37,12 @@ CREATE VIEW mart_ban_hang  AS SELECT so_don, tien_hang - giam_gia AS doanh_thu F
 CREATE VIEW mart_tai_chinh AS SELECT so_don, tien_hang - giam_gia + vat + phi_ship AS doanh_thu FROM src_don;
 ```
 
-Cả hai đội đều làm đúng việc của mình. Bán hàng không tính VAT vì đó không phải tiền của
-công ty; tài chính tính tổng tiền thực vào tài khoản. **Không ai sai.**
+Both teams did their own job correctly. Sales excludes VAT because it isn't the company's money;
+finance totals the actual money hitting the account. **Neither is wrong.**
 
-## Triệu chứng
+## Symptoms
 
-Họp giao ban, hai slide, hai con số cho tháng vừa rồi:
+At the management meeting, two slides, two numbers for last month:
 
 ```text
 ┌─────────────────────────┬──────────────────────────┬───────┬──────────┐
@@ -53,10 +52,10 @@ Họp giao ban, hai slide, hai con số cho tháng vừa rồi:
 └─────────────────────────┴──────────────────────────┴───────┴──────────┘
 ```
 
-Chênh **11,9%**. Nhưng đây chưa phải phần tệ nhất.
+A gap of **11.9%**. But that isn't the worst part.
 
-Một tuần sau, có người dựng dashboard "tỷ lệ chuyển đổi doanh thu", lấy tử số từ mart bán
-hàng, mẫu số từ mart tài chính:
+A week later somebody builds a "revenue conversion rate" dashboard, taking the numerator from the sales
+mart and the denominator from the finance mart:
 
 ```text
 ┌────────────────────────────┐
@@ -66,58 +65,58 @@ hàng, mẫu số từ mart tài chính:
 └────────────────────────────┘
 ```
 
-**89,4%** — nằm gọn trong khoảng người ta kỳ vọng, ổn định qua các tháng, và **không đo
-cái gì cả**. Nó chỉ đang đo tỷ trọng VAT và phí ship trong tổng tiền.
+**89.4%** — comfortably inside the expected range, stable across months, and **measuring
+nothing at all**. It's measuring the share of VAT and shipping fees in the gross amount.
 
-Chỉ số này chạy sáu tháng trước khi có người hỏi công thức của nó.
+That metric runs for six months before anybody asks for its formula.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Một mart nạp thiếu đơn | `count(*)` hai bên bằng nhau, khớp nguồn |
-| Khác kỳ dữ liệu (một bên trễ 1 ngày) | Cùng khoảng ngày, cùng số dòng |
-| Một bên lọc bỏ đơn huỷ | Không có đơn huỷ trong kỳ |
-| Lỗi làm tròn | Chênh 510 trên 4.300 — quá lớn cho làm tròn |
-| Một bên tính sai | **Sai** — cả hai đều tính đúng công thức của mình |
+| One mart loaded incompletely | `count(*)` matches on both sides, and matches the source |
+| Different data periods (one a day behind) | Same date range, same row count |
+| One side filters out cancelled orders | There are no cancelled orders in the period |
+| A rounding error | 510 out of 4,300 — far too large for rounding |
+| One side computes it wrongly | **Wrong** — both compute their own formula correctly |
 
-Chỗ mất thời gian dài nhất: mọi người đi tìm **bên nào sai**. Không bên nào sai. Câu hỏi
-đúng phải là *"hai bên đang đo hai thứ khác nhau à?"* — và câu đó chỉ đặt được khi có
-người mở cả hai định nghĩa ra đặt cạnh nhau.
+Where the longest stretch of time goes: everybody looks for **which side is wrong**. Neither is. The right
+question is *"are the two sides measuring two different things?"* — and that question only gets asked once
+somebody puts the two definitions side by side.
 
-## Nguyên nhân thật
+## The real cause
 
-Hai cột cùng tên `doanh_thu`, hai công thức:
+Two columns with the same name `doanh_thu`, two formulas:
 
 ```text
 mart_ban_hang  : tien_hang - giam_gia
 mart_tai_chinh : tien_hang - giam_gia + vat + phi_ship
 ```
 
-Chênh lệch **510 = VAT 450 + phí ship 60** — giải thích được 100%.
+The gap of **510 = VAT 450 + shipping 60** — 100% explained.
 
-Vấn đề không phải hai định nghĩa tồn tại; doanh nghiệp nào cũng có nhiều khái niệm doanh
-thu. Vấn đề là **chúng cùng tên**, nên không ai nghĩ phải kiểm.
+The problem isn't that two definitions exist; every business has several notions of
+revenue. The problem is that **they share a name**, so nobody thinks to check.
 
-Nếu hai cột tên `doanh_thu_thuan` và `tong_tien_khach_tra` thì người dựng dashboard đã
-dừng lại ở giây đầu tiên.
+Had the two columns been named `doanh_thu_thuan` and `tong_tien_khach_tra`, the dashboard's author would
+have stopped in the first second.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| Mỗi mart khớp bảng nguồn | ✅ xanh cả hai |
-| `not_null`, `unique` trên khoá | ✅ xanh |
-| `doanh_thu > 0` | ✅ xanh |
-| Tỷ lệ chuyển đổi nằm trong `[0, 100]` | ✅ xanh — **89,4 hoàn toàn hợp lệ** |
-| Hai mart cùng định nghĩa `doanh_thu` | ❌ — **không có khái niệm test này** |
+| Each mart matching the source table | ✅ green on both |
+| `not_null`, `unique` on the keys | ✅ green |
+| `doanh_thu > 0` | ✅ green |
+| The conversion rate lying within `[0, 100]` | ✅ green — **89.4 is perfectly valid** |
+| The two marts sharing one definition of `doanh_thu` | ❌ — **no such test concept exists** |
 
-Dòng thứ tư là điểm cốt lõi: một chỉ số **sai nhưng nằm trong khoảng hợp lý** thì không
-test kiểu ngưỡng nào bắt được. Test dữ liệu kiểm dữ liệu; nó không kiểm được **ý nghĩa**.
+The fourth row is the crux: a metric that's **wrong but inside a plausible range** can't be caught by any
+threshold-style test. Data tests check data; they can't check **meaning**.
 
-## Cách sửa
+## The fix
 
-### Bước 1 — hai khái niệm, hai tên, một bảng
+### Step 1 — two concepts, two names, one table
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -135,10 +134,10 @@ FROM src_don;
 └─────────────────┴─────────────────────┴───────┴──────────┴──────────┘
 ```
 
-Giữ luôn các thành phần cấu thành — nhờ đó định nghĩa thứ ba trong tương lai không phải
-sửa nguồn.
+Keep the constituent parts as well — so the third definition, when it arrives, needn't
+change the source.
 
-### Bước 2 — biến chênh lệch thành một phép trừ
+### Step 2 — turn the gap into a subtraction
 
 ```sql
 SELECT sum(tong_tien_khach_tra) - sum(doanh_thu_thuan) AS chenh_thuc_te,
@@ -156,10 +155,10 @@ FROM fct_ban;
 └───────────────┴───────────────────────┴───────────────────────────────┘
 ```
 
-Cột cuối bằng 0 là **test nên đặt**. Nó không thể bằng 0 tình cờ, và nó biến câu chuyện
-"hai đội cãi nhau" thành một dòng CI.
+The last column being 0 is **the test to set up**. It can't be 0 by accident, and it turns the story of
+"two teams arguing" into one CI line.
 
-### Bước 3 — sổ đăng ký chỉ số
+### Step 3 — a metric registry
 
 ```text
 ┌─────────────────────┬───────────────────────────────────────┬─────────────────────┐
@@ -171,9 +170,9 @@ Cột cuối bằng 0 là **test nên đặt**. Nó không thể bằng 0 tình 
 └─────────────────────┴───────────────────────────────────────┴─────────────────────┘
 ```
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Cùng tên cột xuất hiện ở nhiều mart** — kiểm bằng metadata, không cần đọc code:
+1. **The same column name appearing in several marts** — check via metadata, no code reading needed:
 
 ```sql
 SELECT column_name, count(DISTINCT table_name) AS so_bang, list(table_name) AS o_dau
@@ -182,15 +181,15 @@ WHERE column_name IN ('doanh_thu','revenue','gmv')
 GROUP BY 1 HAVING count(DISTINCT table_name) > 1;
 ```
 
-2. Hỏi hai người ở hai phòng *"doanh thu có gồm VAT không"* và nhận hai câu trả lời.
+2. Ask two people in two departments *"does revenue include VAT"* and get two answers.
 
-3. Có chỉ số nào là **tỷ lệ giữa hai bảng khác nhau** — mỗi cái như vậy đều đáng kiểm.
+3. Any metric that's **a ratio between two different tables** — each one deserves a check.
 
-4. Không tìm được chỗ nào ghi công thức của một chỉ số ngoài code SQL.
+4. Nowhere records a metric's formula other than the SQL code.
 
 ## Related Topics
 
-- [Conformed facts](../skills/conformed-facts.md) — bốn điều kiện để hai fact so được
-- [Conformed dimension](../skills/conformed-dimension.md) — nửa còn lại của bài toán
-- [Bus architecture và bus matrix](../reference/bus-architecture.md) — nơi khai báo cái gì phải conform
-- [CS: hai mart không ghép được](hai-mart-khong-ghep-duoc.md) — thiếu conformed dimension
+- [Conformed facts](../skills/conformed-facts.md) — the four conditions for two facts to be comparable
+- [Conformed dimensions](../skills/conformed-dimension.md) — the other half of the problem
+- [Bus architecture and the bus matrix](../reference/bus-architecture.md) — where you declare what must conform
+- [CS: two marts that can't be joined](hai-mart-khong-ghep-duoc.md) — a missing conformed dimension

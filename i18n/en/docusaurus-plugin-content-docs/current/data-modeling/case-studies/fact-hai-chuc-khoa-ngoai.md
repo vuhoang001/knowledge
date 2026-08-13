@@ -1,8 +1,7 @@
 ---
-title: Fact tám khoá ngoại cho hai chiều thật
-i18n_status: untranslated
+title: A fact with eight foreign keys for two real dimensions
 sidebar_position: 19
-description: "Mỗi cấp thời gian và mỗi cấp sản phẩm được tách thành một dimension riêng; mọi báo cáo phải join 3–5 bảng để hỏi một câu đơn giản."
+description: "Every time level and every product level split into its own dimension; every report has to join 3–5 tables to ask one simple question."
 tags: [case-study, centipede, dimension, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,18 +12,18 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Fact tám khoá ngoại cho hai chiều thật
+# A fact with eight foreign keys for two real dimensions
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** ngày, tuần, tháng, quý, năm không phải năm dimension — chúng là năm **cột của
-> một** dimension. Xem [centipede fact table](../skills/centipede-fact.md).
+> **Takeaway:** day, week, month, quarter and year aren't five dimensions — they're five **columns of
+> one** dimension. See [centipede fact tables](../skills/centipede-fact.md).
 
-## Bối cảnh
+## Context
 
-Mô hình được thiết kế bởi một DBA quen chuẩn hoá OLTP. Nguyên tắc áp dụng: *"mỗi thực thể
-một bảng, không lặp dữ liệu"*. Áp lên kho dữ liệu, nó cho ra thế này:
+The model was designed by a DBA used to normalising OLTP. The principle applied: *"one table per
+entity, no repeated data"*. Applied to a warehouse, it produces this:
 
 ```sql
 CREATE TABLE fct_centipede AS
@@ -42,15 +41,15 @@ SELECT 20260110 AS ngay_key, 202602 AS tuan_key, 202601 AS thang_key,
 └───────────────┘
 ```
 
-Tám khoá ngoại, tám bảng dimension. Về mặt chuẩn hoá thì không chê được: không giá trị
-nào bị lặp.
+Eight foreign keys, eight dimension tables. On normalisation grounds it's unimpeachable: not one value
+is repeated.
 
-## Triệu chứng
+## Symptoms
 
-Không có sự cố số liệu. Triệu chứng là **ma sát**, tích lũy dần và không ai quy được cho
-nguyên nhân nào:
+There's no numbers incident. The symptom is **friction**, accumulating gradually and attributed by nobody
+to any cause:
 
-- Câu hỏi đơn giản nhất cũng phải join 3 bảng:
+- Even the simplest question needs a 3-table join:
 
 ```sql
 SELECT t.thang_ten, n.nganh_ten, sum(f.doanh_thu) AS doanh_thu
@@ -68,28 +67,28 @@ GROUP BY 1,2;
 └──────────────┴───────────┴───────────┘
 ```
 
-- Người dùng BI mở model, thấy 8 bảng, không biết bắt đầu từ đâu.
-- Muốn drill từ tháng xuống ngày phải **thêm một join**, không phải thêm một cột.
-- Mỗi phân tích viên tự chọn join khác nhau; hai người ra hai kết quả vì một người quên
+- A BI user opens the model, sees 8 tables, and doesn't know where to start.
+- Drilling from month down to day needs **another join**, not another column.
+- Each analyst picks a different set of joins; two people get two results because one forgot to
   join `dim_nhom`.
 
-Cái mất là **tốc độ trả lời câu hỏi**, thứ không hiện lên bất kỳ dashboard vận hành nào.
+What's lost is **the speed of answering a question**, something that appears on no operational dashboard.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Query chậm do thiếu index | Thêm index, nhanh hơn chút, ma sát vẫn nguyên |
-| Người dùng chưa được đào tạo | Đào tạo xong, tuần sau lại hỏi cách join |
-| Cần một semantic layer để che bớt | Có ích, nhưng chỉ **giấu** vấn đề đi |
-| Warehouse cần nâng cấp | Không phải vấn đề tài nguyên |
+| Queries slow for want of an index | Added indexes, slightly faster, the friction untouched |
+| Users not trained | Training done, and a week later they ask how to join again |
+| Needing a semantic layer to cover it up | Useful, but it only **hides** the problem |
+| The warehouse needing an upgrade | It isn't a resource problem |
 
-Chỗ mất thời gian: coi đây là **vấn đề công cụ hoặc con người**. Cả hai hướng đều tốn
-tiền và không giải quyết gốc.
+Where the time goes: treating this as a **tooling or people problem**. Both directions cost
+money and address nothing at the root.
 
-Câu hỏi rẽ hướng: *"tám khoá này có thật sự là tám chiều độc lập không?"*
+The redirecting question: *"are these eight keys really eight independent dimensions?"*
 
-## Nguyên nhân thật
+## The real cause
 
 ```sql
 SELECT ngay,
@@ -108,34 +107,34 @@ FROM dim_ngay;
 └────────────┴─────────────┴──────────────┴────────────┴────────────┘
 ```
 
-Bốn khoá thời gian **suy ra được hoàn toàn** từ `ngay_key`. Ba khoá sản phẩm cũng vậy:
-`nhom_key` và `nganh_key` suy ra từ `sp_key`.
+Four time keys **fully derivable** from `ngay_key`. The same for the three product keys:
+`nhom_key` and `nganh_key` derive from `sp_key`.
 
-Tám khoá ngoại đại diện cho **đúng hai chiều**: thời gian và sản phẩm.
+Eight foreign keys represent **exactly two dimensions**: time and product.
 
-Chuẩn hoá là đúng cho hệ giao dịch, nơi mục tiêu là **ghi nhanh và không mâu thuẫn**. Kho
-dữ liệu tối ưu cho **đọc và hiểu**, nên nó cố tình chấp nhận lặp dữ liệu trong dimension.
-Áp nguyên tắc của bên này sang bên kia là nguồn gốc của mọi centipede.
+Normalisation is right for a transactional system, where the goal is **writing fast and without
+contradiction**. A warehouse optimises for **reading and understanding**, so it deliberately accepts repeated data in
+dimensions. Applying one side's principle to the other is the origin of every centipede.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `relationships` cho cả 8 khoá | ✅ xanh hết |
-| `not_null` cho cả 8 khoá | ✅ xanh |
-| `unique` trên mỗi dimension | ✅ xanh |
-| Tổng doanh thu khớp nguồn | ✅ xanh |
-| Số khoá ngoại có hợp lý không | ❌ — **không phải loại test dữ liệu** |
+| `relationships` for all 8 keys | ✅ all green |
+| `not_null` for all 8 keys | ✅ green |
+| `unique` on each dimension | ✅ green |
+| Total revenue matching the source | ✅ green |
+| Whether the number of foreign keys is reasonable | ❌ — **not a kind of data test** |
 
-Mọi số đều đúng. Đây không phải lỗi dữ liệu mà là lỗi **cấu trúc**, và hậu quả của nó đo
-bằng thời gian người, không đo bằng con số trong bảng.
+Every number is correct. This isn't a data bug but a **structural** one, and its consequences are measured
+in person-hours, not in numbers in a table.
 
-Thứ bắt được nó là **review thiết kế**, hoặc một quy tắc lint đơn giản: *"fact có trên 20
-khoá ngoại thì phải giải trình"*.
+What catches it is a **design review**, or one simple lint rule: *"a fact with more than 20
+foreign keys must be justified"*.
 
-## Cách sửa
+## The fix
 
-Gộp về một dimension cho mỗi chiều thật:
+Collapse to one dimension per real dimension:
 
 ```sql
 CREATE TABLE dim_ngay_day_du AS
@@ -166,21 +165,21 @@ GROUP BY 1,2;
 └──────────────┴───────────┴───────────┘
 ```
 
-Cùng kết quả.
+The same result.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Khoá ngoại trong fact | 8 | **2** |
-| Bảng cho chiều thời gian | 5 | 1 |
-| Bảng cho chiều sản phẩm | 3 | 1 |
-| Drill tháng → ngày | Thêm một join | Thêm một cột `GROUP BY` |
-| Số cách join sai có thể | Nhiều | Gần như không |
+| Foreign keys in the fact | 8 | **2** |
+| Tables for the time dimension | 5 | 1 |
+| Tables for the product dimension | 3 | 1 |
+| Drilling month → day | Another join | Another `GROUP BY` column |
+| Possible ways to join wrongly | Many | Practically none |
 
-Điểm cuối là lợi ích thật sự: khi chỉ còn hai bảng để join, **không còn chỗ để join sai**.
+The last row is the real benefit: with only two tables left to join, **there's nowhere left to join wrongly**.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Đếm khoá ngoại của mỗi fact — trên 20 là phải giải trình:
+1. Count each fact's foreign keys — over 20 needs justifying:
 
 ```sql
 SELECT table_name, count(*) AS so_cot_key
@@ -189,16 +188,16 @@ WHERE column_name LIKE '%_key' OR column_name LIKE '%_sk'
 GROUP BY 1 ORDER BY 2 DESC;
 ```
 
-2. Tìm các dimension mà **khoá của cái này suy ra được từ cái kia**. Có `dim_thang` và
-   `dim_ngay` cùng lúc là dấu hiệu chắc chắn.
+2. Look for dimensions where **one's key derives from another's**. Having `dim_thang` and
+   `dim_ngay` at the same time is a certain sign.
 
-3. Hỏi một người dùng BI viết câu query đơn giản nhất — đếm số bảng họ phải join.
+3. Ask a BI user to write the simplest query — count the tables they have to join.
 
-4. Trong sơ đồ, đếm số "chân" toả ra từ fact. Trên 20 chân là con rết.
+4. On the diagram, count the "legs" radiating from the fact. Over 20 legs is a centipede.
 
 ## Related Topics
 
-- [Centipede fact table](../skills/centipede-fact.md) — kỹ thuật bị bỏ qua ở đây
-- [Date dimension](../reference/date-dimension.md) — một bảng cho mọi cấp thời gian
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — vì sao dimension nên dẹt
-- [Junk dimension](../skills/junk-dimension.md) — cách khác để giảm số khoá ngoại
+- [Centipede fact tables](../skills/centipede-fact.md) — the technique skipped here
+- [The date dimension](../reference/date-dimension.md) — one table for every time level
+- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — why dimensions should be flat
+- [Junk dimensions](../skills/junk-dimension.md) — another way to cut the foreign-key count
