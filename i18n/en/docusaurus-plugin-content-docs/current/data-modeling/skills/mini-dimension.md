@@ -1,8 +1,7 @@
 ---
-title: Mini-dimension
-i18n_status: untranslated
+title: Mini-dimensions
 sidebar_position: 4
-description: Tách vài cột đổi nhanh khỏi một dimension lớn, để Type 2 không làm cả bảng phình theo nhịp cột nhanh nhất.
+description: Splitting a few fast-changing columns out of a large dimension so Type 2 doesn't make the whole table bloat at the fastest column's rate.
 tags: [mini-dimension, scd, dimension, data-modeling, kimball]
 domain: data-engineering
 category: pattern
@@ -13,32 +12,32 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Mini-dimension
+# Mini-dimensions
 
-> **Chốt:** Một dimension lớn có vài cột đổi nhanh thì Type 2 làm **cả bảng** phình theo
-> nhịp của cột nhanh nhất. Tách đúng mấy cột đó ra một bảng nhỏ chứa **mọi tổ hợp giá
-> trị**, fact giữ hai khoá thay vì một.
+> **Takeaway:** with a large dimension containing a few fast-changing columns, Type 2 makes **the whole table** bloat at
+> the fastest column's rate. Split exactly those columns out into a small table holding **every value
+> combination**, and have the fact carry two keys instead of one.
 
-## Mục tiêu
+## The goal
 
-Xử lý mâu thuẫn: cần lịch sử cho vài thuộc tính, nhưng bật [SCD](scd.md) Type 2 cho cả
-dimension thì số dòng nổ.
+To resolve the conflict: you need history for a few attributes, but turning [SCD](scd.md) Type 2 on for the whole
+dimension explodes the row count.
 
-## Bài toán
+## The problem
 
-`dim_khach_hang` có 5 triệu dòng. Trong đó:
+`dim_khach_hang` has 5 million rows. Within it:
 
-| Cột | Nhịp đổi |
+| Column | Change rate |
 |---|---|
-| `ho_ten`, `ngay_sinh`, `ngay_mo_tk` | gần như không đổi |
-| `nhom_thu_nhap`, `nhom_tuoi` | **mỗi quý** |
+| `ho_ten`, `ngay_sinh`, `ngay_mo_tk` | almost never changes |
+| `nhom_thu_nhap`, `nhom_tuoi` | **every quarter** |
 
-Bật Type 2 cho cả bảng: mỗi quý sinh thêm ~5 triệu dòng. Sau ba năm là 60 triệu dòng
-cho 5 triệu khách — và 90% dòng chỉ khác nhau ở hai cột.
+Turn Type 2 on for the whole table: each quarter adds another ~5 million rows. After three years that's 60 million rows
+for 5 million customers — and 90% of the rows differ only in two columns.
 
-## Cách làm
+## The approach
 
-Tách hai cột hay đổi ra bảng riêng chứa **mọi tổ hợp có thể**, không phải mọi khách:
+Split the two frequently changing columns into their own table holding **every possible combination**, not every customer:
 
 ```text
 dim_khach_hang        5.000.000 dòng, Type 1 — ổn định
@@ -46,17 +45,17 @@ dim_khach_hang_nhom          20 dòng, bất biến — 5 nhóm thu nhập × 4 
 fct_don_hang                 khach_sk + khach_nhom_sk
 ```
 
-Lịch sử **không** nằm ở dimension nữa mà nằm ở **fact**: mỗi dòng fact ghi lại khách
-lúc đó thuộc nhóm nào. Đó là điểm đảo chiều so với Type 2 — và cũng là lý do kỹ thuật
-này khó hiểu lần đầu.
+The history **no longer** lives in the dimension but in the **fact**: each fact row records which group the
+customer was in at the time. That's the reversal compared with Type 2 — and also why this technique
+is hard to grasp the first time.
 
-## Ví dụ xuyên suốt
+## The worked example
 
-Chạy được trên DuckDB.
+Runs on DuckDB.
 
-### Bước 1 — đo trước khi quyết
+### Step 1 — measure before deciding
 
-Con số ở đây chọn hộ bạn, không phải bước kiểm tra cho có:
+The numbers here choose for you; this isn't a token check:
 
 ```sql
 SELECT
@@ -66,7 +65,7 @@ SELECT
 FROM dim_khach_hang_raw;
 ```
 
-Với 6 khách mẫu:
+With 6 sample customers:
 
 ```text
 ┌──────────┬───────────┬────────────┐
@@ -76,19 +75,19 @@ Với 6 khách mẫu:
 └──────────┴───────────┴────────────┘
 ```
 
-Ở quy mô thật con số là *vài triệu khách / vài chục tổ hợp* — chênh lệch đó mới là thứ
-làm mini-dimension đáng làm.
+At real scale the numbers are *a few million customers / a few dozen combinations* — that gap is what
+makes a mini-dimension worth building.
 
-| Thấy gì | Làm gì |
+| What you see | What to do |
 |---|---|
-| Số tổ hợp **rất nhỏ** so với số khách (vài chục vs vài triệu) | Mini-dimension đáng làm |
-| Số tổ hợp xấp xỉ số khách | Không tách được — thuộc tính đó gần như là khoá |
-| Cột đổi chậm như phần còn lại | Không cần mini-dimension, Type 2 bình thường |
+| The combination count is **very small** relative to the customer count (dozens vs millions) | A mini-dimension is worth it |
+| The combination count approaches the customer count | It can't be split out — that attribute is essentially a key |
+| The column changes as slowly as the rest | No mini-dimension needed, ordinary Type 2 will do |
 
-### Bước 2 — dựng mini-dimension
+### Step 2 — build the mini-dimension
 
-Sinh mọi tổ hợp, **không** phụ thuộc dữ liệu khách hiện có — vì tổ hợp chưa xuất hiện
-hôm nay vẫn có thể xuất hiện tháng sau:
+Generate every combination, **independent** of the existing customer data — because a combination that hasn't
+appeared today can still appear next month:
 
 ```sql
 CREATE TABLE dim_khach_hang_nhom AS
@@ -100,10 +99,10 @@ FROM (VALUES ('Dưới 10tr'),('10-20tr'),('20-50tr'),('50-100tr'),('Trên 100tr
 CROSS JOIN (VALUES ('18-25'),('26-35'),('36-50'),('Trên 50')) AS tuoi(nhom);
 ```
 
-Đây là chỗ **khác junk dimension**: junk dimension chỉ sinh tổ hợp *thật sự xuất hiện*;
-mini-dimension sinh *toàn bộ tích Descartes* vì tập giá trị nhỏ và cố định.
+This is where it **differs from a junk dimension**: a junk dimension only generates combinations that *actually appear*;
+a mini-dimension generates *the whole Cartesian product* because the value set is small and fixed.
 
-### Bước 3 — fact giữ hai khoá
+### Step 3 — the fact holds two keys
 
 ```sql
 CREATE TABLE fct_don_hang AS
@@ -120,12 +119,12 @@ JOIN dim_khach_hang_nhom n
   AND d.nhom_tuoi_luc_dat     = n.nhom_tuoi;
 ```
 
-`nhom_..._luc_dat` phải lấy từ hệ nguồn **tại thời điểm phát sinh đơn**. Lấy giá trị
-hiện tại là mất sạch lịch sử — và đó chính là lỗi mà mini-dimension sinh ra để tránh.
+`nhom_..._luc_dat` must come from the source system **as of when the order was placed**. Taking the current
+value loses all the history — and that's exactly the bug mini-dimensions exist to avoid.
 
-### Bước 4 — query kiểm chứng
+### Step 4 — the verification query
 
-Câu hỏi *as-was*: "doanh thu theo nhóm thu nhập **tại thời điểm mua**".
+The *as-was* question: "revenue by income group **at purchase time**".
 
 ```sql
 SELECT n.nhom_thu_nhap, sum(f.thanh_tien) AS doanh_thu
@@ -145,38 +144,38 @@ ORDER BY doanh_thu DESC;
 └───────────────┴───────────┘
 ```
 
-Mini-dimension đầy đủ là **20 dòng** (5 nhóm thu nhập × 4 nhóm tuổi) dù dữ liệu mẫu chỉ
-dùng 5 tổ hợp — đúng chủ ý sinh toàn bộ tích Descartes.
+The full mini-dimension is **20 rows** (5 income groups × 4 age groups) even though the sample data only
+uses 5 combinations — exactly the point of generating the whole Cartesian product.
 
-### Trước và sau
+### Before and after
 
-| | Type 2 cả bảng | Mini-dimension |
+| | Type 2 on the whole table | A mini-dimension |
 |---|---|---|
-| Số dòng dimension sau 3 năm | ~60.000.000 | 5.000.000 + 20 |
-| Trả lời câu hỏi *as-was* | được | được |
-| Trả lời *"khách này giờ thuộc nhóm nào"* | được | **phải tra hệ nguồn** hoặc thêm cột Type 1 |
-| Độ khó hiểu | thấp | cao — lịch sử nằm ở fact, không ở dim |
+| Dimension rows after 3 years | ~60,000,000 | 5,000,000 + 20 |
+| Answers the *as-was* question | yes | yes |
+| Answers *"which group is this customer in now"* | yes | **you must query the source system** or add a Type 1 column |
+| Difficulty to understand | low | high — the history lives in the fact, not the dim |
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Dimension chính không phình | Fact có thêm một khoá, thêm một join |
-| Tổ hợp cố định, không cần bảo trì | Không trả lời được "nhóm hiện tại" nếu không thêm cột |
-| Lịch sử chính xác tới từng giao dịch | Người mới đọc mô hình không hiểu ngay vì sao có hai khoá khách |
+| The main dimension doesn't bloat | The fact gets another key and another join |
+| A fixed combination set needing no maintenance | You can't answer "the current group" without adding a column |
+| History accurate down to each transaction | A newcomer reading the model won't immediately see why there are two customer keys |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Lấy `nhom_thu_nhap` **hiện tại** khi nạp fact | Mất toàn bộ lịch sử — đúng thứ mini-dimension sinh ra để giữ |
-| Nhét cột cardinality cao vào mini-dimension | Tích Descartes nổ, mini-dimension to hơn dimension chính |
-| Dùng mini-dimension khi cột đổi chậm | Thêm một join mà không đổi lấy gì — [SCD](scd.md) Type 2 là đủ |
-| Bỏ luôn khoá `khach_sk`, chỉ giữ `khach_nhom_sk` | Không biết đơn của **ai** nữa |
+| Taking the **current** `nhom_thu_nhap` when loading the fact | All the history is lost — exactly what mini-dimensions exist to keep |
+| Putting a high-cardinality column into the mini-dimension | The Cartesian product explodes and the mini-dimension is bigger than the main one |
+| Using a mini-dimension when the column changes slowly | An extra join in exchange for nothing — [SCD](scd.md) Type 2 is enough |
+| Dropping the `khach_sk` key and keeping only `khach_nhom_sk` | You no longer know **whose** order it was |
 
 ## Related Topics
 
-- [SCD](scd.md) — mini-dimension chính là Type 4 trong bảng phân loại đó
-- [Junk dimension](junk-dimension.md) — cũng gộp cột nhỏ, nhưng chỉ sinh tổ hợp có thật
-- [Fact và Dimension](../reference/fact-and-dimension.md) — vì sao thuộc tính đổi nhanh là dấu hiệu của fact
-- [Grain](../reference/grain.md) — thêm khoá vào fact **không** đổi grain
+- [SCD](scd.md) — a mini-dimension is Type 4 in that classification
+- [Junk dimensions](junk-dimension.md) — also combining small columns, but only generating combinations that exist
+- [Facts and dimensions](../reference/fact-and-dimension.md) — why a fast-changing attribute is a sign of a fact
+- [Grain](../reference/grain.md) — adding a key to a fact does **not** change its grain

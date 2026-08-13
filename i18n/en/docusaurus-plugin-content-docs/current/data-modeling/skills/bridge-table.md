@@ -1,8 +1,7 @@
 ---
-title: Bridge table
-i18n_status: untranslated
+title: Bridge tables
 sidebar_position: 7
-description: Quan hệ nhiều-nhiều giữa fact và dimension — bảng cầu nối kèm hệ số phân bổ để tổng không bị nhân đôi.
+description: A many-to-many relationship between a fact and a dimension — a bridge table with allocation factors so the total doesn't double.
 tags: [bridge-table, many-to-many, dimension, data-modeling, kimball]
 domain: data-engineering
 category: pattern
@@ -13,32 +12,32 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Bridge table
+# Bridge tables
 
-> **Chốt:** Fact và dimension quan hệ **nhiều-nhiều** thì join thẳng là nhân bản dòng và
-> tổng tiền phồng lên. Bridge table giải quyết được, nhưng chỉ khi có thêm **hệ số phân
-> bổ** — và phải chọn trước: cộng đúng tổng, hay cộng đúng theo từng thành viên.
+> **Takeaway:** when a fact and a dimension are related **many-to-many**, joining directly duplicates rows and
+> the total amount inflates. A bridge table solves it, but only with an **allocation
+> factor** — and you have to choose in advance: summing to the right total, or summing correctly per member.
 
-## Mục tiêu
+## The goal
 
-Xử lý tình huống mà mô hình chiều cơ bản không chịu được: một dòng fact thuộc về **nhiều**
-giá trị dimension cùng lúc.
+To handle the situation the basic dimensional model can't take: one fact row belonging to **several**
+dimension values at once.
 
-## Khi nào gặp
+## When you meet it
 
-| Tình huống | Nhiều-nhiều ở đâu |
+| Situation | Where the many-to-many is |
 |---|---|
-| Một tài khoản có nhiều chủ sở hữu | `fct_giao_dich` ↔ `dim_khach_hang` |
-| Một sản phẩm thuộc nhiều danh mục | `fct_ban_hang` ↔ `dim_danh_muc` |
-| Một bệnh án có nhiều chẩn đoán | `fct_kham_benh` ↔ `dim_chan_doan` |
+| One account with several owners | `fct_giao_dich` ↔ `dim_khach_hang` |
+| One product in several categories | `fct_ban_hang` ↔ `dim_danh_muc` |
+| One medical record with several diagnoses | `fct_kham_benh` ↔ `dim_chan_doan` |
 
-Dấu hiệu nhận ra: câu hỏi *"một dòng fact ứng với **mấy** giá trị dimension"* trả lời là
-"không cố định".
+The sign to look for: the question *"one fact row corresponds to **how many** dimension values"* is answered
+with "it varies".
 
-## Vì sao không join thẳng
+## Why not join directly
 
-Giao dịch 1.000.000đ của tài khoản có 3 chủ. Nếu `fct_giao_dich` join trực tiếp bảng
-`tai_khoan_chu_so_huu`:
+A 1,000,000đ transaction on an account with 3 owners. If `fct_giao_dich` joins the
+`tai_khoan_chu_so_huu` table directly:
 
 ```text
 giao_dich | khach   | so_tien
@@ -47,16 +46,16 @@ GD001     | KH002   | 1.000.000
 GD001     | KH003   | 1.000.000
 ```
 
-`SUM(so_tien)` = **3.000.000**. Giao dịch chỉ có một triệu.
+`SUM(so_tien)` = **3,000,000**. The transaction was only a million.
 
-Đây là lỗi khó bắt vì `count(*)` fact vẫn đúng nếu đếm trước join, và không test nào
-dựng sẵn cho nó.
+This bug is hard to catch because the fact's `count(*)` is still right if counted before the join, and no
+ready-made test exists for it.
 
-## Ví dụ xuyên suốt
+## The worked example
 
-Chạy được trên DuckDB.
+Runs on DuckDB.
 
-### Bước 1 — dữ liệu nguồn
+### Step 1 — the source data
 
 ```sql
 CREATE TABLE fct_giao_dich (giao_dich_id VARCHAR, tai_khoan_id VARCHAR, so_tien DECIMAL(18,2));
@@ -71,9 +70,9 @@ INSERT INTO tai_khoan_chu VALUES
   ('TK01','KH001'), ('TK01','KH002'), ('TK01','KH003'), ('TK02','KH004');
 ```
 
-### Bước 2 — bridge table kèm hệ số phân bổ
+### Step 2 — a bridge table with an allocation factor
 
-Cột `he_so` là thứ phân biệt bridge table với một bảng nối thường:
+The `he_so` column is what distinguishes a bridge table from an ordinary link table:
 
 ```sql
 CREATE TABLE bridge_tai_khoan_khach AS
@@ -84,12 +83,12 @@ SELECT
 FROM tai_khoan_chu;
 ```
 
-`TK01` → mỗi chủ hệ số `0.333…`; `TK02` → hệ số `1.0`. Tổng hệ số của mỗi tài khoản
-luôn bằng 1 — đó là bất biến cần giữ.
+`TK01` → each owner gets a factor of `0.333…`; `TK02` → a factor of `1.0`. The factors for each account
+always sum to 1 — that's the invariant to preserve.
 
-### Bước 3 — hai cách cộng, cho hai câu hỏi khác nhau
+### Step 3 — two ways of summing, for two different questions
 
-Đây là chỗ phải **chọn**, không phải chỗ có đáp án duy nhất:
+This is where you must **choose**, not where there's a single answer:
 
 ```sql
 -- A. Có phân bổ: tổng toàn hệ thống ĐÚNG, số của từng khách là phần được chia
@@ -120,20 +119,20 @@ A. Có phân bổ                      B. Không phân bổ
    tổng = 1.800.000 ✅                tổng = 4.400.000 ❌
 ```
 
-Tổng thật là **1.800.000**. Cột A cộng lại đúng; cột B cộng lại ra 4.400.000 — phồng
-gấp 2,4 lần. Cả hai đều **đúng cho câu hỏi của nó**, sai là khi cộng nhầm cột.
+The real total is **1,800,000**. Column A adds up correctly; column B adds up to 4,400,000 — inflated
+by a factor of 2.4. Both are **correct for their own question**; the error is adding up the wrong column.
 
-| Câu hỏi nghiệp vụ | Dùng cách |
+| Business question | Use approach |
 |---|---|
-| "Tổng doanh số toàn hệ thống" | **A** — B sẽ phồng |
-| "Khách này liên quan tới bao nhiêu tiền" | **B** — A chia nhỏ, không phản ánh mức liên quan |
-| Báo cáo có cả hai | Hai cột riêng, **đặt tên khác nhau** |
+| "Total system-wide sales" | **A** — B will inflate |
+| "How much money is this customer involved with" | **B** — A divides it up and doesn't reflect involvement |
+| A report with both | Two separate columns, **named differently** |
 
-Đặt tên là phần quan trọng nhất. Gọi cả hai là `doanh_thu` thì sớm muộn ai đó cộng nhầm.
+The naming is the most important part. Call them both `doanh_thu` and sooner or later somebody adds the wrong one.
 
-### Bước 4 — test bắt buộc
+### Step 4 — the mandatory tests
 
-Bất biến phải kiểm, không phải tin:
+The invariants must be checked, not trusted:
 
 ```sql
 -- 1. tong he so moi tai khoan phai bang 1
@@ -156,39 +155,39 @@ Test 1 — tong he so <> 1        Test 2 — tong truoc/sau
         0 rows                  └───────────────┴─────────────┘
 ```
 
-Test 1 không trả về dòng nào, test 2 hai số khớp — bridge lành.
+Test 1 returns no rows and test 2's two figures match — the bridge is healthy.
 
-Test 1 trả về dòng nào là bridge hỏng. Test 2 lệch là mất hoặc nhân giao dịch — thường
-do tài khoản không có chủ nào trong bridge.
+If test 1 returns any row, the bridge is broken. If test 2 diverges, transactions are lost or multiplied — usually
+because an account has no owner in the bridge.
 
-### Trước và sau
+### Before and after
 
-| | Join thẳng | Bridge có hệ số |
+| | Joining directly | A bridge with factors |
 |---|---|---|
-| `SUM` tổng hệ thống | 3× với tài khoản 3 chủ | đúng |
-| Lọc theo một khách | được | được |
-| Số dòng trả về | nhân bản | nhân bản (bản chất nhiều-nhiều) |
-| Có test bảo vệ | không | tổng hệ số = 1 |
+| System-wide `SUM` | 3× for a 3-owner account | correct |
+| Filtering by one customer | works | works |
+| Rows returned | duplicated | duplicated (the nature of many-to-many) |
+| A protective test | none | the factors sum to 1 |
 
-## Khi nào KHÔNG dùng
+## When NOT to use it
 
-- **Số lượng cố định và nhỏ** (luôn đúng 2 chủ) → hai cột `chu_1_sk`, `chu_2_sk` đơn giản hơn.
-- **Chỉ cần một giá trị đại diện** (chủ tài khoản chính) → một khoá thường, không cần bridge.
-- **Nhiều-nhiều giữa hai dimension**, không liên quan fact → bảng phân cấp riêng.
+- **A fixed, small count** (always exactly 2 owners) → two columns `chu_1_sk`, `chu_2_sk` are simpler.
+- **You only need one representative value** (the primary account holder) → an ordinary key, no bridge needed.
+- **A many-to-many between two dimensions**, not involving a fact → its own hierarchy table.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Bridge không có `he_so` | Tổng phồng, và không có cách sửa sau |
-| Cộng cột không phân bổ rồi báo cáo là doanh thu | Số sai, không lỗi nào báo — nguy hiểm nhất |
-| Hệ số không tổng về 1 | Tổng lệch âm thầm; phải có test |
-| Dùng bridge khi số lượng cố định | Phức tạp hoá vô ích |
-| Tài khoản không có chủ nào trong bridge | `JOIN` làm mất giao dịch — dùng `LEFT JOIN` hoặc thêm dòng "chưa xác định" |
+| A bridge with no `he_so` | The total inflates, with no way to fix it afterwards |
+| Summing the unallocated column and reporting it as revenue | Wrong numbers with no error reported — the most dangerous |
+| Factors that don't sum to 1 | The total silently diverges; you must have a test |
+| Using a bridge when the count is fixed | Pointless complication |
+| An account with no owner in the bridge | The `JOIN` loses the transaction — use a `LEFT JOIN` or add an "unknown" row |
 
 ## Related Topics
 
-- [Fact và Dimension](../reference/fact-and-dimension.md) — mô hình cơ bản giả định một-nhiều
-- [Grain](../reference/grain.md) — bridge **không** đổi grain của fact
-- [Junk dimension](junk-dimension.md) — cũng thêm bảng phụ, nhưng cho cột cardinality thấp
-- [Sáu chiều chất lượng](../../data-quality/six-dimensions.md) — chiều *accuracy*, chỗ duy nhất bắt được lỗi cộng phồng
+- [Facts and dimensions](../reference/fact-and-dimension.md) — the basic model assumes one-to-many
+- [Grain](../reference/grain.md) — a bridge does **not** change the fact's grain
+- [Junk dimensions](junk-dimension.md) — also adding a side table, but for low-cardinality columns
+- [The six quality dimensions](../../data-quality/six-dimensions.md) — the *accuracy* dimension, the only place that catches an inflated sum
