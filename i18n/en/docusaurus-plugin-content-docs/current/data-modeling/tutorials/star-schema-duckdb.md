@@ -1,8 +1,7 @@
 ---
-title: Dựng một star schema từ đầu bằng DuckDB
-i18n_status: untranslated
+title: Building a star schema from scratch with DuckDB
 sidebar_position: 1
-description: "Đi hết bốn bước thiết kế của Kimball trên dữ liệu thật: dim_ngay, dimension Type 2, transaction fact, accumulating snapshot, rồi drill-across — có output dán lại được."
+description: "Walk Kimball's four design steps on real data: dim_ngay, a Type 2 dimension, a transaction fact, an accumulating snapshot, then drill-across — with output you can paste back."
 tags: [tutorial, star-schema, duckdb, kimball, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,15 +12,15 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Dựng một star schema từ đầu bằng DuckDB
+# Building a star schema from scratch with DuckDB
 
-> **Chốt:** đọc mười file lý thuyết không bằng dựng một mô hình chạy được rồi tự tay phá
-> nó. Bài này đi từ ba bảng nguồn thô tới một star schema kiểm chứng được, trong khoảng
-> 20 phút, không cần cài gì ngoài DuckDB.
+> **Takeaway:** reading ten theory files is worth less than building a working model and then breaking
+> it yourself. This one goes from three raw source tables to a verifiable star schema in about
+> 20 minutes, with nothing to install beyond DuckDB.
 
-## Chuẩn bị
+## Preparation
 
-Lab nằm **ngoài repo** này (xem `CLAUDE.md`). Chạy bằng venv sẵn có:
+The lab lives **outside** this repo (see `CLAUDE.md`). Run it with the existing venv:
 
 ```bash
 ~/Documents/learn-lab/dbt/.venv/bin/python -c "import duckdb; print(duckdb.__version__)"
@@ -31,27 +30,27 @@ Lab nằm **ngoài repo** này (xem `CLAUDE.md`). Chạy bằng venv sẵn có:
 1.5.5
 ```
 
-Mọi câu SQL bên dưới chạy được nguyên trạng trong một session DuckDB in-memory. Cách
-nhanh nhất là dán từng khối vào một file `.py` với `duckdb.connect()`, hoặc mở DuckDB CLI
-rồi dán thẳng.
+Every SQL statement below runs as-is in an in-memory DuckDB session. The quickest way is to
+paste each block into a `.py` file with `duckdb.connect()`, or open the DuckDB CLI
+and paste directly.
 
-**Ô *Kết quả của bạn* để trống là chưa chạy.** Chạy rồi thì dán output vào, và chỉ khi đó
-mới điền `verified_at` ở đầu file.
+**An empty *Your result* cell means it hasn't been run.** Once you've run it, paste the output in — and only then
+fill in `verified_at` at the top of the file.
 
-## Bài toán
+## The problem
 
-Một cửa hàng online. Nghiệp vụ đặt ba câu hỏi:
+An online shop. The business asks three questions:
 
-1. Doanh thu theo khu vực khách hàng — **theo khu vực lúc mua**, không phải lúc này.
-2. Đơn hàng đang kẹt ở khâu nào, trung bình bao lâu thì tới tay khách.
-3. Tỷ lệ trả hàng theo khu vực.
+1. Revenue by customer region — **by the region at purchase time**, not the current one.
+2. Which stage orders are stuck at, and how long on average until they reach the customer.
+3. Return rate by region.
 
-Ba câu, ba hình dạng bảng khác nhau. Đó là lý do bài này không dừng ở một fact.
+Three questions, three different table shapes. That's why this tutorial doesn't stop at one fact.
 
-## Bước 0 — dữ liệu nguồn
+## Step 0 — the source data
 
-Ba bảng, đúng như hệ nguồn hay có: một bảng header đơn, một bảng dòng đơn, một bảng khách
-hàng đã có sẵn lịch sử thay đổi.
+Three tables, exactly as source systems usually have them: an order header table, an order line table, and a customer
+table that already carries a change history.
 
 ```sql
 CREATE TABLE src_don AS
@@ -72,7 +71,7 @@ SELECT * FROM (VALUES
   ('DH-004', 2, 'SP-C', 1, 900000)
 ) t(so_don, dong_so, san_pham_id, so_luong, don_gia);
 
--- C1 chuyen tu Mien Bac sang Mien Nam tu 01/02/2026
+-- C1 moved from Mien Bac to Mien Nam on 01/02/2026
 CREATE TABLE src_khach AS
 SELECT * FROM (VALUES
   ('C1', 'Nguyen A', 'Mien Bac',   DATE '2025-01-01', DATE '2026-02-01'),
@@ -82,7 +81,7 @@ SELECT * FROM (VALUES
 ) t(khach_id, ho_ten, khu_vuc, hieu_luc_tu, hieu_luc_den);
 ```
 
-Ghi lại con số nguồn **trước khi bắt đầu** — đây là mốc đối chiếu cho mọi bước sau:
+Write down the source numbers **before starting** — this is the reconciliation benchmark for every step that follows:
 
 ```sql
 SELECT (SELECT count(*) FROM src_don)                    AS don,
@@ -98,26 +97,26 @@ SELECT (SELECT count(*) FROM src_don)                    AS don,
 └───────┴──────────┴─────────────────┘
 ```
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-## Bốn bước thiết kế trước khi gõ DDL
+## The four design steps before typing any DDL
 
-Theo [quy trình thiết kế 4 bước](../reference/design-process.md), làm xong bảng này rồi
-mới viết `CREATE TABLE`:
+Per [the four-step design process](../reference/design-process.md), finish this table before
+writing `CREATE TABLE`:
 
-| Bước | Quyết định |
+| Step | The decision |
 |---|---|
-| 1. Quy trình nghiệp vụ | **Bán hàng** (không phải "báo cáo doanh thu" — báo cáo là đầu ra, không phải quy trình) |
-| 2. Grain | **Một dòng của một đơn hàng** — mịn nhất mà nguồn cho phép |
-| 3. Dimension | Ngày (đóng nhiều vai), Khách hàng (Type 2 — nghiệp vụ hỏi "lúc mua"), Sản phẩm, Kênh |
-| 4. Fact | `so_luong`, `don_gia`, `thanh_tien` — cả ba additive |
+| 1. Business process | **Sales** (not "revenue reporting" — a report is an output, not a process) |
+| 2. Grain | **One line of one order** — the finest the source permits |
+| 3. Dimensions | Date (playing several roles), Customer (Type 2 — the business asks "at purchase time"), Product, Channel |
+| 4. Facts | `so_luong`, `don_gia`, `thanh_tien` — all three additive |
 
-Câu hỏi 2 (đơn kẹt ở khâu nào) có **grain khác**: một dòng một *đơn*, không phải một
-*dòng đơn*. Grain khác nghĩa là fact khác — đó là bước 5.
+Question 2 (which stage orders are stuck at) has a **different grain**: one row per *order*, not per
+*order line*. A different grain means a different fact — that's step 5.
 
-## Bước 1 — dim_ngay
+## Step 1 — dim_ngay
 
 ```sql
 CREATE TABLE dim_ngay AS
@@ -137,8 +136,8 @@ UNION ALL
 SELECT -1, NULL, 'Chua xay ra', NULL, NULL, 'Chua xay ra', NULL, NULL;
 ```
 
-Dòng `UNION ALL` cuối là thứ hay bị quên: khoá `-1` cho mốc **chưa xảy ra**. Đơn `DH-003`
-chưa giao, và nếu để `NULL` thì `JOIN` sẽ ném cả đơn đó ra khỏi báo cáo.
+That last `UNION ALL` row is the easily-forgotten one: key `-1` for the **hasn't-happened** milestone. Order `DH-003`
+isn't delivered, and leaving `NULL` would make the `JOIN` throw that whole order out of the report.
 
 ```sql
 SELECT ngay_key, ngay_hien_thi, thu_ten, thang_ten, la_ngay_lam_viec
@@ -155,13 +154,13 @@ FROM dim_ngay WHERE ngay_key IN (-1, 20260110, 20260215) ORDER BY ngay_key;
 └──────────┴───────────────┴─────────┴──────────────┴──────────────────┘
 ```
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-Chi tiết vì sao lịch phải là bảng: [Date dimension](../reference/date-dimension.md).
+Why the calendar must be a table, in detail: [the date dimension](../reference/date-dimension.md).
 
-## Bước 2 — dim_khach Type 2
+## Step 2 — dim_khach, Type 2
 
 ```sql
 CREATE TABLE dim_khach AS
@@ -186,21 +185,21 @@ SELECT 0, '(chua biet)', '(chua biet)', '(chua biet)',
 └──────────┴─────────────┴─────────────┴─────────────┴──────────────┴─────────────┘
 ```
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-Hai chi tiết đáng nhớ:
+Two details worth remembering:
 
-- `C1` có **hai dòng** — cùng một khách, hai phiên bản. Grain của dimension Type 2 là
-  *một phiên bản*, không phải *một khách*. Xem [SCD](../skills/scd.md).
-- Dòng `khach_sk = 0` là chỗ trú cho khoá không khớp
-  ([inferred member](../skills/late-arriving.md)) — nhờ nó, fact không bao giờ cần khoá
-  `NULL`.
+- `C1` has **two rows** — one customer, two versions. A Type 2 dimension's grain is
+  *one version*, not *one customer*. See [SCD](../skills/scd.md).
+- The `khach_sk = 0` row is the shelter for a non-matching key
+  (an [inferred member](../skills/late-arriving.md)) — thanks to it, the fact never needs a
+  `NULL` key.
 
-## Bước 3 — fact giao dịch
+## Step 3 — the transaction fact
 
-Chỗ quyết định nằm ở điều kiện join: **hiệu lực tại ngày đặt hàng**, không phải
+The decisive point is the join condition: **in effect at the order date**, not
 `la_hien_tai`.
 
 ```sql
@@ -234,22 +233,22 @@ LEFT JOIN dim_khach k
 └─────────┴─────────┴──────────────┴──────────┴─────────────┴──────────┴────────────┘
 ```
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-Để ý `DH-001` mang `khach_sk = 1` (Miền Bắc) còn `DH-002` mang `khach_sk = 2` (Miền Nam)
-— **cùng một khách `C1`**. Đó là as-was đang hoạt động.
+Notice `DH-001` carrying `khach_sk = 1` (the North) while `DH-002` carries `khach_sk = 2` (the South)
+— **the same customer `C1`**. That's as-was at work.
 
-Và `so_don` ở lại trong fact như một cột thường, không có `dim_don_hang`:
-[degenerate dimension](../skills/degenerate-dimension.md).
+And `so_don` stays in the fact as an ordinary column, with no `dim_don_hang`:
+a [degenerate dimension](../skills/degenerate-dimension.md).
 
-## Bước 4 — bốn phép kiểm bắt buộc
+## Step 4 — the four mandatory checks
 
-Đây là phần hay bị bỏ, và cũng là phần đáng giữ lại nhất. Chạy sau **mỗi lần** dựng lại
-mô hình.
+This is the part usually skipped, and also the part most worth keeping. Run it after **every** model
+rebuild.
 
-### 4.1 Grain có thật sự duy nhất không
+### 4.1 Is the grain really unique
 
 ```sql
 SELECT count(*) AS so_dong,
@@ -266,9 +265,9 @@ FROM fct_ban;
 └─────────┴───────────────────┴────────────┘
 ```
 
-`grain_dung = false` nghĩa là có join nào đó đã nhân bản dòng — dừng lại, đừng đi tiếp.
+`grain_dung = false` means some join has replicated rows — stop, don't go on.
 
-### 4.2 Tổng có khớp nguồn không
+### 4.2 Does the total match the source
 
 ```sql
 SELECT (SELECT sum(thanh_tien) FROM fct_ban)              AS tong_fact,
@@ -285,7 +284,7 @@ SELECT (SELECT sum(thanh_tien) FROM fct_ban)              AS tong_fact,
 └───────────┴────────────┴────────┘
 ```
 
-### 4.3 Có khoá mồ côi không
+### 4.3 Are there orphan keys
 
 ```sql
 SELECT count(*) FILTER (WHERE khach_sk = 0)      AS khoa_khong_khop,
@@ -301,7 +300,7 @@ FROM fct_ban f LEFT JOIN dim_ngay d ON d.ngay_key = f.ngay_dat_key;
 └─────────────────┴─────────────────┘
 ```
 
-### 4.4 As-was có đúng không
+### 4.4 Is as-was correct
 
 ```sql
 SELECT f.so_don, k.khach_id, k.khu_vuc, sum(f.thanh_tien) AS thanh_tien
@@ -319,18 +318,18 @@ GROUP BY 1,2,3 ORDER BY 1;
 └─────────┴──────────┴──────────┴────────────┘
 ```
 
-| Kết quả của bạn (4.1 → 4.4) |
+| Your result (4.1 → 4.4) |
 |---|
 | |
 
-**Bài tập phá mô hình:** đổi điều kiện join ở bước 3 thành `AND k.la_hien_tai`, dựng lại,
-rồi chạy 4.4. Cả hai đơn sẽ về Miền Nam — 1.050.000 gán sai khu vực, mà 4.1, 4.2, 4.3 vẫn
-xanh hết. Đó chính là [case study fact về muộn](../case-studies/fact-den-muon-gan-sai-khu-vuc.md).
+**Break-the-model exercise:** change the join condition in step 3 to `AND k.la_hien_tai`, rebuild,
+then run 4.4. Both orders will land in the South — 1,050,000 assigned to the wrong region, while 4.1, 4.2 and 4.3 stay
+green. That's exactly [the late-arriving fact case study](../case-studies/fact-den-muon-gan-sai-khu-vuc.md).
 
-## Bước 5 — accumulating snapshot cho câu hỏi thứ hai
+## Step 5 — an accumulating snapshot for the second question
 
-Câu *"đơn kẹt ở khâu nào"* không trả lời được từ `fct_ban`, vì grain ở đó là **dòng đơn**.
-Cần một fact thứ hai, grain **một đơn**, có các mốc thời gian và các *lag fact*.
+*"Which stage are orders stuck at"* can't be answered from `fct_ban`, because its grain is **the order line**.
+You need a second fact, at the grain of **one order**, carrying the milestones and the *lag facts*.
 
 ```sql
 CREATE TABLE fct_don_vong_doi AS
@@ -361,14 +360,14 @@ LEFT JOIN dim_khach k
 └─────────┴──────────────┴───────────────┴───────────────┴──────────┴────────────┴───────┘
 ```
 
-Ba đặc điểm khiến bảng này khác hẳn transaction fact:
+Three characteristics make this table quite unlike a transaction fact:
 
-- **Dòng bị `UPDATE`**, không chỉ `INSERT`. Đơn giao xong thì dòng cũ được cập nhật.
-- Mốc chưa xảy ra mang khoá `-1` chứ không `NULL` — nhờ dòng đã thêm ở bước 1.
-- `ngay_cho_giao`, `ngay_van_chuyen` là **lag fact**: khoảng cách giữa hai mốc, tính sẵn
-  lúc nạp để không ai phải tự trừ ngày trong BI.
+- **Rows are `UPDATE`d**, not only `INSERT`ed. When an order is delivered, the existing row is updated.
+- A milestone that hasn't happened carries key `-1` rather than `NULL` — thanks to the row added in step 1.
+- `ngay_cho_giao` and `ngay_van_chuyen` are **lag facts**: the gap between two milestones, precomputed
+  at load time so nobody has to subtract dates in BI.
 
-Phiếu đo quy trình, thứ mà nghiệp vụ thật sự cần:
+The process scorecard, which is what the business actually needs:
 
 ```sql
 SELECT count(*)                                            AS tong_don,
@@ -388,17 +387,17 @@ FROM fct_don_vong_doi;
 └──────────┴───────────┴─────────────────┴─────────┴──────────────────┘
 ```
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-`tb_ngay_hoan_tat = 6.0` chỉ tính trên 2 đơn đã nhận — `avg` bỏ qua `NULL`. Đó là hành vi
-**đúng** ở đây (không thể biết đơn chưa xong mất bao lâu), nhưng phải nói rõ trên báo cáo,
-nếu không người đọc tưởng nó là trung bình của cả 4 đơn.
+`tb_ngay_hoan_tat = 6.0` counts only the 2 received orders — `avg` skips `NULL`. That's the **right**
+behaviour here (you can't know how long an unfinished order will take), but it must be stated on the report,
+or the reader takes it for the average of all 4 orders.
 
-## Bước 6 — drill-across cho câu hỏi thứ ba
+## Step 6 — drill-across for the third question
 
-Thêm fact trả hàng, dùng chung `dim_khach`:
+Add a returns fact, sharing `dim_khach`:
 
 ```sql
 CREATE TABLE fct_tra_hang AS
@@ -409,7 +408,7 @@ SELECT * FROM (VALUES
 ) t(so_don, ngay_tra_key, khach_sk, gia_tri_tra);
 ```
 
-**Cách sai — join thẳng hai fact:**
+**The wrong way — joining the two facts directly:**
 
 ```sql
 SELECT count(*) AS dong_sau_join,
@@ -426,10 +425,10 @@ FROM fct_ban f JOIN fct_tra_hang t USING (so_don);
 └───────────────┴──────────────────────────────┴────────────────┘
 ```
 
-Hai lỗi cùng lúc: `DH-001` bị nhân đôi vì có hai lần trả, còn `DH-002` và `DH-003` biến
-mất vì không có dòng trả nào. Con số 2.700.000 không phải doanh thu của bất kỳ thứ gì.
+Two errors at once: `DH-001` is doubled because it was returned twice, while `DH-002` and `DH-003`
+vanish for having no return line. The number 2,700,000 isn't the revenue of anything at all.
 
-**Cách đúng — gộp từng fact về cùng grain trước, rồi mới ghép:**
+**The right way — aggregate each fact to the same grain first, then combine:**
 
 ```sql
 WITH ban AS (
@@ -458,15 +457,15 @@ ORDER BY 2 DESC;
 └────────────┴───────────┴─────────────┴───────────────┘
 ```
 
-| Kết quả của bạn |
+| Your result |
 |---|
 | |
 
-Doanh thu cộng lại = 3.450.000, khớp nguồn. `FULL JOIN` giữ được cả khu vực không có dòng
-trả nào. Đây là **drill-across**, và điều kiện để nó chạy được là hai fact dùng **cùng
-một** `dim_khach` — xem [conformed dimension](../skills/conformed-dimension.md).
+Revenue adds up to 3,450,000, matching the source. `FULL JOIN` keeps even the region with no return
+line. This is **drill-across**, and its precondition is that both facts use **the same**
+`dim_khach` — see [conformed dimensions](../skills/conformed-dimension.md).
 
-## Mô hình cuối
+## The final model
 
 ```text
                   dim_ngay ────┬──── ngay_dat_key
@@ -486,29 +485,29 @@ một** `dim_khach` — xem [conformed dimension](../skills/conformed-dimension.
    so_don: degenerate dimension, co mat trong ca ba fact
 ```
 
-Ba fact, một bộ dimension dùng chung. Đó là hình dạng của một
-[star schema](../reference/star-snowflake-obt.md) trưởng thành: fact mọc thêm theo từng
-quy trình nghiệp vụ, dimension thì dùng lại.
+Three facts, one shared set of dimensions. That's the shape of a mature
+[star schema](../reference/star-snowflake-obt.md): facts grow per business
+process, while dimensions get reused.
 
-## Bài tập tự làm
+## Exercises to do yourself
 
-| # | Đề | Kỹ thuật cần |
+| # | The task | The technique needed |
 |---|---|---|
-| 1 | Đổi join ở bước 3 sang `la_hien_tai`, chạy lại 4.4 và giải thích chênh lệch | [Dữ liệu về muộn](../skills/late-arriving.md) |
-| 2 | Thêm đơn `DH-005` của khách `C9` chưa có trong `src_khach` — giữ cho tổng vẫn khớp | [Inferred member](../skills/late-arriving.md) |
-| 3 | Dựng `agg_thang_khu_vuc`, rồi thêm một đơn lùi ngày và tìm chênh lệch | [Aggregate fact table](../skills/aggregate-fact-table.md) |
-| 4 | Thêm phí ship ở cấp header, phân bổ về dòng đơn sao cho `SUM` đúng | [Degenerate dimension](../skills/degenerate-dimension.md) |
-| 5 | Thêm `dim_audit`, gắn `audit_sk` vào cả ba fact, nạp `src_don` hai lần rồi xoá đúng lần thứ hai | [Audit dimension](../skills/audit-dimension.md) |
+| 1 | Change the step-3 join to `la_hien_tai`, re-run 4.4 and explain the divergence | [Late-arriving data](../skills/late-arriving.md) |
+| 2 | Add order `DH-005` for customer `C9` who isn't in `src_khach` — keeping the total matching | [Inferred members](../skills/late-arriving.md) |
+| 3 | Build `agg_thang_khu_vuc`, then add a backdated order and find the divergence | [Aggregate fact tables](../skills/aggregate-fact-table.md) |
+| 4 | Add a header-level shipping fee and allocate it onto the order lines so `SUM` is right | [Degenerate dimensions](../skills/degenerate-dimension.md) |
+| 5 | Add `dim_audit`, attach `audit_sk` to all three facts, load `src_don` twice then delete exactly the second load | [Audit dimensions](../skills/audit-dimension.md) |
 
-Bài 1 và 5 là hai bài đáng làm nhất — chúng cho thấy mô hình hỏng khi nào, chứ không chỉ
-cho thấy nó chạy khi nào.
+Exercises 1 and 5 are the two most worth doing — they show when the model breaks, not merely
+when it works.
 
 ## Related Topics
 
-- [Quy trình thiết kế 4 bước](../reference/design-process.md) — khung của toàn bài
-- [Grain](../reference/grain.md) — quyết định ở bước 2, chi phối mọi thứ sau đó
-- [Date dimension](../reference/date-dimension.md) — bước 1
-- [SCD](../skills/scd.md) — bước 2
-- [Degenerate dimension](../skills/degenerate-dimension.md) — `so_don` trong bước 3
-- [Conformed dimension](../skills/conformed-dimension.md) — điều kiện của bước 6
-- [dbt lab với DuckDB](../../etl/dbt/tutorials/dbt-lab-duckdb.md) — dựng lại mô hình này bằng dbt
+- [The four-step design process](../reference/design-process.md) — the frame of this whole tutorial
+- [Grain](../reference/grain.md) — the step-2 decision, governing everything after it
+- [The date dimension](../reference/date-dimension.md) — step 1
+- [SCD](../skills/scd.md) — step 2
+- [Degenerate dimensions](../skills/degenerate-dimension.md) — `so_don` in step 3
+- [Conformed dimensions](../skills/conformed-dimension.md) — step 6's precondition
+- [The dbt lab with DuckDB](../../etl/dbt/tutorials/dbt-lab-duckdb.md) — rebuilding this model with dbt
