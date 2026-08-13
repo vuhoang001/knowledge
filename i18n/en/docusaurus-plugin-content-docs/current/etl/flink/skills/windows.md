@@ -1,8 +1,7 @@
 ---
-title: Window trong Flink
-i18n_status: untranslated
+title: Windows in Flink
 sidebar_position: 2
-description: "Tumbling, sliding, session; allowed lateness và side output cho dữ liệu đến muộn."
+description: "Tumbling, sliding, session; allowed lateness and side outputs for late data."
 tags: [flink, window, allowed-lateness, side-output, session-window]
 domain: data-engineering
 category: concept
@@ -13,49 +12,49 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Window trong Flink
+# Windows in Flink
 
-> **Chốt:** Trên unbounded stream, mọi aggregation phải cắt thành **window**; chọn kiểu
-> window là chọn *ngữ nghĩa*, còn watermark quyết định *khi nào* window đóng. Sai một
-> trong hai thì số ra sai lặng lẽ.
+> **Takeaway:** on an unbounded stream, every aggregation has to be cut into **windows**; choosing the window
+> type chooses the *semantics*, while watermarks decide *when* a window closes. Get either wrong and the
+> numbers come out quietly wrong.
 
-Stream không bao giờ kết thúc, nên `COUNT` hay `SUM` "toàn bộ" là vô nghĩa — phải hỏi
-"trong khoảng nào". Window là câu trả lời.
+A stream never ends, so a `COUNT` or `SUM` over "everything" is meaningless — you have to ask
+"over what interval". Windows are the answer.
 
-## Giải phẫu một window: bốn thành phần
+## The anatomy of a window: four components
 
-Một window operation không phải một khối liền — nó là chuỗi bốn thành phần, mỗi cái thay
-được độc lập:
+A window operation isn't a monolith — it's a chain of four components, each replaceable
+independently:
 
 ```mermaid
 graph LR
-    A["Assigner<br/>event thuộc window nào"] --> B["Trigger<br/>khi nào FIRE"]
-    B --> C["Evictor (tùy chọn)<br/>lọc bớt trước/sau khi tính"]
-    C --> D["Window Function<br/>tính kết quả"]
+    A["Assigner<br/>which window an event belongs to"] --> B["Trigger<br/>when to FIRE"]
+    B --> C["Evictor (optional)<br/>filter before/after computing"]
+    C --> D["Window Function<br/>compute the result"]
 ```
 
-| Thành phần | Trả lời câu hỏi | Mặc định |
+| Component | The question it answers | Default |
 |---|---|---|
-| **Assigner** | Event này rơi vào (những) window nào? | Do kiểu window bạn chọn |
-| **Trigger** | Khi nào window fire ra kết quả? | `EventTimeTrigger` — fire khi watermark vượt mép cuối |
-| **Evictor** | Có bỏ bớt element trước/sau khi tính không? | Không có (đa số không cần) |
-| **Window Function** | Tính gì trên các element? | Bạn cung cấp |
+| **Assigner** | Which window(s) does this event fall into? | Determined by the window type you choose |
+| **Trigger** | When does the window fire its result? | `EventTimeTrigger` — fires when the watermark passes the end edge |
+| **Evictor** | Should elements be dropped before/after computing? | None (most don't need one) |
+| **Window Function** | What to compute over the elements? | You provide it |
 
-Hiểu bốn thành phần này giải thích được gần như mọi hành vi window "kỳ lạ": số ra chậm =
-trigger chưa fire (watermark chưa tới); số cập nhật lại = trigger fire nhiều lần (allowed
-lateness); state phình = function giữ buffer thay vì incremental.
+Understanding these four explains almost every "strange" window behaviour: a late result = the
+trigger hasn't fired (the watermark hasn't arrived); a result being updated = the trigger firing several times (allowed
+lateness); bloating state = the function buffering instead of aggregating incrementally.
 
-## Ba kiểu window (assigner)
+## The three window types (assigners)
 
-| Kiểu | Định nghĩa | Chồng lấn | Dùng khi |
+| Type | Definition | Overlapping | Use when |
 |---|---|---|---|
-| **Tumbling** | Cửa sổ cố định `size`, không chồng | Không | Báo cáo theo phút/giờ cố định |
-| **Sliding (hop)** | `size` + `slide`; mỗi event vào nhiều cửa sổ | Có | "5 phút gần nhất, cập nhật mỗi phút" |
-| **Session** | Nhóm event, ngắt khi im lặng quá `gap` | Không, độ dài động | Phiên người dùng, chuỗi hoạt động |
+| **Tumbling** | Fixed windows of `size`, no overlap | No | Reports on fixed minutes/hours |
+| **Sliding (hop)** | `size` + `slide`; each event lands in several windows | Yes | "The last 5 minutes, updated every minute" |
+| **Session** | Groups events, breaking after silence longer than `gap` | No, with a dynamic length | User sessions, activity sequences |
 
 ```mermaid
 gantt
-    title Assigner — cùng dòng event, ba cách cắt
+    title Assigner — the same event stream, three ways of cutting it
     dateFormat X
     axisFormat %s
     section Tumbling
@@ -70,21 +69,21 @@ gantt
     P2 :6, 3
 ```
 
-Sliding chồng lấn nên **một event nằm trong nhiều window** → state và tính toán nhân lên
-theo `size/slide`. `size=1h, slide=1m` nghĩa mỗi event thuộc 60 window. Đây là bẫy phình
-state phổ biến nhất.
+Sliding windows overlap, so **one event sits in several windows** → state and computation multiply
+by `size/slide`. `size=1h, slide=1m` means each event belongs to 60 windows. This is the most common
+state-bloat trap.
 
-Mỗi assigner có hai biến thể: **event-time** (`TumblingEventTimeWindows`) và
-**processing-time** (`TumblingProcessingTimeWindows`). Processing-time nhanh và không cần
-watermark, nhưng số **không tái lập được** — chạy lại cùng dữ liệu cho kết quả khác vì
-phụ thuộc đồng hồ tường. Dùng event-time trừ khi bạn thật sự chỉ cần "gần đây theo giờ
-thực" và chấp nhận sai khi dữ liệu đến muộn.
+Each assigner has two variants: **event-time** (`TumblingEventTimeWindows`) and
+**processing-time** (`TumblingProcessingTimeWindows`). Processing-time is fast and needs no
+watermarks, but the numbers are **not reproducible** — re-running the same data gives a different result because it
+depends on the wall clock. Use event time unless you genuinely only need "recently, by real
+time" and accept being wrong when data arrives late.
 
-## Trigger — khi nào fire
+## Triggers — when to fire
 
-`EventTimeTrigger` mặc định fire **đúng một lần** khi watermark vượt mép cuối window. Bạn
-custom được để fire sớm (early firing — ra kết quả sơ bộ trước khi window đóng) hoặc fire
-lại (late firing — cập nhật khi event muộn tới).
+The default `EventTimeTrigger` fires **exactly once** when the watermark passes the window's end edge. You
+can customise it to fire early (early firing — emitting a preliminary result before the window closes) or to fire
+again (late firing — updating when a late event arrives).
 
 ```java
 // Code minh hoạ, chưa chạy — fire sớm mỗi 10s để ra kết quả xấp xỉ, rồi fire chính khi đóng
@@ -94,33 +93,33 @@ stream.keyBy(...)
   .aggregate(new SumAgg());
 ```
 
-`allowedLateness` bên dưới thực chất **lắp thêm trigger fire lại**: sau khi window đóng,
-mỗi event muộn tới trong khoảng lateness làm trigger fire thêm một lần, phát bản kết quả
-cập nhật.
+The `allowedLateness` below is really **fitting an additional re-firing trigger**: after the window closes,
+each late event arriving inside the lateness window makes the trigger fire once more, emitting an updated
+result.
 
 ## Keyed vs non-keyed
 
-- **Keyed window** (`keyBy(...).window(...)`) — window tính **độc lập cho mỗi khoá**,
-  chạy song song trên nhiều subtask. Đây là mặc định nên dùng.
-- **Non-keyed** (`windowAll(...)`) — cả stream gộp một luồng, **parallelism = 1**. Nghẽn
-  ngay khi lưu lượng lớn. Chỉ dùng cho tổng toàn cục nhỏ.
+- **Keyed windows** (`keyBy(...).window(...)`) — the window is computed **independently per key**,
+  running in parallel across subtasks. This is the default you should use.
+- **Non-keyed** (`windowAll(...)`) — the whole stream is merged into one flow, with **parallelism = 1**. It bottlenecks
+  the moment traffic is high. Only for a small global total.
 
-## Window function: nhẹ vs nặng
+## Window functions: light vs heavy
 
-| Loại | Cách chạy | Chi phí | Có context? |
+| Kind | How it runs | Cost | Has context? |
 |---|---|---|---|
-| `ReduceFunction` | **Incremental** — gộp hai element cùng kiểu, giữ một giá trị | Nhẹ nhất | Không |
-| `AggregateFunction` | **Incremental** — accumulator riêng, in/out khác kiểu | Nhẹ | Không |
-| `ProcessWindowFunction` | Giữ **cả buffer** event tới khi window đóng rồi mới xử | Nặng, phình state | Có (`window_start`, key, timer, side output) |
+| `ReduceFunction` | **Incremental** — merges two elements of the same type, keeping one value | The lightest | No |
+| `AggregateFunction` | **Incremental** — its own accumulator, with in/out types differing | Light | No |
+| `ProcessWindowFunction` | Buffers **all** the events until the window closes, then processes | Heavy, bloating state | Yes (`window_start`, key, timers, side outputs) |
 
-`ReduceFunction` là ca đặc biệt của `AggregateFunction` khi input, accumulator, output
-cùng kiểu (ví dụ `SUM` số). `AggregateFunction` linh hoạt hơn: accumulator có thể là
-struct khác (ví dụ tính trung bình cần giữ cả `sum` và `count`).
+`ReduceFunction` is the special case of `AggregateFunction` where the input, accumulator and output
+are the same type (e.g. a numeric `SUM`). `AggregateFunction` is more flexible: the accumulator can be a
+different struct (e.g. computing an average needs both `sum` and `count`).
 
-Mặc định chọn `AggregateFunction`. Chỉ khi cần thấy toàn bộ event hoặc metadata window
-mới dùng `ProcessWindowFunction`. Tốt nhất là **kết hợp**: `AggregateFunction` gộp
-incremental, kết quả gộp đưa vào `ProcessWindowFunction` để gắn context — vừa nhẹ vừa có
-đủ thông tin.
+Default to `AggregateFunction`. Only use `ProcessWindowFunction` when you need to see all the events or the
+window's metadata. Best is to **combine them**: `AggregateFunction` merges
+incrementally and the merged result goes into a `ProcessWindowFunction` to attach context — light and with
+all the information you need.
 
 ```java
 // Code minh hoạ, chưa chạy
@@ -131,20 +130,20 @@ stream.keyBy(e -> e.key)
   .aggregate(new SumAgg(), new AttachWindowMeta());  // incremental + context
 ```
 
-Nếu chỉ dùng `ProcessWindowFunction` một mình, Flink phải giữ **mọi element** của window
-trong state tới lúc đóng — window 1 giờ traffic cao dễ OOM. Kết hợp thì state chỉ còn một
-accumulator nhỏ.
+With a `ProcessWindowFunction` alone, Flink has to keep **every element** of the window
+in state until it closes — a 1-hour window at high traffic easily OOMs. Combined, the state is just one
+small accumulator.
 
-## Watermark quyết định lúc đóng
+## Watermarks decide when it closes
 
-Window **event-time đóng khi watermark vượt qua mép cuối window** — không phải khi đồng
-hồ tường tới đó. Watermark trễ thì kết quả ra chậm; watermark nhảy quá nhanh (bound quá
-nhỏ) thì event đến muộn bị coi là "muộn" và rớt. Chi tiết cơ chế ở
-[event time và watermark](../reference/event-time-watermark.md) — đọc trước file này.
+An **event-time window closes when the watermark passes the window's end edge** — not when the wall
+clock reaches it. A late watermark means results come out slowly; a watermark advancing too fast (too small a
+bound) means late-arriving events are treated as "late" and dropped. The mechanism is detailed in
+[event time and watermarks](../reference/event-time-watermark.md) — read that before this file.
 
-## Dữ liệu đến muộn: allowedLateness và side output
+## Late data: allowedLateness and side outputs
 
-Watermark đã đóng window mà event vẫn tới (muộn thật). Hai tầng phòng thủ:
+The watermark has closed the window and an event still arrives (genuinely late). Two lines of defence:
 
 ```java
 // Code minh hoạ, chưa chạy
@@ -157,33 +156,33 @@ stream.keyBy(...)
 DataStream<Event> tooLate = result.getSideOutput(lateTag);  // hứng, log, reprocess
 ```
 
-- `allowedLateness` — sau khi window đóng vẫn giữ state thêm khoảng này; event muộn tới
-  làm window **fire lại**, phát bản kết quả cập nhật. Đánh đổi: state sống lâu hơn, và
-  downstream nhận **nhiều bản** cho cùng một window — phải xử lý được cập nhật (upsert
-  theo `window_start` + key), không cộng dồn.
-- `sideOutputLateData` — event muộn hơn cả allowedLateness không bị **âm thầm rớt** mà
-  rẽ vào một stream riêng để bạn đếm/log/xử lý sau. Không có nó, dữ liệu quá muộn biến
-  mất không dấu vết.
+- `allowedLateness` — after the window closes, state is kept for this further period; a late event arriving
+  makes the window **fire again**, emitting an updated result. The trade-off: state lives longer, and
+  the downstream receives **several versions** for the same window — it must handle updates (upserting
+  by `window_start` + key), not accumulate.
+- `sideOutputLateData` — an event later than even allowedLateness isn't **silently dropped** but
+  routed into a separate stream for you to count/log/handle later. Without it, too-late data disappears
+  without a trace.
 
-## Session window merge
+## Session window merging
 
-Session window đặc biệt vì độ dài **động**: không biết trước khi nào đóng. Khi hai session
-kề nhau mà khoảng cách nhỏ hơn `gap`, Flink **merge** chúng thành một.
+Session windows are special because their length is **dynamic**: you don't know in advance when they'll close. When two
+adjacent sessions are closer together than the `gap`, Flink **merges** them into one.
 
 ```mermaid
 graph LR
-    A["Session A<br/>event tại t=0,1"] --> M["MERGE thành một<br/>vì gap giữa A và B < gap threshold"]
-    B["Session B<br/>event tại t=2,3"] --> M
+    A["Session A<br/>events at t=0,1"] --> M["MERGED into one<br/>because the gap between A and B < the gap threshold"]
+    B["Session B<br/>events at t=2,3"] --> M
 ```
 
-Hệ quả: session window phải giữ state để gộp, và `ReduceFunction`/`AggregateFunction`
-dùng với session phải **kết hợp được** (`merge` accumulator). Đây là lý do session window
-tốn nhiều state hơn tumbling — nó không thể fire-and-forget từng element.
+The consequence: a session window has to hold state to merge, and a `ReduceFunction`/`AggregateFunction`
+used with sessions must be **mergeable** (a `merge` on the accumulator). This is why session windows
+cost more state than tumbling ones — they can't fire-and-forget each element.
 
-## Window trong Flink SQL — windowing TVF
+## Windows in Flink SQL — windowing TVFs
 
-Cú pháp hiện đại (khuyến nghị) là **Table-Valued Function**: `TUMBLE`, `HOP`, `CUMULATE`,
-`SESSION` bọc quanh bảng, thêm cột `window_start`/`window_end`.
+The modern (recommended) syntax is a **Table-Valued Function**: `TUMBLE`, `HOP`, `CUMULATE`,
+`SESSION` wrapped around the table, adding `window_start`/`window_end` columns.
 
 ```sql
 -- TUMBLE: cửa sổ cố định 1 phút
@@ -207,54 +206,54 @@ window_start          window_end            EXPR$2
 2026-08-11 10:00:00   2026-08-11 10:01:00   1530.00
 ```
 
-`CUMULATE` là kiểu SQL không có tương đương trực tiếp ở DataStream API dựng sẵn: nó phát
-kết quả tích luỹ tăng dần trong một max window (ví dụ "doanh thu tích luỹ từ 00:00, cập
-nhật mỗi phút") — rất hợp cho dashboard chạy trong ngày.
+`CUMULATE` is a SQL type with no direct ready-made equivalent in the DataStream API: it emits
+an incrementally accumulating result within a max window (e.g. "revenue accumulated since 00:00, updated
+every minute") — perfect for an intraday dashboard.
 
 ## Common Mistakes
 
-| Bẫy | Hậu quả | Cách tránh |
+| Trap | Consequence | How to avoid it |
 |---|---|---|
-| Sliding với `size` lớn, `slide` nhỏ | State nhân lên `size/slide` lần, phình | Cân nhắc tumbling hoặc slide lớn hơn |
-| Dùng **processing time** window | Số sai khi dữ liệu đến muộn/không đều, không lỗi báo | Event time + watermark |
-| `windowAll` cho lưu lượng lớn | Parallelism 1, nghẽn | `keyBy` trước |
-| Quên `sideOutputLateData` | Event quá muộn rớt âm thầm | Luôn hứng side output khi số phải đúng |
-| `ProcessWindowFunction` cho window lớn | Giữ cả buffer → OOM | Kết hợp với `AggregateFunction` |
-| Downstream cộng dồn khi window fire lại | Đếm trùng do allowedLateness fire nhiều lần | Upsert theo `window_start` + key |
+| Sliding with a large `size` and small `slide` | State multiplies `size/slide` times and bloats | Consider tumbling or a larger slide |
+| Using **processing time** windows | Wrong numbers with late/uneven data, and no error reported | Event time + watermarks |
+| `windowAll` for high traffic | Parallelism 1, a bottleneck | `keyBy` first |
+| Forgetting `sideOutputLateData` | Too-late events dropped silently | Always catch the side output when the numbers must be right |
+| `ProcessWindowFunction` for a large window | Buffering everything → OOM | Combine it with an `AggregateFunction` |
+| A downstream that accumulates when a window re-fires | Double-counting because allowedLateness fires several times | Upsert by `window_start` + key |
 
 ## FAQ
 
 <details>
-<summary>Sliding window có làm số bị đếm trùng không?</summary>
+<summary>Do sliding windows cause double-counting?</summary>
 
-Không — mỗi window là một kết quả riêng cho một khoảng thời gian riêng. Một event *xuất
-hiện* trong nhiều window là đúng ngữ nghĩa sliding ("mỗi phút, tính 10 phút gần nhất").
-Downstream cần hiểu là nó nhận nhiều window chồng nhau, không phải một tổng.
-
-</details>
-
-<details>
-<summary>Session window sao biết khi nào đóng?</summary>
-
-Khi không có event nào của khoá đó trong `gap` (tính theo event time + watermark). Hai
-session kề nhau mà khoảng cách nhỏ hơn gap sẽ được **merge** lại — nên session window
-phải giữ state để gộp, không dự đoán được độ dài trước.
+No — each window is its own result for its own time interval. An event *appearing*
+in several windows is exactly the semantics of sliding ("every minute, compute the last 10 minutes").
+The downstream needs to understand that it's receiving several overlapping windows, not one total.
 
 </details>
 
 <details>
-<summary>Trigger fire nhiều lần thì downstream nhận gì?</summary>
+<summary>How does a session window know when to close?</summary>
 
-Nhiều bản kết quả cho cùng một window (early firing hoặc late firing). Downstream phải
-coi mỗi bản là "kết quả mới nhất cho window này" và ghi đè theo khoá `window_start`, không
-cộng dồn. Nếu sink append-only, số sẽ nhân lên.
+When there's no event for that key within the `gap` (measured by event time + the watermark). Two
+adjacent sessions closer together than the gap are **merged** — so a session window
+has to hold state to merge, and its length can't be predicted in advance.
+
+</details>
+
+<details>
+<summary>What does the downstream receive when a trigger fires several times?</summary>
+
+Several result versions for the same window (early firing or late firing). The downstream must
+treat each version as "the latest result for this window" and overwrite by the `window_start` key, not
+accumulate. With an append-only sink, the numbers multiply.
 
 </details>
 
 ## Related Topics
 
-- [Event time và watermark](../reference/event-time-watermark.md) — cái quyết định lúc window đóng
-- [DataStream vs Table/SQL API](datastream-vs-table-sql.md) — window ở hai API
-- [Case: cửa sổ không chạy vì idle partition](../case-studies/cua-so-khong-chay-idle-partition.md)
-- [Case: số sai vì processing time](../case-studies/so-sai-vi-processing-time.md)
-- [Kỹ năng — Flink](../index.md)
+- [Event time and watermarks](../reference/event-time-watermark.md) — what decides when a window closes
+- [DataStream vs Table/SQL API](datastream-vs-table-sql.md) — windows in both APIs
+- [Case: a window not firing because of an idle partition](../case-studies/cua-so-khong-chay-idle-partition.md)
+- [Case: wrong numbers from processing time](../case-studies/so-sai-vi-processing-time.md)
+- [Skills — Flink](../index.md)

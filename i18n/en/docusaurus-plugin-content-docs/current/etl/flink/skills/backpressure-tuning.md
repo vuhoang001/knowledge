@@ -1,8 +1,7 @@
 ---
-title: Backpressure và tuning
-i18n_status: untranslated
+title: Backpressure and tuning
 sidebar_position: 5
-description: "Đọc backpressure để tìm toán tử nghẽn; chỉnh parallelism, state backend, checkpoint."
+description: "Reading backpressure to find the bottlenecked operator; tuning parallelism, the state backend, checkpoints."
 tags: [flink, backpressure, tuning, rocksdb, unaligned-checkpoint]
 domain: data-engineering
 category: concept
@@ -13,43 +12,43 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Backpressure và tuning
+# Backpressure and tuning
 
-> **Chốt:** Backpressure luôn chỉ về **hạ nguồn**, nhưng thủ phạm là toán tử **đầu tiên
-> không bị backpressure mà `busy` cao** — nó chậm và đang chặn ngược cả chuỗi phía trên.
-> Tìm đúng nó rồi mới chỉnh; chỉnh mù toàn job là phí tài nguyên.
+> **Takeaway:** backpressure always points **downstream**, but the culprit is the **first
+> operator that isn't backpressured while its `busy` is high** — it's slow and holding back the whole chain above it.
+> Find that one before tuning; tuning the whole job blindly wastes resources.
 
-Job chạy chậm hoặc lag tăng dần gần như luôn quy về một toán tử nghẽn. Backpressure là
-cách hệ thống tự nói cho bạn nó nằm đâu.
+A job running slowly or with rising lag almost always comes down to one bottlenecked operator. Backpressure is
+how the system tells you where it is.
 
-## Cơ chế: credit-based flow control
+## The mechanism: credit-based flow control
 
-Backpressure trong Flink không phải "đầy buffer thì tràn" — nó là **credit-based flow
-control** giữa các subtask, chặt chẽ hơn:
+Backpressure in Flink isn't "buffers fill and overflow" — it's **credit-based flow
+control** between subtasks, which is stricter:
 
 ```mermaid
 graph LR
-    U["Subtask thượng nguồn<br/>(producer)"] -->|"gửi data theo credit được cấp"| D["Subtask hạ nguồn<br/>(consumer)"]
-    D -.->|"báo credit = số buffer trống còn lại"| U
+    U["Upstream subtask<br/>(producer)"] -->|"sends data per the granted credit"| D["Downstream subtask<br/>(consumer)"]
+    D -.->|"reports credit = the free buffers remaining"| U
 ```
 
-- Mỗi subtask hạ nguồn công bố **credit** = số network buffer trống nó còn.
-- Subtask thượng nguồn **chỉ gửi khi có credit**. Hạ nguồn xử chậm → buffer đầy → credit
-  về 0 → thượng nguồn **ngừng gửi**, không phải gửi rồi bị drop.
-- Áp lực này **ghì ngược từng chặng** lên tới source, làm source đọc chậm lại — không mất
-  dữ liệu, chỉ chậm lại đồng bộ toàn chuỗi.
+- Each downstream subtask announces its **credit** = the number of free network buffers it has left.
+- The upstream subtask **only sends when it has credit**. Slow downstream processing → buffers fill → credit
+  reaches 0 → the upstream **stops sending**, rather than sending and having it dropped.
+- That pressure **is held back hop by hop** up to the source, making the source read more slowly — nothing
+  lost, just the whole chain slowing down in step.
 
-Đó là cơ chế **tự điều tiết** (chi tiết luồng dữ liệu ở
-[architecture](../reference/architecture.md)) — bản thân backpressure không phải lỗi, nó
-là **triệu chứng** chỉ chỗ nghẽn.
+That's the **self-regulating** mechanism (the data flow is detailed in
+[architecture](../reference/architecture.md)) — backpressure itself isn't a bug, it's a
+**symptom** pointing at the bottleneck.
 
-## Đọc backpressure ở Flink UI
+## Reading backpressure in the Flink UI
 
-Flink UI (cổng **8081** — cổng mặc định) tô màu mỗi toán tử theo ba chỉ số:
+The Flink UI (port **8081** — the default) colours each operator by three metrics:
 
-- **`busy` %** — thời gian toán tử **đang thực sự xử lý** (CPU/logic của chính nó).
-- **`backpressured` %** — thời gian bị **hạ nguồn chặn**, không đẩy ra được.
-- **`idle` %** — thời gian **rảnh, chờ input** (không có gì để làm). `busy + backpressured
+- **`busy` %** — the time the operator is **genuinely processing** (its own CPU/logic).
+- **`backpressured` %** — the time it's **held back by the downstream**, unable to push output out.
+- **`idle` %** — the time it's **free, waiting for input** (with nothing to do). `busy + backpressured
   + idle ≈ 100%`.
 
 ```text
@@ -63,158 +62,158 @@ Output minh hoạ, chưa chạy — sơ đồ toán tử trong Flink UI:
 [ sink   ]  backpressured=0%   busy=20%  idle=80%   <- rảnh, dưới thủ phạm
 ```
 
-## Tìm toán tử nghẽn
+## Finding the bottlenecked operator
 
-Quy tắc: đi từ source xuôi dòng, tìm toán tử **đầu tiên** có `backpressured ≈ 0` nhưng
-`busy` cao. Mọi thứ **trên** nó bị backpressure là do nó dội ngược lên; mọi thứ **dưới**
-nó rảnh (`idle` cao). Nó là nút thắt.
+The rule: walk downstream from the source and find the **first** operator with `backpressured ≈ 0` but a high
+`busy`. Everything **above** it is backpressured because it's pushing back up; everything **below**
+it is free (a high `idle`). It's the bottleneck.
 
-Nếu `backpressured=0` khắp nơi và lag vẫn tăng → nghẽn ở **source** (đọc không kịp:
-partition ít, network) chứ không phải xử lý.
+If `backpressured=0` everywhere and lag is still rising → the bottleneck is at the **source** (it can't read
+fast enough: too few partitions, the network), not in the processing.
 
-## Cách xử lý — theo nguyên nhân
+## How to fix it — by cause
 
-| Nguyên nhân | Cách chỉnh | Giá trị / lý do |
+| Cause | What to tune | Value / rationale |
 |---|---|---|
-| Toán tử đó thiếu song song | Tăng **parallelism riêng** cho nó | Đặt bằng bội số slot; không cần tăng cả job |
-| **Data skew** (key nóng) | Sửa khoá, thêm salt, hoặc two-phase agg | Một key ôm phần lớn traffic → tăng parallelism vô ích |
-| State lớn (GB) làm chậm | Đổi state backend sang **RocksDB** | State ra đĩa, không kẹt heap; đổi lại truy cập chậm hơn heap |
-| Checkpoint kẹt vì backpressure cao | Bật **unaligned checkpoint** | Barrier vượt qua buffer thay vì chờ căn hàng → checkpoint không treo |
-| Network buffer thiếu | Tăng `taskmanager.memory.network` fraction | Chỉ khi UI cho thấy chờ buffer |
-| Serialization đắt | POJO/Avro thay Kryo + object reuse | Giảm chi phí mỗi record qua network/state |
+| That operator lacks parallelism | Raise **its own parallelism** | Set it to a multiple of the slots; there's no need to raise the whole job |
+| **Data skew** (a hot key) | Change the key, add a salt, or use a two-phase aggregation | One key holding most of the traffic → raising parallelism is useless |
+| Large state (GB) slowing it | Switch the state backend to **RocksDB** | State goes to disk and doesn't clog the heap; in exchange access is slower than the heap |
+| Checkpoints stuck because backpressure is high | Enable **unaligned checkpoints** | Barriers overtake the buffers rather than waiting for alignment → checkpoints don't hang |
+| Insufficient network buffers | Raise the `taskmanager.memory.network` fraction | Only when the UI shows waiting on buffers |
+| Expensive serialization | POJO/Avro instead of Kryo + object reuse | Reduces the per-record cost through the network/state |
 
-### Bảng config tuning
+### The tuning config table
 
-| Config | Mặc định (mặc định Flink) | Làm gì | Khi nào đổi |
+| Config | Default (Flink's default) | What it does | When to change it |
 |---|---|---|---|
-| `parallelism.default` | 1 | Parallelism toàn job nếu không đặt riêng | Đặt theo số slot; ưu tiên đặt riêng toán tử nghẽn |
-| `taskmanager.memory.network.fraction` | 0.1 | Phần managed memory làm network buffer | Tăng khi UI báo chờ buffer; hiếm cần |
-| `state.backend` (`rocksdb` / `hashmap`) | hashmap | Nơi giữ keyed state | RocksDB khi state > RAM hoặc phình theo thời gian |
-| `execution.checkpointing.unaligned.enabled` | false | Cho barrier vượt buffer | Bật khi checkpoint timeout dưới backpressure |
-| `execution.checkpointing.interval` | không đặt (tắt) | Chu kỳ checkpoint | Ngắn = phục hồi nhanh + độ trễ sink thấp, nhưng overhead cao |
-| `pipeline.object-reuse` | false | Bỏ copy phòng thủ giữa toán tử | Bật khi code KHÔNG giữ ref object đã emit |
-| `state.backend.incremental` | false (bật mặc định với RocksDB ở nhiều bản) | Checkpoint chỉ phần delta | State lớn, RocksDB |
+| `parallelism.default` | 1 | The job-wide parallelism when nothing specific is set | Set it by slot count; prefer setting the bottlenecked operator specifically |
+| `taskmanager.memory.network.fraction` | 0.1 | The share of managed memory used for network buffers | Raise it when the UI reports waiting on buffers; rarely needed |
+| `state.backend` (`rocksdb` / `hashmap`) | hashmap | Where keyed state is held | RocksDB when the state > RAM or grows over time |
+| `execution.checkpointing.unaligned.enabled` | false | Lets barriers overtake buffers | Enable it when checkpoints time out under backpressure |
+| `execution.checkpointing.interval` | unset (off) | The checkpointing interval | Short = faster recovery + lower sink latency, but higher overhead |
+| `pipeline.object-reuse` | false | Drops the defensive copies between operators | Enable it when your code does NOT retain references to emitted objects |
+| `state.backend.incremental` | false (on by default with RocksDB in many versions) | Checkpoints only the delta | Large state, RocksDB |
 
-*(Giá trị mặc định thay đổi giữa các bản Flink — kiểm bằng `flink-conf.yaml` / doc bản
-đang chạy, đừng tin trí nhớ.)*
+*(Defaults change between Flink versions — check `flink-conf.yaml` / the docs for the version you're
+running, don't trust your memory.)*
 
-### Data skew — bẫy hay bị bỏ sót
+### Data skew — the most-overlooked trap
 
-Tăng parallelism **không cứu** được key nóng: mọi record cùng key vào **cùng một**
+Raising parallelism **doesn't rescue** a hot key: every record with the same key goes to **the same**
 subtask.
 
 ```mermaid
 graph TD
-    K["Key nóng 'US' = 80% traffic"] --> S1["subtask 1<br/>QUÁ TẢI"]
-    A[các key khác] --> S2["subtask 2 rảnh"]
-    A --> S3["subtask 3 rảnh"]
+    K["The hot key 'US' = 80% of the traffic"] --> S1["subtask 1<br/>OVERLOADED"]
+    A[the other keys] --> S2["subtask 2 idle"]
+    A --> S3["subtask 3 idle"]
 ```
 
-Phải sửa ở tầng khoá — **two-phase aggregation**: gộp cục bộ theo `key+salt` trước (tán
-key nóng ra nhiều subtask), rồi gộp lại theo `key` ở tầng hai. Hoặc chọn khoá phân bố đều
-hơn. Nhìn phân bố record giữa các subtask trong UI (tab "Subtasks") để phát hiện — nếu
-một subtask nhận nhiều gấp bội, đó là skew.
+It has to be fixed at the key layer — a **two-phase aggregation**: aggregate locally by `key+salt` first (spreading
+the hot key across several subtasks), then aggregate again by `key` at the second layer. Or choose a more evenly
+distributed key. Look at the record distribution across subtasks in the UI (the "Subtasks" tab) to spot it — if
+one subtask receives many times more, that's skew.
 
-### RocksDB vs heap state backend
+### RocksDB vs the heap state backend
 
-- **HashMap (heap)** — state trong JVM heap, **nhanh nhất**, nhưng giới hạn bởi RAM và
-  gây áp lực GC khi lớn.
-- **RocksDB** — state ra đĩa (LSM), chịu được state **lớn hơn RAM**, hỗ trợ incremental
-  checkpoint. Đổi lại mỗi lần đọc/ghi state chậm hơn (serialize + đĩa) — mỗi truy cập
-  state đi qua serialize/deserialize, không như heap giữ object sống.
+- **HashMap (heap)** — state in the JVM heap, **the fastest**, but bounded by RAM and
+  causing GC pressure when large.
+- **RocksDB** — state on disk (an LSM), able to hold state **larger than RAM**, supporting incremental
+  checkpoints. In exchange each state read/write is slower (serialization + disk) — every state
+  access goes through serialize/deserialize, unlike the heap holding live objects.
 
-Ngưỡng thô: state nhỏ, low-latency → heap; state lớn hoặc phình theo thời gian → RocksDB.
-State phình vì thiếu TTL là chuyện khác — xem
-[state phình thiếu TTL](../case-studies/state-phinh-thieu-ttl.md), đừng dùng RocksDB để
-che một rò rỉ state.
+The rough threshold: small state, low latency → the heap; large state or state growing over time → RocksDB.
+State bloating for want of a TTL is a different matter — see
+[state bloating for want of a TTL](../case-studies/state-phinh-thieu-ttl.md), and don't use RocksDB to
+paper over a state leak.
 
-### Unaligned checkpoint
+### Unaligned checkpoints
 
-Checkpoint thường **align**: barrier phải chờ mọi input channel tới cùng điểm.
+Checkpoints normally **align**: the barrier has to wait for every input channel to reach the same point.
 
 ```mermaid
 graph LR
-    subgraph "Aligned — barrier CHỜ căn hàng"
-        B1["barrier kẹt sau đống buffer khi backpressure cao"]
+    subgraph "Aligned — the barrier WAITS to align"
+        B1["the barrier is stuck behind a pile of buffers when backpressure is high"]
     end
-    subgraph "Unaligned — barrier VƯỢT buffer"
-        B2["chụp luôn cả in-flight data → snapshot to hơn nhưng không treo"]
+    subgraph "Unaligned — the barrier OVERTAKES the buffers"
+        B2["captures the in-flight data too → a bigger snapshot but no hanging"]
     end
 ```
 
-Khi backpressure cao, barrier kẹt sau đống buffer → checkpoint chậm hoặc timeout.
-**Unaligned checkpoint** cho barrier vượt buffer (chụp luôn cả in-flight data). Bật khi
-checkpoint timeout dưới backpressure. Đánh đổi: snapshot to hơn (chứa cả in-flight), và
-không phải lúc nào cũng cần khi backpressure thấp.
+With high backpressure, the barrier is stuck behind a pile of buffers → checkpoints are slow or time out.
+**Unaligned checkpoints** let the barrier overtake the buffers (capturing the in-flight data too). Enable it when
+checkpoints time out under backpressure. The trade-off: a bigger snapshot (containing the in-flight data), and
+it isn't always needed when backpressure is low.
 
-## Serialization — chi phí ẩn
+## Serialization — the hidden cost
 
-- **Tránh Kryo.** Kryo là fallback chậm khi Flink không nhận ra kiểu; nó serialize từng
-  record mỗi lần qua network/state. Dùng POJO đúng chuẩn (constructor rỗng, getter/setter,
-  field public hoặc bean) hoặc Avro để Flink dùng serializer chuyên. Đăng ký type hoặc
-  bật cảnh báo (`disableGenericTypes()` để job **fail sớm** nếu lỡ rơi vào Kryo) giúp bắt
-  sớm.
-- **Object reuse** (`pipeline.object-reuse` / `env.getConfig().enableObjectReuse()`) — bỏ
-  copy phòng thủ giữa các toán tử, giảm áp lực GC. **Bẫy:** chỉ bật khi code **không giữ
-  tham chiếu** tới object đã emit — nếu không, dữ liệu bị ghi đè âm thầm, sai số không
-  báo.
+- **Avoid Kryo.** Kryo is the slow fallback when Flink doesn't recognise a type; it serializes each
+  record every time it crosses the network/state. Use a proper POJO (an empty constructor, getters/setters,
+  public fields or bean style) or Avro so Flink uses a specialised serializer. Registering types or
+  enabling the warning (`disableGenericTypes()` to make the job **fail early** if it accidentally falls to Kryo) helps catch it
+  early.
+- **Object reuse** (`pipeline.object-reuse` / `env.getConfig().enableObjectReuse()`) — drops the
+  defensive copies between operators, reducing GC pressure. **The trap:** only enable it when your code does **not retain
+  references** to emitted objects — otherwise data is silently overwritten and the numbers go wrong without
+  a report.
 
-## Checklist chẩn đoán
+## The diagnostic checklist
 
-1. Lag tăng? Mở Flink UI, xem cột `backpressured`/`busy`/`idle` từng toán tử.
-2. Tìm toán tử **đầu tiên** `backpressured≈0` + `busy` cao → thủ phạm.
-3. `backpressured=0` khắp nơi mà lag tăng → nghẽn **source** (partition/network).
-4. Xem tab Subtasks: một subtask nhận record gấp bội → **data skew**, sửa khoá.
-5. Checkpoint timeout/kéo dài? → cân nhắc **unaligned** + kiểm state backend.
-6. GC pause cao / heap đầy? → **RocksDB** cho state lớn, kiểm Kryo.
-7. Chỉ sau khi khoanh đúng nút thắt mới tăng parallelism — **riêng toán tử đó**, không cả
+1. Lag rising? Open the Flink UI and look at the `backpressured`/`busy`/`idle` columns per operator.
+2. Find the **first** operator with `backpressured≈0` + a high `busy` → the culprit.
+3. `backpressured=0` everywhere while lag rises → a **source** bottleneck (partitions/network).
+4. Check the Subtasks tab: one subtask receiving many times more records → **data skew**, fix the key.
+5. Checkpoints timing out/dragging on? → consider **unaligned** + check the state backend.
+6. High GC pauses / a full heap? → **RocksDB** for large state, and check for Kryo.
+7. Only after correctly locating the bottleneck should you raise parallelism — **for that operator alone**, not the whole
    job.
 
 ## Common Mistakes
 
-| Bẫy | Hậu quả |
+| Trap | Consequence |
 |---|---|
-| Tăng parallelism toàn job thay vì toán tử nghẽn | Phí slot, nghẽn vẫn còn nếu do skew |
-| Coi toán tử `backpressured` cao là thủ phạm | Chỉnh nhầm chỗ; thủ phạm là cái `busy` cao |
-| Tăng parallelism để chữa data skew | Vô ích — cùng key vẫn về một subtask |
-| Bật object reuse mà code giữ ref object đã emit | Ghi đè dữ liệu, sai lặng lẽ |
-| Dùng RocksDB để giấu state rò rỉ | Chỉ hoãn OOM/đầy đĩa; phải đặt TTL |
-| Bật unaligned checkpoint phòng xa | Snapshot to vô ích khi backpressure thấp |
-| Để type rơi vào Kryo mà không biết | Chậm âm thầm; nên `disableGenericTypes()` để fail sớm |
+| Raising the whole job's parallelism instead of the bottlenecked operator's | Wasted slots, and the bottleneck remains if it's skew |
+| Treating the operator with high `backpressured` as the culprit | Tuning the wrong place; the culprit is the one with a high `busy` |
+| Raising parallelism to fix data skew | Useless — the same key still goes to one subtask |
+| Enabling object reuse while your code retains references to emitted objects | Overwritten data, silently wrong |
+| Using RocksDB to hide a state leak | It only postpones the OOM/full disk; you must set a TTL |
+| Enabling unaligned checkpoints pre-emptively | Pointlessly large snapshots when backpressure is low |
+| Letting a type fall to Kryo unnoticed | Silently slow; use `disableGenericTypes()` to fail early |
 
 ## FAQ
 
 <details>
-<summary>backpressured=0 khắp nơi mà lag vẫn tăng thì sao?</summary>
+<summary>What if backpressured=0 everywhere and lag is still rising?</summary>
 
-Nghẽn ở source: đọc không kịp. Thường do quá ít partition (Kafka) so với parallelism,
-hoặc băng thông mạng tới broker. Tăng partition ở nguồn hoặc kiểm mạng — chỉnh toán tử
-downstream không giúp.
-
-</details>
-
-<details>
-<summary>Có nên luôn bật unaligned checkpoint không?</summary>
-
-Không mặc định. Nó đổi độ ổn định checkpoint dưới backpressure lấy snapshot to hơn. Khi
-job khoẻ, backpressure thấp, aligned checkpoint gọn hơn. Bật khi bạn *thấy* checkpoint
-timeout vì backpressure, đừng bật phòng xa.
+The bottleneck is at the source: it can't read fast enough. Usually too few partitions (Kafka) relative to the parallelism,
+or the network bandwidth to the broker. Add partitions at the source or check the network — tuning downstream
+operators won't help.
 
 </details>
 
 <details>
-<summary>Parallelism cao hơn số partition Kafka có ích không?</summary>
+<summary>Should unaligned checkpoints always be on?</summary>
 
-Không cho phần **đọc** — mỗi partition chỉ một reader đọc, subtask thừa sẽ idle. Nhưng
-parallelism cao vẫn có ích cho các toán tử **sau** source (window, join nặng). Nếu source
-là nút thắt, tăng partition ở Kafka trước, rồi mới tăng parallelism reader.
+Not by default. It trades checkpoint stability under backpressure for a bigger snapshot. When the
+job is healthy and backpressure is low, aligned checkpoints are tidier. Enable it when you *see* checkpoints
+timing out because of backpressure, not pre-emptively.
+
+</details>
+
+<details>
+<summary>Is parallelism above the Kafka partition count useful?</summary>
+
+Not for the **reading** part — each partition is read by one reader only, so the surplus subtasks sit idle. But high
+parallelism is still useful for the operators **after** the source (windows, heavy joins). If the source
+is the bottleneck, add partitions in Kafka first, and only then raise the reader parallelism.
 
 </details>
 
 ## Related Topics
 
-- [Kiến trúc Flink](../reference/architecture.md) — luồng dữ liệu và cơ chế backpressure
-- [State và checkpoint](../reference/state-and-checkpoint.md) — state backend, checkpoint
-- [Savepoint và nâng cấp job](savepoint-upgrade.md) — max parallelism khi scale
-- [Case: state phình vì thiếu TTL](../case-studies/state-phinh-thieu-ttl.md)
-- [Kỹ năng — Flink](../index.md)
+- [Flink architecture](../reference/architecture.md) — the data flow and the backpressure mechanism
+- [State and checkpoints](../reference/state-and-checkpoint.md) — state backends, checkpoints
+- [Savepoints and upgrading a job](savepoint-upgrade.md) — max parallelism when scaling
+- [Case: state bloating for want of a TTL](../case-studies/state-phinh-thieu-ttl.md)
+- [Skills — Flink](../index.md)

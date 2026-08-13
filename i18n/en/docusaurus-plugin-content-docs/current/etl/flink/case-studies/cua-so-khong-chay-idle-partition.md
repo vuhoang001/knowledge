@@ -1,8 +1,7 @@
 ---
-title: Cửa sổ không bao giờ chạy vì partition im lặng
-i18n_status: untranslated
+title: A window that never fires because of a silent partition
 sidebar_position: 1
-description: "Một Kafka partition không phát gì giữ watermark đứng yên — window không đóng, kết quả không ra."
+description: "One Kafka partition emitting nothing holds the watermark still — the window doesn't close and no result comes out."
 tags: [flink, watermark, idle-partition, event-time, windowing]
 domain: data-engineering
 category: technology
@@ -13,47 +12,47 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Cửa sổ không bao giờ chạy vì partition im lặng
+# A window that never fires because of a silent partition
 
-> **Chốt:** Watermark toàn cục lấy **min** của mọi partition; một partition im lặng thì watermark của nó không tiến, kéo watermark toàn cục đứng yên — window event-time không bao giờ đủ điều kiện đóng, và kết quả không bao giờ ra.
+> **Takeaway:** the global watermark takes the **min** over every partition; a silent partition's watermark doesn't advance, holding the global watermark still — an event-time window never becomes eligible to close, and the result never comes out.
 
-## Nhãn
+## Label
 
-**Tình huống dựng lại** — số liệu là **minh hoạ, chưa chạy trên cluster**, nhưng nhất quán trong bài.
+**A reconstructed situation** — the figures are **illustrative, not run on a cluster**, but internally consistent.
 
-## Bối cảnh
+## Context
 
-Job đọc topic `orders` có **6 partition**, mỗi partition mang đơn của một khu vực. Pipeline gộp doanh số theo cửa sổ event-time 5 phút (`TUMBLE`), đẩy ra dashboard.
+The job reads the `orders` topic with **6 partitions**, each partition carrying one region's orders. The pipeline aggregates sales into 5-minute event-time windows (`TUMBLE`) and pushes them to a dashboard.
 
-Ban ngày mọi khu vực đều có traffic, dashboard cập nhật đều. Ban đêm, một khu vực (partition) gần như **không có đơn nào** trong nhiều giờ.
+During the day every region has traffic and the dashboard updates steadily. At night, one region (partition) has **almost no orders** for hours.
 
-## Triệu chứng
+## Symptoms
 
-*Số minh hoạ — chưa chạy:*
+*Illustrative numbers — not run:*
 
-- Ban đêm dashboard **đứng im**: cửa sổ 5 phút cuối cùng ra lúc 23:05, sau đó không có dòng mới nào cho tới sáng.
-- Job vẫn **RUNNING**, không exception, không restart. Records-in vẫn nhích (các partition khác vẫn có đơn).
-- Khi khu vực im lặng có đơn trở lại lúc ~06:00, **một loạt** cửa sổ dồn của cả đêm bất ngờ ra cùng lúc.
+- At night the dashboard **freezes**: the last 5-minute window came out at 23:05, and then no new rows until morning.
+- The job is still **RUNNING**, with no exception and no restart. Records-in still ticks up (the other partitions still have orders).
+- When the silent region has orders again around 06:00, **a whole batch** of the night's backed-up windows suddenly emerges at once.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-1. **Nghi job treo.** Xem UI: subtask vẫn RUNNING, throughput dương. Không treo.
-2. **Nghi checkpoint fail.** Checkpoint vẫn hoàn tất đúng interval, size ổn định. Loại.
-3. **Nghi sink chặn.** Test ghi thẳng vài dòng vào sink — sink nhận bình thường. Không phải sink.
+1. **Suspecting the job was hung.** Checking the UI: the subtasks were still RUNNING with positive throughput. Not hung.
+2. **Suspecting checkpoint failures.** Checkpoints were still completing on schedule with a stable size. Ruled out.
+3. **Suspecting the sink was blocking.** Testing a few direct writes into the sink — it accepted them normally. Not the sink.
 
-Chỗ mất thời gian: cả ba giả thuyết giả định "có kết quả nhưng bị kẹt đâu đó trên đường ra". Sự thật là **kết quả chưa bao giờ được sinh ra** — window operator chưa nhận đủ watermark để trigger.
+Where the time went: all three hypotheses assumed "there are results but they're stuck somewhere on the way out". The truth was that **the results were never produced** — the window operator hadn't received a watermark high enough to trigger.
 
-## Nguyên nhân thật
+## The real cause
 
-Watermark của một operator nhiều đầu vào là **min các watermark đầu vào** — để không đóng cửa sổ sớm mà bỏ sót dữ liệu từ đầu vào chậm nhất.
+The watermark of a multi-input operator is the **min of its input watermarks** — so as not to close a window early and miss data from the slowest input.
 
-Mỗi partition sinh watermark riêng. Partition im lặng **không có event mới** nên watermark của nó **không tiến**. Window operator lấy min → watermark toàn cục dính ở mốc cũ → điều kiện `watermark ≥ window end` không bao giờ đạt → window không trigger.
+Each partition generates its own watermark. A silent partition has **no new events** so its watermark **doesn't advance**. The window operator takes the min → the global watermark sticks at an old mark → the condition `watermark ≥ window end` is never met → the window never triggers.
 
-Đây là hành vi **đúng theo thiết kế**, không phải bug: Flink không thể biết partition kia "hết dữ liệu" hay chỉ "tạm im".
+This is behaviour that's **correct by design**, not a bug: Flink can't know whether the other partition is "out of data" or merely "temporarily quiet".
 
-## Cách sửa
+## The fix
 
-Đánh dấu source **idle** sau một khoảng lặng, để nó tạm rút khỏi phép tính min watermark:
+Mark the source **idle** after a period of silence, so it temporarily withdraws from the min-watermark computation:
 
 ```java
 // DataStream API
@@ -68,23 +67,23 @@ WatermarkStrategy<Order> strategy = WatermarkStrategy
 SET 'table.exec.source.idle-timeout' = '60000'; -- 60s, đơn vị ms
 ```
 
-Sau khi bật `withIdleness`, partition im lặng quá ngưỡng bị bỏ khỏi min → watermark toàn cục tiến theo các partition còn hoạt động → window đóng đúng nhịp.
+Once `withIdleness` is on, a partition silent beyond the threshold is dropped from the min → the global watermark advances with the still-active partitions → windows close on schedule.
 
-Đánh đổi: nếu partition "idle" thật ra chỉ chậm và sau đó có event **cũ**, event đó có thể tới sau khi watermark đã vượt qua và bị coi là **late**. Chọn `idle-timeout` đủ lớn so với độ trễ thực tế của luồng chậm nhất.
+The trade-off: if the "idle" partition was really just slow and then has **old** events, those events may arrive after the watermark has passed and be treated as **late**. Pick an `idle-timeout` large enough relative to the real delay of the slowest stream.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-Theo dõi **`currentOutputWatermark` theo từng subtask** trong Flink UI hoặc metrics:
+Track **`currentOutputWatermark` per subtask** in the Flink UI or the metrics:
 
 ```text
 subtask 0: currentOutputWatermark = 2026-08-11 06:00:00
 subtask 3: currentOutputWatermark = 2026-08-11 23:05:00  <-- đứng yên
 ```
 
-Một subtask có watermark **không tăng** trong khi các subtask khác tiến đều = gần như chắc chắn có partition idle. Đặt alert khi độ lệch watermark giữa subtask vượt ngưỡng.
+One subtask with a watermark that **isn't increasing** while the others advance steadily = almost certainly an idle partition. Set an alert when the watermark spread between subtasks exceeds a threshold.
 
 ## Related Topics
 
-- [Event time và watermark](../reference/event-time-watermark.md) — vì sao watermark lấy min, và cơ chế idleness
-- [Windows](../skills/windows.md) — điều kiện trigger của window event-time
-- [Flink](../index.md) — chủ đề chứa case study này
+- [Event time and watermarks](../reference/event-time-watermark.md) — why the watermark takes the min, and the idleness mechanism
+- [Windows](../skills/windows.md) — the trigger condition of an event-time window
+- [Flink](../index.md) — the topic this case study belongs to

@@ -1,8 +1,7 @@
 ---
-title: Savepoint và nâng cấp job
-i18n_status: untranslated
+title: Savepoints and upgrading a job
 sidebar_position: 3
-description: "Sửa code mà không mất state — và vì sao mọi operator có state cần uid() cố định."
+description: "Changing code without losing state — and why every stateful operator needs a fixed uid()."
 tags: [flink, savepoint, uid, state-evolution, max-parallelism]
 domain: data-engineering
 category: concept
@@ -13,42 +12,42 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Savepoint và nâng cấp job
+# Savepoints and upgrading a job
 
-> **Chốt:** Muốn sửa code streaming mà không mất state, bạn cần **savepoint** + một
-> `.uid("...")` **cố định** trên mọi stateful operator. Thiếu uid, Flink tự sinh id theo
-> topology — đổi một chỗ là toàn bộ ánh xạ state vỡ.
+> **Takeaway:** to change streaming code without losing state, you need a **savepoint** plus a
+> **fixed** `.uid("...")` on every stateful operator. Without a uid, Flink generates ids from the
+> topology — change one thing and the whole state mapping breaks.
 
-Job streaming giữ state sống hàng tháng. "Deploy version mới" mà không nghĩ tới state
-nghĩa là ném đi state đó, hoặc job không start lại được.
+A streaming job keeps state alive for months. "Deploying a new version" without thinking about state
+means throwing that state away, or the job refusing to start again.
 
-## Savepoint vs checkpoint
+## Savepoints vs checkpoints
 
 | | Checkpoint | Savepoint |
 |---|---|---|
-| Ai kích hoạt | Flink, tự động định kỳ | Người, thủ công |
-| Mục đích | **Chịu lỗi** — job crash tự khôi phục | **Nâng cấp / di chuyển / A-B / lưu trữ** |
-| Vòng đời | Flink tự dọn bản cũ | Bạn giữ tới khi không cần |
-| Định dạng | Native (tối ưu tốc độ, có thể incremental) | Canonical (portable) hoặc native |
-| Sở hữu / dọn dẹp | Flink quản; xoá khi retain vượt số cấu hình | **Bạn** quản; Flink không tự xoá |
-| Tốc độ chụp | Nhanh (incremental, sát cơ chế state backend) | Chậm hơn (canonical phải chuẩn hoá format) |
+| Who triggers it | Flink, automatically and periodically | A person, manually |
+| Purpose | **Fault tolerance** — automatic recovery from a crash | **Upgrading / moving / A-B testing / archiving** |
+| Lifecycle | Flink cleans old ones itself | You keep it until you don't need it |
+| Format | Native (speed-optimised, can be incremental) | Canonical (portable) or native |
+| Ownership / cleanup | Managed by Flink; deleted past the configured retain count | Managed by **you**; Flink never deletes it |
+| Snapshot speed | Fast (incremental, close to the state backend's mechanism) | Slower (canonical has to normalise the format) |
 
-Hai thứ cùng cơ chế snapshot state (xem
-[state và checkpoint](../reference/state-and-checkpoint.md)) nhưng khác **ý định**.
-Checkpoint để máy tự cứu mình; savepoint để **bạn** chủ động can thiệp.
+Both use the same state-snapshot mechanism (see
+[state and checkpoints](../reference/state-and-checkpoint.md)) but differ in **intent**.
+Checkpoints let the machine save itself; savepoints let **you** intervene deliberately.
 
-**Canonical vs native format:** savepoint canonical là định dạng độc lập state backend —
-chụp bằng RocksDB, restore vào heap được, và bền hơn qua version. Native format nhanh hơn
-(sát cơ chế backend) nhưng ràng buộc backend. Cho nâng cấp qua version hoặc đổi backend,
-dùng canonical.
+**Canonical vs native format:** a canonical savepoint is a state-backend-independent format —
+snapshot with RocksDB and you can restore into the heap, and it's more durable across versions. Native format is faster
+(close to the backend's mechanism) but binds you to the backend. For upgrading across versions or changing backend,
+use canonical.
 
-## Quy trình nâng cấp
+## The upgrade procedure
 
 ```mermaid
 graph LR
-    A["Job đang chạy<br/>v1"] --> B["flink stop --savepoint<br/>drain + chụp nhất quán"]
-    B --> C["Deploy jar mới v2<br/>giữ nguyên uid"]
-    C --> D["flink run --fromSavepoint path<br/>khôi phục state"]
+    A["A running job<br/>v1"] --> B["flink stop --savepoint<br/>drain + consistent snapshot"]
+    B --> C["Deploy the new v2 jar<br/>keeping the uids unchanged"]
+    C --> D["flink run --fromSavepoint path<br/>state restored"]
 ```
 
 ```bash
@@ -62,33 +61,33 @@ flink stop --savepoint /savepoints/my-job <jobId>
 flink run --fromSavepoint /savepoints/my-job/savepoint-abc123-... my-job-v2.jar
 ```
 
-Dùng `flink stop --savepoint` chứ đừng `cancel` rồi mới chụp — `stop` đảm bảo dừng đúng
-điểm nhất quán (nó phát một watermark cuối `MAX_WATERMARK` để đóng mọi window đang mở
-trước khi snapshot, gọi là **drain**). Cancel-rồi-chụp có thể để lại state nửa vời. (Cờ
-chính xác có thể khác giữa các bản Flink — kiểm bằng `flink --help`, đừng tin trí nhớ về
+Use `flink stop --savepoint` rather than `cancel` followed by a snapshot — `stop` guarantees stopping at a
+consistent point (it emits a final `MAX_WATERMARK` watermark to close every open window
+before snapshotting, called a **drain**). Cancel-then-snapshot can leave state half-finished. (The exact
+flags can differ between Flink versions — check with `flink --help`, don't trust your memory of a
 flag.)
 
-## Vì sao mỗi stateful operator cần `.uid()` cố định
+## Why every stateful operator needs a fixed `.uid()`
 
-Flink lưu state theo **operator ID**. Nếu bạn không đặt uid, nó **tự sinh id từ vị trí
-operator trong topology** (hàm băm của cấu trúc đồ thị — dựa trên chuỗi các operator và
-kết nối). Hệ quả:
+Flink stores state by **operator ID**. If you don't set a uid, it **generates the id from the operator's
+position in the topology** (a hash of the graph structure — based on the operator chain and its
+connections). The consequence:
 
 ```mermaid
 graph TD
-    subgraph "v1 — id tự sinh theo topology"
-        S1[source] --> M1["map<br/>hash=A"] --> P1["process CÓ STATE<br/>hash=B"]
+    subgraph "v1 — ids auto-generated from the topology"
+        S1[source] --> M1["map<br/>hash=A"] --> P1["process WITH STATE<br/>hash=B"]
     end
-    subgraph "v2 — chèn thêm filter"
-        S2[source] --> F2["filter MỚI"] --> M2["map<br/>hash=A'"] --> P2["process CÓ STATE<br/>hash=B' ≠ B"]
+    subgraph "v2 — a filter inserted"
+        S2[source] --> F2["NEW filter"] --> M2["map<br/>hash=A'"] --> P2["process WITH STATE<br/>hash=B' ≠ B"]
     end
 ```
 
-- Thêm một `map` ở giữa, đổi thứ tự hai operator, hay chèn một filter → id tự sinh
-  **thay đổi** → savepoint cũ không tìm thấy state cho operator "mới" → **mất state**,
-  hoặc job từ chối start vì có state không khớp.
+- Add a `map` in the middle, swap two operators' order, or insert a filter → the generated id
+  **changes** → the old savepoint can't find state for the "new" operator → **state lost**,
+  or the job refuses to start because of unmatched state.
 
-Đặt uid thủ công tách **danh tính** operator khỏi **vị trí** của nó:
+Setting the uid manually separates an operator's **identity** from its **position**:
 
 ```java
 // Code minh hoạ, chưa chạy
@@ -99,67 +98,67 @@ stream
   .name("dedup");              // name chỉ để hiển thị UI, KHÔNG thay uid
 ```
 
-Quy tắc: đặt uid **ngay từ v1**, trước khi có state để mất. Uid là chuỗi ổn định, đừng
-bao giờ đổi sau khi đã lên production — đổi uid tương đương xoá state của operator đó.
+The rule: set uids **from v1**, before there's state to lose. A uid is a stable string, and you should never
+change it once it's in production — changing a uid is equivalent to deleting that operator's state.
 
-### `allowNonRestoredState` — con dao hai lưỡi
+### `allowNonRestoredState` — a double-edged sword
 
 ```bash
 flink run --fromSavepoint <path> --allowNonRestoredState my-job.jar
 ```
 
-Cờ này bảo Flink: *"state trong savepoint không map được vào operator nào thì cứ bỏ, đừng
-báo lỗi"*. Hữu ích khi **cố ý xoá** một operator. Nguy hiểm vì nó cũng **nuốt luôn lỗi
-uid** — nếu bạn vô tình đổi uid, state đáng ra phải khôi phục bị lặng lẽ vứt đi, job vẫn
-start như không có gì. Chỉ bật khi bạn *biết chắc* state nào đang bỏ và vì sao.
+This flag tells Flink: *"if state in the savepoint doesn't map to any operator, just drop it, don't
+report an error"*. Useful when you **deliberately delete** an operator. Dangerous because it also **swallows uid
+mistakes** — if you accidentally change a uid, the state that should have been restored is silently thrown away and the
+job starts as if nothing happened. Only enable it when you *know for certain* which state is being dropped and why.
 
-Nó chỉ xử một chiều: state trong savepoint **không có** operator nhận. Chiều ngược lại —
-operator mới **không có** state trong savepoint — luôn được phép (operator mới khởi tạo
-state rỗng), không cần cờ này.
+It only handles one direction: state in the savepoint with **no** operator to receive it. The reverse —
+a new operator with **no** state in the savepoint — is always permitted (a new operator initialises
+empty state), needing no flag.
 
-## Schema evolution của state
+## State schema evolution
 
-State không đứng yên khi bạn sửa kiểu dữ liệu:
+State doesn't sit still when you change your data types:
 
-| Serializer | Thêm field | Xoá field | Đổi kiểu / đổi tên field | Cho state sống lâu? |
+| Serializer | Adding a field | Removing a field | Changing a type / renaming a field | Suitable for long-lived state? |
 |---|---|---|---|---|
-| **POJO** | OK (field mới nhận default) | OK (field bỏ bị lược) | **Không** an toàn | Được, có kiểm soát |
-| **Avro** | OK (field có default) | OK | Theo luật Avro, bền hơn POJO | **Tốt nhất** |
-| **Kryo** | Không | Không | Không | **Tránh** — coi như không evolve |
+| **POJO** | OK (the new field gets its default) | OK (the dropped field is elided) | **Not** safe | Yes, with care |
+| **Avro** | OK (a field with a default) | OK | Per Avro's rules, more durable than POJO | **The best** |
+| **Kryo** | No | No | No | **Avoid** — treat it as non-evolvable |
 
-- **POJO** — Flink hỗ trợ thêm/bớt field. Đổi kiểu một field hoặc đổi tên thì phải xử lý
-  bằng migration thủ công.
-- **Avro** — evolution theo luật Avro (thêm field có default OK, kèm alias để đổi tên).
-  Bền nhất cho state sống lâu.
-- **Kryo** — coi như **không** evolve được. Kryo serialize theo thứ tự nội bộ, đổi lớp là
-  hỏng. Tránh Kryo cho bất cứ state nào bạn định giữ qua nâng cấp.
+- **POJO** — Flink supports adding/removing fields. Changing a field's type or renaming it must be handled
+  by a manual migration.
+- **Avro** — evolution per Avro's rules (adding a field with a default is OK, with aliases for renaming).
+  The most durable for long-lived state.
+- **Kryo** — treat it as **not** evolvable. Kryo serializes by internal ordering, so changing the class
+  breaks it. Avoid Kryo for any state you intend to keep across an upgrade.
 
-Chọn Avro (hoặc POJO có kiểm soát) cho state phải sống qua nhiều lần deploy.
+Choose Avro (or a carefully managed POJO) for state that must survive many deploys.
 
-## Đổi parallelism qua savepoint
+## Changing parallelism through a savepoint
 
-Đổi parallelism khi restore được, nhưng bị chặn bởi **max parallelism** (số key group cố
-định lúc job chạy lần đầu):
+You can change parallelism on restore, but you're bounded by the **max parallelism** (the fixed key-group
+count set when the job first ran):
 
 ```mermaid
 graph LR
-    K["Keyed state<br/>chia thành N key group<br/>(N = max parallelism, CỐ ĐỊNH)"] --> P1["parallelism=4<br/>mỗi subtask nhận N/4 key group"]
-    K --> P2["parallelism=8<br/>mỗi subtask nhận N/8 key group"]
+    K["Keyed state<br/>divided into N key groups<br/>(N = max parallelism, FIXED)"] --> P1["parallelism=4<br/>each subtask gets N/4 key groups"]
+    K --> P2["parallelism=8<br/>each subtask gets N/8 key groups"]
 ```
 
-- State keyed được chia thành **key group**; số key group = max parallelism, **cố định**
-  từ lần đầu và **không đổi được** qua savepoint.
-- Parallelism thực tế co giãn tự do trong khoảng `1..maxParallelism`.
-- Đặt max parallelism đủ lớn từ đầu (mặc định Flink tự chọn theo parallelism ban đầu —
-  nếu biết sẽ scale to, đặt tay lớn hơn). Đặt quá nhỏ → sau này không scale lên được mà
-  không tạo state mới từ đầu. Đặt quá lớn → chút overhead metadata (thường chấp nhận
-  được), nên nghiêng về đặt rộng tay.
+- Keyed state is divided into **key groups**; the key-group count = max parallelism, **fixed**
+  from the first run and **not changeable** through a savepoint.
+- Actual parallelism scales freely within `1..maxParallelism`.
+- Set max parallelism large enough from the start (Flink picks it from the initial parallelism by default —
+  if you know you'll scale up, set it higher by hand). Too small → later you can't scale up without
+  creating fresh state from scratch. Too large → a little metadata overhead (usually
+  acceptable), so lean towards being generous.
 
-## State Processor API — đọc/sửa savepoint
+## The State Processor API — reading/editing a savepoint
 
-Khi cần **sửa** state trong savepoint (bootstrap state ban đầu, sửa dữ liệu hỏng, đọc
-state để debug), dùng State Processor API — nó coi savepoint như một dataset đọc/ghi được
-bằng batch job.
+When you need to **edit** the state in a savepoint (bootstrapping initial state, fixing corrupt data, reading
+state to debug), use the State Processor API — it treats a savepoint as a dataset readable/writable by
+a batch job.
 
 ```java
 // Code minh hoạ, chưa chạy — đọc state của operator "dedup-by-user" ra để kiểm tra
@@ -167,54 +166,54 @@ SavepointReader sp = SavepointReader.read(env, savepointPath, new HashMapStateBa
 DataStream<KeyedState> state = sp.readKeyedState("dedup-by-user", new MyReaderFunction());
 ```
 
-Đây là con đường duy nhất để **sửa** state ngoài luồng job đang chạy — ví dụ nạp state
-khởi điểm từ một bảng batch trước khi start job streaming lần đầu.
+This is the only route to **editing** state outside a running job — for example loading initial
+state from a batch table before starting a streaming job for the first time.
 
 ## Common Mistakes
 
-| Bẫy | Hậu quả |
+| Trap | Consequence |
 |---|---|
-| Không đặt `.uid()` từ v1 | Lần refactor đầu tiên mất sạch state |
-| Đổi uid của operator đang chạy | Xoá state operator đó, âm thầm |
-| Dùng `.name()` tưởng là uid | name không ảnh hưởng state mapping |
-| Bật `allowNonRestoredState` thường xuyên | Nuốt lỗi uid, mất state không báo |
-| State kiểu Kryo giữ qua upgrade | Không restore được sau khi sửa lớp |
-| Max parallelism để mặc định rồi cần scale lớn | Kẹt, phải rebuild state |
-| `cancel` rồi mới chụp savepoint | State nửa vời, window chưa drain |
-| Không dọn savepoint cũ | Đầy storage — Flink không tự xoá savepoint |
+| Not setting `.uid()` from v1 | The first refactor wipes all the state |
+| Changing a running operator's uid | That operator's state is deleted, silently |
+| Using `.name()` thinking it's the uid | name has no effect on state mapping |
+| Enabling `allowNonRestoredState` routinely | It swallows uid mistakes and loses state without reporting |
+| Kryo-typed state kept across an upgrade | It won't restore after the class changes |
+| Leaving max parallelism at the default and later needing to scale big | Stuck, having to rebuild the state |
+| `cancel` followed by a savepoint | Half-finished state, windows undrained |
+| Not cleaning up old savepoints | Storage fills — Flink never deletes savepoints itself |
 
 ## FAQ
 
 <details>
-<summary>Có cần uid cho operator không có state (map, filter thuần) không?</summary>
+<summary>Do stateless operators (a plain map or filter) need uids?</summary>
 
-Không bắt buộc về mặt state, nhưng đặt hết cho **nhất quán** là thói quen tốt — đỡ phải
-phân vân cái nào có state cái nào không khi topology lớn dần. Chi phí bằng không.
-
-</details>
-
-<details>
-<summary>Savepoint có xài lại được qua các version Flink không?</summary>
-
-Thường có (savepoint dùng định dạng canonical, portable), nhưng luôn kiểm ma trận tương
-thích của bản đích trước khi nâng version Flink — đừng giả định. Test trên môi trường
-staging trước, không nhảy thẳng production.
+Not required state-wise, but setting them everywhere for **consistency** is a good habit — it saves you
+wondering which ones have state as the topology grows. The cost is zero.
 
 </details>
 
 <details>
-<summary>Restore từ checkpoint được không, hay chỉ savepoint?</summary>
+<summary>Can a savepoint be reused across Flink versions?</summary>
 
-Restore từ checkpoint retained được (`flink run --fromSavepoint <checkpoint-path>` chấp
-nhận cả checkpoint), nhưng checkpoint dùng native format nên ràng buộc backend hơn và
-Flink có thể dọn nó bất cứ lúc nào. Cho nâng cấp có kế hoạch, chụp savepoint chủ động —
-bạn kiểm soát vòng đời của nó.
+Usually yes (savepoints use a portable canonical format), but always check the target version's
+compatibility matrix before upgrading Flink — don't assume. Test on a staging
+environment first, never jump straight to production.
+
+</details>
+
+<details>
+<summary>Can I restore from a checkpoint, or only from a savepoint?</summary>
+
+You can restore from a retained checkpoint (`flink run --fromSavepoint <checkpoint-path>` accepts a
+checkpoint too), but checkpoints use the native format so they're more backend-bound and
+Flink may clean them at any time. For a planned upgrade, take a savepoint deliberately —
+you control its lifecycle.
 
 </details>
 
 ## Related Topics
 
-- [State và checkpoint](../reference/state-and-checkpoint.md) — cơ chế snapshot bên dưới
-- [Backpressure và tuning](backpressure-tuning.md) — max parallelism và scale
-- [Case: state phình vì thiếu TTL](../case-studies/state-phinh-thieu-ttl.md)
-- [Kỹ năng — Flink](../index.md)
+- [State and checkpoints](../reference/state-and-checkpoint.md) — the snapshot mechanism underneath
+- [Backpressure and tuning](backpressure-tuning.md) — max parallelism and scaling
+- [Case: state bloating for want of a TTL](../case-studies/state-phinh-thieu-ttl.md)
+- [Skills — Flink](../index.md)

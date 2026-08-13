@@ -1,8 +1,7 @@
 ---
-title: Lab Flink SQL trên Docker
-i18n_status: untranslated
+title: Flink SQL lab on Docker
 sidebar_position: 1
-description: "Dựng Flink cluster + SQL Client bằng Docker: windowed aggregation, watermark, late data — tự chạy."
+description: "Standing up a Flink cluster + SQL Client with Docker: windowed aggregation, watermarks, late data — run it yourself."
 tags: [flink, flink-sql, docker, lab, watermark]
 domain: data-engineering
 category: technology
@@ -13,19 +12,19 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Lab Flink SQL trên Docker
+# Flink SQL lab on Docker
 
-> **Chốt:** Dựng một Flink cluster tối thiểu bằng Docker, dùng `datagen` connector (không cần Kafka) để tận mắt thấy windowed aggregation, watermark tiến, và late data bị bỏ.
+> **Takeaway:** stand up a minimal Flink cluster with Docker and use the `datagen` connector (no Kafka needed) to see windowed aggregation, watermarks advancing, and late data being dropped with your own eyes.
 
-:::warning Chạy ngoài repo
-Làm lab này trong **thư mục lab NGOÀI repo**: `~/Documents/learn-lab/flink`. **KHÔNG tạo file lab trong repo knowledge này** — `.gitignore` chỉ chặn một số artifact, còn `docker-compose.yml` thì không.
+:::warning Run this outside the repo
+Do this lab in a **lab directory OUTSIDE the repo**: `~/Documents/learn-lab/flink`. **Don't create lab files inside this knowledge repo** — `.gitignore` only blocks certain artifacts, and `docker-compose.yml` isn't one of them.
 :::
 
-Mọi ô **Kết quả** dưới đây để trống — tự chạy rồi dán output vào. Chưa chạy thì chưa gọi là học.
+Every **Result** box below is empty — run it yourself and paste the output in. If you haven't run it, you haven't learnt it.
 
-## 0. Chuẩn bị
+## 0. Preparation
 
-`image` Flink và số version dưới đây là **ví dụ — tự kiểm version** trước khi chạy (xem tag hiện có trên Docker Hub `apache/flink`). Lab dùng `datagen` connector nên **không cần Kafka**.
+The Flink `image` and version number below are **an example — check the version yourself** before running (see the existing tags on Docker Hub under `apache/flink`). The lab uses the `datagen` connector, so **no Kafka is needed**.
 
 ```yaml title="~/Documents/learn-lab/flink/docker-compose.yml (ví dụ, tự kiểm version)"
 services:
@@ -51,7 +50,7 @@ services:
         taskmanager.numberOfTaskSlots: 4
 ```
 
-## Bài 1 — Dựng cluster, mở UI, vào SQL Client
+## Exercise 1 — Stand up the cluster, open the UI, enter the SQL Client
 
 ```bash
 cd ~/Documents/learn-lab/flink
@@ -62,11 +61,11 @@ docker compose up -d
 docker compose exec jobmanager ./bin/sql-client.sh
 ```
 
-**Kết quả:** ⬜ chưa chạy
+**Result:** ⬜ not run
 
-## Bài 2 — CREATE TABLE với datagen source + WATERMARK
+## Exercise 2 — CREATE TABLE with a datagen source + WATERMARK
 
-`datagen` tự sinh dữ liệu, có thể cấu hình để timestamp lệch nhau — đủ để thấy watermark và late data.
+`datagen` generates data itself and can be configured to make timestamps diverge — enough to see watermarks and late data.
 
 ```sql
 CREATE TABLE orders (
@@ -87,11 +86,11 @@ CREATE TABLE orders (
 SELECT * FROM orders LIMIT 10;
 ```
 
-**Kết quả:** ⬜ chưa chạy
+**Result:** ⬜ not run
 
-## Bài 3 — TUMBLE window count
+## Exercise 3 — A TUMBLE window count
 
-Đếm số đơn theo cửa sổ event-time 10 giây.
+Count orders in 10-second event-time windows.
 
 ```sql
 SET 'sql-client.execution.result-mode' = 'table';
@@ -103,13 +102,13 @@ FROM TABLE(
 GROUP BY window_start, window_end;
 ```
 
-Quan sát: mỗi cửa sổ chỉ ra kết quả **sau khi watermark vượt qua `window_end`** — có độ trễ nhỏ so với thời gian thực.
+Watch: each window only produces a result **after the watermark passes its `window_end`** — a small delay relative to real time.
 
-**Kết quả:** ⬜ chưa chạy
+**Result:** ⬜ not run
 
-## Bài 4 — Tạo late data và quan sát bị bỏ
+## Exercise 4 — Create late data and watch it be dropped
 
-Cho `datagen` sinh timestamp lệch quá watermark (event "cũ" hơn allowed lateness) để thấy event bị coi là late.
+Have `datagen` produce timestamps diverging beyond the watermark (events "older" than the allowed lateness) to see events treated as late.
 
 ```sql
 -- bảng mới: đẩy event_ts lùi ngẫu nhiên để tạo dữ liệu đến muộn
@@ -128,11 +127,11 @@ FROM TABLE(TUMBLE(TABLE orders_late, DESCRIPTOR(event_ts), INTERVAL '10' SECONDS
 GROUP BY window_start, window_end;
 ```
 
-Với lateness chỉ 2s nhưng event lùi tới 30s: nhiều event tới **sau khi** watermark đã đóng cửa sổ của chúng → bị **bỏ**, không được đếm. So tổng đếm với tổng số dòng sinh ra để thấy phần thiếu.
+With a lateness of only 2s but events reaching 30s into the past: many events arrive **after** the watermark has closed their window → they're **dropped** and not counted. Compare the total count against the number of rows generated to see what's missing.
 
-**Kết quả:** ⬜ chưa chạy
+**Result:** ⬜ not run
 
-## Bài 5 — Bật checkpoint, kill taskmanager, xem khôi phục
+## Exercise 5 — Enable checkpointing, kill a taskmanager, watch the recovery
 
 ```sql
 -- trong SQL Client, bật checkpointing cho session
@@ -148,11 +147,11 @@ docker compose up -d --scale taskmanager=1   # dựng lại
 # xem Flink UI 8081: job restart, restore từ checkpoint cuối
 ```
 
-**Giới hạn:** với SQL Client, job kết thúc khi session đóng; để job sống độc lập qua restart cần submit dạng detached (`flink run -d`) hoặc application mode. Ở lab này chỉ **quan sát cơ chế restart + restore từ checkpoint**, không phải bài kiểm chứng exactly-once end-to-end (cần sink transaction — xem case study sink).
+**The limit:** with the SQL Client, the job ends when the session closes; for a job to live independently across a restart you need to submit it detached (`flink run -d`) or in application mode. In this lab you only **observe the restart + restore-from-checkpoint mechanism**, not an end-to-end exactly-once verification (which needs a transactional sink — see the sink case study).
 
-**Kết quả:** ⬜ chưa chạy
+**Result:** ⬜ not run
 
-## Dọn dẹp
+## Cleanup
 
 ```bash
 docker compose down -v
@@ -160,8 +159,8 @@ docker compose down -v
 
 ## Related Topics
 
-- [Event time và watermark](../reference/event-time-watermark.md) — vì sao window đợi watermark, late data
-- [State và checkpoint](../reference/state-and-checkpoint.md) — cơ chế checkpoint/restore ở bài 5
-- [Windows](../skills/windows.md) — TUMBLE và các window TVF
-- [Connectors](../skills/connectors.md) — datagen và các source khác
-- [Flink](../index.md) — chủ đề chứa lab này
+- [Event time and watermarks](../reference/event-time-watermark.md) — why a window waits for the watermark, and late data
+- [State and checkpoints](../reference/state-and-checkpoint.md) — the checkpoint/restore mechanism in exercise 5
+- [Windows](../skills/windows.md) — TUMBLE and the other window TVFs
+- [Connectors](../skills/connectors.md) — datagen and other sources
+- [Flink](../index.md) — the topic this lab belongs to

@@ -1,8 +1,7 @@
 ---
-title: State phình vì thiếu TTL
-i18n_status: untranslated
+title: State bloating for want of a TTL
 sidebar_position: 3
-description: "Keyed state giữ mọi key mãi mãi — checkpoint chậm dần rồi TaskManager OOM."
+description: "Keyed state keeps every key forever — checkpoints slow down and then the TaskManager OOMs."
 tags: [flink, state, ttl, checkpoint, rocksdb]
 domain: data-engineering
 category: technology
@@ -13,47 +12,47 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# State phình vì thiếu TTL
+# State bloating for want of a TTL
 
-> **Chốt:** Keyed state không có TTL giữ **mọi key đã từng xuất hiện mãi mãi**; với key space vô hạn (order_id, session_id), state chỉ tăng — checkpoint chậm dần theo thời gian rồi TaskManager OOM.
+> **Takeaway:** keyed state with no TTL keeps **every key that ever appeared, forever**; with an unbounded key space (order_id, session_id) the state only grows — checkpoints slow down over time and then the TaskManager OOMs.
 
-## Nhãn
+## Label
 
-**Tình huống dựng lại** — số liệu là **minh hoạ, chưa chạy trên cluster**, nhưng nhất quán trong bài.
+**A reconstructed situation** — the figures are **illustrative, not run on a cluster**, but internally consistent.
 
-## Bối cảnh
+## Context
 
-Job làm **dedup**: giữ một `ValueState<Boolean>` theo `order_id` để bỏ bản ghi trùng. Mỗi `order_id` mới tạo một entry state. `order_id` **không bao giờ được dùng lại** — key space thực tế là vô hạn, tăng theo lượng đơn.
+The job does **deduplication**: keeping a `ValueState<Boolean>` per `order_id` to drop duplicate records. Each new `order_id` creates a state entry. An `order_id` is **never reused** — so the key space is effectively unbounded, growing with the order volume.
 
-Không ai đặt TTL, vì lúc đầu job chạy tốt và state còn nhỏ.
+Nobody set a TTL, because the job worked fine at first while the state was still small.
 
-## Triệu chứng
+## Symptoms
 
-*Số minh hoạ — chưa chạy:*
+*Illustrative numbers — not run:*
 
-- **Tuần 1:** checkpoint size ~200 MB, duration ~3 s. Ổn.
-- **Tuần 4:** checkpoint size ~4 GB, duration ~40 s. Vẫn "chạy được".
-- **Tuần 8:** checkpoint bắt đầu **timeout** (vượt `execution.checkpointing.timeout`), rồi TaskManager **OOM** và restart, restore từ checkpoint lớn cũng lâu → vòng xoáy.
+- **Week 1:** checkpoint size ~200 MB, duration ~3 s. Fine.
+- **Week 4:** checkpoint size ~4 GB, duration ~40 s. Still "working".
+- **Week 8:** checkpoints start **timing out** (exceeding `execution.checkpointing.timeout`), then the TaskManager **OOMs** and restarts, and restoring from a huge checkpoint is also slow → a downward spiral.
 
-Đồ thị checkpoint size và duration **tăng gần tuyến tính theo thời gian**, không theo tải.
+The checkpoint size and duration graphs rise **almost linearly with time**, not with load.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-1. **Nghi thiếu RAM tạm thời.** Tăng heap TaskManager → **hoãn** được vài tuần rồi OOM lại ở mức cao hơn. Chỉ mua thời gian.
-2. **Nghi data spike.** Rà throughput input → **ổn định**, không có đợt tăng đột biến. Loại.
-3. **Nghi checkpoint config sai.** Chỉnh interval/timeout → size vẫn tăng, chỉ dời điểm chết. Không phải config checkpoint.
+1. **Suspecting a temporary RAM shortage.** Raising the TaskManager heap → it **postponed** it a few weeks then OOMed again at a higher level. Buying time only.
+2. **Suspecting a data spike.** Reviewing input throughput → **stable**, with no burst. Ruled out.
+3. **Suspecting wrong checkpoint config.** Tuning the interval/timeout → the size still grew, only moving the point of death. Not checkpoint config.
 
-Chỗ mất thời gian: mọi giả thuyết coi đây là vấn đề **tài nguyên/tức thời**, trong khi đây là **rò rỉ state có hệ thống** — state chỉ thêm, không bao giờ bớt.
+Where the time went: every hypothesis treated this as a **resource/momentary** problem, when it was a **systematic state leak** — state only added, never removed.
 
-## Nguyên nhân thật
+## The real cause
 
-State là **unbounded**: mỗi key mới thêm một entry, không có cơ chế nào xoá entry cũ. Với key space vô hạn, tổng state → vô hạn theo thời gian. Checkpoint phải chụp toàn bộ state → size và duration tăng theo → cuối cùng vượt bộ nhớ / timeout.
+The state is **unbounded**: each new key adds an entry, with no mechanism to delete old ones. With an unbounded key space, total state → infinity over time. A checkpoint has to capture all the state → its size and duration rise with it → eventually exceeding memory / the timeout.
 
-Đây không phải bug của Flink; là **thiếu vòng đời cho state**. Flink giữ đúng những gì được bảo giữ.
+This isn't a Flink bug; it's a **missing lifecycle for the state**. Flink keeps exactly what it was told to keep.
 
-## Cách sửa
+## The fix
 
-**1. Đặt TTL cho state** để entry cũ tự bị dọn:
+**1. Set a TTL on the state** so old entries are cleaned up:
 
 ```java
 StateTtlConfig ttl = StateTtlConfig
@@ -68,23 +67,23 @@ ValueStateDescriptor<Boolean> desc =
 desc.enableTimeToLive(ttl);
 ```
 
-**2. Dùng RocksDB state backend** cho state lớn (spill ra đĩa thay vì giữ hết trên heap):
+**2. Use the RocksDB state backend** for large state (spilling to disk rather than keeping everything on the heap):
 
 ```properties
 state.backend: rocksdb
 state.backend.incremental: true   # checkpoint tăng dần, chỉ chụp phần thay đổi
 ```
 
-**3. Thiết kế lại để state bounded** khi có thể: dedup theo cửa sổ thời gian giới hạn thay vì "nhớ mọi order_id mãi mãi" — chỉ cần chống trùng trong khoảng hợp lý (vd 24h).
+**3. Redesign for bounded state** where you can: deduplicate over a limited time window instead of "remembering every order_id forever" — you only need to prevent duplicates over a reasonable interval (e.g. 24h).
 
-Đánh đổi: TTL nghĩa là sau ngưỡng, một `order_id` cũ quay lại **không còn** bị coi là trùng. Chọn TTL đủ dài để bao trọn khả năng đến muộn/replay thực tế.
+The trade-off: a TTL means that past the threshold, an old `order_id` returning is **no longer** treated as a duplicate. Pick a TTL long enough to cover the realistic late-arrival/replay window.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-Theo dõi **checkpoint size và duration theo thời gian** (Flink UI → Checkpoints, hoặc metrics `lastCheckpointSize`, `lastCheckpointDuration`). Đường **tăng tuyến tính bất kể tải** = state đang rò. Bắt sớm rẻ hơn nhiều so với đợi OOM: alert khi checkpoint size vượt ngưỡng hoặc tăng đều nhiều tuần liền.
+Track **checkpoint size and duration over time** (the Flink UI → Checkpoints, or the `lastCheckpointSize`, `lastCheckpointDuration` metrics). A line **rising linearly regardless of load** = the state is leaking. Catching it early is far cheaper than waiting for the OOM: alert when the checkpoint size exceeds a threshold or rises steadily for several weeks running.
 
 ## Related Topics
 
-- [State và checkpoint](../reference/state-and-checkpoint.md) — vòng đời keyed state, TTL, RocksDB backend
-- [Backpressure tuning](../skills/backpressure-tuning.md) — checkpoint size/duration ảnh hưởng tới độ khoẻ job
-- [Flink](../index.md) — chủ đề chứa case study này
+- [State and checkpoints](../reference/state-and-checkpoint.md) — the keyed-state lifecycle, TTL, the RocksDB backend
+- [Backpressure tuning](../skills/backpressure-tuning.md) — how checkpoint size/duration affects a job's health
+- [Flink](../index.md) — the topic this case study belongs to

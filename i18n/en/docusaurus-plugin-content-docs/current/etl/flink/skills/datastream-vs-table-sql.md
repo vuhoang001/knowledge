@@ -1,8 +1,7 @@
 ---
 title: DataStream API vs Table/SQL API
-i18n_status: untranslated
 sidebar_position: 1
-description: "Chọn API nào cho việc nào — và cái giá của mỗi lựa chọn."
+description: "Which API for which job — and the price of each choice."
 tags: [flink, datastream-api, table-api, process-function, changelog]
 domain: data-engineering
 category: concept
@@ -15,76 +14,76 @@ updated: 2026-08-11
 
 # DataStream API vs Table/SQL API
 
-> **Chốt:** Đa số ETL và aggregation viết bằng **Table/SQL** ngắn hơn nhiều lần và để
-> Flink tự tối ưu; chỉ tụt xuống **DataStream / ProcessFunction** khi cần chạm state
-> thô, điều khiển timer, hoặc logic mà SQL không diễn đạt được (CEP, state machine).
+> **Takeaway:** most ETL and aggregation written in **Table/SQL** is several times shorter and lets
+> Flink optimise it for you; only drop down to **DataStream / ProcessFunction** when you need raw state
+> access, timer control, or logic SQL can't express (CEP, state machines).
 
-Hai API không phải hai công cụ ngang hàng cho một việc — chúng ở hai **mức trừu tượng**
-khác nhau, và cái giá là kiểm soát đổi lấy độ dài code.
+The two APIs aren't two peer tools for one job — they sit at two different **abstraction
+levels**, and the price is control traded against code length.
 
-## Ba mức trừu tượng
+## The three abstraction levels
 
-| Mức | API | Bạn kiểm soát | Bạn đánh mất |
+| Level | API | What you control | What you give up |
 |---|---|---|---|
-| Cao | **Table / SQL** | Khai báo *muốn gì*; planner tự chọn *làm thế nào* | Không chạm được state thô, khó chèn logic ngoài SQL |
-| Giữa | **DataStream** (`map`/`keyBy`/`window`) | Luồng transform, keyed stream, window | Vẫn dùng abstraction dựng sẵn cho window/join |
-| Thấp | **ProcessFunction** | Từng event một, `ValueState`/`ListState`, timer thủ công | Phải tự viết mọi thứ — verbose, dễ sai |
+| High | **Table / SQL** | Declaring *what you want*; the planner chooses *how* | No raw state access, hard to insert non-SQL logic |
+| Middle | **DataStream** (`map`/`keyBy`/`window`) | The transformation flow, keyed streams, windows | Still using ready-made abstractions for windows/joins |
+| Low | **ProcessFunction** | One event at a time, `ValueState`/`ListState`, manual timers | Having to write everything yourself — verbose, error-prone |
 
-`ProcessFunction` là đáy: nó cho bạn `processElement(event, ctx, out)` cộng
-`onTimer(...)`. Mọi window, join, aggregation ở tầng trên cuối cùng đều quy về hai thứ
-này. Nếu diễn đạt được bằng tầng cao hơn thì đừng xuống đây.
+`ProcessFunction` is the floor: it gives you `processElement(event, ctx, out)` plus
+`onTimer(...)`. Every window, join and aggregation at the layers above ultimately reduces to these two
+things. If it's expressible at a higher layer, don't come down here.
 
 ```mermaid
 graph TD
-    A["Table / SQL API<br/>khai báo, planner tối ưu"] --> B["DataStream API<br/>map / keyBy / window"]
-    B --> C["ProcessFunction<br/>processElement + onTimer + state thô"]
+    A["Table / SQL API<br/>declarative, planner-optimised"] --> B["DataStream API<br/>map / keyBy / window"]
+    B --> C["ProcessFunction<br/>processElement + onTimer + raw state"]
     C --> D["Runtime: stream operators + state backend"]
 ```
 
-Đi xuống một tầng, bạn nhận thêm quyền kiểm soát nhưng gánh thêm code và trách nhiệm tối
-ưu. Quy tắc mặc định: **ở tầng cao nhất diễn đạt được bài toán**, chỉ tụt xuống đúng chỗ
-cần.
+Going down a layer, you gain control but shoulder more code and more responsibility for
+optimisation. The default rule: **stay at the highest layer that can express the problem**, dropping down only where
+it's actually needed.
 
-### Bảng khi-nào-dùng tầng nào
+### The when-to-use-which-layer table
 
-| Bài toán | Tầng nên dùng | Vì sao |
+| Problem | The layer to use | Why |
 |---|---|---|
-| Lọc, chiếu cột, join hai bảng, aggregation theo window | **SQL / Table** | Planner đẩy predicate, chọn join strategy, sinh watermark logic |
-| Làm giàu bằng lookup có TTL riêng, dedup theo khoá tùy biến | **DataStream + KeyedProcessFunction** | Cần state tùy ý + kiểm soát TTL từng khoá |
-| Bắn timer theo lịch riêng, expire state đúng lúc | **ProcessFunction** | Chỉ tầng này có `ctx.timerService()` |
-| Pattern chuỗi event (A rồi B trong 5') | **CEP** hoặc **ProcessFunction** | SQL thuần không diễn đạt state machine theo chuỗi |
-| State machine phức tạp (nhiều trạng thái, chuyển tùy điều kiện) | **ProcessFunction** | Cần `ValueState` giữ trạng thái + logic chuyển tự viết |
+| Filtering, projecting columns, joining two tables, windowed aggregation | **SQL / Table** | The planner pushes predicates down, picks a join strategy, generates the watermark logic |
+| Enrichment with a lookup on its own TTL, deduplication on a custom key | **DataStream + KeyedProcessFunction** | You need arbitrary state + per-key TTL control |
+| Firing timers on your own schedule, expiring state at exactly the right moment | **ProcessFunction** | Only this layer has `ctx.timerService()` |
+| Event-sequence patterns (A then B within 5 min) | **CEP** or **ProcessFunction** | Plain SQL can't express a sequence-based state machine |
+| A complex state machine (many states, conditional transitions) | **ProcessFunction** | You need `ValueState` to hold the state + your own transition logic |
 
-## Gặp X → chọn gì
+## Situation X → what to choose
 
-- **Aggregation / join / filter / window đơn giản trên bảng** → **SQL**. Ngắn, planner
-  đẩy được predicate, đổi được mà không viết lại Java.
-- **Cần state tùy ý xuyên nhiều event** (dedup theo khoá tùy biến, đếm phiên phức tạp,
-  làm giàu bằng lookup có TTL riêng) → **DataStream + `KeyedProcessFunction`**.
-- **Điều khiển thời gian thủ công** (bắn timer đúng lúc, expire state theo lịch riêng) →
+- **Simple aggregation / joins / filters / windows over tables** → **SQL**. Short, the planner can
+  push predicates down, and you can change it without rewriting Java.
+- **Arbitrary state across events** (deduplication on a custom key, complex session counting,
+  enrichment with a lookup on its own TTL) → **DataStream + `KeyedProcessFunction`**.
+- **Manual time control** (firing a timer at the right moment, expiring state on your own schedule) →
   **ProcessFunction**.
-- **Pattern matching chuỗi event** (A rồi B trong 5 phút) → **CEP** hoặc
-  `ProcessFunction`, không phải SQL thuần.
+- **Event-sequence pattern matching** (A then B within 5 minutes) → **CEP** or
+  `ProcessFunction`, not plain SQL.
 
-## Changelog semantics — trái tim của Table API
+## Changelog semantics — the heart of the Table API
 
-Đây là chỗ dễ vấp nhất khi chuyển Table ↔ DataStream: một Table **không phải lúc nào
-cũng là stream "chỉ thêm"**. Bên dưới, mỗi Table là một trong hai loại stream:
+This is the easiest place to trip when converting Table ↔ DataStream: a Table is **not always
+an "append-only" stream**. Underneath, each Table is one of two kinds of stream:
 
-| Loại | Row mang gì | Sinh ra từ |
+| Kind | What the rows carry | Produced by |
 |---|---|---|
-| **Append-only** | Chỉ `+I` (insert) | `SELECT ... WHERE ...`, projection, window aggregation với window TVF |
-| **Changelog (retract)** | `+I`, `-U`, `+U`, `-D` | Aggregation không window (`GROUP BY`), regular join, dedup, `ORDER BY ... LIMIT` |
-| **Changelog (upsert)** | `+U`/`+I` theo khoá + `-D` tombstone | Sink/source có **primary key** (`upsert-kafka`, JDBC upsert) |
+| **Append-only** | Only `+I` (insert) | `SELECT ... WHERE ...`, projections, windowed aggregation with a window TVF |
+| **Changelog (retract)** | `+I`, `-U`, `+U`, `-D` | Non-windowed aggregation (`GROUP BY`), regular joins, deduplication, `ORDER BY ... LIMIT` |
+| **Changelog (upsert)** | `+U`/`+I` by key + `-D` tombstones | A sink/source with a **primary key** (`upsert-kafka`, JDBC upsert) |
 
-Ký hiệu row kind trong Flink: `+I` (insert), `-U` (update-before, retract bản cũ), `+U`
-(update-after, phát bản mới), `-D` (delete).
+The row-kind notation in Flink: `+I` (insert), `-U` (update-before, retracting the old value), `+U`
+(update-after, emitting the new one), `-D` (delete).
 
-### Vì sao aggregation và join sinh retract
+### Why aggregation and joins produce retractions
 
-Xét `SELECT user, COUNT(*) FROM clicks GROUP BY user`. Mỗi click mới của `u1` làm count
-của `u1` **thay đổi** — mà stream đã phát count cũ ra downstream rồi. Không thể "sửa" một
-row đã đi. Nên Flink phát:
+Consider `SELECT user, COUNT(*) FROM clicks GROUP BY user`. Each new click for `u1` makes `u1`'s
+count **change** — but the stream already emitted the old count downstream. You can't "edit" a
+row that's already gone. So Flink emits:
 
 ```text
 Output minh hoạ — chưa chạy:
@@ -95,25 +94,25 @@ Output minh hoạ — chưa chạy:
 +U (u1, 3)
 ```
 
-Downstream phải hiểu retract để trừ bản cũ trước khi cộng bản mới, nếu không sẽ đếm dồn
-sai. Regular join (không phải interval/temporal join) cũng vậy: khi một bên có row mới
-khớp, kết quả join cũ phải bị rút lại.
+The downstream has to understand retractions to subtract the old value before adding the new one, otherwise it accumulates
+wrongly. A regular join (not an interval/temporal join) is the same: when one side gets a new matching row,
+the old join result must be retracted.
 
-Khi bảng có **primary key** khai báo, Flink chuyển từ retract sang **upsert mode**: thay
-vì phát cặp `-U`/`+U`, nó phát một `+U` mang khoá — sink dùng khoá để ghi đè. Gọn hơn,
-nhưng đòi hỏi sink hiểu upsert.
+When a table has a declared **primary key**, Flink switches from retract to **upsert mode**: instead
+of emitting a `-U`/`+U` pair, it emits a single `+U` carrying the key — and the sink uses the key to overwrite. Tidier,
+but it requires a sink that understands upserts.
 
-## Chuyển đổi Table ↔ DataStream
+## Converting Table ↔ DataStream
 
-Không phải chọn một lần cho cả job. Chuyển qua lại được — nhưng phải chọn đúng hàm theo
-loại stream:
+It isn't a once-per-job choice. You can convert back and forth — but you must pick the right function for the
+kind of stream:
 
-| Hàm | Dùng cho | Mất gì nếu chọn sai |
+| Function | For | What you lose if you pick wrongly |
 |---|---|---|
-| `toDataStream(table)` | Table **append-only** | Ném lỗi nếu table có update |
-| `toChangelogStream(table)` | Table **có retract/upsert** | — (giữ đủ row kind) |
-| `fromDataStream(ds)` | DataStream thường → append Table | — |
-| `fromChangelogStream(ds)` | `DataStream<Row>` mang row kind → changelog Table | — |
+| `toDataStream(table)` | An **append-only** table | Throws an error if the table has updates |
+| `toChangelogStream(table)` | A table **with retractions/upserts** | — (keeps all the row kinds) |
+| `fromDataStream(ds)` | An ordinary DataStream → an append Table | — |
+| `fromChangelogStream(ds)` | A `DataStream<Row>` carrying row kinds → a changelog Table | — |
 
 ```java
 // Code minh hoạ, chưa chạy
@@ -125,29 +124,29 @@ DataStream<Row> enriched = stream
 Table back = tableEnv.fromChangelogStream(enriched);
 ```
 
-Mẫu thường dùng: đọc/aggregation bằng SQL cho gọn, tách một đoạn logic khó ra
-DataStream, rồi ghép lại. Đừng viết cả job bằng DataStream chỉ vì *một* chỗ cần nó.
+The common pattern: read/aggregate in SQL for brevity, split the hard piece of logic out into
+DataStream, then join it back. Don't write the whole job in DataStream just because *one* place needs it.
 
-`toDataStream` trên bảng có aggregation sẽ **ném lỗi ngay** (Flink hiện đại) hoặc âm thầm
-mất retract (API cũ `toRetractStream`/`toAppendStream`). Luôn dùng `toChangelogStream`
-khi bảng có thể update.
+`toDataStream` on a table with aggregation **throws immediately** (in modern Flink) or silently
+loses retractions (the old `toRetractStream`/`toAppendStream` API). Always use `toChangelogStream`
+when the table can update.
 
-## Ưu / nhược mỗi API
+## Each API's pros / cons
 
-**Table / SQL — planner tự tối ưu.** Bạn viết *muốn gì*, cost-based optimizer chọn *làm
-thế nào*: đẩy predicate xuống source, chọn join strategy, chọn state layout, tự sinh
-watermark logic khi đã khai báo. Đánh đổi: plan có thể **đổi giữa các version Flink** —
-cùng SQL, bản mới sinh plan khác, savepoint có thể không tương thích (SQL job không có
-uid ổn định theo cách DataStream có).
+**Table / SQL — the planner optimises for you.** You write *what you want* and a cost-based optimizer chooses *how*:
+pushing predicates into the source, picking a join strategy, picking the state layout, generating the
+watermark logic once it's declared. The trade-off: the plan can **change between Flink versions** —
+the same SQL, a new version, a different plan, and a savepoint that may not be compatible (a SQL job has no
+stable uid the way DataStream does).
 
-**DataStream — kiểm soát state thô.** Bạn nắm topology, đặt `.uid()` cố định, biết chính
-xác operator nào giữ state gì. Đổi lại verbose và **bạn tự tối ưu** — planner không giúp.
+**DataStream — raw state control.** You own the topology, set fixed `.uid()`s, and know exactly
+which operator holds what state. In exchange it's verbose and **you optimise it yourself** — the planner won't help.
 
-## CEP cần DataStream
+## CEP needs DataStream
 
-Complex Event Processing (thư viện `flink-cep`) — bắt **pattern chuỗi event** — chỉ chạy
-trên `DataStream`, không có API SQL tương đương đầy đủ (`MATCH_RECOGNIZE` trong SQL bắt
-được một phần nhưng hạn chế hơn).
+Complex Event Processing (the `flink-cep` library) — matching **event-sequence patterns** — only runs
+on `DataStream`, with no fully equivalent SQL API (`MATCH_RECOGNIZE` in SQL catches part of it
+but is more limited).
 
 ```java
 // Code minh hoạ, chưa chạy — pattern "login thất bại 3 lần trong 1 phút"
@@ -157,12 +156,12 @@ Pattern<Event, ?> p = Pattern.<Event>begin("fail")
     .within(Time.minutes(1));
 ```
 
-Cần pattern kiểu này thì buộc xuống DataStream — đây là một trong ít bài toán SQL không
-với tới.
+Needing a pattern like this forces you down to DataStream — one of the few problems SQL can't
+reach.
 
-## Cùng một bài toán, hai cách — đếm theo cửa sổ
+## The same problem, two ways — counting per window
 
-**Table/SQL** (windowing TVF):
+**Table/SQL** (a windowing TVF):
 
 ```sql
 -- Output minh hoạ, chưa chạy:
@@ -175,7 +174,7 @@ FROM TABLE(
 GROUP BY window_start, user_id;
 ```
 
-**DataStream** — cùng kết quả, dài hơn nhiều:
+**DataStream** — the same result, much longer:
 
 ```java
 // Code minh hoạ, chưa chạy
@@ -186,74 +185,73 @@ clicks
   .aggregate(new CountAgg());   // AggregateFunction đếm incremental
 ```
 
-SQL bản trên là bốn dòng và planner tự chọn state backend, tự sinh watermark logic khi
-đã khai báo. Chỉ khi bạn cần điều gì SQL không cho — ví dụ phát thêm side output cho
-event muộn kèm metadata riêng — thì mới đáng xuống DataStream.
+The SQL version above is four lines and the planner picks the state backend and generates the watermark logic once
+it's declared. Only when you need something SQL won't give you — say emitting an extra side output for
+late events with its own metadata — is dropping to DataStream worth it.
 
-## Bảng quyết định
+## The decision table
 
-| Câu hỏi | Nếu "có" | Nếu "không" |
+| Question | If "yes" | If "no" |
 |---|---|---|
-| Diễn đạt được bằng SQL thuần (filter/join/agg/window)? | **SQL** | Đọc tiếp |
-| Cần state tùy ý hoặc TTL riêng từng khoá? | **DataStream + KeyedProcessFunction** | Đọc tiếp |
-| Cần điều khiển timer thủ công? | **ProcessFunction** | Đọc tiếp |
-| Cần bắt pattern chuỗi event? | **CEP (DataStream)** | Quay lại **SQL** |
+| Expressible in plain SQL (filter/join/agg/window)? | **SQL** | Read on |
+| Need arbitrary state or a per-key TTL? | **DataStream + KeyedProcessFunction** | Read on |
+| Need manual timer control? | **ProcessFunction** | Read on |
+| Need event-sequence pattern matching? | **CEP (DataStream)** | Back to **SQL** |
 
 ## Trade-offs
 
 | Table / SQL | DataStream / ProcessFunction |
 |---|---|
-| Ngắn, khai báo, planner tối ưu | Verbose, bạn tự tối ưu |
-| Ai đọc SQL cũng sửa được | Cần dev Java/Scala |
-| Khó chạm state thô, khó logic phi-SQL | Toàn quyền state + timer |
-| Upgrade/plan thay đổi giữa version có thể lệch | Ổn định hơn, bạn nắm topology (uid cố định) |
-| Retract/upsert xử lý tự động | Bạn tự quản row kind khi trộn |
+| Short, declarative, planner-optimised | Verbose, you optimise it yourself |
+| Anybody who reads SQL can change it | Needs a Java/Scala developer |
+| Hard to touch raw state, hard for non-SQL logic | Full control of state + timers |
+| Upgrades/plan changes between versions can diverge | More stable, you own the topology (fixed uids) |
+| Retractions/upserts handled automatically | You manage row kinds yourself when mixing |
 
 ## Common Mistakes
 
-- **Viết cả job bằng DataStream vì một chỗ cần state thô.** Trộn đi — SQL cho phần còn
-  lại.
-- **`toDataStream` trên bảng có aggregation.** Mất retract → sink đếm trùng. Dùng
+- **Writing the whole job in DataStream because one place needs raw state.** Mix them — SQL for the
+  rest.
+- **`toDataStream` on a table with aggregation.** Retractions lost → the sink double-counts. Use
   `toChangelogStream`.
-- **Nghĩ SQL không có state.** Có — `GROUP BY`, join, dedup đều giữ state; vẫn phải lo
-  TTL và checkpoint như DataStream.
-- **Downstream không hiểu changelog.** Ghi retract stream vào sink append-only → số dồn
-  sai. Sink phải hỗ trợ upsert/delete hoặc bảng phải là append-only.
-- **Kỳ vọng SQL plan ổn định qua version.** Nâng Flink có thể đổi plan → savepoint SQL
-  không restore được. Test trên staging.
+- **Thinking SQL has no state.** It does — `GROUP BY`, joins and deduplication all hold state; you still have to worry about
+  TTL and checkpoints just as with DataStream.
+- **A downstream that doesn't understand changelogs.** Writing a retract stream into an append-only sink → accumulating
+  wrongly. The sink must support upsert/delete, or the table must be append-only.
+- **Expecting a SQL plan to be stable across versions.** Upgrading Flink can change the plan → a SQL savepoint
+  that won't restore. Test on staging.
 
 ## FAQ
 
 <details>
-<summary>SQL có chậm hơn DataStream không?</summary>
+<summary>Is SQL slower than DataStream?</summary>
 
-Không mặc nhiên. Planner thường sinh plan tốt hơn code DataStream viết vội. DataStream
-chỉ nhanh hơn khi bạn thực sự tối ưu tay (tránh serialization thừa, state layout gọn) —
-mà việc đó tốn công.
-
-</details>
-
-<details>
-<summary>ProcessFunction khác gì RichFunction?</summary>
-
-`RichFunction` cho vòng đời (`open`/`close`) và truy cập state. `ProcessFunction` thêm
-`Context` với timer và side output — tức là điều khiển được thời gian, thứ RichFunction
-thường không có.
+Not inherently. The planner usually produces a better plan than hastily written DataStream code. DataStream
+is only faster when you genuinely optimise by hand (avoiding surplus serialization, a tight state layout) —
+and that takes effort.
 
 </details>
 
 <details>
-<summary>Khi nào cần khai báo primary key trên Table?</summary>
+<summary>How does ProcessFunction differ from RichFunction?</summary>
 
-Khi bạn muốn Flink chuyển từ retract sang upsert mode — gọn hơn (một row `+U` mang khoá
-thay vì cặp `-U`/`+U`), và bắt buộc khi sink là `upsert-kafka` hoặc JDBC upsert. Không có
-primary key, aggregation phát retract stream đầy đủ.
+`RichFunction` gives you the lifecycle (`open`/`close`) and state access. `ProcessFunction` adds a
+`Context` with timers and side outputs — that is, control over time, which RichFunction usually lacks.
+
+</details>
+
+<details>
+<summary>When do I need to declare a primary key on a Table?</summary>
+
+When you want Flink to switch from retract to upsert mode — tidier (one `+U` row carrying the key
+instead of a `-U`/`+U` pair), and mandatory when the sink is `upsert-kafka` or a JDBC upsert. Without a
+primary key, aggregation emits a full retract stream.
 
 </details>
 
 ## Related Topics
 
-- [Window trong Flink](windows.md) — window ở cả hai API
-- [Connector Flink](connectors.md) — `upsert-kafka` và changelog format
-- [Flink là gì](../reference/what-is-flink.md) — mô hình xử lý nền
-- [Kỹ năng — Flink](../index.md)
+- [Windows in Flink](windows.md) — windows in both APIs
+- [Flink connectors](connectors.md) — `upsert-kafka` and changelog formats
+- [What Flink is](../reference/what-is-flink.md) — the underlying processing model
+- [Skills — Flink](../index.md)

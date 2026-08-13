@@ -1,8 +1,7 @@
 ---
-title: Số sai vì dùng processing time
-i18n_status: untranslated
+title: Wrong numbers from using processing time
 sidebar_position: 2
-description: "Job chạy mượt, số lặng lẽ sai: event đến muộn bị gán vào cửa sổ theo giờ xử lý, không lỗi nào báo."
+description: "The job runs smoothly while the numbers go quietly wrong: late events are assigned to a window by processing time, with no error reported."
 tags: [flink, processing-time, event-time, windowing, correctness]
 domain: data-engineering
 category: technology
@@ -13,50 +12,50 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Số sai vì dùng processing time
+# Wrong numbers from using processing time
 
-> **Chốt:** Processing-time window gán event vào cửa sổ theo **lúc Flink xử lý**, không theo lúc sự kiện xảy ra — khi có lag/retry/backfill, số trong từng phút lặng lẽ sai mà không lỗi nào báo.
+> **Takeaway:** a processing-time window assigns an event to a window by **when Flink processed it**, not by when the event happened — so with lag/retries/backfill, the per-minute numbers go quietly wrong with no error reported.
 
-## Nhãn
+## Label
 
-**Tình huống dựng lại** — số liệu là **minh hoạ, chưa chạy trên cluster**, nhưng nhất quán trong bài.
+**A reconstructed situation** — the figures are **illustrative, not run on a cluster**, but internally consistent.
 
-## Bối cảnh
+## Context
 
-Pipeline đếm số đơn theo cửa sổ 5 phút. Người viết chọn **processing-time** `TUMBLE` cho tiện: không cần khai watermark, không cần timestamp assigner, code ngắn hơn, và "phần lớn thời gian số trông đúng".
+The pipeline counts orders in 5-minute windows. Whoever wrote it chose a **processing-time** `TUMBLE` for convenience: no watermark to declare, no timestamp assigner, shorter code, and "most of the time the numbers look right".
 
-## Triệu chứng
+## Symptoms
 
-*Số minh hoạ — chưa chạy:*
+*Illustrative numbers — not run:*
 
-Một event xảy ra lúc **10:59:30** (event time) nhưng do consumer lag / retry, Flink xử lý lúc **11:02:00** (processing time). Processing-time window gán nó vào cửa sổ **11:00–11:05**.
+An event happens at **10:59:30** (event time) but because of consumer lag / a retry, Flink processes it at **11:02:00** (processing time). The processing-time window assigns it to the **11:00–11:05** window.
 
-So cùng một tập dữ liệu, hai chế độ cho hai kết quả:
+Over the same dataset, the two modes give two results:
 
-| Cửa sổ | Đếm theo **event time** (đúng) | Đếm theo **processing time** (bài này) |
+| Window | Counted by **event time** (correct) | Counted by **processing time** (this case) |
 |---|---|---|
-| 10:55–11:00 | 1.000 | 940 |
-| 11:00–11:05 | 1.000 | 1.060 |
+| 10:55–11:00 | 1,000 | 940 |
+| 11:00–11:05 | 1,000 | 1,060 |
 
-*(minh hoạ, chưa chạy)* — 60 event của phút 10:55 bị "chảy" sang phút 11:00. Tổng vẫn 2.000, nhưng **phân bổ theo phút sai**. Dashboard nhìn hợp lý nên không ai nghi.
+*(illustrative, not run)* — 60 events from the 10:55 minute "leaked" into the 11:00 one. The total is still 2,000, but **the per-minute allocation is wrong**. The dashboard looks plausible so nobody suspects anything.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-1. **Nghi mất dữ liệu.** Đếm tổng cả ngày event-time vs processing-time → **bằng nhau**. Không mất.
-2. **Nghi trùng.** Dedup theo `order_id` → không có bản trùng. Loại.
-3. **Nghi sai công thức gộp.** Rà lại logic `COUNT` → đúng. Không phải công thức.
+1. **Suspecting data loss.** Counting the whole day by event time vs processing time → **equal**. Nothing lost.
+2. **Suspecting duplicates.** Deduplicating by `order_id` → no duplicates. Ruled out.
+3. **Suspecting the aggregation formula.** Reviewing the `COUNT` logic → correct. Not the formula.
 
-Chỗ mất thời gian: mọi giả thuyết soi vào *dữ liệu* và *phép tính*, trong khi lỗi nằm ở **trục thời gian dùng để chia cửa sổ**.
+Where the time went: every hypothesis looked at the *data* and the *arithmetic*, while the error was in **the time axis used to cut the windows**.
 
-## Nguyên nhân thật
+## The real cause
 
-Processing-time window phụ thuộc **thời điểm máy xử lý**, không phải thời điểm sự kiện. Bất cứ thứ gì làm processing time lệch event time — consumer lag, retry, restart, backfill, backpressure — đều đẩy event sang nhầm cửa sổ. Không có lỗi vì với Flink đây là hành vi đúng của processing time.
+A processing-time window depends on **when the machine processes**, not when the event happened. Anything that makes processing time diverge from event time — consumer lag, retries, restarts, backfill, backpressure — pushes events into the wrong window. There's no error because, as far as Flink is concerned, this is processing time behaving correctly.
 
-Bằng chứng quyết định: **chạy lại (reprocess)** cùng dữ liệu lịch sử cho ra số **khác** lần chạy đầu — vì lần reprocess, mọi event được xử lý dồn, processing time hoàn toàn khác. Kết quả **không tất định**.
+The decisive evidence: **reprocessing** the same historical data gives **different** numbers from the first run — because on the reprocess every event is handled in a rush and the processing times are entirely different. The result is **non-deterministic**.
 
-## Cách sửa
+## The fix
 
-Chuyển sang **event-time** window: gán timestamp từ chính sự kiện và khai watermark.
+Switch to an **event-time** window: assign the timestamp from the event itself and declare a watermark.
 
 ```java
 // DataStream API
@@ -79,16 +78,16 @@ FROM TABLE(TUMBLE(TABLE orders, DESCRIPTOR(event_ts), INTERVAL '5' MINUTES))
 GROUP BY window_start, window_end;
 ```
 
-Với event time, event 10:59:30 luôn vào cửa sổ 10:55–11:00 dù xử lý lúc nào. Reprocess ra **đúng số cũ** — tất định.
+With event time, the 10:59:30 event always lands in the 10:55–11:00 window whenever it's processed. A reprocess gives **exactly the old numbers** — deterministic.
 
-Đánh đổi: cần chấp nhận độ trễ nhỏ (chờ watermark) và xử lý event late tường minh (drop hoặc allowed lateness), thay vì "ra ngay nhưng sai".
+The trade-off: you have to accept a small delay (waiting for the watermark) and handle late events explicitly (drop or allowed lateness), instead of "out immediately but wrong".
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-**Chạy lại một khoảng lịch sử và so với lần đầu.** Nếu số **khác** → kết quả phụ thuộc processing time → sai bản chất. Một pipeline event-time đúng phải cho **cùng số mỗi lần reprocess**.
+**Reprocess a historical interval and compare with the first run.** If the numbers **differ** → the result depends on processing time → it's fundamentally wrong. A correct event-time pipeline must give **the same numbers on every reprocess**.
 
 ## Related Topics
 
-- [Event time và watermark](../reference/event-time-watermark.md) — khác biệt event time vs processing time, và tính tất định
-- [Windows](../skills/windows.md) — chọn trục thời gian cho window
-- [Flink](../index.md) — chủ đề chứa case study này
+- [Event time and watermarks](../reference/event-time-watermark.md) — the difference between event time and processing time, and determinism
+- [Windows](../skills/windows.md) — choosing a window's time axis
+- [Flink](../index.md) — the topic this case study belongs to

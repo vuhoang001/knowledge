@@ -1,9 +1,8 @@
 ---
-title: Case study — Flink
-i18n_status: untranslated
+title: Case studies — Flink
 sidebar_key: flink-case-studies
 sidebar_position: 0
-description: "Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu."
+description: "Real incidents debugged to a conclusion, including the wrong hypotheses along the way."
 tags: [case-study, flink]
 domain: data-engineering
 category: index
@@ -11,17 +10,17 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Case study — Flink
+# Case studies — Flink
 
-Sự cố thật hoặc tình huống dựng lại đã debug xong, kèm **giả thuyết sai lúc đầu**.
+Real incidents or reconstructed situations debugged to a conclusion, including **the wrong hypotheses along the way**.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [Cửa sổ không bao giờ chạy](cua-so-khong-chay-idle-partition.md) | Một partition im lặng giữ watermark đứng yên → window không đóng | 📝 |
-| 2 | [Số sai vì dùng processing time](so-sai-vi-processing-time.md) | Job chạy mượt, số lặng lẽ sai khi dữ liệu đến muộn | 📝 |
-| 3 | [State phình vì thiếu TTL](state-phinh-thieu-ttl.md) | Keyed state giữ mọi key mãi mãi → checkpoint chậm dần rồi OOM | 📝 |
-| 4 | [Trùng lặp vì sink không transaction](trung-lap-vi-sink-khong-transaction.md) | Exactly-once trong Flink không tự lan tới sink không hỗ trợ 2PC | 📝 |
+| 1 | [A window that never fires](cua-so-khong-chay-idle-partition.md) | One silent partition holds the watermark still → the window doesn't close | 📝 |
+| 2 | [Wrong numbers from using processing time](so-sai-vi-processing-time.md) | The job runs smoothly while the numbers go quietly wrong with late data | 📝 |
+| 3 | [State bloating for want of a TTL](state-phinh-thieu-ttl.md) | Keyed state keeps every key forever → checkpoints slow down and then OOM | 📝 |
+| 4 | [Duplicates from a non-transactional sink](trung-lap-vi-sink-khong-transaction.md) | Flink's exactly-once doesn't spread by itself to a sink without 2PC | 📝 |
 
 ## Related Topics
 
-- [Flink](../index.md) — chủ đề chứa thư mục này
+- [Flink](../index.md) — the topic this directory belongs to

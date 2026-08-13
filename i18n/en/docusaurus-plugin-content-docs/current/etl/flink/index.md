@@ -1,7 +1,6 @@
 ---
 title: Apache Flink
-i18n_status: untranslated
-description: Engine xử lý stream có state — event time và watermark là chỗ sai nhiều nhất.
+description: A stateful stream processing engine — event time and watermarks are where things go wrong most.
 tags: [flink, streaming, event-time, watermark, checkpoint]
 domain: data-engineering
 category: technology
@@ -13,91 +12,91 @@ updated: 2026-08-11
 ---
 # Flink
 
-**Flink là engine xử lý stream có state.** Khác biệt gốc so với batch: dữ liệu không bao
-giờ "hết", nên phải tự định nghĩa *khi nào một cửa sổ tính toán được coi là đủ* — đó là
-toàn bộ chuyện event time và watermark. Và vì stream chạy mãi, Flink phải tự giữ **state**
-(bộ đếm, cửa sổ, bảng join) và tự khôi phục nó sau khi chết — đó là toàn bộ chuyện
-checkpoint.
+**Flink is a stateful stream processing engine.** The root difference from batch: the data never
+"ends", so you have to define for yourself *when a computation window counts as complete* — that's
+the whole business of event time and watermarks. And because a stream runs forever, Flink has to hold
+**state** itself (counters, windows, join tables) and restore it after a failure — that's the whole
+business of checkpoints.
 
-> **Nhãn kiểm chứng.** Flink cần một cluster; phần lớn output trong `reference/`/`skills/`
-> là **số minh hoạ — chưa chạy**, có dán nhãn ngay cạnh. Chỉ [bài tập](tutorials/flink-lab.md)
-> dựng cluster Docker mới có output đã chạy. `verified_at` để trống theo luật cứng của kho.
+> **A note on verification.** Flink needs a cluster; most of the output in `reference/`/`skills/`
+> is **illustrative numbers — not run**, labelled as such right next to it. Only the [exercises](tutorials/flink-lab.md),
+> which stand up a Docker cluster, have output that's actually been run. `verified_at` stays empty per the repo's hard rule.
 
-## Mục lục — các component của Flink
+## Contents — Flink's components
 
-| # | Component | Trả lời câu hỏi | Trạng thái |
+| # | Component | The question it answers | Status |
 |---|---|---|---|
-| 01 | [Flink là gì](reference/what-is-flink.md) | Stream vs batch, khi nào cần stream thật | 📝 |
-| 02 | [Kiến trúc job](reference/architecture.md) | JobManager, TaskManager, slot, parallelism | 📝 |
-| 03 | [Event time và watermark](reference/event-time-watermark.md) | Vì sao processing time cho số sai | 📝 |
-| 04 | [State và checkpoint](reference/state-and-checkpoint.md) | Nơi giữ state, khôi phục sau khi chết | 📝 |
-| 05 | [Exactly-once](reference/exactly-once.md) | Two-phase commit, sink phải hỗ trợ gì | 📝 |
-| 06 | [DataStream vs Table/SQL](skills/datastream-vs-table-sql.md) | Chọn API nào cho việc nào | 📝 |
-| 07 | [Window](skills/windows.md) | Tumbling, sliding, session, allowed lateness | 📝 |
-| 08 | [Savepoint và nâng cấp](skills/savepoint-upgrade.md) | Sửa code mà không mất state; `uid()` | 📝 |
-| 09 | [Connector](skills/connectors.md) | Kafka source/sink, Iceberg sink, CDC | 📝 |
-| 10 | [Backpressure và tuning](skills/backpressure-tuning.md) | Đọc backpressure, chỉnh parallelism | 📝 |
-| — | [Cheatsheet: config và SQL](cheatsheets/config-and-sql.md) | Tra nhanh khi đang làm | 📝 |
-| — | [Bài tập: Docker](tutorials/flink-lab.md) | Chạy thật: windowed aggregation, late data | 📝 |
+| 01 | [What Flink is](reference/what-is-flink.md) | Stream vs batch, when you genuinely need streaming | 📝 |
+| 02 | [Job architecture](reference/architecture.md) | JobManager, TaskManager, slots, parallelism | 📝 |
+| 03 | [Event time and watermarks](reference/event-time-watermark.md) | Why processing time gives wrong numbers | 📝 |
+| 04 | [State and checkpoints](reference/state-and-checkpoint.md) | Where state is held, restoring after a failure | 📝 |
+| 05 | [Exactly-once](reference/exactly-once.md) | Two-phase commit, what the sink must support | 📝 |
+| 06 | [DataStream vs Table/SQL](skills/datastream-vs-table-sql.md) | Which API for which job | 📝 |
+| 07 | [Windows](skills/windows.md) | Tumbling, sliding, session, allowed lateness | 📝 |
+| 08 | [Savepoints and upgrades](skills/savepoint-upgrade.md) | Changing code without losing state; `uid()` | 📝 |
+| 09 | [Connectors](skills/connectors.md) | Kafka source/sink, Iceberg sink, CDC | 📝 |
+| 10 | [Backpressure and tuning](skills/backpressure-tuning.md) | Reading backpressure, tuning parallelism | 📝 |
+| — | [Cheatsheet: config and SQL](cheatsheets/config-and-sql.md) | A quick lookup while you work | 📝 |
+| — | [Exercises: Docker](tutorials/flink-lab.md) | Really run: windowed aggregation, late data | 📝 |
 
-Ký hiệu: ✅ đã chạy tay · 📝 lý thuyết, output minh hoạ · 🟡 mới có khung · ⬜ chưa viết
+Symbols: ✅ run by hand · 📝 theory, illustrative output · 🟡 outline only · ⬜ not written
 
-## Bản đồ khái niệm
+## Concept map
 
-| Khái niệm | Là gì | Khi nào chạm tới |
+| Concept | What it is | When you touch it |
 |---|---|---|
-| DataStream API | API mức thấp, điều khiển từng event và state | Logic phức tạp, cần kiểm soát state |
-| Table/SQL API | Khai báo bằng SQL, Flink tự dịch ra toán tử | Đa số ETL streaming |
-| JobManager | Điều phối: lập lịch, checkpoint, khôi phục | Kiến trúc cụm |
-| TaskManager | Nơi thật sự chạy toán tử; chứa slot | Kiến trúc cụm, tuning |
-| slot / parallelism | Đơn vị tài nguyên / số bản song song của toán tử | Scale job |
-| event time | Thời điểm sự việc **xảy ra**, nằm trong dữ liệu | Số phải đúng dù dữ liệu đến muộn |
-| watermark | Lời khẳng định "đã hết event trước mốc T" | Quyết định khi nào đóng cửa sổ |
-| window | Gom event thành nhóm hữu hạn để tính | Mọi phép tổng hợp trên stream |
-| keyed state | State gắn theo key, Flink tự phân vùng | Đếm/join/dedup theo khoá |
-| checkpoint | Ảnh chụp state định kỳ để khôi phục tự động | Chịu lỗi |
-| savepoint | Ảnh chụp thủ công để nâng cấp/di chuyển job | Đổi code mà giữ state |
-| exactly-once | Mỗi event ảnh hưởng kết quả đúng một lần | Số tiền, số đếm không được sai |
+| DataStream API | The low-level API, controlling each event and its state | Complex logic needing state control |
+| Table/SQL API | Declarative SQL, with Flink translating it into operators | Most streaming ETL |
+| JobManager | Coordination: scheduling, checkpointing, recovery | Cluster architecture |
+| TaskManager | Where operators actually run; holds slots | Cluster architecture, tuning |
+| slot / parallelism | The unit of resource / the number of parallel copies of an operator | Scaling a job |
+| event time | When the event **happened**, carried in the data | When the numbers must be right even with late data |
+| watermark | An assertion that "there are no more events before mark T" | Deciding when to close a window |
+| window | Grouping events into a finite set to compute over | Every aggregation on a stream |
+| keyed state | State attached to a key, partitioned by Flink | Counting/joining/deduplicating by key |
+| checkpoint | A periodic snapshot of state for automatic recovery | Fault tolerance |
+| savepoint | A manual snapshot for upgrading/moving a job | Changing code while keeping state |
+| exactly-once | Each event affects the result exactly once | Money and counts that mustn't be wrong |
 
-## Lộ trình
+## Learning path
 
-- [ ] **Hiểu** — giải thích được vì sao processing time cho số sai, và watermark giải quyết gì
-- [ ] **Chạy được** — dựng cluster Docker, chạy windowed aggregation bằng Flink SQL, thấy late data bị bỏ hoặc gom ([bài tập](tutorials/flink-lab.md))
-- [ ] **Sửa được** — đọc backpressure, chẩn cửa sổ không chạy do watermark, thêm state TTL
-- [ ] **Thiết kế được** — chọn window + allowed lateness + sink cho một pipeline exactly-once và bảo vệ được lựa chọn
+- [ ] **Understand** — be able to explain why processing time gives wrong numbers, and what watermarks solve
+- [ ] **Run it** — stand up a Docker cluster, run a windowed aggregation with Flink SQL, and see late data dropped or gathered ([exercises](tutorials/flink-lab.md))
+- [ ] **Fix it** — read backpressure, diagnose a window that won't fire because of watermarks, add state TTL
+- [ ] **Design it** — choose the window + allowed lateness + sink for an exactly-once pipeline, and defend the choice
 
-## Bẫy biết trước
+## Traps to know in advance
 
-**Event time là chỗ sai nhiều nhất.** Dùng processing time cho tiện thì job chạy mượt và
-số sai lặng lẽ — dữ liệu đến muộn bị tính vào cửa sổ sai, không có lỗi nào báo ra. Ba câu
-phải thuộc:
+**Event time is where things go wrong most.** Use processing time for convenience and the job runs
+smoothly while the numbers go quietly wrong — late data is counted into the wrong window with no error
+reported. Three sentences you must know by heart:
 
-1. **Watermark không đợi partition im lặng.** Một nguồn không phát gì có thể giữ watermark
-   đứng yên → cửa sổ không bao giờ đóng.
-2. **Exactly-once của Flink dừng ở ranh giới sink.** Sink không hỗ trợ 2PC thì kết quả ra
-   ngoài vẫn có thể trùng.
-3. **State không tự dọn.** Không đặt TTL thì keyed state giữ mọi key mãi mãi → checkpoint
-   chậm dần rồi OOM.
+1. **Watermarks don't wait for a silent partition.** A source emitting nothing can hold the watermark
+   still → the window never closes.
+2. **Flink's exactly-once stops at the sink boundary.** With a sink that doesn't support 2PC, the results
+   going out can still be duplicated.
+3. **State doesn't clean itself.** Without a TTL, keyed state keeps every key forever → checkpoints
+   get slower and slower and then OOM.
 
-## Sai lầm hay gặp
+## Common mistakes
 
-Chi tiết ở [`case-studies/`](case-studies/index.md).
+Details in [`case-studies/`](case-studies/index.md).
 
-| Sự cố | Bài học |
+| Incident | Lesson |
 |---|---|
-| [Cửa sổ không chạy](case-studies/cua-so-khong-chay-idle-partition.md) | Partition im lặng giữ watermark đứng yên |
-| [Số sai vì processing time](case-studies/so-sai-vi-processing-time.md) | Đến muộn bị gán sai cửa sổ, không lỗi nào báo |
-| [State phình](case-studies/state-phinh-thieu-ttl.md) | Thiếu TTL thì state chỉ có tăng |
-| [Trùng lặp ở sink](case-studies/trung-lap-vi-sink-khong-transaction.md) | Exactly-once không tự lan tới sink không 2PC |
+| [The window won't fire](case-studies/cua-so-khong-chay-idle-partition.md) | A silent partition holds the watermark still |
+| [Wrong numbers from processing time](case-studies/so-sai-vi-processing-time.md) | Late arrivals get the wrong window, with no error reported |
+| [State bloating](case-studies/state-phinh-thieu-ttl.md) | Without a TTL, state only ever grows |
+| [Duplicates at the sink](case-studies/trung-lap-vi-sink-khong-transaction.md) | Exactly-once doesn't spread to a non-2PC sink by itself |
 
 ## Related Topics
 
-- [Kafka](../kafka/index.md) — nguồn vào thường gặp nhất
-- [Event time và watermark](reference/event-time-watermark.md) — khái niệm quan trọng nhất
-- [Iceberg](../../storage/iceberg/index.md) — nơi Flink ghi ra
-- [Data Engineering](../../index.md) — vị trí của Flink trong pipeline
+- [Kafka](../kafka/index.md) — the most common input source
+- [Event time and watermarks](reference/event-time-watermark.md) — the most important concept
+- [Iceberg](../../storage/iceberg/index.md) — where Flink writes out to
+- [Data Engineering](../../index.md) — where Flink sits in the pipeline
 
-## Nguồn
+## Sources
 
-- [ ] Flink docs — phần *Concepts: Stateful Stream Processing* và *Timely Stream Processing*
-- [ ] Stream Processing with Apache Flink (Hueske & Kalavri) — chương time và state
+- [ ] The Flink docs — the *Concepts: Stateful Stream Processing* and *Timely Stream Processing* sections
+- [ ] Stream Processing with Apache Flink (Hueske & Kalavri) — the chapters on time and state

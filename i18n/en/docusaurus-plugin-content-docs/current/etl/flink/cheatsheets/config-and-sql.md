@@ -1,8 +1,7 @@
 ---
-title: Flink config và SQL
-i18n_status: untranslated
+title: Flink config and SQL
 sidebar_position: 1
-description: "Config quan trọng theo nhóm và cú pháp watermark/window trong Flink SQL."
+description: "The important configs by group and the watermark/window syntax in Flink SQL."
 tags: [flink, config, flink-sql, watermark, cheatsheet]
 domain: data-engineering
 category: concept
@@ -13,47 +12,47 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Flink config và SQL
+# Flink config and SQL
 
-> **Chốt:** Tra nhanh — config theo nhóm, cú pháp watermark/window/connector trong SQL, và lệnh CLI. Mọi giá trị mặc định dưới đây là **mặc định tài liệu**, tự kiểm lại theo version đang chạy.
+> **Takeaway:** a quick lookup — config by group, the watermark/window/connector syntax in SQL, and the CLI commands. Every default below is the **documented default**; check it yourself against the version you're running.
 
-## Config theo nhóm
+## Config by group
 
 **Checkpointing**
 
-| Key | Ý nghĩa | Ghi chú |
+| Key | Meaning | Notes |
 |---|---|---|
-| `execution.checkpointing.interval` | Chu kỳ checkpoint | vd `30 s`; nhỏ quá tốn, lớn quá replay nhiều khi restart |
-| `execution.checkpointing.mode` | `EXACTLY_ONCE` \| `AT_LEAST_ONCE` | mặc định tài liệu: `EXACTLY_ONCE` |
-| `execution.checkpointing.timeout` | Hết giờ thì huỷ checkpoint | tăng nếu state lớn |
-| `execution.checkpointing.unaligned` | Unaligned checkpoint | giảm ảnh hưởng backpressure lên checkpoint, đổi lấy state lớn hơn |
-| `execution.checkpointing.min-pause` | Nghỉ tối thiểu giữa hai checkpoint | tránh checkpoint dồn liên tục |
+| `execution.checkpointing.interval` | The checkpointing interval | e.g. `30 s`; too small is costly, too large replays a lot on restart |
+| `execution.checkpointing.mode` | `EXACTLY_ONCE` \| `AT_LEAST_ONCE` | documented default: `EXACTLY_ONCE` |
+| `execution.checkpointing.timeout` | Cancels the checkpoint when time runs out | raise it if the state is large |
+| `execution.checkpointing.unaligned` | Unaligned checkpoints | reduces backpressure's impact on checkpointing, in exchange for larger state |
+| `execution.checkpointing.min-pause` | The minimum pause between two checkpoints | avoids back-to-back checkpoints |
 
 **State backend**
 
-| Key | Ý nghĩa | Ghi chú |
+| Key | Meaning | Notes |
 |---|---|---|
-| `state.backend` | `hashmap` (heap) \| `rocksdb` (đĩa) | state lớn → `rocksdb` |
-| `state.backend.incremental` | Checkpoint tăng dần | chỉ RocksDB; giảm size checkpoint |
-| `state.checkpoints.dir` | Nơi lưu checkpoint | thường DFS/S3 |
-| (State TTL) | Đặt trong code qua `StateTtlConfig` | không có key global; xem case study state TTL |
+| `state.backend` | `hashmap` (heap) \| `rocksdb` (disk) | large state → `rocksdb` |
+| `state.backend.incremental` | Incremental checkpoints | RocksDB only; reduces checkpoint size |
+| `state.checkpoints.dir` | Where checkpoints are stored | usually DFS/S3 |
+| (State TTL) | Set in code via `StateTtlConfig` | there's no global key; see the state TTL case study |
 
-**Parallelism / slot**
+**Parallelism / slots**
 
-| Key | Ý nghĩa | Ghi chú |
+| Key | Meaning | Notes |
 |---|---|---|
-| `parallelism.default` | Parallelism mặc định của job | override per-operator được |
-| `taskmanager.numberOfTaskSlots` | Số slot mỗi TaskManager | mỗi slot chạy một slice pipeline |
+| `parallelism.default` | The job's default parallelism | overridable per operator |
+| `taskmanager.numberOfTaskSlots` | The slots per TaskManager | each slot runs one pipeline slice |
 
 **Restart strategy**
 
-| Key | Ý nghĩa | Ghi chú |
+| Key | Meaning | Notes |
 |---|---|---|
-| `restart-strategy.type` | `fixed-delay` \| `exponential-delay` \| `failure-rate` \| `none` | bật checkpointing thường kéo theo restart mặc định |
-| `restart-strategy.fixed-delay.attempts` | Số lần thử lại | |
-| `restart-strategy.fixed-delay.delay` | Nghỉ giữa các lần | vd `10 s` |
+| `restart-strategy.type` | `fixed-delay` \| `exponential-delay` \| `failure-rate` \| `none` | enabling checkpointing usually brings a default restart strategy with it |
+| `restart-strategy.fixed-delay.attempts` | The number of retries | |
+| `restart-strategy.fixed-delay.delay` | The pause between attempts | e.g. `10 s` |
 
-## Flink SQL — watermark
+## Flink SQL — watermarks
 
 ```sql
 -- khai watermark ngay trong CREATE TABLE, trên một cột TIMESTAMP(3)
@@ -64,7 +63,7 @@ CREATE TABLE orders (
 ) WITH ( 'connector' = 'kafka', /* ... */ );
 ```
 
-## Flink SQL — windowing TVF
+## Flink SQL — windowing TVFs
 
 ```sql
 -- TUMBLE: cửa sổ cố định, không chồng
@@ -79,7 +78,7 @@ FROM TABLE(HOP(TABLE orders, DESCRIPTOR(event_ts), INTERVAL '5' MINUTES, INTERVA
 FROM TABLE(CUMULATE(TABLE orders, DESCRIPTOR(event_ts), INTERVAL '1' MINUTES, INTERVAL '1' HOUR))
 ```
 
-## Flink SQL — connector chính
+## Flink SQL — the main connectors
 
 ```sql
 -- kafka: append stream
@@ -105,8 +104,8 @@ flink cancel <JobID>                          # huỷ không savepoint
 
 ## Related Topics
 
-- [Event time và watermark](../reference/event-time-watermark.md) — ngữ nghĩa của `WATERMARK`
-- [State và checkpoint](../reference/state-and-checkpoint.md) — nhóm config checkpointing/state backend
-- [Windows](../skills/windows.md) — chọn TUMBLE/HOP/CUMULATE
-- [Connectors](../skills/connectors.md) — kafka/upsert-kafka/iceberg và delivery guarantee
-- [Flink](../index.md) — chủ đề chứa cheatsheet này
+- [Event time and watermarks](../reference/event-time-watermark.md) — the semantics of `WATERMARK`
+- [State and checkpoints](../reference/state-and-checkpoint.md) — the checkpointing/state-backend config groups
+- [Windows](../skills/windows.md) — choosing TUMBLE/HOP/CUMULATE
+- [Connectors](../skills/connectors.md) — kafka/upsert-kafka/iceberg and delivery guarantees
+- [Flink](../index.md) — the topic this cheatsheet belongs to

@@ -1,8 +1,7 @@
 ---
-title: Event time và watermark
-i18n_status: untranslated
+title: Event time and watermarks
 sidebar_position: 3
-description: "Processing time cho số sai lặng lẽ; event time + watermark là cách nói khi nào một cửa sổ đủ."
+description: "Processing time gives quietly wrong numbers; event time + watermarks are how you say when a window is complete."
 tags: [flink, event-time, watermark, late-data, idle-partition]
 domain: data-engineering
 category: concept
@@ -13,54 +12,54 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Event time và watermark
+# Event time and watermarks
 
-> **Chốt:** Processing time cho số **sai một cách lặng lẽ** khi dữ liệu đến muộn hay
-> không đều — không lỗi nào báo. Event time + watermark là cách duy nhất để nói
-> **"cửa sổ này đã đủ event, đóng được rồi"** dựa trên thời điểm việc *xảy ra*, không
-> phải thời điểm Flink *thấy* nó.
+> **Takeaway:** processing time gives numbers that are **quietly wrong** when data arrives late or
+> unevenly — with no error reported. Event time + watermarks are the only way to say
+> **"this window has all its events, it can be closed"** based on when things *happened*, not
+> when Flink *saw* them.
 
-Đây là file quan trọng nhất trong nhóm. Gần như mọi lỗi "số streaming không khớp với
-batch" đều truy về chỗ này.
+This is the most important file in the group. Almost every "the streaming numbers don't match
+batch" bug traces back here.
 
-## Ba khái niệm thời gian
+## The three kinds of time
 
-| Loại | Là gì | Nằm ở đâu |
+| Kind | What it is | Where it lives |
 |---|---|---|
-| **Event time** | Thời điểm việc **xảy ra** ở nguồn | Trong chính dữ liệu (một field timestamp) |
-| **Ingestion time** | Thời điểm event **vào** Flink source | Flink gán khi đọc |
-| **Processing time** | Thời điểm operator **xử lý** event | Đồng hồ máy đang chạy operator |
+| **Event time** | When the thing **happened** at the source | In the data itself (a timestamp field) |
+| **Ingestion time** | When the event **entered** the Flink source | Assigned by Flink on read |
+| **Processing time** | When the operator **handled** the event | The clock of the machine running the operator |
 
-Processing time là đồng hồ treo tường của máy. Nhanh, không cần watermark, kết quả *không
-tái lập được* — chạy lại cùng dữ liệu ra số khác vì thứ tự và độ trễ khác.
+Processing time is the machine's wall clock. Fast, no watermarks needed, and results that are *not
+reproducible* — re-running the same data gives different numbers because the order and the delays differ.
 
-Event time đọc từ dữ liệu. Chậm hơn, cần watermark, nhưng **tái lập được** và **đúng**:
-một event lúc 10:03 luôn thuộc cửa sổ 10:00–10:05 dù Flink thấy nó lúc 10:04 hay 10:09.
+Event time is read from the data. Slower, needs watermarks, but **reproducible** and **correct**:
+an event at 10:03 always belongs to the 10:00–10:05 window whether Flink saw it at 10:04 or 10:09.
 
-## Vì sao processing time cho số sai
+## Why processing time gives wrong numbers
 
-Mạng trễ, retry, một consumer bị chậm, một partition Kafka backlog — event *xảy ra* lúc
-10:03 nhưng *đến* operator lúc 10:07. Với processing time, cửa sổ 10:00–10:05 đã đóng từ
-lâu, nên event này rơi vào cửa sổ 10:05–10:10 **sai**. Không có exception, không có cảnh
-báo; chỉ là con số cuối tháng lệch với batch và không ai biết vì sao.
+Network delays, retries, a slow consumer, a backlogged Kafka partition — an event *happens* at
+10:03 but *arrives* at the operator at 10:07. With processing time, the 10:00–10:05 window closed long
+ago, so this event falls into the 10:05–10:10 window, **wrongly**. No exception, no
+warning; just a month-end figure that disagrees with batch and nobody knowing why.
 
-Xem [case study số sai vì processing time](../case-studies/so-sai-vi-processing-time.md)
-cho một ví dụ đi từ dữ liệu tới con số lệch.
+See the [case study on wrong numbers from processing time](../case-studies/so-sai-vi-processing-time.md)
+for an example running from the data to the discrepant figure.
 
-## Watermark là gì
+## What a watermark is
 
-**Watermark = một lời khẳng định trôi trong stream: "đã hết event có timestamp ≤ T".**
-Nó là một record đặc biệt Flink chèn vào dòng dữ liệu, mang một giá trị thời gian T. Khi
-một operator thấy watermark T, nó tin rằng *sẽ không còn event nào có event time ≤ T tới
-nữa* — và vì thế mọi cửa sổ kết thúc ≤ T có thể đóng và phát kết quả.
+**A watermark = an assertion flowing in the stream: "there are no more events with timestamp ≤ T".**
+It's a special record Flink inserts into the data flow, carrying a time value T. When
+an operator sees watermark T, it trusts that *no event with event time ≤ T will arrive
+any more* — and so every window ending ≤ T can close and emit its result.
 
-Watermark chính là cơ chế **đẩy cửa sổ đóng**. Không có nó, một cửa sổ event-time không
-bao giờ biết khi nào "đủ" và không bao giờ phát ra kết quả.
+Watermarks are precisely the mechanism that **pushes windows closed**. Without them, an event-time window
+would never know when it's "complete" and would never emit a result.
 
-## Sinh watermark — cơ chế nội bộ
+## Generating watermarks — the internal mechanism
 
-Watermark không tự có. Flink sinh nó qua một `WatermarkStrategy`, và bên trong strategy
-là một `WatermarkGenerator` với hai callback quyết định *khi nào* phát watermark:
+Watermarks don't appear by themselves. Flink generates them through a `WatermarkStrategy`, and inside the
+strategy is a `WatermarkGenerator` with two callbacks deciding *when* to emit a watermark:
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -73,29 +72,29 @@ public interface WatermarkGenerator<T> {
 }
 ```
 
-Có hai kiểu sinh, phân biệt bởi *chỗ* thực sự phát watermark:
+There are two generation styles, distinguished by *where* the watermark is actually emitted:
 
-| Kiểu | Phát ở | Dùng khi | Chi phí |
+| Style | Emits in | Use when | Cost |
 |---|---|---|---|
-| **Periodic** | `onPeriodicEmit`, gọi mỗi `auto-watermark-interval` | Mặc định, hầu hết trường hợp | Ít record watermark hơn |
-| **Punctuated** | `onEvent`, ngay khi thấy một event đặc biệt | Nguồn có event mang tín hiệu "hết batch" | Nhiều watermark, độ trễ thấp nhất |
+| **Periodic** | `onPeriodicEmit`, called every `auto-watermark-interval` | The default, most cases | Fewer watermark records |
+| **Punctuated** | `onEvent`, the moment a special event is seen | The source has events carrying an "end of batch" signal | Many watermarks, the lowest latency |
 
-Với **periodic** (kiểu thường dùng), `onEvent` chỉ cập nhật biến `maxTimestamp` đã thấy,
-còn watermark thật sự được phát định kỳ trong `onPeriodicEmit`. Khoảng định kỳ đó điều
-khiển bằng config:
+With **periodic** (the usual style), `onEvent` only updates the `maxTimestamp` seen so far,
+while the actual watermark is emitted periodically in `onPeriodicEmit`. That interval is
+controlled by config:
 
 ```text
 pipeline.auto-watermark-interval = 200ms   (mặc định)
 ```
 
-Đặt `0` thì tắt phát periodic. Đặt nhỏ hơn → watermark tiến mượt hơn, độ trễ đóng cửa sổ
-thấp hơn, đổi lại nhiều record watermark trôi trong dòng hơn.
+Setting `0` disables periodic emission. Setting it smaller → watermarks advance more smoothly and windows
+close with lower latency, at the cost of more watermark records flowing in the stream.
 
-Với **punctuated**, bạn phát watermark trong `onEvent` dựa vào một cờ trong chính event —
-ví dụ event cuối của một micro-batch có flag `isEndOfBatch`. Không chờ interval, nên độ
-trễ thấp nhất, nhưng mỗi event có thể sinh một watermark → tốn hơn.
+With **punctuated**, you emit the watermark in `onEvent` based on a flag in the event itself —
+for example the last event of a micro-batch carrying an `isEndOfBatch` flag. It doesn't wait for an interval, so
+latency is lowest, but each event can generate a watermark → more expensive.
 
-### Hai built-in strategy hay dùng
+### The two commonly used built-in strategies
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -111,32 +110,32 @@ WatermarkStrategy
     .withTimestampAssigner((event, ts) -> event.getEventTimeMillis());
 ```
 
-- `forBoundedOutOfOrderness(d)` là kiểu periodic, watermark luôn = (timestamp lớn nhất đã
-  thấy − d). Đây là lựa chọn mặc định thực dụng cho hầu hết nguồn.
-- `forMonotonousTimestamps` giả định event tới đúng thứ tự tuyệt đối (timestamp không bao
-  giờ giảm), watermark = maxTimestamp, không trừ gì. Chỉ đúng khi nguồn đảm bảo thứ tự
-  (ví dụ một partition Kafka do một producer duy nhất ghi tuần tự). Sai giả định này thì
-  mọi event lệch thứ tự đều thành late.
+- `forBoundedOutOfOrderness(d)` is the periodic style, with the watermark always = (the largest timestamp
+  seen − d). This is the pragmatic default for most sources.
+- `forMonotonousTimestamps` assumes events arrive in absolutely correct order (timestamps never
+  decrease), with the watermark = maxTimestamp and nothing subtracted. Only correct when the source guarantees
+  ordering (e.g. one Kafka partition written sequentially by a single producer). Get this assumption wrong and
+  every out-of-order event becomes late.
 
 ### Bounded out-of-orderness
 
-Event thực tế đến không đúng thứ tự (event 10:05 có thể tới trước 10:03). Chiến lược phổ
-biến nhất là **bounded out-of-orderness**: chấp nhận trễ tối đa một khoảng cố định.
+Real events don't arrive in order (a 10:05 event can arrive before a 10:03 one). The most common
+strategy is **bounded out-of-orderness**: accepting a fixed maximum delay.
 
-Với độ trễ tối đa 5 giây, watermark luôn = (timestamp lớn nhất đã thấy − 5s). Đây là
-**đánh đổi cốt lõi**:
+With a maximum delay of 5 seconds, the watermark is always = (the largest timestamp seen − 5s). This is
+**the core trade-off**:
 
-- Đặt lớn (ví dụ 5 phút) → chờ lâu, cửa sổ đóng muộn → **độ trễ cao** nhưng bắt được
-  nhiều event đến muộn.
-- Đặt nhỏ (ví dụ 1 giây) → cửa sổ đóng nhanh → **độ trễ thấp** nhưng event đến muộn hơn
-  1 giây bị coi là *late data*.
+- Set it large (say 5 minutes) → a long wait, windows close late → **high latency** but catching
+  many late events.
+- Set it small (say 1 second) → windows close quickly → **low latency** but events more than
+  1 second late are treated as *late data*.
 
-Không có giá trị đúng tuyệt đối; nó là quyết định giữa độ trễ và độ đầy đủ.
+There's no absolutely right value; it's a decision between latency and completeness.
 
-### Ví dụ số — watermark tiến, cửa sổ đóng
+### A numeric example — watermarks advancing, a window closing
 
-Giả sử `forBoundedOutOfOrderness(5s)`, cửa sổ tumbling 10 phút `[10:00, 10:10)`. Dòng
-event tới (lệch thứ tự) và watermark tương ứng (watermark = maxTs − 5s):
+Suppose `forBoundedOutOfOrderness(5s)` and a 10-minute tumbling window `[10:00, 10:10)`. The stream of
+arriving events (out of order) and the corresponding watermarks (watermark = maxTs − 5s):
 
 ```text
 số minh hoạ — chưa chạy trên cluster
@@ -150,20 +149,20 @@ e4          10:11:00     10:11:00     10:10:55         WM ≥ 10:10 → cửa s�
 e5          10:09:50     10:11:00     10:10:55         LATE — WM (10:10:55) đã vượt 10:09:50, event bị bỏ
 ```
 
-Điểm mấu chốt ở `e4`: chính event *tương lai* (10:11) đẩy watermark lên 10:10:55, và đó
-là cái làm cửa sổ `[10:00, 10:10)` đóng. Cửa sổ không đóng vì đồng hồ máy chạy — nó đóng
-vì **có event mới có timestamp đủ lớn** kéo watermark qua mốc. Nguồn im lặng = watermark
-đứng = cửa sổ không đóng (xem phần idle bên dưới).
+The crucial point is at `e4`: it's the *future* event (10:11) that pushes the watermark to 10:10:55, and that's
+what makes the window `[10:00, 10:10)` close. A window doesn't close because the machine's clock advances — it closes
+because **a new event with a large enough timestamp** dragged the watermark past the mark. A silent source =
+a still watermark = a window that doesn't close (see the idleness section below).
 
-## Lan truyền watermark qua đồ thị
+## Watermark propagation through the graph
 
-Watermark không chỉ sinh ở source; nó **trôi** qua cả đồ thị toán tử, và mỗi toán tử phải
-quyết định watermark của *chính mình* để đẩy tiếp xuống downstream.
+Watermarks aren't only generated at the source; they **flow** through the whole operator graph, and each operator has to
+decide *its own* watermark to push further downstream.
 
-Quy tắc cốt lõi: **một toán tử có nhiều input phát watermark = `min`(watermark của mọi
-input).** Lý do: nó chỉ được phép khẳng định "hết event ≤ T" khi *mọi* nguồn thượng nguồn
-đều đã qua T. Chỉ cần một input còn ở T′ &lt; T thì vẫn có thể còn event ≤ T tới từ input
-đó.
+The core rule: **an operator with several inputs emits a watermark = `min`(the watermarks of all its
+inputs).** The reason: it may only assert "no more events ≤ T" when *every* upstream source
+has passed T. If just one input is still at T′ &lt; T, an event ≤ T can still arrive from that
+input.
 
 ```mermaid
 flowchart LR
@@ -177,31 +176,31 @@ flowchart LR
     W --> S[sink]
 ```
 
-Trong sơ đồ trên, toán tử join phát watermark = min(10:07, 10:02) = **10:02**. Source B
-chậm kéo tụt watermark của cả pipeline. Đây là hành vi đúng — nhưng cũng là nguồn của bẫy
-idle partition bên dưới.
+In the diagram above, the join operator emits a watermark = min(10:07, 10:02) = **10:02**. Slow source B
+drags the whole pipeline's watermark down. This is the correct behaviour — but also the source of the
+idle-partition trap below.
 
-### Watermark theo partition / theo split rồi hợp nhất
+### Per-partition / per-split watermarks, then merged
 
-Một source parallel đọc nhiều partition (Kafka) hoặc nhiều split (file). Flink theo dõi
-watermark **riêng cho từng partition/split** bên trong một source subtask, rồi mỗi subtask
-phát ra watermark = min các partition nó đọc. Nhờ vậy một partition nhanh không "kéo"
-watermark vượt quá một partition chậm — vẫn giữ đúng ngữ nghĩa "hết event ≤ T ở mọi nguồn".
+A parallel source reads several partitions (Kafka) or several splits (files). Flink tracks the
+watermark **separately per partition/split** inside a source subtask, and then each subtask
+emits a watermark = the min over the partitions it reads. That way a fast partition doesn't "drag" the
+watermark past a slow one — preserving the "no more events ≤ T at any source" semantics.
 
-Điều này lý giải vì sao watermark của cả job thực chất là **min lồng nhau nhiều tầng**:
-min theo partition trong một subtask, rồi min theo input tại mỗi toán tử downstream. Một
-partition duy nhất tụt lại kéo toàn bộ.
+This explains why a whole job's watermark is really **a nested min at several levels**:
+min over partitions within a subtask, then min over inputs at each downstream operator. A single
+lagging partition drags everything.
 
-## Idleness — nguồn im lặng giữ watermark đứng
+## Idleness — a silent source holding the watermark still
 
-Watermark của một operator = **min** watermark của tất cả các input partition. Hệ quả
-nguy hiểm: **một partition im lặng (không phát gì) giữ watermark của partition đó đứng
-yên → kéo min xuống → toàn bộ cửa sổ không bao giờ đóng.** Job chạy, không lỗi, nhưng
-không cửa sổ nào phát kết quả. Đây là một trong những lỗi khó chẩn nhất của Flink.
+An operator's watermark = the **min** watermark of all its input partitions. The dangerous
+consequence: **a silent partition (emitting nothing) holds that partition's watermark
+still → dragging the min down → no window ever closes.** The job runs, with no error, but
+no window emits a result. This is one of Flink's hardest bugs to diagnose.
 
-Cách chữa: **`withIdleness`** — báo cho Flink coi một partition là "nhàn rỗi" nếu nó im
-quá một khoảng, tạm loại nó khỏi phép tính min watermark. Khi partition đó có event trở
-lại, nó được đưa lại vào phép min.
+The cure: **`withIdleness`** — telling Flink to treat a partition as "idle" if it stays silent
+for longer than a given period, temporarily excluding it from the min-watermark computation. When that
+partition has events again, it's brought back into the min.
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -211,24 +210,24 @@ WatermarkStrategy
     .withTimestampAssigner((event, ts) -> event.getEventTimeMillis());
 ```
 
-**Bẫy đi kèm:** `withIdleness` chỉ nới lỏng phép min để watermark *tiến được*. Nếu một
-partition đáng lẽ có dữ liệu nhưng bị treo (không phải thật sự idle), đánh dấu nó idle sẽ
-làm watermark tiến quá nhanh và event của nó khi tới lại thành late. Idleness là công cụ
-cho nguồn *thật sự* có lúc im (một sensor không phát ban đêm), không phải để giấu một
-partition đang backlog.
+**The accompanying trap:** `withIdleness` only loosens the min so the watermark *can advance*. If a
+partition ought to have data but is stuck (not genuinely idle), marking it idle will
+make the watermark advance too fast and its events, when they do arrive, become late. Idleness is a tool
+for sources that are *genuinely* silent sometimes (a sensor that emits nothing at night), not for hiding a
+backlogged partition.
 
-Xem [case study cửa sổ không chạy vì idle partition](../case-studies/cua-so-khong-chay-idle-partition.md).
+See the [case study on a window not firing because of an idle partition](../case-studies/cua-so-khong-chay-idle-partition.md).
 
 ## Watermark alignment (FLIP-182)
 
-Vấn đề ngược với idle: một nguồn *nhanh* (một partition đọc kịp tới hiện tại) trong khi
-nguồn khác còn đọc backlog cũ. Nguồn nhanh cứ đẩy event tương lai vào, buffer/state phình
-để chờ nguồn chậm bắt kịp trước khi cửa sổ đóng.
+The inverse problem to idleness: one *fast* source (a partition that has caught up to the present) while
+another is still reading an old backlog. The fast source keeps pushing future events in, and buffers/state
+bloat waiting for the slow source to catch up before the window closes.
 
-**Watermark alignment** ghì các nguồn lại: nếu watermark của một split vượt quá watermark
-nhóm một ngưỡng `maxAllowedWatermarkDrift`, Flink **tạm ngừng đọc** split nhanh đó cho tới
-khi các split chậm bắt kịp trong ngưỡng. Nhờ vậy watermark toàn cục tiến đều, không để một
-nguồn nhanh làm phình state.
+**Watermark alignment** holds the sources back: if one split's watermark exceeds the group's
+watermark by a `maxAllowedWatermarkDrift` threshold, Flink **pauses reading** that fast split until
+the slow splits catch up within the threshold. That way the global watermark advances evenly and one
+fast source doesn't bloat the state.
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -238,22 +237,22 @@ WatermarkStrategy
     // (tên nhóm, drift tối đa cho phép, chu kỳ cập nhật)
 ```
 
-Đây là tuyến phòng thủ cho các job backfill/replay từ đầu topic, nơi các partition lệch
-nhau hàng giờ.
+This is the line of defence for backfill/replay-from-the-start jobs, where partitions are hours
+apart.
 
-## Late data — event tới sau watermark
+## Late data — events arriving after the watermark
 
-Event có event time ≤ watermark hiện tại nhưng *tới sau* khi watermark đã vượt qua nó là
-**late data**. Mặc định Flink **bỏ** (drop) chúng — cửa sổ đã đóng và phát rồi (chính là
-`e5` trong ví dụ số ở trên).
+An event whose event time is ≤ the current watermark but which *arrives after* the watermark has passed it is
+**late data**. By default Flink **drops** them — the window has already closed and emitted (that's exactly
+`e5` in the numeric example above).
 
-Muốn giữ, hai lựa chọn:
+To keep them, two options:
 
-- **`allowedLateness(Duration)`** — giữ state cửa sổ thêm một khoảng sau khi watermark
-  vượt qua; late event trong khoảng này *cập nhật lại* kết quả (phát bản cập nhật). Tốn
-  thêm state, và downstream phải xử được kết quả bị phát nhiều lần (retract/update).
-- **`sideOutputLateData(tag)`** — chuyển event quá muộn (ngoài cả allowedLateness) ra một
-  stream phụ để xử lý riêng: log, ghi vào bảng "late" để reconcile với batch, hay cảnh báo.
+- **`allowedLateness(Duration)`** — keep the window's state for a further period after the watermark
+  passes; late events inside that period *update* the result (emitting an updated version). It costs
+  extra state, and the downstream must handle a result being emitted several times (retract/update).
+- **`sideOutputLateData(tag)`** — route events that are too late (beyond even allowedLateness) into a
+  secondary stream for separate handling: logging, writing into a "late" table to reconcile with batch, or alerting.
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -269,19 +268,19 @@ SingleOutputStreamOperator<Result> main = stream
 DataStream<Event> tooLate = main.getSideOutput(lateTag);   // hứng quá muộn để reconcile
 ```
 
-Thứ tự phòng thủ: watermark delay hứng lệch thứ tự *bình thường* → `allowedLateness` hứng
-trễ *vừa phải* (đổi lấy state + kết quả cập nhật) → side output hứng phần *quá muộn* để
-không mất âm thầm. Chi tiết các loại cửa sổ ở [windows](../skills/windows.md).
+The order of defences: the watermark delay catches *normal* out-of-order arrivals → `allowedLateness` catches
+*moderately* late ones (in exchange for state + updated results) → the side output catches the *too late* part so
+nothing is silently lost. The window types are detailed in [windows](../skills/windows.md).
 
-## Timer trong ProcessFunction
+## Timers in a ProcessFunction
 
-Cửa sổ là API tầng cao; bên dưới, cơ chế "làm gì đó khi thời gian tới mốc T" là **timer**
-trong `ProcessFunction`. Có hai loại, và chúng kích theo hai đồng hồ khác nhau:
+Windows are the high-level API; underneath, the mechanism for "do something when time reaches T" is a **timer**
+in a `ProcessFunction`. There are two kinds, and they fire off two different clocks:
 
-| Loại timer | Kích khi | Đồng hồ dùng |
+| Timer kind | Fires when | Clock used |
 |---|---|---|
-| **Event-time timer** | **watermark** vượt qua mốc đã đăng ký | Watermark (thời gian trong dữ liệu) |
-| **Processing-time timer** | **đồng hồ máy** (wall clock) tới mốc | System clock của TaskManager |
+| **Event-time timer** | the **watermark** passes the registered mark | The watermark (time inside the data) |
+| **Processing-time timer** | the **machine clock** (wall clock) reaches the mark | The TaskManager's system clock |
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -300,124 +299,124 @@ public class MyProcess extends KeyedProcessFunction<String, Event, Result> {
 }
 ```
 
-Điểm quan trọng: **event-time timer là cách cửa sổ thực sự "đóng".** Cửa sổ đăng ký một
-event-time timer tại mốc cuối cửa sổ; khi watermark vượt mốc, `onTimer` chạy và phát kết
-quả. Nên tất cả những gì kể trên — watermark min, idle, alignment — quy về một câu: chúng
-quyết định *khi nào event-time timer kích*, và do đó *khi nào cửa sổ phát*.
+The important point: **event-time timers are how a window actually "closes".** A window registers an
+event-time timer at its end mark; when the watermark passes it, `onTimer` runs and emits the
+result. So everything above — the watermark min, idleness, alignment — comes down to one sentence: they
+decide *when the event-time timer fires*, and therefore *when the window emits*.
 
-Processing-time timer thì độc lập với watermark — hữu ích cho timeout thực (ví dụ "nếu
-30 giây không thấy event tiếp theo của session thì đóng session"), nhưng không tái lập
-được vì phụ thuộc đồng hồ máy.
+Processing-time timers are independent of the watermark — useful for real timeouts (e.g. "if
+30 seconds pass without the session's next event, close the session"), but not reproducible
+because they depend on the machine clock.
 
-## Toàn cảnh — watermark chảy từ source tới cửa sổ đóng
+## The overview — a watermark flowing from source to window closure
 
 ```mermaid
 flowchart TD
-    E[event có field timestamp] --> TA[Timestamp Assigner<br/>trích long millis]
+    E[an event with a timestamp field] --> TA[Timestamp Assigner<br/>extracts long millis]
     TA --> WG[WatermarkGenerator]
-    WG -->|periodic: onPeriodicEmit mỗi 200ms| WM[phát watermark = maxTs - delay]
+    WG -->|periodic: onPeriodicEmit every 200ms| WM[emit watermark = maxTs - delay]
     WG -->|punctuated: onEvent| WM
-    WM --> PART[min theo partition/split trong subtask]
-    PART --> OP[min theo input tại mỗi toán tử downstream]
-    OP --> TIMER{watermark ≥ mốc cuối cửa sổ?}
-    TIMER -->|chưa| WAIT[chờ — cửa sổ giữ state]
-    TIMER -->|rồi| FIRE[event-time timer kích<br/>cửa sổ phát kết quả]
-    FIRE --> LATE[event tới sau: allowedLateness / side output]
+    WM --> PART[min per partition/split within the subtask]
+    PART --> OP[min per input at each downstream operator]
+    OP --> TIMER{watermark ≥ the window's end mark?}
+    TIMER -->|not yet| WAIT[wait — the window holds its state]
+    TIMER -->|yes| FIRE[the event-time timer fires<br/>the window emits its result]
+    FIRE --> LATE[events arriving after: allowedLateness / side output]
 ```
 
-## Timestamp assigner
+## The timestamp assigner
 
-Trước khi có watermark, Flink cần biết event time của mỗi event nằm ở đâu — đó là việc
-của **timestamp assigner** (`withTimestampAssigner`). Nó trích một `long` mili-giây từ
-mỗi record. Nếu bạn quên gán, Flink không có event time để dựng watermark, và cửa sổ
-event-time không chạy.
+Before there can be a watermark, Flink needs to know where each event's event time lives — that's the job
+of the **timestamp assigner** (`withTimestampAssigner`). It extracts a `long` of milliseconds from
+each record. If you forget to assign one, Flink has no event time to build watermarks from, and
+event-time windows don't fire.
 
-Assigner nên trả về **epoch millis UTC**. Nếu field nguồn là chuỗi ISO có múi giờ, chuẩn
-hoá về UTC ngay tại đây — sai múi giờ ở bước này làm watermark lệch cả pipeline một cách
-lặng lẽ.
+The assigner should return **epoch millis in UTC**. If the source field is an ISO string with a timezone, normalise
+it to UTC right here — getting the timezone wrong at this step skews the watermark of the whole pipeline
+silently.
 
-## Processing vs event time — bảng so sánh
+## Processing vs event time — the comparison
 
 | | Processing time | Event time |
 |---|---|---|
-| Nguồn thời gian | Đồng hồ máy | Field trong dữ liệu |
-| Cần watermark | Không | **Có** |
-| Kết quả tái lập | Không (chạy lại ra số khác) | Có |
-| Đúng khi dữ liệu đến muộn | **Không** — gán sai cửa sổ | Có |
-| Độ trễ | Thấp nhất | Phụ thuộc watermark delay |
-| Xử lý late data | Không có khái niệm | allowedLateness / side output |
-| Khi nào dùng | Chỉ khi số sai không quan trọng (monitoring thô) | Mọi phép tính cần đúng |
+| Time source | The machine clock | A field in the data |
+| Needs watermarks | No | **Yes** |
+| Reproducible results | No (a re-run gives different numbers) | Yes |
+| Correct with late data | **No** — assigned to the wrong window | Yes |
+| Latency | The lowest | Depends on the watermark delay |
+| Handling late data | The concept doesn't exist | allowedLateness / side output |
+| When to use | Only when wrong numbers don't matter (rough monitoring) | Every computation that must be correct |
 
-## Bảng config watermark
+## The watermark config table
 
-| Config / API | Mặc định | Điều khiển |
+| Config / API | Default | Controls |
 |---|---|---|
-| `pipeline.auto-watermark-interval` | 200ms | Chu kỳ `onPeriodicEmit` phát watermark periodic |
-| `forBoundedOutOfOrderness(d)` | — | Watermark = maxTs − d, chịu lệch thứ tự tới d |
-| `forMonotonousTimestamps()` | — | Watermark = maxTs, giả định thứ tự tuyệt đối |
-| `withIdleness(d)` | tắt | Loại partition im &gt; d khỏi phép min watermark |
-| `withWatermarkAlignment(...)` | tắt | Ghì nguồn nhanh chờ nguồn chậm (FLIP-182) |
-| `allowedLateness(d)` | 0 | Giữ cửa sổ thêm d để cập nhật với late event |
-| `sideOutputLateData(tag)` | tắt | Đẩy event quá muộn ra stream phụ thay vì bỏ |
+| `pipeline.auto-watermark-interval` | 200ms | The `onPeriodicEmit` interval for emitting periodic watermarks |
+| `forBoundedOutOfOrderness(d)` | — | Watermark = maxTs − d, tolerating disorder up to d |
+| `forMonotonousTimestamps()` | — | Watermark = maxTs, assuming absolute ordering |
+| `withIdleness(d)` | off | Excludes a partition silent for &gt; d from the min-watermark computation |
+| `withWatermarkAlignment(...)` | off | Holds fast sources back to wait for slow ones (FLIP-182) |
+| `allowedLateness(d)` | 0 | Keeps the window a further d to update with late events |
+| `sideOutputLateData(tag)` | off | Routes too-late events into a secondary stream instead of dropping them |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả | Phòng bằng |
+| Mistake | Consequence | Prevented by |
 |---|---|---|
-| Dùng processing time cho tiện | Số sai lặng lẽ khi dữ liệu đến muộn | Dùng event time cho mọi phép tổng hợp cần đúng |
-| Quên timestamp assigner | Cửa sổ event-time không chạy | Luôn gán event time trước watermark |
-| Không có `withIdleness` | Một partition im giữ cửa sổ không đóng mãi | Thêm `withIdleness` khi nguồn có partition có thể im |
-| Đánh dấu idle partition đang backlog | Watermark tiến quá nhanh → event của nó thành late | Chỉ idle cho nguồn *thật sự* có lúc im |
-| Dùng `forMonotonousTimestamps` khi nguồn lệch thứ tự | Mọi event lệch thứ tự thành late, bị bỏ | Dùng `forBoundedOutOfOrderness` trừ khi chắc thứ tự |
-| Watermark delay quá nhỏ | Nhiều event bị coi là late, bị bỏ | Đo độ out-of-order thực tế rồi đặt |
-| Watermark delay quá lớn | Cửa sổ đóng muộn, độ trễ cao | Cân với yêu cầu độ trễ |
-| Không side-output late data | Event muộn mất âm thầm, số lệch batch không truy được | `sideOutputLateData` để reconcile |
+| Using processing time for convenience | Quietly wrong numbers with late data | Using event time for every aggregation that must be correct |
+| Forgetting the timestamp assigner | Event-time windows never fire | Always assigning event time before watermarks |
+| No `withIdleness` | One silent partition keeps windows from ever closing | Adding `withIdleness` when a source may have silent partitions |
+| Marking a backlogged partition idle | The watermark advances too fast → its events become late | Only using idleness for sources that are *genuinely* silent sometimes |
+| Using `forMonotonousTimestamps` when the source is out of order | Every out-of-order event becomes late and is dropped | Using `forBoundedOutOfOrderness` unless ordering is certain |
+| A watermark delay that's too small | Many events treated as late and dropped | Measuring the real out-of-orderness before setting it |
+| A watermark delay that's too large | Windows close late, latency is high | Weighing it against the latency requirement |
+| Not side-outputting late data | Late events lost silently, and the batch discrepancy can't be traced | `sideOutputLateData` to reconcile |
 
 ## FAQ
 
 <details>
-<summary>Watermark có phải là dữ liệu không?</summary>
+<summary>Is a watermark data?</summary>
 
-Có — nó là một record đặc biệt Flink chèn vào dòng, trôi cùng event qua các operator.
-Khác event thường ở chỗ nó không mang payload, chỉ mang một mốc thời gian T và mang nghĩa
-"hết event ≤ T".
-
-</details>
-
-<details>
-<summary>Periodic hay punctuated watermark — chọn cái nào?</summary>
-
-Mặc định periodic (`onPeriodicEmit` mỗi 200ms) đủ cho gần như mọi job: nó gộp nhiều event
-thành một watermark, ít record hơn. Chỉ chọn punctuated (`onEvent`) khi nguồn có tín hiệu
-rõ "hết một batch" trong chính event và bạn cần độ trễ đóng cửa sổ thấp nhất — đổi lại
-nhiều watermark hơn trôi trong dòng.
+Yes — it's a special record Flink inserts into the flow, travelling with the events through the operators.
+It differs from an ordinary event in carrying no payload, only a time mark T, and meaning
+"no more events ≤ T".
 
 </details>
 
 <details>
-<summary>Vì sao cửa sổ của tôi không bao giờ phát dù job vẫn chạy?</summary>
+<summary>Periodic or punctuated watermarks — which to choose?</summary>
 
-Gần như luôn là watermark không tiến. Ba thủ phạm thường gặp: (1) quên timestamp assigner
-nên không có event time; (2) một partition/nguồn im lặng kéo min watermark đứng — thiếu
-`withIdleness`; (3) không có event mới nào có timestamp đủ lớn để đẩy watermark qua mốc
-cuối cửa sổ. Kiểm tra watermark hiện tại của operator trong Web UI trước tiên.
+The periodic default (`onPeriodicEmit` every 200ms) is enough for almost every job: it collapses many events
+into one watermark, with fewer records. Only pick punctuated (`onEvent`) when the source has a clear
+"end of a batch" signal in the events themselves and you need the lowest window-closing latency — in exchange for
+more watermarks flowing in the stream.
 
 </details>
 
 <details>
-<summary>Nếu event time trong dữ liệu bị sai (lệch múi giờ) thì sao?</summary>
+<summary>Why does my window never emit even though the job is running?</summary>
 
-Watermark sẽ tính trên timestamp sai đó, và cửa sổ gom sai — nhưng ít nhất kết quả *tái
-lập được* và bạn có thể phát hiện. Với processing time bạn còn không có gì để đối chiếu.
-Chuẩn hoá timestamp về epoch millis UTC ngay ở timestamp assigner.
+Almost always because the watermark isn't advancing. Three common culprits: (1) forgetting the timestamp assigner
+so there's no event time; (2) a silent partition/source dragging the min watermark still — missing
+`withIdleness`; (3) no new event with a large enough timestamp to push the watermark past the window's
+end mark. Check the operator's current watermark in the Web UI first.
+
+</details>
+
+<details>
+<summary>What if the event time in the data is wrong (a timezone offset)?</summary>
+
+The watermark will be computed on that wrong timestamp and the windows will group wrongly — but at least the
+result is *reproducible* and you can detect it. With processing time you'd have nothing to compare against.
+Normalise timestamps to epoch millis in UTC right at the timestamp assigner.
 
 </details>
 
 ## Related Topics
 
-- [Window](../skills/windows.md) — allowedLateness, side output, các loại cửa sổ
-- [Flink là gì](what-is-flink.md) — vì sao unbounded stream cần định nghĩa "khi nào đủ"
-- [State và checkpoint](state-and-checkpoint.md) — cửa sổ giữ state, đóng cửa sổ giải phóng nó; event-time timer nằm trong state
-- [Số sai vì processing time](../case-studies/so-sai-vi-processing-time.md) — ví dụ đi tới con số lệch
-- [Cửa sổ không chạy vì idle partition](../case-studies/cua-so-khong-chay-idle-partition.md) — bẫy watermark đứng yên
-- [Flink](../index.md) — chủ đề chứa file này
+- [Windows](../skills/windows.md) — allowedLateness, side outputs, the window types
+- [What Flink is](what-is-flink.md) — why an unbounded stream needs a definition of "when it's enough"
+- [State and checkpoints](state-and-checkpoint.md) — windows hold state, closing one releases it; event-time timers live in state
+- [Wrong numbers from processing time](../case-studies/so-sai-vi-processing-time.md) — an example running to the discrepant figure
+- [A window not firing because of an idle partition](../case-studies/cua-so-khong-chay-idle-partition.md) — the still-watermark trap
+- [Flink](../index.md) — the topic this file belongs to

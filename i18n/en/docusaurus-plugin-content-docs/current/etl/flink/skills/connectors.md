@@ -1,8 +1,7 @@
 ---
-title: Connector Flink
-i18n_status: untranslated
+title: Flink connectors
 sidebar_position: 4
-description: "Kafka source/sink, Iceberg sink, CDC — nối Flink với thế giới, và bẫy exactly-once ở ranh giới."
+description: "Kafka source/sink, Iceberg sink, CDC — connecting Flink to the world, and the exactly-once trap at the boundary."
 tags: [flink, connector, kafka, iceberg, cdc]
 domain: data-engineering
 category: concept
@@ -13,48 +12,48 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Connector Flink
+# Flink connectors
 
-> **Chốt:** Flink chỉ mạnh exactly-once **bên trong** job; ở ranh giới với thế giới,
-> đảm bảo đó chỉ giữ được nếu **cả source lẫn sink** hợp tác (source replay được offset,
-> sink hỗ trợ transaction). Chọn sai connector là chỗ trùng lặp lọt ra ngoài.
+> **Takeaway:** Flink's exactly-once is only strong **inside** the job; at the boundary with the world, that
+> guarantee only holds if **both the source and the sink** cooperate (the source replayable by offset, the
+> sink supporting transactions). Choosing the wrong connector is where duplicates escape.
 
-Connector là chỗ Flink chạm dữ liệu ngoài — và cũng là chỗ mọi đảm bảo lý thuyết va vào
-thực tế của hệ thống bên kia.
+Connectors are where Flink touches external data — and also where every theoretical guarantee collides with
+the reality of the system on the other side.
 
-## Mô hình source/sink hiện đại
+## The modern source/sink model
 
-Connector Flink hiện đại theo hai FLIP thống nhất giao diện — hiểu chúng giải thích được
-vì sao exactly-once hoạt động (hay không):
+Modern Flink connectors follow two FLIPs that unify the interfaces — understanding them explains
+why exactly-once works (or doesn't):
 
-- **FLIP-27 (Source)** — tách làm hai phần: **SplitEnumerator** (chạy trên JobManager,
-  chia công việc thành split: partition Kafka, khoảng file) và **SourceReader** (chạy
-  trên TaskManager, đọc split được giao). Nhờ tách vậy mà một API dùng chung cho cả
-  bounded (batch) lẫn unbounded (stream), và watermark gán được ngay tại reader theo từng
+- **FLIP-27 (Source)** — split into two parts: a **SplitEnumerator** (running on the JobManager,
+  dividing the work into splits: Kafka partitions, file ranges) and a **SourceReader** (running
+  on a TaskManager, reading the assigned splits). That separation is what lets one API serve both
+  bounded (batch) and unbounded (stream), and lets watermarks be assigned right at the reader per
   split.
-- **FLIP-143 (Sink)** — tách **SinkWriter** (ghi dữ liệu, tích luỹ thứ cần commit) và
-  **Committer** (commit khi checkpoint hoàn tất). Đây là khung **2PC**: writer chuẩn bị
-  (ghi file tạm / mở transaction), committer chốt khi checkpoint xong. Iceberg, Kafka
-  EXACTLY_ONCE, file sink đều dựng trên khung này.
+- **FLIP-143 (Sink)** — separates the **SinkWriter** (writing the data, accumulating what needs committing) and
+  the **Committer** (committing when the checkpoint completes). This is the **2PC** framework: the writer prepares
+  (writing temporary files / opening a transaction) and the committer finalises when the checkpoint is done. Iceberg, the Kafka
+  EXACTLY_ONCE sink and file sinks are all built on this framework.
 
 ```mermaid
 graph LR
     subgraph Source FLIP-27
-        E["SplitEnumerator<br/>chia split (JobManager)"] --> R["SourceReader<br/>đọc split (TaskManager)"]
+        E["SplitEnumerator<br/>divides splits (JobManager)"] --> R["SourceReader<br/>reads splits (TaskManager)"]
     end
     R --> J["Flink job<br/>checkpoint"]
-    J --> W["SinkWriter<br/>ghi tạm / mở txn"]
+    J --> W["SinkWriter<br/>writes temp / opens a txn"]
     subgraph Sink FLIP-143
-        W --> C["Committer<br/>commit khi checkpoint xong (2PC)"]
+        W --> C["Committer<br/>commits when the checkpoint is done (2PC)"]
     end
 ```
 
-## Source vs sink — điều kiện exactly-once
+## Source vs sink — the exactly-once preconditions
 
-- **Source** — đọc vào Flink. Tốt nếu **replay được** theo offset đã checkpoint (Kafka,
-  file có vị trí). Không replay được thì không có exactly-once dù sink hoàn hảo.
-- **Sink** — ghi ra ngoài. Tốt nếu **transaction** (2PC) hoặc **idempotent** (upsert theo
-  khoá). Sink chỉ append mù thì retry sau lỗi sẽ ghi trùng.
+- **Source** — reading into Flink. Good if it's **replayable** by a checkpointed offset (Kafka,
+  files with a position). Non-replayable means no exactly-once however perfect the sink.
+- **Sink** — writing out. Good if it's **transactional** (2PC) or **idempotent** (an upsert by
+  key). A blindly appending sink will write duplicates on a retry after a failure.
 
 ## Kafka source
 
@@ -75,23 +74,23 @@ env.fromSource(source,
     "kafka-clicks");
 ```
 
-Ba điểm quan trọng ở source:
+Three important points about the source:
 
-- **Offset initializer** — `OffsetsInitializer` quyết định bắt đầu từ đâu:
-  `earliest()`/`latest()` (từ đầu/cuối topic), `committedOffsets(...)` (từ offset group
-  đã commit, fallback earliest/latest nếu chưa có), `timestamp(ms)` (từ mốc thời gian).
-- **Offset** do Flink quản trong checkpoint (không dựa vào `enable.auto.commit` của
-  Kafka). Khôi phục từ checkpoint = tua lại đúng offset đó → không mất, không trùng phía
-  đọc. (Nó vẫn commit offset về Kafka để **giám sát lag**, nhưng offset đó không phải
-  nguồn sự thật khi khôi phục.)
-- **Bounded mode** — `.setBounded(OffsetsInitializer.latest())` biến Kafka source thành
-  hữu hạn (đọc tới offset đó rồi kết thúc) — dùng cho backfill/batch trên cùng API.
-- **Watermark gán ngay tại source** thường tốt hơn gán sau `keyBy`, vì nó theo dõi
-  per-partition. Nhớ `withIdleness` để partition im lặng không kéo watermark toàn cục
-  đứng lại — đúng cái bẫy trong
-  [case idle partition](../case-studies/cua-so-khong-chay-idle-partition.md).
+- **The offset initializer** — `OffsetsInitializer` decides where to start:
+  `earliest()`/`latest()` (the start/end of the topic), `committedOffsets(...)` (from the group's committed
+  offset, falling back to earliest/latest if there is none), `timestamp(ms)` (from a point in time).
+- **Offsets** are managed by Flink inside checkpoints (not relying on Kafka's `enable.auto.commit`).
+  Restoring from a checkpoint = rewinding to exactly that offset → nothing lost or duplicated on the
+  reading side. (It still commits offsets back to Kafka for **lag monitoring**, but those offsets aren't the
+  source of truth on recovery.)
+- **Bounded mode** — `.setBounded(OffsetsInitializer.latest())` turns the Kafka source into a finite one
+  (reading up to that offset then ending) — for backfill/batch on the same API.
+- **Assigning watermarks right at the source** is usually better than after a `keyBy`, because it tracks
+  them per partition. Remember `withIdleness` so a silent partition doesn't hold the global watermark
+  still — exactly the trap in the
+  [idle-partition case study](../case-studies/cua-so-khong-chay-idle-partition.md).
 
-## Kafka sink — chọn delivery guarantee
+## Kafka sink — choosing a delivery guarantee
 
 ```java
 // Code minh hoạ, chưa chạy
@@ -104,33 +103,33 @@ KafkaSink<Row> sink = KafkaSink.<Row>builder()
     .build();
 ```
 
-| Guarantee | Cơ chế | Đánh đổi |
+| Guarantee | Mechanism | Trade-off |
 |---|---|---|
-| `NONE` | Fire-and-forget, không đảm bảo gì | Nhanh nhất, **có thể mất** record khi lỗi |
-| `AT_LEAST_ONCE` | Ghi và flush theo checkpoint, có thể ghi lại sau lỗi | Không mất, nhưng **có thể trùng** — downstream phải dedup |
-| `EXACTLY_ONCE` | Kafka **transaction** commit đúng theo checkpoint (2PC) | Không trùng, nhưng cần `transactionalIdPrefix`, chịu **thêm độ trễ** = chu kỳ checkpoint, và consumer phải đọc `read_committed` |
+| `NONE` | Fire-and-forget, no guarantee at all | The fastest, and records **can be lost** on failure |
+| `AT_LEAST_ONCE` | Writes and flushes per checkpoint, possibly rewriting after a failure | Nothing lost, but it **can duplicate** — the downstream must deduplicate |
+| `EXACTLY_ONCE` | A Kafka **transaction** committed exactly per checkpoint (2PC) | No duplicates, but it needs a `transactionalIdPrefix`, incurs **extra latency** = the checkpoint interval, and consumers must read `read_committed` |
 
-### Bẫy `transaction.timeout.ms`
+### The `transaction.timeout.ms` trap
 
-Với EXACTLY_ONCE, Flink mở một Kafka transaction và **chỉ commit khi checkpoint hoàn
-tất**. Nếu checkpoint chậm (backpressure, state lớn) mà transaction **timeout trước khi
-kịp commit**, Kafka abort transaction → dữ liệu mất, hoặc job kẹt không khôi phục được.
+With EXACTLY_ONCE, Flink opens a Kafka transaction and **only commits when the checkpoint
+completes**. If the checkpoint is slow (backpressure, large state) and the transaction **times out before
+the commit**, Kafka aborts the transaction → data lost, or the job stuck unable to recover.
 
-Quy tắc: `transaction.timeout.ms` phải **lớn hơn khoảng thời gian tối đa giữa hai
-checkpoint** (checkpoint interval + thời gian một checkpoint có thể kéo dài dưới
-backpressure), cộng biên an toàn. Đồng thời nó bị chặn trên bởi `transaction.max.timeout.ms`
-phía broker — nếu đặt cao hơn giới hạn broker, sink từ chối start. Kiểm cả hai phía.
+The rule: `transaction.timeout.ms` must be **larger than the maximum interval between two
+checkpoints** (the checkpoint interval + how long a checkpoint might drag on under
+backpressure), plus a safety margin. It's also capped by the broker's `transaction.max.timeout.ms`
+— set it above the broker's limit and the sink refuses to start. Check both sides.
 
-`EXACTLY_ONCE` chỉ thật sự exactly-once khi **consumer bên kia đọc `read_committed`** —
-nếu không nó vẫn thấy cả bản chưa commit. Chi tiết cơ chế hai pha ở
+`EXACTLY_ONCE` is only genuinely exactly-once when **the consumer on the other side reads `read_committed`** —
+otherwise it still sees uncommitted versions. The two-phase mechanism is detailed in
 [exactly-once](../reference/exactly-once.md).
 
 ## Iceberg sink
 
-Iceberg sink **commit file theo checkpoint** (dựng trên khung FLIP-143): writer ghi data
-file giữa hai checkpoint, committer chỉ **commit vào metadata (snapshot) khi checkpoint
-hoàn tất**. Nhờ đó đạt exactly-once ở mức file — lỗi giữa chừng thì file chưa commit bị
-bỏ, không lộ ra query. Đây là mẫu sink transaction "sạch" điển hình.
+The Iceberg sink **commits files per checkpoint** (built on the FLIP-143 framework): the writer writes data
+files between checkpoints, and the committer only **commits into the metadata (a snapshot) when the checkpoint
+completes**. That gives exactly-once at the file level — a mid-flight failure leaves uncommitted files that are
+dropped and never exposed to queries. This is the archetypal "clean" transactional sink.
 
 ```sql
 -- Flink SQL ghi ra Iceberg (số/tên minh hoạ)
@@ -140,112 +139,112 @@ FROM TABLE(TUMBLE(TABLE orders, DESCRIPTOR(event_time), INTERVAL '1' HOUR))
 GROUP BY window_start, region;
 ```
 
-Đổi lại, kết quả chỉ **thấy được sau mỗi checkpoint** — checkpoint 1 phút thì độ trễ tối
-thiểu tới bảng đích là ~1 phút. Đây là đánh đổi cố hữu của mọi sink transaction, không
-phải lỗi. Một hệ quả phụ: checkpoint quá thưa → **nhiều small file** (mỗi checkpoint một
-batch file); cần cân bằng interval với compaction phía Iceberg.
+In exchange, the results are only **visible after each checkpoint** — a 1-minute checkpoint means a minimum
+latency to the destination table of ~1 minute. This is the inherent trade-off of every transactional sink, not
+a bug. A side consequence: checkpoints too far apart → **many small files** (one batch of files per
+checkpoint); you have to balance the interval against compaction on the Iceberg side.
 
-## CDC — hai đường
+## CDC — two routes
 
-1. **Flink CDC** (Debezium **nhúng** trong job) — đọc **thẳng** binlog/WAL của DB. Ít
-   thành phần, không cần Kafka Connect. Đánh đổi: connector chạy trong Flink, tải snapshot
-   ban đầu nặng, và phụ thuộc quyền đọc log của DB.
-2. **Đọc topic Debezium qua Kafka** — Debezium (Kafka Connect) ghi thay đổi vào topic,
-   Flink đọc topic đó. Tách phần CDC ra khỏi Flink, chịu tải tốt hơn khi nhiều consumer.
-   Xem [kafka-connect-cdc](../../kafka/skills/kafka-connect-cdc.md).
+1. **Flink CDC** (Debezium **embedded** in the job) — reading the DB's binlog/WAL **directly**. Fewer
+   components, no Kafka Connect needed. The trade-off: the connector runs inside Flink, the initial snapshot
+   is heavy, and it depends on having log-read permission on the DB.
+2. **Reading a Debezium topic through Kafka** — Debezium (Kafka Connect) writes the changes into a topic and
+   Flink reads that topic. It separates the CDC part from Flink and handles load better with many consumers.
+   See [kafka-connect-cdc](../../kafka/skills/kafka-connect-cdc.md).
 
 ```mermaid
 graph LR
     DB[(Database<br/>binlog/WAL)]
-    DB -->|"(1) Flink CDC nhúng Debezium"| F1[Flink job]
-    DB -->|"(2) Debezium qua Kafka Connect"| T["Kafka topic<br/>debezium-json"]
+    DB -->|"(1) Flink CDC with Debezium embedded"| F1[Flink job]
+    DB -->|"(2) Debezium via Kafka Connect"| T["Kafka topic<br/>debezium-json"]
     T --> F2[Flink job]
-    T --> X[Consumer khác]
+    T --> X[Another consumer]
 ```
 
-Chọn (1) khi muốn ít hạ tầng và một consumer; chọn (2) khi CDC dùng chung nhiều nơi hoặc
-muốn buffer/độc lập nhịp. Cả hai phát ra **changelog stream** (before/after/op) — Flink
-xử lý như retract/upsert, không phải append.
+Choose (1) for less infrastructure and a single consumer; choose (2) when the CDC is shared in several places or
+you want buffering/pace independence. Both emit a **changelog stream** (before/after/op) — Flink
+handles it as retract/upsert, not append.
 
-## changelog / upsert-kafka và format
+## changelog / upsert-kafka and formats
 
-- **`upsert-kafka` connector** — coi topic như bảng có khoá: `+I`/`+U` ghi bản mới (cùng
-  key), `-D` ghi tombstone (value null). Dùng khi đích là "trạng thái mới nhất theo
-  khoá", không phải log append. Bắt buộc khai báo `PRIMARY KEY`. Đây là sink hợp cho kết
-  quả aggregation (`GROUP BY`) vì nó tiêu hoá được changelog/retract.
-- **Format**:
+- **The `upsert-kafka` connector** — treats a topic as a keyed table: `+I`/`+U` write the new value (under the same
+  key), `-D` writes a tombstone (a null value). Use it when the destination is "the latest state per
+  key", not an append log. Declaring a `PRIMARY KEY` is mandatory. This is the right sink for
+  aggregation results (`GROUP BY`) because it can digest changelogs/retractions.
+- **Formats**:
 
-| Format | Đặc điểm | Dùng khi |
+| Format | Characteristics | Use when |
 |---|---|---|
-| `json` | Dễ đọc, không schema, không enforce kiểu | Dev, log người đọc |
-| `avro` | Chặt, có schema registry, evolve tốt | Production, dữ liệu sống lâu |
-| `debezium-json` | Bọc changelog CDC: `before`/`after`/`op` | Đọc CDC từ topic Debezium |
-| `avro-confluent` | Avro + Confluent Schema Registry | Hệ đã dùng Confluent |
+| `json` | Readable, schemaless, no type enforcement | Dev, human-readable logs |
+| `avro` | Strict, with a schema registry, evolves well | Production, long-lived data |
+| `debezium-json` | Wraps a CDC changelog: `before`/`after`/`op` | Reading CDC from a Debezium topic |
+| `avro-confluent` | Avro + the Confluent Schema Registry | A stack already using Confluent |
 
-Đọc CDC từ Kafka thì thường là `debezium-json` — Flink tự dịch `op` (`c`/`u`/`d`) thành
-row kind (`+I`/`+U`/`-D`).
+Reading CDC from Kafka is usually `debezium-json` — Flink translates `op` (`c`/`u`/`d`) into
+row kinds (`+I`/`+U`/`-D`) itself.
 
-## Bẫy exactly-once ở ranh giới
+## The exactly-once trap at the boundary
 
-Exactly-once **end-to-end** cần **cả chuỗi** hợp tác:
+**End-to-end** exactly-once needs **the whole chain** to cooperate:
 
 ```text
 source replay được  +  Flink checkpoint  +  sink transaction  =  exactly-once thật
         ^ thiếu bất kỳ mắt nào → tụt xuống at-least-once → có TRÙNG
 ```
 
-Sink không có transaction (JDBC append thường, HTTP POST) thì dù Flink cấu hình
-exactly-once, retry sau lỗi vẫn **ghi trùng** — đúng vết
-[trùng lặp vì sink không transaction](../case-studies/trung-lap-vi-sink-khong-transaction.md).
-Với sink loại đó, cứu vãn bằng **idempotent** (upsert theo khoá) thay vì trông chờ
+A sink with no transaction (an ordinary JDBC append, an HTTP POST) will still **write duplicates** on a retry
+after a failure however Flink is configured for exactly-once — exactly the trail of
+[duplicates from a non-transactional sink](../case-studies/trung-lap-vi-sink-khong-transaction.md).
+For that kind of sink, rescue it with **idempotence** (an upsert by key) rather than hoping for a
 transaction.
 
 ## Common Mistakes
 
-| Bẫy | Hậu quả | Cách tránh |
+| Trap | Consequence | How to avoid it |
 |---|---|---|
-| Bật EXACTLY_ONCE ở sink append thường | Vẫn trùng | Đổi sink transaction hoặc làm idempotent |
-| `transaction.timeout.ms` < checkpoint interval | Txn abort, mất dữ liệu / job kẹt | Đặt timeout > interval tối đa + margin, dưới `transaction.max.timeout.ms` broker |
-| Consumer đọc EXACTLY_ONCE topic mà không `read_committed` | Thấy bản chưa commit | Đặt isolation level |
-| Quên `withIdleness` ở Kafka source | Idle partition treo watermark, window không đóng | Thêm idleness |
-| Kỳ vọng Iceberg sink thấy dữ liệu tức thì | Trễ = chu kỳ checkpoint | Chấp nhận hoặc giảm checkpoint interval |
-| Checkpoint quá thưa với file/Iceberg sink | Ít file to; quá dày thì small file | Cân bằng interval + compaction |
-| Ghi retract stream vào sink append-only | Số dồn sai | Dùng `upsert-kafka` / sink có primary key |
+| Enabling EXACTLY_ONCE on an ordinary appending sink | Still duplicates | Switch to a transactional sink or make it idempotent |
+| `transaction.timeout.ms` < the checkpoint interval | The txn aborts, data lost / the job stuck | Set the timeout > the maximum interval + a margin, and under the broker's `transaction.max.timeout.ms` |
+| A consumer reading an EXACTLY_ONCE topic without `read_committed` | It sees uncommitted versions | Set the isolation level |
+| Forgetting `withIdleness` on a Kafka source | An idle partition holds the watermark and windows don't close | Add idleness |
+| Expecting an Iceberg sink to show data instantly | The latency = the checkpoint interval | Accept it, or shorten the checkpoint interval |
+| Checkpoints too far apart with a file/Iceberg sink | Few large files; too close together gives small files | Balance the interval + compaction |
+| Writing a retract stream into an append-only sink | The numbers accumulate wrongly | Use `upsert-kafka` / a sink with a primary key |
 
 ## FAQ
 
 <details>
-<summary>EXACTLY_ONCE của Kafka sink làm chậm bao nhiêu?</summary>
+<summary>How much does the Kafka sink's EXACTLY_ONCE slow things down?</summary>
 
-Kết quả chỉ **hiển thị (commit)** sau mỗi checkpoint, nên độ trễ tối thiểu ≈ checkpoint
-interval. Muốn nhanh hơn thì giảm interval, đổi lại overhead checkpoint tăng. Không có
-bữa trưa miễn phí ở đây.
-
-</details>
-
-<details>
-<summary>Flink CDC hay Debezium-qua-Kafka?</summary>
-
-Flink CDC gọn khi một job một nguồn. Khi nhiều hệ cùng cần dòng thay đổi, hoặc snapshot
-ban đầu quá nặng cho một job, tách qua Kafka Connect để CDC độc lập với xử lý.
+The results only **become visible (commit)** after each checkpoint, so minimum latency ≈ the checkpoint
+interval. For lower latency you shorten the interval, in exchange for higher checkpointing overhead. There's no
+free lunch here.
 
 </details>
 
 <details>
-<summary>transactionalIdPrefix có cần duy nhất giữa các job không?</summary>
+<summary>Flink CDC or Debezium-through-Kafka?</summary>
 
-Có — hai job dùng chung prefix trên cùng cluster Kafka sẽ **giẫm transaction của nhau**,
-gây abort chéo hoặc kẹt. Đặt prefix riêng cho mỗi job, và giữ ổn định qua các lần restart
-(đổi prefix sau restart có thể để lại transaction treo tới khi timeout).
+Flink CDC is neat for one job with one source. When several systems need the change stream, or the initial
+snapshot is too heavy for one job, split it out through Kafka Connect so CDC is independent of processing.
+
+</details>
+
+<details>
+<summary>Does transactionalIdPrefix need to be unique across jobs?</summary>
+
+Yes — two jobs sharing a prefix on the same Kafka cluster will **tread on each other's transactions**,
+causing cross-aborts or a stuck job. Give each job its own prefix, and keep it stable across restarts
+(changing the prefix after a restart can leave a hanging transaction until it times out).
 
 </details>
 
 ## Related Topics
 
-- [Exactly-once](../reference/exactly-once.md) — cơ chế hai pha ở ranh giới
-- [Iceberg](../../../storage/iceberg/index.md) — đích ghi transaction theo checkpoint
+- [Exactly-once](../reference/exactly-once.md) — the two-phase mechanism at the boundary
+- [Iceberg](../../../storage/iceberg/index.md) — a destination committing transactionally per checkpoint
 - [DataStream vs Table/SQL API](datastream-vs-table-sql.md) — changelog/upsert semantics
-- [Delivery semantics của Kafka](../../kafka/reference/delivery-semantics.md)
-- [CDC qua Kafka Connect](../../kafka/skills/kafka-connect-cdc.md)
-- [Case: trùng lặp vì sink không transaction](../case-studies/trung-lap-vi-sink-khong-transaction.md)
-- [Kỹ năng — Flink](../index.md)
+- [Kafka's delivery semantics](../../kafka/reference/delivery-semantics.md)
+- [CDC through Kafka Connect](../../kafka/skills/kafka-connect-cdc.md)
+- [Case: duplicates from a non-transactional sink](../case-studies/trung-lap-vi-sink-khong-transaction.md)
+- [Skills — Flink](../index.md)

@@ -1,8 +1,7 @@
 ---
-title: State và checkpoint
-i18n_status: untranslated
+title: State and checkpoints
 sidebar_position: 4
-description: "State là bộ nhớ của stream; checkpoint là ảnh chụp định kỳ để tự khôi phục sau khi chết."
+description: "State is a stream's memory; a checkpoint is the periodic snapshot that lets it restore itself after a failure."
 tags: [flink, state, checkpoint, rocksdb, state-ttl]
 domain: data-engineering
 category: concept
@@ -13,38 +12,38 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# State và checkpoint
+# State and checkpoints
 
-> **Chốt:** State là *bộ nhớ* của một stream chạy mãi (bộ đếm, cửa sổ, bảng join);
-> checkpoint là *ảnh chụp định kỳ* của toàn bộ state để, khi job chết, nó tự restart từ
-> ảnh gần nhất và replay từ offset đã lưu — không mất, không tính lại từ đầu.
+> **Takeaway:** state is the *memory* of a stream that runs forever (counters, windows, join tables);
+> a checkpoint is a *periodic snapshot* of all that state so that, when the job dies, it restarts from
+> the most recent snapshot and replays from the saved offset — nothing lost, nothing recomputed from scratch.
 
-Vì stream không bao giờ hết, Flink phải tự nhớ. Và vì nó chạy mãi trên phần cứng sẽ hỏng,
-nó phải tự khôi phục cái đã nhớ. Đó là hai nửa của file này.
+Because a stream never ends, Flink has to remember things itself. And because it runs forever on hardware
+that will fail, it has to restore what it remembered. Those are the two halves of this file.
 
 ## Keyed state vs operator state
 
-**Keyed state** — gắn với một *key* (sau `keyBy`). Flink tự phân vùng theo key: mỗi
-subtask chỉ giữ state của những key thuộc về nó. Đây là loại dùng 95% thời gian:
+**Keyed state** — attached to a *key* (after a `keyBy`). Flink partitions it by key: each
+subtask only holds the state of the keys belonging to it. This is the kind you use 95% of the time:
 
-| Loại | Giữ gì | Dùng khi |
+| Kind | Holds | Use when |
 |---|---|---|
-| `ValueState<T>` | Một giá trị mỗi key | Đếm, cờ, giá trị mới nhất |
-| `ListState<T>` | Danh sách mỗi key | Gom event chờ xử lý |
-| `MapState<K,V>` | Map mỗi key | Dedup, bảng phụ theo key |
-| `ReducingState<T>` | Một giá trị, gộp bằng reduce func | Tổng/max tăng dần |
-| `AggregatingState<IN,OUT>` | Như reducing, kiểu vào/ra khác nhau | Trung bình, aggregate phức tạp |
+| `ValueState<T>` | One value per key | Counters, flags, the latest value |
+| `ListState<T>` | A list per key | Gathering events awaiting processing |
+| `MapState<K,V>` | A map per key | Deduplication, a side table per key |
+| `ReducingState<T>` | One value, merged by a reduce function | An incremental sum/max |
+| `AggregatingState<IN,OUT>` | Like reducing, with different in/out types | Averages, complex aggregation |
 
-**Operator state** — gắn với một *instance operator*, không theo key. Ít gặp; chủ yếu
-connector dùng (ví dụ Kafka source giữ offset mỗi partition). Khi đổi parallelism, Flink
-phân bố lại theo các scheme như *even-split*.
+**Operator state** — attached to an *operator instance*, not to a key. Less common; mostly used by
+connectors (e.g. a Kafka source holding the offset per partition). On a parallelism change, Flink
+redistributes it according to schemes like *even-split*.
 
-### State primitives — code minh hoạ
+### State primitives — illustrative code
 
-State không phải biến thường: nó được Flink quản lý (đưa vào checkpoint, phân vùng theo
-key, dọn khi rescale). Bạn khai báo qua một `StateDescriptor` trong `open()` rồi truy cập
-trong `processElement()`. Truy cập keyed state **luôn ngầm định** theo key hiện tại của
-record đang xử lý — không cần truyền key.
+State isn't an ordinary variable: it's managed by Flink (included in checkpoints, partitioned by
+key, cleaned on rescale). You declare it through a `StateDescriptor` in `open()` and then access it
+in `processElement()`. Accessing keyed state is **always implicitly** scoped to the current key of the
+record being processed — you don't pass the key.
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -79,21 +78,21 @@ public class DedupCount extends KeyedProcessFunction<String, Event, Long> {
 }
 ```
 
-`ReducingState` và `AggregatingState` khác `ValueState` ở chỗ *gộp tại chỗ*: mỗi `add`
-gọi hàm gộp ngay, nên không giữ cả danh sách — nhẹ hơn nhiều khi chỉ cần tổng/max/avg.
-`ReducingState` bắt kiểu vào = kiểu ra; `AggregatingState` cho phép kiểu accumulator và
-kiểu output khác kiểu input (ví dụ tích luỹ `(sum, count)` nhưng xuất `Double`).
+`ReducingState` and `AggregatingState` differ from `ValueState` in *merging in place*: each `add`
+calls the merge function immediately, so no list is retained — much lighter when you only need a sum/max/average.
+`ReducingState` requires the input type = the output type; `AggregatingState` allows the accumulator type and
+the output type to differ from the input type (e.g. accumulating `(sum, count)` but outputting a `Double`).
 
-## Key groups & rescale — vì sao đổi parallelism cần savepoint
+## Key groups & rescaling — why changing parallelism needs a savepoint
 
-Đây là cơ chế ít người biết nhưng giải thích nhiều ràng buộc vận hành. Flink **không**
-phân keyed state trực tiếp theo `hash(key) % parallelism`. Nếu làm vậy, đổi parallelism sẽ
-xáo trộn *mọi* key sang subtask khác → phân phối lại toàn bộ state, rất đắt.
+This is a little-known mechanism that explains a lot of operational constraints. Flink does **not**
+distribute keyed state directly by `hash(key) % parallelism`. If it did, changing parallelism would
+shuffle *every* key to a different subtask → redistributing all the state, which is very expensive.
 
-Thay vào đó, keyed state chia thành **key groups**: mỗi key được gán vào một key group cố
-định bằng `hash(key) % maxParallelism`. Số key group = **`maxParallelism`** (đặt lúc tạo
-job, mặc định suy ra từ parallelism ban đầu, cận trên 32768). Mỗi subtask nhận một *dải*
-liên tục key group:
+Instead, keyed state is divided into **key groups**: each key is assigned to a fixed key group by
+`hash(key) % maxParallelism`. The number of key groups = **`maxParallelism`** (set when the job is created,
+derived from the initial parallelism by default, with an upper bound of 32768). Each subtask gets a contiguous
+*range* of key groups:
 
 ```text
 số minh hoạ — chưa chạy trên cluster
@@ -110,38 +109,38 @@ rescale → parallelism = 8:
   (mỗi key group vẫn nguyên khối, chỉ ĐỔI CHỦ — không cần hash lại từng key)
 ```
 
-Hệ quả rút ra từ đây:
+The consequences that follow:
 
-- **Đổi parallelism cần restart từ savepoint/checkpoint.** Không thể đổi khi đang chạy;
-  phải dừng, phân phối lại key group theo parallelism mới, rồi khởi động lại. Flink chỉ
-  cần chuyển *nguyên khối* key group giữa các subtask, không hash lại từng key.
-- **Không thể vượt `maxParallelism`.** Vì số key group cố định, parallelism không thể lớn
-  hơn số key group — mỗi subtask cần ít nhất một key group. Nếu đặt `maxParallelism` = 128
-  thì mãi mãi không scale quá 128, dù có thêm máy. Không sửa được sau khi job có state.
-- **Đặt `maxParallelism` cao ngay từ đầu** (ví dụ 128 hoặc 720) để còn đường scale; nhưng
-  quá cao thì tốn metadata cho mỗi key group. Đây là quyết định một chiều, cân từ trước.
+- **Changing parallelism requires a restart from a savepoint/checkpoint.** You can't change it while
+  running; you must stop, redistribute the key groups for the new parallelism, and start again. Flink only
+  needs to move *whole* key groups between subtasks, not rehash individual keys.
+- **You can't exceed `maxParallelism`.** Because the key-group count is fixed, parallelism can't be larger
+  than the number of key groups — each subtask needs at least one. If you set `maxParallelism` = 128
+  you can never scale past 128, however many machines you add. It can't be changed once the job has state.
+- **Set `maxParallelism` high from the start** (e.g. 128 or 720) to leave room to scale; but
+  too high costs metadata per key group. This is a one-way decision, so weigh it in advance.
 
-## State backend — giữ state ở đâu
+## State backends — where state is held
 
-| Backend | State nằm ở | Tốc độ | Dung lượng | Checkpoint | Dùng khi |
+| Backend | State lives in | Speed | Capacity | Checkpoints | Use when |
 |---|---|---|---|---|---|
-| **HashMapStateBackend** | Heap JVM (on-heap object) | Nhanh nhất, không serialize mỗi truy cập | Giới hạn bởi RAM | **Full** mỗi lần | State nhỏ, độ trễ tối thượng |
-| **EmbeddedRocksDBStateBackend** | RocksDB (off-heap, trên đĩa local) | Chậm hơn (serialize + có thể chạm đĩa) | Lớn hơn RAM nhiều (hàng trăm GB) | **Incremental** được (qua SST files) | State lớn, nhiều key |
+| **HashMapStateBackend** | The JVM heap (on-heap objects) | Fastest, no serialization per access | Bounded by RAM | **Full** every time | Small state, latency above all |
+| **EmbeddedRocksDBStateBackend** | RocksDB (off-heap, on local disk) | Slower (serialization + possible disk access) | Far larger than RAM (hundreds of GB) | Can be **incremental** (via SST files) | Large state, many keys |
 
-**Cơ chế bên trong — vì sao tốc độ khác nhau:**
+**The internal mechanism — why the speeds differ:**
 
-- **HashMapStateBackend** giữ state là *object Java sống* trong heap. Đọc/ghi là truy cập
-  con trỏ, không serialize → nhanh nhất. Nhưng: state đếm vào heap → **GC nặng** khi lớn,
-  và không vượt được RAM. Checkpoint là **full**: mỗi lần chép toàn bộ state ra durable
+- **HashMapStateBackend** keeps state as *live Java objects* in the heap. Reads/writes are pointer
+  accesses with no serialization → the fastest. But: the state counts against the heap → **heavy GC** when large,
+  and it can't exceed RAM. Checkpoints are **full**: each one copies all the state out to durable
   storage.
-- **EmbeddedRocksDBStateBackend** lưu state đã **serialize thành bytes** trong RocksDB (một
-  LSM-tree ghi ra file `.sst` trên đĩa local, off-heap). Mỗi lần đọc state phải
-  *deserialize*, mỗi lần ghi phải *serialize* → chậm hơn, và có thể chạm đĩa nếu không nằm
-  trong block cache. Đổi lại state không giới hạn bởi RAM và không đè lên GC của JVM.
+- **EmbeddedRocksDBStateBackend** stores state **serialized into bytes** in RocksDB (an
+  LSM-tree writing `.sst` files to local disk, off-heap). Each state read must
+  *deserialize* and each write must *serialize* → slower, and it may touch disk if the data isn't in
+  the block cache. In exchange the state isn't bounded by RAM and doesn't burden the JVM's GC.
 
-**Incremental checkpoint chỉ RocksDB có** vì nó tận dụng cấu trúc LSM: RocksDB ghi các file
-SST *bất biến* (immutable); một checkpoint incremental chỉ cần chép **các SST file mới** kể
-từ checkpoint trước, không chép lại toàn bộ. HashMap không có cấu trúc này nên luôn full.
+**Only RocksDB has incremental checkpoints** because it exploits the LSM structure: RocksDB writes
+*immutable* SST files; an incremental checkpoint only needs to copy **the new SST files** since
+the previous checkpoint, rather than copying everything. HashMap has no such structure, so it's always full.
 
 ```text
 số minh hoạ — chưa chạy trên cluster
@@ -151,16 +150,16 @@ RocksDB incremental checkpoint:
   checkpoint 3: + sst_005, compaction gộp 001+002 → sst_006  (chép 005, 006)
 ```
 
-**Đánh đổi cốt lõi:** HashMap nhanh vì mọi thứ trong heap, nhưng state không vượt được
-RAM và làm GC nặng. RocksDB chứa được state khổng lồ vì tràn xuống đĩa và hỗ trợ
-incremental checkpoint, đổi lại mỗi lần đọc/ghi phải serialize và có thể chạm đĩa — chậm
-hơn. Chọn RocksDB khi state lớn, nhiều key, hoặc cần incremental checkpoint.
+**The core trade-off:** HashMap is fast because everything is in the heap, but the state can't exceed
+RAM and it makes GC heavy. RocksDB can hold enormous state because it spills to disk and supports
+incremental checkpoints, in exchange for serialization on every read/write and possible disk access — slower.
+Choose RocksDB when state is large, keys are many, or you need incremental checkpoints.
 
-## Checkpoint — ảnh chụp để khôi phục
+## Checkpoints — the snapshot for recovery
 
-Checkpoint là ảnh chụp *nhất quán* của toàn bộ state của mọi operator tại một thời điểm
-logic, ghi ra durable storage (`state.checkpoints.dir` trên S3, HDFS...). Cơ chế là thuật
-toán **Chandy-Lamport** bằng **barrier**:
+A checkpoint is a *consistent* snapshot of all the state of all the operators at one logical
+moment, written to durable storage (`state.checkpoints.dir` on S3, HDFS…). The mechanism is the
+**Chandy-Lamport** algorithm using **barriers**:
 
 ```text
 source ─●─────●─────●─►  operator ─●─►  sink
@@ -168,36 +167,36 @@ source ─●─────●─────●─►  operator ─●─►  
      barrier trôi theo dòng dữ liệu, kẹp giữa các event
 ```
 
-1. JobMaster tiêm một **barrier** vào source (một record đặc biệt) theo `interval`.
-2. Barrier **trôi theo dataflow** cùng event. Khi một operator nhận barrier, nó chụp
-   state của mình (bất đồng bộ, gửi ra durable storage) rồi đẩy barrier xuống downstream.
-3. Khi barrier tới mọi sink và mọi operator đã chụp xong, checkpoint hoàn tất — được đánh
-   dấu "complete" trên durable storage và có thể dùng để khôi phục.
+1. The JobMaster injects a **barrier** into the sources (a special record) per the `interval`.
+2. The barrier **flows through the dataflow** with the events. When an operator receives a barrier, it snapshots
+   its own state (asynchronously, sending it to durable storage) and then pushes the barrier downstream.
+3. When the barrier reaches every sink and every operator has finished snapshotting, the checkpoint is complete — marked
+   "complete" on durable storage and usable for recovery.
 
-Điểm hay: **không dừng dòng dữ liệu** để chụp; barrier trôi *giữa* các event, nên xử lý
-vẫn tiếp diễn.
+The elegant part: **the data flow isn't stopped** to snapshot; the barrier travels *between* events, so processing
+continues.
 
 ```mermaid
 flowchart LR
-    JM[JobMaster] -.tiêm barrier mỗi interval.-> SRC[source]
+    JM[JobMaster] -.injects a barrier per interval.-> SRC[source]
     SRC -->|event + barrier| OP1[operator A]
-    OP1 -->|chụp state rồi đẩy barrier| OP2[operator B]
+    OP1 -->|snapshots state then pushes the barrier| OP2[operator B]
     OP2 --> SNK[sink]
     OP1 -. snapshot .-> DFS[(durable storage<br/>state.checkpoints.dir)]
     OP2 -. snapshot .-> DFS
     SRC -. offset .-> DFS
-    SNK -->|mọi barrier tới đích| DONE[đánh dấu checkpoint complete]
+    SNK -->|every barrier reaches the end| DONE[mark the checkpoint complete]
 ```
 
-### Aligned vs unaligned checkpoint
+### Aligned vs unaligned checkpoints
 
-Khi một operator có nhiều input, barrier từ các input tới không cùng lúc.
+When an operator has several inputs, the barriers from those inputs don't arrive at the same time.
 
-- **Aligned checkpoint** (mặc định) — operator *đợi* barrier từ **mọi** input tới rồi mới
-  chụp; các input có barrier tới trước bị **buffer** lại (chặn tạm) cho tới khi input chậm
-  nhất cũng gửi barrier. Chính xác, checkpoint nhẹ hơn (không chứa dữ liệu in-flight),
-  nhưng dưới **backpressure** barrier bị kẹt sau hàng dài buffer chưa xử lý → alignment
-  lâu → checkpoint chậm hoặc timeout.
+- **Aligned checkpoint** (the default) — the operator *waits* for barriers from **every** input before
+  snapshotting; the inputs whose barriers arrived first are **buffered** (briefly blocked) until the slowest
+  input sends its barrier too. Precise, with lighter checkpoints (containing no in-flight data),
+  but under **backpressure** a barrier gets stuck behind a long queue of unprocessed buffers → alignment
+  takes long → checkpoints are slow or time out.
 
 ```text
 số minh hoạ — chưa chạy trên cluster — ALIGNED tại operator 2 input:
@@ -205,74 +204,74 @@ số minh hoạ — chưa chạy trên cluster — ALIGNED tại operator 2 inpu
   input B: ...e e e e e e e |barrier|      → chờ tới đây mới ĐỦ → chụp state → đẩy barrier
 ```
 
-- **Unaligned checkpoint** — chụp ngay khi barrier *đầu tiên* tới, **vượt qua** hàng buffer
-  và đưa cả dữ liệu **in-flight** (các event đang nằm trong buffer/network) vào checkpoint.
-  Vượt qua được backpressure (barrier không phải chờ alignment), đổi lại checkpoint **to
-  hơn** (chứa dữ liệu đang bay). Bật khi checkpoint hay timeout vì backpressure.
+- **Unaligned checkpoint** — snapshots the moment the *first* barrier arrives, **overtaking** the buffer queue
+  and including the **in-flight** data (the events sitting in buffers/the network) in the checkpoint.
+  It gets past backpressure (the barrier needn't wait for alignment), in exchange for a **larger** checkpoint
+  (containing data in flight). Turn it on when checkpoints often time out because of backpressure.
 
-## Khôi phục — job chết thì sao
+## Recovery — what happens when the job dies
 
-1. Một task chết (máy hỏng, OOM, exception).
-2. JobManager phát hiện, **restart** job (theo restart strategy).
-3. Mọi operator **nạp lại state từ checkpoint hoàn tất gần nhất** (phân phối lại key group
-   nếu parallelism đổi).
-4. Source **replay từ offset đã lưu trong checkpoint đó** (ví dụ tua Kafka consumer về
-   offset đã checkpoint).
+1. A task dies (hardware failure, OOM, an exception).
+2. The JobManager notices and **restarts** the job (per the restart strategy).
+3. Every operator **reloads its state from the most recent completed checkpoint** (redistributing key groups
+   if the parallelism changed).
+4. The sources **replay from the offset saved in that checkpoint** (e.g. rewinding the Kafka consumer to
+   the checkpointed offset).
 
-Vì state và offset được chụp *cùng một* checkpoint nên chúng nhất quán: replay từ offset
-đó cộng với state tại đó cho kết quả như chưa từng chết. Đây là nền của exactly-once *nội
-bộ* — xem [exactly-once](exactly-once.md) cho phần ra sink.
+Because state and offsets are captured in the *same* checkpoint, they're consistent: replaying from that
+offset plus the state at that point gives the same result as never having died. This is the foundation of *internal*
+exactly-once — see [exactly-once](exactly-once.md) for the sink part.
 
 ### Exactly-once vs at-least-once (checkpoint mode)
 
-`execution.checkpointing.mode` có hai giá trị, và chúng chính là aligned vs không:
+`execution.checkpointing.mode` has two values, and they are precisely aligned vs not:
 
-- **EXACTLY_ONCE** (mặc định) — dùng **aligned** barrier (hoặc unaligned nếu bật). Vì
-  operator chờ *đủ* barrier mọi input trước khi chụp, state ảnh chụp nhất quán tuyệt đối:
-  mỗi record đóng góp vào state *đúng một lần*. Đây là ngữ nghĩa cần cho phép đếm/tổng đúng.
-- **AT_LEAST_ONCE** — **không align**: operator chụp ngay khi barrier đầu tiên tới mà
-  *không* buffer input khác. Nhẹ hơn, độ trễ thấp hơn, nhưng khi khôi phục một số record
-  có thể được xử *hơn một lần* (state đã hấp thụ event vượt barrier). Chấp nhận được cho
-  job không cần đếm chính xác, không cho job tài chính.
+- **EXACTLY_ONCE** (the default) — uses **aligned** barriers (or unaligned if enabled). Because the
+  operator waits for *all* its inputs' barriers before snapshotting, the snapshot is absolutely consistent:
+  each record contributes to the state *exactly once*. This is the semantics you need for correct counts/sums.
+- **AT_LEAST_ONCE** — **no alignment**: the operator snapshots the moment the first barrier arrives without
+  buffering the other inputs. Lighter, lower latency, but on recovery some records
+  may be processed *more than once* (the state absorbed events beyond the barrier). Acceptable for
+  a job that doesn't need exact counts, never for financial ones.
 
-Lưu ý: unaligned checkpoint *vẫn* cho exactly-once — nó chụp cả in-flight buffer nên khôi
-phục vẫn nhất quán. Đừng nhầm "unaligned" với "at-least-once"; chúng là hai trục khác nhau.
+Note: unaligned checkpoints *still* give exactly-once — they capture the in-flight buffers so recovery
+is still consistent. Don't confuse "unaligned" with "at-least-once"; they're two different axes.
 
-## Các tham số checkpoint
+## The checkpoint parameters
 
-- **interval** — bao lâu chụp một lần. Ngắn → khôi phục ít replay hơn nhưng tốn I/O
-  thường xuyên; dài → nhẹ hơn nhưng chết thì replay nhiều hơn.
-- **timeout** — quá lâu mà chưa xong thì huỷ checkpoint đó.
-- **incremental checkpoint** (chỉ RocksDB) — chỉ ghi phần state *thay đổi* (SST file mới)
-  từ checkpoint trước, không ghi lại toàn bộ. Bắt buộc khi state lớn — nếu không mỗi
-  checkpoint ghi cả trăm GB thì không kịp interval.
+- **interval** — how often to snapshot. Short → less replay on recovery but frequent I/O
+  cost; long → lighter but more replay when you die.
+- **timeout** — cancel a checkpoint that hasn't finished in time.
+- **incremental checkpoints** (RocksDB only) — write only the *changed* state (new SST files)
+  since the previous checkpoint, not everything again. Mandatory with large state — otherwise every
+  checkpoint writes hundreds of GB and can't keep up with the interval.
 
-### Bảng config checkpoint đầy đủ
+### The full checkpoint config table
 
-| Config | Mặc định | Điều khiển |
+| Config | Default | Controls |
 |---|---|---|
-| `execution.checkpointing.interval` | tắt (phải bật) | Chu kỳ chụp checkpoint |
-| `execution.checkpointing.mode` | `EXACTLY_ONCE` | `EXACTLY_ONCE` (aligned) hay `AT_LEAST_ONCE` |
-| `execution.checkpointing.timeout` | 10 phút | Quá lâu chưa xong thì huỷ checkpoint đó |
-| `execution.checkpointing.min-pause` | 0 | Khoảng nghỉ tối thiểu giữa hai checkpoint (giữ CPU cho xử lý) |
-| `execution.checkpointing.max-concurrent-checkpoints` | 1 | Số checkpoint chạy song song |
-| `execution.checkpointing.unaligned.enabled` | `false` | Bật unaligned để vượt backpressure |
-| `execution.checkpointing.externalized-checkpoint-retention` | tắt (dọn khi huỷ job) | Giữ checkpoint sau khi job dừng để khôi phục thủ công |
-| `state.checkpoints.dir` | — | Thư mục durable storage lưu checkpoint (DFS/S3) |
-| `state.backend.incremental` | `false` | Bật incremental checkpoint (chỉ RocksDB) |
+| `execution.checkpointing.interval` | off (must be enabled) | The checkpointing interval |
+| `execution.checkpointing.mode` | `EXACTLY_ONCE` | `EXACTLY_ONCE` (aligned) or `AT_LEAST_ONCE` |
+| `execution.checkpointing.timeout` | 10 minutes | Cancels a checkpoint that takes too long |
+| `execution.checkpointing.min-pause` | 0 | The minimum pause between two checkpoints (leaving CPU for processing) |
+| `execution.checkpointing.max-concurrent-checkpoints` | 1 | How many checkpoints run concurrently |
+| `execution.checkpointing.unaligned.enabled` | `false` | Enables unaligned checkpoints to get past backpressure |
+| `execution.checkpointing.externalized-checkpoint-retention` | off (cleaned when the job is cancelled) | Keeps checkpoints after the job stops for manual recovery |
+| `state.checkpoints.dir` | — | The durable-storage directory holding checkpoints (DFS/S3) |
+| `state.backend.incremental` | `false` | Enables incremental checkpoints (RocksDB only) |
 
-Ghi chú: tên và default config có thể đổi giữa các phiên bản Flink; những giá trị trên là
-mặc định thường thấy — kiểm chứng bằng tài liệu đúng version trước khi dựa vào chúng.
+A note: config names and defaults can change between Flink versions; the values above are the
+commonly seen defaults — verify them against the docs for your version before relying on them.
 
-## State TTL — bẫy state chỉ tăng
+## State TTL — the ever-growing-state trap
 
-Keyed state **không tự dọn**. Nếu key liên tục mới (mỗi `session_id` chỉ xuất hiện một
-lần), số key chỉ tăng, state phình mãi → checkpoint chậm dần → cuối cùng OOM hoặc
-checkpoint timeout. Job "chạy tốt" vài tuần rồi chết, và nguyên nhân cách xa triệu chứng.
-Đây là lý do TTL gần như **bắt buộc** với mọi keyed state có **key space vô hạn** (session
-id, request id, user-agent... — thứ không bao giờ lặp lại).
+Keyed state **doesn't clean itself**. If keys are continuously new (each `session_id` appearing only
+once), the key count only grows, state bloats forever → checkpoints get slower → eventually OOM or a
+checkpoint timeout. The job "works well" for a few weeks and then dies, with the cause far from the symptom.
+This is why a TTL is essentially **mandatory** for any keyed state with an **unbounded key space** (session
+ids, request ids, user agents… — anything that never repeats).
 
-Chữa bằng **state TTL** (`StateTtlConfig`): hết hạn thì Flink dọn.
+The cure is a **state TTL** (`StateTtlConfig`): once expired, Flink cleans it up.
 
 ```java
 // số minh hoạ — chưa chạy trên cluster
@@ -285,86 +284,86 @@ StateTtlConfig ttl = StateTtlConfig
 descriptor.enableTimeToLive(ttl);
 ```
 
-- `UpdateType.OnCreateAndWrite` — TTL reset mỗi lần *ghi*; `OnReadAndWrite` reset cả khi đọc.
-- `StateVisibility.NeverReturnExpired` — không bao giờ trả state đã hết hạn dù chưa kịp dọn.
-- `cleanupInRocksdbCompactFilter(N)` — dọn state hết hạn *trong lúc RocksDB compaction* (mỗi
-  N phần tử kiểm một lần), thay vì chờ truy cập. Quan trọng với RocksDB: không có nó thì
-  state hết hạn vẫn nằm trên đĩa cho tới khi bị đọc lại — mà key một-lần thì không bao giờ
-  đọc lại → không bao giờ dọn.
+- `UpdateType.OnCreateAndWrite` — the TTL resets on each *write*; `OnReadAndWrite` resets on reads too.
+- `StateVisibility.NeverReturnExpired` — never returns expired state even if it hasn't been cleaned yet.
+- `cleanupInRocksdbCompactFilter(N)` — cleans expired state *during RocksDB compaction* (checking every
+  N elements), rather than waiting for an access. Important with RocksDB: without it,
+  expired state stays on disk until it's read again — and a write-once key is never
+  read again → never cleaned.
 
-Xem [case study state phình vì thiếu TTL](../case-studies/state-phinh-thieu-ttl.md).
+See the [case study on state bloating for want of a TTL](../case-studies/state-phinh-thieu-ttl.md).
 
 ## Trade-offs
 
-| Được | Mất | Đổi lấy |
+| You get | You lose | In exchange for |
 |---|---|---|
-| RocksDB: state khổng lồ | Chậm hơn HashMap (serialize + đĩa) | Không giới hạn bởi RAM |
-| RocksDB: incremental checkpoint | Checkpoint gồm nhiều SST, phục hồi ghép lại | Không ghi lại trăm GB mỗi lần |
-| Checkpoint thường xuyên | I/O liên tục | Khôi phục replay ít |
-| Unaligned checkpoint | Checkpoint to hơn (chứa in-flight) | Vượt qua backpressure |
-| EXACTLY_ONCE (aligned) | Alignment chậm khi backpressure | State nhất quán, đếm đúng |
-| `maxParallelism` cao | Metadata mỗi key group nhiều hơn | Còn đường scale về sau |
-| State TTL | Có thể mất history cũ ngoài ý muốn nếu đặt sai | State không phình vô hạn |
+| RocksDB: enormous state | Slower than HashMap (serialization + disk) | Not being bounded by RAM |
+| RocksDB: incremental checkpoints | Checkpoints spanning many SSTs, reassembled on restore | Not rewriting hundreds of GB each time |
+| Frequent checkpoints | Continuous I/O | Less replay on recovery |
+| Unaligned checkpoints | Larger checkpoints (containing in-flight data) | Getting past backpressure |
+| EXACTLY_ONCE (aligned) | Slow alignment under backpressure | Consistent state, correct counts |
+| A high `maxParallelism` | More metadata per key group | Room to scale later |
+| A state TTL | Possibly losing old history unintentionally if set wrongly | State not bloating without bound |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả | Phòng bằng |
+| Mistake | Consequence | Prevented by |
 |---|---|---|
-| Không đặt state TTL cho key space vô hạn | State chỉ tăng → checkpoint chậm → OOM | Đặt TTL cho keyed state có key liên tục mới |
-| TTL RocksDB thiếu `cleanupInRocksdbCompactFilter` | State hết hạn vẫn nằm đĩa vì key không đọc lại | Bật compact filter cleanup |
-| Đặt `maxParallelism` quá thấp | Không scale được quá ngưỡng, không sửa được | Đặt cao (128/720) từ đầu |
-| Kỳ vọng đổi parallelism khi đang chạy | Không làm được | Dừng → savepoint → khởi động lại với parallelism mới |
-| HashMap backend với state lớn | OOM khi state vượt RAM, GC nặng | Chuyển sang RocksDB |
-| RocksDB không bật incremental | Mỗi checkpoint ghi lại toàn bộ, timeout | Bật incremental checkpoint |
-| Checkpoint timeout vì backpressure | Không có checkpoint hoàn tất → mất nhiều khi chết | Bật unaligned checkpoint + xử backpressure |
-| Dùng AT_LEAST_ONCE cho job đếm/tài chính | Record xử hơn một lần khi khôi phục → số sai | Giữ EXACTLY_ONCE cho mọi phép cần đúng |
+| No state TTL for an unbounded key space | State only grows → checkpoints slow → OOM | Setting a TTL on keyed state whose keys are continuously new |
+| A RocksDB TTL without `cleanupInRocksdbCompactFilter` | Expired state stays on disk because the keys are never read again | Enabling compact-filter cleanup |
+| Setting `maxParallelism` too low | You can't scale past the threshold, and can't fix it | Setting it high (128/720) from the start |
+| Expecting to change parallelism while running | It can't be done | Stop → savepoint → restart with the new parallelism |
+| The HashMap backend with large state | OOM once the state exceeds RAM, plus heavy GC | Moving to RocksDB |
+| RocksDB without incremental checkpoints enabled | Each checkpoint rewrites everything and times out | Enabling incremental checkpoints |
+| Checkpoint timeouts caused by backpressure | No completed checkpoint → losing a lot when you die | Enabling unaligned checkpoints + dealing with the backpressure |
+| Using AT_LEAST_ONCE for a counting/financial job | Records processed more than once on recovery → wrong numbers | Keeping EXACTLY_ONCE for anything that must be correct |
 
 ## FAQ
 
 <details>
-<summary>Checkpoint và savepoint khác gì?</summary>
+<summary>What's the difference between a checkpoint and a savepoint?</summary>
 
-Checkpoint là *tự động, định kỳ*, do Flink quản để khôi phục sau lỗi (có thể bị dọn khi
-cũ). Savepoint là *thủ công*, do bạn kích, để nâng cấp code hay di chuyển job — bền, bạn
-tự quản. Xem [savepoint-upgrade](../skills/savepoint-upgrade.md).
-
-</details>
-
-<details>
-<summary>Vì sao đổi parallelism lại cần dừng job và savepoint?</summary>
-
-Vì keyed state phân theo key group cố định (số = maxParallelism), và mỗi subtask giữ một
-dải key group. Đổi parallelism = phân phối lại các dải key group giữa các subtask — không
-làm được khi đang chạy, phải chụp state (savepoint/checkpoint), dừng, rồi khởi động lại với
-bố cục mới. Và không bao giờ vượt được maxParallelism đã đặt.
+A checkpoint is *automatic and periodic*, managed by Flink for recovery after a failure (and may be cleaned when
+old). A savepoint is *manual*, triggered by you, for upgrading code or moving a job — durable, and
+managed by you. See [savepoint-upgrade](../skills/savepoint-upgrade.md).
 
 </details>
 
 <details>
-<summary>Barrier trôi chậm thì checkpoint chậm — vì sao?</summary>
+<summary>Why does changing parallelism require stopping the job and taking a savepoint?</summary>
 
-Với aligned checkpoint, operator phải đợi barrier từ mọi input. Nếu một input đang
-backpressure, barrier kẹt sau hàng dài buffer chưa xử lý → alignment lâu → checkpoint không
-hoàn tất kịp timeout. Đó là lý do backpressure và checkpoint timeout thường đi cùng nhau.
-Unaligned checkpoint vượt qua được vì nó chụp cả in-flight buffer thay vì chờ.
+Because keyed state is distributed by fixed key groups (numbering maxParallelism), and each subtask holds a
+range of key groups. Changing parallelism = redistributing the key-group ranges between subtasks — which can't
+be done while running, so you must snapshot the state (savepoint/checkpoint), stop, and restart with the
+new layout. And you can never exceed the maxParallelism you set.
 
 </details>
 
 <details>
-<summary>Unaligned checkpoint có nghĩa là at-least-once không?</summary>
+<summary>A slow-travelling barrier makes checkpoints slow — why?</summary>
 
-Không. Unaligned vẫn cho exactly-once — nó chụp cả dữ liệu in-flight nên khôi phục vẫn
-nhất quán. "Aligned/unaligned" là cách xử lý barrier khi backpressure; "exactly/at-least-once"
-là ngữ nghĩa khôi phục. Hai trục độc lập.
+With aligned checkpoints, the operator has to wait for barriers from every input. If one input is
+backpressured, its barrier is stuck behind a long queue of unprocessed buffers → alignment takes long → the checkpoint doesn't
+finish before the timeout. That's why backpressure and checkpoint timeouts usually come together.
+Unaligned checkpoints get past this because they capture the in-flight buffers instead of waiting.
+
+</details>
+
+<details>
+<summary>Does an unaligned checkpoint mean at-least-once?</summary>
+
+No. Unaligned still gives exactly-once — it captures the in-flight data so recovery is still
+consistent. "Aligned/unaligned" is how barriers are handled under backpressure; "exactly/at-least-once"
+is the recovery semantics. Two independent axes.
 
 </details>
 
 ## Related Topics
 
-- [Exactly-once trong Flink](exactly-once.md) — checkpoint là nền, phần ra sink cần thêm gì
-- [Event time và watermark](event-time-watermark.md) — cửa sổ giữ state, event-time timer nằm trong keyed state
-- [Kiến trúc job Flink](architecture.md) — JobManager điều phối checkpoint thế nào
-- [Backpressure và tuning](../skills/backpressure-tuning.md) — vì sao backpressure làm checkpoint timeout
-- [Savepoint và nâng cấp](../skills/savepoint-upgrade.md) — rescale, đổi parallelism qua savepoint
-- [State phình vì thiếu TTL](../case-studies/state-phinh-thieu-ttl.md) — bẫy state chỉ tăng
-- [Flink](../index.md) — chủ đề chứa file này
+- [Exactly-once in Flink](exactly-once.md) — checkpoints are the foundation, and what the sink part needs on top
+- [Event time and watermarks](event-time-watermark.md) — windows hold state, and event-time timers live in keyed state
+- [Flink job architecture](architecture.md) — how the JobManager coordinates checkpointing
+- [Backpressure and tuning](../skills/backpressure-tuning.md) — why backpressure causes checkpoint timeouts
+- [Savepoints and upgrades](../skills/savepoint-upgrade.md) — rescaling and changing parallelism through a savepoint
+- [State bloating for want of a TTL](../case-studies/state-phinh-thieu-ttl.md) — the ever-growing-state trap
+- [Flink](../index.md) — the topic this file belongs to

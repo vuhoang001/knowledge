@@ -1,8 +1,7 @@
 ---
-title: Kiến trúc job Flink
-i18n_status: untranslated
+title: Flink job architecture
 sidebar_position: 2
-description: "JobManager điều phối, TaskManager chạy; slot và parallelism quyết định scale."
+description: "The JobManager coordinates, the TaskManager runs; slots and parallelism decide how you scale."
 tags: [flink, architecture, jobmanager, taskmanager, parallelism]
 domain: data-engineering
 category: concept
@@ -13,25 +12,25 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Kiến trúc job Flink
+# Flink job architecture
 
-> **Chốt:** JobManager *điều phối* (lập lịch, checkpoint, khôi phục) còn TaskManager
-> *thực thi* (chạy subtask trong các task slot); scale một job là chuyện của
-> **parallelism** và số **slot**, và tăng parallelism không miễn phí vì nó kéo theo
-> redistribute state.
+> **Takeaway:** the JobManager *coordinates* (scheduling, checkpointing, recovery) while the TaskManager
+> *executes* (running subtasks in task slots); scaling a job is a matter of
+> **parallelism** and the number of **slots**, and raising parallelism isn't free because it drags
+> state redistribution with it.
 
-Một cụm Flink có hai loại process. Hiểu ranh giới giữa chúng là điều kiện để đọc được
-UI, chẩn lỗi, và tuning.
+A Flink cluster has two kinds of process. Understanding the boundary between them is the precondition
+for reading the UI, diagnosing errors, and tuning.
 
-## Toàn cảnh: ai nói chuyện với ai
+## The overview: who talks to whom
 
 ```mermaid
 flowchart TB
-  Client["Client<br/>(biên dịch code → JobGraph, submit)"]
-  subgraph JM["JobManager (process điều phối)"]
-    Disp["Dispatcher<br/>REST + Web UI (8081, mặc định)"]
-    RM["ResourceManager<br/>cấp phát task slot"]
-    JMaster["JobMaster<br/>1 job / 1 cái: lập lịch + checkpoint"]
+  Client["Client<br/>(compiles code → JobGraph, submits)"]
+  subgraph JM["JobManager (the coordinating process)"]
+    Disp["Dispatcher<br/>REST + Web UI (8081, default)"]
+    RM["ResourceManager<br/>allocates task slots"]
+    JMaster["JobMaster<br/>1 per job: scheduling + checkpointing"]
   end
   subgraph TM1["TaskManager A"]
     s1["slot 1"]
@@ -42,117 +41,116 @@ flowchart TB
     s4["slot 2"]
   end
   Client -->|submit JobGraph| Disp
-  Disp -->|khởi tạo| JMaster
-  JMaster -->|xin slot| RM
-  RM -->|cấp slot từ| TM1
-  RM -->|cấp slot từ| TM2
-  JMaster -->|deploy subtask| s1
-  JMaster -->|deploy subtask| s3
-  JMaster -.->|checkpoint barrier / gom ack| TM1
-  JMaster -.->|checkpoint barrier / gom ack| TM2
+  Disp -->|creates| JMaster
+  JMaster -->|requests slots| RM
+  RM -->|grants slots from| TM1
+  RM -->|grants slots from| TM2
+  JMaster -->|deploys subtasks| s1
+  JMaster -->|deploys subtasks| s3
+  JMaster -.->|checkpoint barriers / collects acks| TM1
+  JMaster -.->|checkpoint barriers / collects acks| TM2
 ```
 
-## JobManager — bộ não điều phối
+## JobManager — the coordinating brain
 
-JobManager không chạy dữ liệu; nó điều phối. Bên trong gồm ba thành phần với vai trò
-tách bạch:
+The JobManager doesn't run data; it coordinates. Inside it are three components with distinct roles:
 
-- **Dispatcher** — nhận job submit từ client, khởi một **JobMaster** cho mỗi job, và
-  cung cấp **REST API + Web UI** (cổng **8081** là *mặc định*, có thể đổi bằng config).
-  Nó sống lâu hơn từng job; là cửa vào của cụm.
-- **ResourceManager** — quản lý và cấp phát **task slot** từ các TaskManager. Đây là
-  thành phần biết cụm có bao nhiêu slot rảnh và cấp cho JobMaster khi được xin. Có bản
-  cho từng nền tảng (Standalone, YARN, Kubernetes) — khác nhau ở cách *xin thêm*
-  TaskManager khi thiếu.
-- **JobMaster** — **mỗi job một cái**. Nó lập lịch các task vào slot, **điều phối
-  checkpoint** (phát barrier xuống source, gom xác nhận từ mọi subtask, chốt checkpoint
-  hoàn tất), và **khôi phục** khi có subtask chết (chọn checkpoint gần nhất, restore).
+- **Dispatcher** — receives job submissions from clients, starts a **JobMaster** for each job, and
+  provides the **REST API + Web UI** (port **8081** is the *default*, changeable via config).
+  It outlives individual jobs; it's the cluster's front door.
+- **ResourceManager** — manages and allocates **task slots** from the TaskManagers. This is the
+  component that knows how many free slots the cluster has and grants them to a JobMaster on request. There's
+  a version per platform (Standalone, YARN, Kubernetes) — differing in how they *request more*
+  TaskManagers when short.
+- **JobMaster** — **one per job**. It schedules tasks into slots, **coordinates
+  checkpoints** (emitting barriers into the sources, collecting acknowledgements from every subtask, finalising
+  a completed checkpoint), and handles **recovery** when a subtask dies (picking the most recent checkpoint and restoring).
 
-Chia ba như vậy để tách *cửa vào cụm* (Dispatcher), *kế toán tài nguyên* (ResourceManager)
-và *vòng đời một job* (JobMaster) — mỗi job có JobMaster riêng nên một job hỏng không kéo
-job khác trong session xuống theo.
+The three-way split separates *the cluster's front door* (Dispatcher), *resource accounting* (ResourceManager)
+and *one job's lifecycle* (JobMaster) — each job has its own JobMaster, so one broken job doesn't drag
+the other jobs in the session down with it.
 
-## TaskManager — nơi thật sự chạy
+## TaskManager — where it actually runs
 
-TaskManager (còn gọi *worker*) là nơi dữ liệu chảy qua và tính toán xảy ra:
+The TaskManager (also called a *worker*) is where data flows through and computation happens:
 
-- Chạy các **subtask** (một bản song song của một operator).
-- Cung cấp **task slot** — đơn vị tài nguyên cố định; mỗi TaskManager có N slot, chia
-  đều bộ nhớ managed cho chúng.
-- Quản **network buffer** để trao đổi dữ liệu giữa các subtask (đây cũng là chỗ
-  backpressure biểu hiện — buffer đầy thì upstream chậm lại; xem
+- It runs the **subtasks** (one parallel copy of one operator).
+- It provides **task slots** — a fixed unit of resource; each TaskManager has N slots, dividing its managed
+  memory evenly between them.
+- It manages the **network buffers** for exchanging data between subtasks (this is also where
+  backpressure shows up — a full buffer slows the upstream down; see
   [backpressure-tuning](../skills/backpressure-tuning.md)).
 
-### Mô hình bộ nhớ TaskManager
+### The TaskManager memory model
 
-Đây là chỗ tuning hay đau nhất. Bộ nhớ một TaskManager **không** chỉ là "heap"; nó chia
-thành nhiều vùng, và Flink phân bổ từ tổng `taskmanager.memory.process.size`:
+This is where tuning hurts most. A TaskManager's memory is **not** just "the heap"; it's divided
+into several regions, and Flink allocates them from the total `taskmanager.memory.process.size`:
 
-| Vùng | Nằm ở | Làm gì | Đổi khi |
+| Region | Lives in | What it does | Change it when |
 |---|---|---|---|
-| **Framework heap** | JVM heap | Bộ nhớ cho chính framework Flink chạy | Hầu như không đụng |
-| **Task heap** | JVM heap | Object của *user code* (operator, state on-heap) | State/logic on-heap lớn → OOM heap thì tăng |
-| **Managed memory** | Off-heap, Flink tự quản | **RocksDB** state backend, buffer cho sort/hash (batch) | Dùng RocksDB, hoặc job batch sort nặng |
-| **Network buffers** | Off-heap | Buffer trao đổi dữ liệu giữa subtask (credit-based) | Parallelism/shuffle lớn báo thiếu network buffer |
-| **JVM metaspace** | Off-heap | Class metadata của JVM | Nạp nhiều class (nhiều connector/UDF) |
-| **JVM overhead** | Off-heap | Thread stack, native, GC housekeeping | Native lib nặng |
+| **Framework heap** | JVM heap | Memory for the Flink framework itself | Almost never touched |
+| **Task heap** | JVM heap | *User code* objects (operators, on-heap state) | Large on-heap state/logic → raise it if the heap OOMs |
+| **Managed memory** | Off-heap, managed by Flink | The **RocksDB** state backend, buffers for sort/hash (batch) | Using RocksDB, or a batch job with heavy sorting |
+| **Network buffers** | Off-heap | Buffers for exchanging data between subtasks (credit-based) | High parallelism/shuffle reports insufficient network buffers |
+| **JVM metaspace** | Off-heap | The JVM's class metadata | Loading many classes (many connectors/UDFs) |
+| **JVM overhead** | Off-heap | Thread stacks, native memory, GC housekeeping | Heavy native libraries |
 
-Vì sao chia vậy: **managed memory nằm off-heap và Flink tự quản** để RocksDB và các
-buffer lớn không nằm trong JVM heap — nếu để trong heap, chúng sẽ gây GC pause dài và
-OOM khó đoán. Tách network buffer riêng để backpressure có "van" đo được. Bẫy kinh điển:
-bật RocksDB nhưng để managed memory quá nhỏ → RocksDB tự cấp bộ nhớ ngoài hạn mức →
-container bị OS/YARN/K8s **kill vì vượt giới hạn**, chứ không phải lỗi Flink nào báo.
+Why it's divided this way: **managed memory sits off-heap and Flink manages it** so that RocksDB and the
+large buffers stay out of the JVM heap — inside the heap they'd cause long GC pauses and
+unpredictable OOMs. Network buffers are separated out so backpressure has a measurable "valve". The classic trap:
+turning on RocksDB but leaving managed memory too small → RocksDB allocates memory outside its budget →
+the container is **killed for exceeding its limit** by the OS/YARN/K8s, with no Flink error reported.
 
-Số liệu cụ thể (hạn mức mỗi vùng theo MB) phụ thuộc cấu hình và version — lấy từ log
-khởi động TaskManager thật, đừng đoán. *(số minh hoạ — chưa chạy)*
+The concrete figures (each region's limit in MB) depend on the configuration and version — take them from
+a real TaskManager's startup log, don't guess. *(illustrative numbers — not run)*
 
-## Task slot vs parallelism
+## Task slots vs parallelism
 
-Hai khái niệm hay lẫn:
+Two easily confused concepts:
 
-- **Parallelism** của một operator = số bản song song của nó đang chạy. Parallelism 4
-  nghĩa là 4 subtask cùng xử lý 4 phần dữ liệu (phân theo key nếu keyed).
-- **Task slot** = một *chỗ* tài nguyên trên TaskManager để đặt subtask vào. Tổng số slot
-  của cụm là trần cho parallelism.
+- An operator's **parallelism** = the number of parallel copies of it running. Parallelism 4
+  means 4 subtasks each processing a quarter of the data (split by key if keyed).
+- A **task slot** = a resource *place* on a TaskManager to put a subtask into. The cluster's total slot
+  count is the ceiling for parallelism.
 
-Quy tắc thô: **số slot cần ≥ parallelism cao nhất trong job.**
+The rough rule: **the slots you need ≥ the highest parallelism in the job.**
 
-### Slot sharing group
+### Slot sharing groups
 
-Mặc định Flink cho các subtask *thuộc các operator khác nhau nhưng cùng một pipeline*
-chia **chung một slot** (slot sharing). Nhờ vậy một slot có thể chứa cả chuỗi
-source→map→window→sink, và số slot cần chỉ bằng parallelism cao nhất, không phải tổng số
-subtask.
+By default Flink lets subtasks *belonging to different operators but the same pipeline*
+share **one slot** (slot sharing). Thanks to this, one slot can hold the whole
+source→map→window→sink chain, and the slots needed equal only the highest parallelism, not the total
+subtask count.
 
-Vì sao gộp có lợi: một slot khi đó cầm *cả một lát cắt dọc* của pipeline, nên (1) dùng
-tài nguyên tốt hơn — source chậm không để slot của sink nằm không; (2) dữ liệu giữa các
-operator trong cùng slot đi trong cùng process, đỡ qua mạng. Có thể tách bằng
-`.slotSharingGroup("tên")` khi muốn cô lập một operator nặng (ví dụ một window state
-khổng lồ) khỏi phần còn lại, đổi lại tốn thêm slot.
+Why sharing helps: a slot then holds *a whole vertical slice* of the pipeline, so (1) resources are used
+better — a slow source doesn't leave the sink's slot idle; (2) data between operators inside one slot
+travels inside one process, avoiding the network. You can split them with
+`.slotSharingGroup("name")` to isolate a heavy operator (say an enormous window state)
+from the rest, at the cost of extra slots.
 
 ## Operator chaining
 
-Flink **gộp** các operator liền nhau vào một *chain* để chạy trong cùng một thread, khi
-chúng nối 1-1 (không đổi phân vùng) và cùng parallelism. Ví dụ `map → filter` được gộp
-thành một chain.
+Flink **merges** adjacent operators into a *chain* to run in one thread, when
+they connect 1-to-1 (no partitioning change) and share a parallelism. For example `map → filter` is merged
+into one chain.
 
-**Được gì:** bỏ được serialize/deserialize và trao đổi buffer giữa hai operator — dữ liệu
-truyền bằng lời gọi hàm trong cùng thread. Đây là một trong những tối ưu lớn nhất của Flink.
+**What you get:** you eliminate the serialize/deserialize and buffer exchange between two operators — the data
+is passed by function call within the same thread. This is one of Flink's biggest optimisations.
 
-Chain bị **cắt** ở ranh giới `keyBy` (đổi phân vùng → phải shuffle qua mạng), khi đổi
-parallelism, hoặc khi bạn gọi `disableChaining()`. Trong UI, một hộp = một chain, nên
-đừng nhầm "một hộp" với "một operator".
+A chain is **cut** at a `keyBy` boundary (a partitioning change → it must shuffle over the network), on a
+parallelism change, or when you call `disableChaining()`. In the UI, one box = one chain, so
+don't confuse "one box" with "one operator".
 
-## Task và subtask
+## Tasks and subtasks
 
-- **Task** = một operator (hoặc một chain) trong JobGraph.
-- **Subtask** = một bản song song cụ thể của task đó. Task có parallelism 3 → 3 subtask.
+- **Task** = one operator (or one chain) in the JobGraph.
+- **Subtask** = one specific parallel copy of that task. A task with parallelism 3 → 3 subtasks.
 
-Subtask là đơn vị được đặt vào slot và được lập lịch.
+A subtask is the unit placed into a slot and scheduled.
 
-## Từ code tới ExecutionGraph — bốn tầng biểu diễn
+## From code to ExecutionGraph — four layers of representation
 
-Một job SQL hay DataStream đi qua các tầng biểu diễn trước khi chạy được:
+A SQL or DataStream job passes through several representation layers before it can run:
 
 ```text
 User code (SQL / DataStream)
@@ -167,124 +165,124 @@ ExecutionGraph   TRẢI theo parallelism: mỗi task → N subtask, gán slot, d
 Physical         subtask thật đặt trên TaskManager cụ thể, chạy
 ```
 
-- **StreamGraph** — biểu diễn logic thô đúng như bạn viết, một operator một node, chưa
-  tối ưu gì.
-- **JobGraph** — đã **chain** các operator liền nhau thành đơn vị lớn hơn để giảm
-  serialize/mạng. *Đây là thứ được serialize và submit lên cụm.*
-- **ExecutionGraph** — JobMaster "trải phẳng" JobGraph theo parallelism: mỗi task thành N
-  subtask, dựng các cạnh trao đổi dữ liệu (forward hay shuffle), gán slot. Đây là graph
-  JobManager thực sự **lập lịch và theo dõi** — trạng thái SCHEDULED/RUNNING/FAILED bạn
-  thấy trong UI là ở tầng này.
-- **Physical** — subtask được deploy lên slot của TaskManager cụ thể.
+- **StreamGraph** — the raw logical representation exactly as you wrote it, one operator per node, with no
+  optimisation.
+- **JobGraph** — adjacent operators are already **chained** into larger units to reduce
+  serialization/network cost. *This is what gets serialized and submitted to the cluster.*
+- **ExecutionGraph** — the JobMaster "flattens" the JobGraph by parallelism: each task becomes N
+  subtasks, the data-exchange edges are built (forward or shuffle), and slots are assigned. This is the graph
+  the JobManager actually **schedules and tracks** — the SCHEDULED/RUNNING/FAILED states you
+  see in the UI are at this layer.
+- **Physical** — subtasks are deployed into slots on specific TaskManagers.
 
-## Network stack — credit-based flow control
+## The network stack — credit-based flow control
 
-Giữa hai subtask nối qua mạng (sau `keyBy` hay đổi parallelism), Flink dùng **credit-based
+Between two subtasks connected over the network (after a `keyBy` or a parallelism change), Flink uses **credit-based
 flow control**:
 
-- Subtask **downstream** báo cho upstream biết nó còn bao nhiêu **credit** = bao nhiêu
-  buffer trống sẵn sàng nhận.
-- Upstream **chỉ gửi** tối đa bằng số credit đó. Downstream chậm tiêu thụ → credit về 0 →
-  upstream ngừng gửi → buffer của upstream đầy dần → *nó* cũng chậm lại → áp lực **lan
-  ngược** tới tận source.
+- The **downstream** subtask tells the upstream how much **credit** it has = how many
+  free buffers are ready to receive.
+- The upstream **only sends** up to that credit. Slow downstream consumption → credit reaches 0 →
+  the upstream stops sending → the upstream's buffers fill → *it* slows down too → the pressure **propagates
+  backwards** all the way to the source.
 
-Đây chính là cơ chế **backpressure** đo được trong Flink: không phải "làm rớt dữ liệu",
-mà là *van tự đóng* lan từ điểm nghẽn ngược về nguồn. Trong UI, subtask backpressured cao
-nghĩa là nó đang bị downstream giữ lại. Chi tiết đọc và chỉnh ở
+This is exactly the **backpressure** mechanism you can measure in Flink: not "dropping data",
+but a *self-closing valve* propagating from the bottleneck back to the source. In the UI, a highly
+backpressured subtask means it's being held back by the downstream. The details of reading and tuning it are in
 [backpressure-tuning](../skills/backpressure-tuning.md).
 
-## Deployment mode
+## Deployment modes
 
-| Mode | User code / JobGraph sinh ở đâu | Dùng khi |
+| Mode | Where user code / the JobGraph is produced | Use when |
 |---|---|---|
-| **Session** | Client sinh, submit vào cụm dùng chung, sẵn có | Nhiều job ngắn, chia hạ tầng |
-| **Application** | Sinh **trên** cụm (trong JobManager), mỗi app một cụm | Production, cô lập tài nguyên |
-| ~~Per-job~~ | (đã **deprecated**) | — không dùng cho mới |
+| **Session** | The client produces it and submits into a shared, already-running cluster | Many short jobs, sharing infrastructure |
+| **Application** | Produced **on** the cluster (inside the JobManager), one cluster per app | Production, resource isolation |
+| ~~Per-job~~ | (**deprecated**) | — don't use for anything new |
 
-Session mode chia cụm cho nhiều job — nhẹ để thử nghiệm nhưng một job ngốn tài nguyên có
-thể ảnh hưởng job khác, và client phải biên dịch JobGraph (tốn tài nguyên client).
-Application mode cô lập mỗi ứng dụng vào cụm riêng và `main()` chạy *trên* JobManager —
-chuẩn production hiện nay. Per-job mode cũ đã bị deprecated; nếu tài liệu nào còn nhắc,
-coi như lỗi thời.
+Session mode shares a cluster between several jobs — light for experiments, but one resource-hungry job can
+affect the others, and the client has to compile the JobGraph (costing client resources).
+Application mode isolates each application in its own cluster and runs `main()` *on* the JobManager —
+the current production standard. The old per-job mode is deprecated; if a document still mentions it,
+treat it as out of date.
 
-### High availability (HA) — JobManager không phải điểm chết đơn
+### High availability (HA) — the JobManager isn't a single point of failure
 
-JobManager là điểm điều phối trung tâm; nếu nó chết mà không có HA, cả job dừng. HA giải
-bằng:
+The JobManager is the central coordination point; if it dies without HA, the whole job stops. HA solves this
+with:
 
-- **Nhiều JobManager**, một *leader* tại một thời điểm, bầu lại qua **ZooKeeper** hoặc
-  **Kubernetes** (leader election). JobManager chết → một cái khác lên leader.
-- **JobGraph store + metadata checkpoint** lưu ở nơi bền (ví dụ trên HDFS/S3, con trỏ
-  trong ZK/K8s ConfigMap). Nhờ đó JobManager mới lên biết *đang có job nào*, checkpoint
-  gần nhất ở đâu, và **restore** thay vì mất trắng.
+- **Several JobManagers**, one *leader* at a time, re-elected through **ZooKeeper** or
+  **Kubernetes** (leader election). The JobManager dies → another becomes leader.
+- **A JobGraph store + checkpoint metadata** stored durably (e.g. on HDFS/S3, with the pointer
+  in ZK/a K8s ConfigMap). That way the new JobManager knows *which jobs exist*, where the most recent
+  checkpoint is, and can **restore** rather than lose everything.
 
-Không có HA thì JobManager là single point of failure; production gần như luôn bật HA.
+Without HA the JobManager is a single point of failure; production almost always has HA on.
 
-## Trade-offs khi tăng parallelism
+## The trade-offs of raising parallelism
 
-Tăng parallelism *không* miễn phí:
+Raising parallelism is *not* free:
 
-| Được | Mất | Đổi lấy |
+| You get | You lose | In exchange for |
 |---|---|---|
-| Throughput cao hơn (nếu chưa nghẽn) | Cần thêm slot/TaskManager | Xử lý nhiều event/giây hơn |
-| Chia nhỏ tải mỗi subtask | **State redistribute** khi đổi parallelism → cần savepoint, tốn thời gian | Scale mà giữ state |
-| — | **Key skew**: nếu một key nóng chiếm phần lớn dữ liệu, thêm subtask không cứu được | — |
+| Higher throughput (if you weren't already bottlenecked) | Needing more slots/TaskManagers | Processing more events per second |
+| Smaller load per subtask | **State redistribution** on a parallelism change → needing a savepoint, taking time | Scaling while keeping state |
+| — | **Key skew**: if one hot key holds most of the data, more subtasks don't help | — |
 
-**Bẫy key skew:** parallelism chỉ giúp khi dữ liệu chia đều theo key. Nếu 90% event có
-cùng một `user_id`, subtask giữ key đó vẫn nghẽn dù bạn tăng parallelism lên bao nhiêu —
-tất cả event của một key đi về đúng một subtask. Phải giải bằng cách đổi khoá (thêm salt)
-hoặc pre-aggregate, không phải bằng thêm slot.
+**The key-skew trap:** parallelism only helps when the data divides evenly by key. If 90% of the events share
+one `user_id`, the subtask holding that key is still the bottleneck no matter how far you raise parallelism —
+all of a key's events go to exactly one subtask. It has to be solved by changing the key (adding a salt)
+or pre-aggregating, not by adding slots.
 
-**Rescale state:** keyed state phân theo key vào các subtask qua *key group* (đơn vị chia
-nhỏ nhất của state). Đổi parallelism nghĩa là gán lại key group cho subtask mới, nên state
-phải đọc ra và phân bố lại — Flink chỉ làm được điều này khi **restore từ savepoint**,
-không làm nóng trên job đang chạy. Đó là lý do đổi parallelism = dừng, savepoint, restore.
+**Rescaling state:** keyed state is distributed by key across subtasks via *key groups* (the smallest
+unit state is split into). Changing parallelism means reassigning key groups to the new subtasks, so state
+must be read out and redistributed — Flink can only do this when **restoring from a savepoint**,
+never hot on a running job. That's why changing parallelism = stop, savepoint, restore.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả | Phòng bằng |
+| Mistake | Consequence | Prevented by |
 |---|---|---|
-| Số slot < parallelism | Job không đủ chỗ chạy, treo ở SCHEDULED | Đảm bảo tổng slot ≥ parallelism cao nhất |
-| Tăng parallelism để cứu key skew | Không cải thiện, phí tài nguyên | Sửa phân bố key trước |
-| Đổi parallelism trực tiếp không savepoint | Mất state | Savepoint → restore với parallelism mới ([savepoint-upgrade](../skills/savepoint-upgrade.md)) |
-| Nhầm một hộp UI là một operator | Chẩn sai chỗ nghẽn | Nhớ một hộp = một chain |
-| Bật RocksDB nhưng managed memory quá nhỏ | Container bị kill vì vượt bộ nhớ, không lỗi Flink | Cấp đủ managed memory cho RocksDB |
-| Chạy production không HA | JobManager chết → job dừng, mất metadata | Bật HA qua ZK/K8s |
+| Slots < parallelism | The job has nowhere to run and hangs at SCHEDULED | Ensuring total slots ≥ the highest parallelism |
+| Raising parallelism to fix key skew | No improvement, wasted resources | Fixing the key distribution first |
+| Changing parallelism directly without a savepoint | State lost | Savepoint → restore with the new parallelism ([savepoint-upgrade](../skills/savepoint-upgrade.md)) |
+| Mistaking one UI box for one operator | Diagnosing the wrong bottleneck | Remembering one box = one chain |
+| Turning on RocksDB with managed memory too small | The container is killed for exceeding memory, with no Flink error | Giving RocksDB enough managed memory |
+| Running production without HA | The JobManager dies → the job stops and metadata is lost | Turning HA on via ZK/K8s |
 
 ## FAQ
 
 <details>
-<summary>Một slot chạy được bao nhiêu subtask?</summary>
+<summary>How many subtasks can one slot run?</summary>
 
-Với slot sharing bật (mặc định), một slot chứa được cả một *chuỗi* subtask thuộc các
-operator khác nhau của cùng pipeline — nhưng chỉ **một** subtask của mỗi operator. Nên
-số slot cần bằng parallelism cao nhất, không phải tổng số subtask.
-
-</details>
-
-<details>
-<summary>Vì sao đổi parallelism lại cần savepoint?</summary>
-
-Keyed state được phân theo key (qua key group) vào các subtask. Đổi parallelism nghĩa là
-phân vùng key đổi, nên state phải được đọc ra và phân bố lại. Flink làm việc này khi
-restore từ savepoint, không làm được trên job đang chạy.
+With slot sharing on (the default), one slot can hold a whole *chain* of subtasks belonging to different
+operators of the same pipeline — but only **one** subtask per operator. So
+the slots needed equal the highest parallelism, not the total subtask count.
 
 </details>
 
 <details>
-<summary>Session mode và application mode khác nhau ở đâu quan trọng nhất?</summary>
+<summary>Why does changing parallelism need a savepoint?</summary>
 
-Ở chỗ `main()` (biên dịch JobGraph) chạy đâu và tài nguyên có cô lập không. Session:
-client biên dịch, cụm dùng chung nhiều job → một job xấu ảnh hưởng cả cụm. Application:
-`main()` chạy trên JobManager, mỗi app một cụm → cô lập, chuẩn production.
+Keyed state is distributed by key (via key groups) across the subtasks. Changing parallelism means the
+key partitioning changes, so state has to be read out and redistributed. Flink does this when
+restoring from a savepoint; it can't do it on a running job.
+
+</details>
+
+<details>
+<summary>What's the most important difference between session mode and application mode?</summary>
+
+Where `main()` (compiling the JobGraph) runs, and whether resources are isolated. Session:
+the client compiles and the cluster is shared between jobs → one bad job affects the whole cluster. Application:
+`main()` runs on the JobManager, one cluster per app → isolated, the production standard.
 
 </details>
 
 ## Related Topics
 
-- [Flink là gì](what-is-flink.md) — dataflow và DAG operator, nền cho file này
-- [State và checkpoint](state-and-checkpoint.md) — JobManager điều phối checkpoint thế nào
-- [Exactly-once trong Flink](exactly-once.md) — JobMaster gom ack checkpoint để chốt hoàn tất
-- [Backpressure và tuning](../skills/backpressure-tuning.md) — đọc network buffer, credit-based flow control
-- [Savepoint và nâng cấp](../skills/savepoint-upgrade.md) — đổi parallelism mà giữ state
-- [Flink](../index.md) — chủ đề chứa file này
+- [What Flink is](what-is-flink.md) — dataflow and the operator DAG, the foundation for this file
+- [State and checkpoints](state-and-checkpoint.md) — how the JobManager coordinates checkpointing
+- [Exactly-once in Flink](exactly-once.md) — the JobMaster collecting checkpoint acks to finalise completion
+- [Backpressure and tuning](../skills/backpressure-tuning.md) — reading network buffers, credit-based flow control
+- [Savepoints and upgrades](../skills/savepoint-upgrade.md) — changing parallelism while keeping state
+- [Flink](../index.md) — the topic this file belongs to

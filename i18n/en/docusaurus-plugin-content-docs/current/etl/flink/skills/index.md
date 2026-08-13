@@ -1,9 +1,8 @@
 ---
-title: Kỹ năng — Flink
-i18n_status: untranslated
+title: Skills — Flink
 sidebar_key: flink-skills
 sidebar_position: 0
-description: "Đã nắm reference rồi, giờ gặp tình huống X thì xử lý ra sao."
+description: "You've got the reference; now, faced with situation X, what do you do."
 tags: [skills, flink]
 domain: data-engineering
 category: index
@@ -11,19 +10,19 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Kỹ năng — Flink
+# Skills — Flink
 
-Mỗi file giả định phần [`reference/`](../reference/index.md) đã nắm, và xử lý **một
-tình huống cụ thể**.
+Each file assumes the [`reference/`](../reference/index.md) section is understood, and handles **one
+specific situation**.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [DataStream vs Table/SQL API](datastream-vs-table-sql.md) | Chọn API nào cho việc nào, và cái giá của mỗi lựa chọn | 📝 |
-| 2 | [Window](windows.md) | Tumbling, sliding, session; allowed lateness và side output | 📝 |
-| 3 | [Savepoint và nâng cấp job](savepoint-upgrade.md) | Sửa code mà không mất state; vì sao cần `uid()` | 📝 |
-| 4 | [Connector](connectors.md) | Kafka source/sink, Iceberg sink, CDC — nối Flink với thế giới | 📝 |
-| 5 | [Backpressure và tuning](backpressure-tuning.md) | Đọc backpressure, chỉnh parallelism, state backend | 📝 |
+| 1 | [DataStream vs Table/SQL API](datastream-vs-table-sql.md) | Which API for which job, and the price of each choice | 📝 |
+| 2 | [Windows](windows.md) | Tumbling, sliding, session; allowed lateness and side outputs | 📝 |
+| 3 | [Savepoints and upgrading a job](savepoint-upgrade.md) | Changing code without losing state; why you need `uid()` | 📝 |
+| 4 | [Connectors](connectors.md) | Kafka source/sink, Iceberg sink, CDC — connecting Flink to the world | 📝 |
+| 5 | [Backpressure and tuning](backpressure-tuning.md) | Reading backpressure, tuning parallelism and the state backend | 📝 |
 
 ## Related Topics
 
-- [Flink](../index.md) — chủ đề chứa thư mục này
+- [Flink](../index.md) — the topic this directory belongs to

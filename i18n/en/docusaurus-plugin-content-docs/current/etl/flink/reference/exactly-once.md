@@ -1,8 +1,7 @@
 ---
-title: Exactly-once trong Flink
-i18n_status: untranslated
+title: Exactly-once in Flink
 sidebar_position: 5
-description: "Checkpoint cho exactly-once nội bộ; ra sink cần two-phase commit mới không trùng."
+description: "Checkpoints give internal exactly-once; getting to the sink needs two-phase commit to avoid duplicates."
 tags: [flink, exactly-once, two-phase-commit, transactional-sink, delivery-semantics]
 domain: data-engineering
 category: concept
@@ -13,47 +12,47 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Exactly-once trong Flink
+# Exactly-once in Flink
 
-> **Chốt:** Exactly-once của Flink nghĩa là mỗi event ảnh hưởng **state** đúng một lần —
-> không phải "được xử lý đúng một lần". Nó dừng ở **ranh giới sink**: ra ngoài chỉ là
-> at-least-once trừ khi sink hỗ trợ **two-phase commit** hoặc idempotent.
+> **Takeaway:** Flink's exactly-once means each event affects **state** exactly once —
+> not "is processed exactly once". It stops at the **sink boundary**: going out is only
+> at-least-once unless the sink supports **two-phase commit** or is idempotent.
 
-Đây là chỗ hiểu nhầm đắt nhất về Flink. "Exactly-once" nghe như bảo đảm mọi thứ chỉ xảy
-ra một lần — không phải. Hiểu đúng ranh giới của nó là điều kiện để không giao một pipeline
-"exactly-once" mà thực ra vẫn trùng ở đích.
+This is the most expensive misunderstanding about Flink. "Exactly-once" sounds like a guarantee that everything
+happens only once — it isn't. Understanding its boundary correctly is the precondition for not shipping an
+"exactly-once" pipeline that actually still duplicates at the destination.
 
-## Exactly-once nghĩa là gì (và không nghĩa là gì)
+## What exactly-once means (and doesn't mean)
 
-**Nghĩa là:** mỗi event tác động **state nội bộ** của Flink đúng một lần. Sau một lần
-chết và khôi phục, bộ đếm không tăng hai lần cho cùng một event, cửa sổ không gom trùng.
+**It means:** each event affects Flink's **internal state** exactly once. After a failure
+and recovery, a counter doesn't increment twice for the same event, and a window doesn't double-count.
 
-**KHÔNG nghĩa là:** mỗi event được *xử lý* (chạy qua hàm) đúng một lần. Khi khôi phục,
-Flink **replay** event từ checkpoint — nên một event có thể *chạy qua* operator nhiều lần.
-Cái được đảm bảo là *hiệu ứng lên state* chỉ tính một lần, vì state cũng **rewind** về
-checkpoint cùng offset. Nói cách khác: record có thể được *tính lại*, nhưng vì state cũng
-lùi về đúng điểm đó, kết quả cuối như thể chỉ tính một lần. Đây là lý do side-effect
-không-idempotent trong hàm xử lý (gọi API ngoài, ghi thẳng DB) **không** được exactly-once
-— chỉ *state của Flink* mới được.
+**It does NOT mean:** each event is *processed* (run through your function) exactly once. On recovery,
+Flink **replays** events from the checkpoint — so an event may *run through* an operator several times.
+What's guaranteed is that the *effect on state* counts once, because the state is also **rewound** to the
+checkpoint at the same offset. Put differently: a record may be *recomputed*, but because the state also
+goes back to exactly that point, the end result is as if it were computed once. This is why a
+non-idempotent side effect inside your processing function (calling an external API, writing straight to a DB)
+does **not** get exactly-once — only *Flink's state* does.
 
-## Cơ chế: checkpoint + rewind + state khớp
+## The mechanism: checkpoint + rewind + matching state
 
-Exactly-once *nội bộ* dựa trên ba mảnh khớp nhau, tất cả chụp trong cùng một checkpoint:
+*Internal* exactly-once rests on three pieces fitting together, all captured in the same checkpoint:
 
-1. **Source replayable** — nguồn phải tua lại được về offset đã lưu (Kafka: offset;
-   file: vị trí). Nguồn không replay được thì không có exactly-once.
-2. **State checkpoint** — state được chụp cùng thời điểm với offset đó.
-3. **Rewind khi khôi phục** — chết thì restore state từ checkpoint N và tua source về
-   đúng offset đã lưu trong checkpoint N.
+1. **A replayable source** — the source must be rewindable to a saved offset (Kafka: an offset;
+   files: a position). A non-replayable source means no exactly-once.
+2. **A state checkpoint** — the state is captured at the same moment as that offset.
+3. **Rewinding on recovery** — on failure, restore state from checkpoint N and rewind the source to
+   exactly the offset saved in checkpoint N.
 
-Vì offset và state đến từ *cùng một* checkpoint, replay từ offset đó cộng state tại đó cho
-kết quả như chưa từng chết. Nền tảng ở [state-and-checkpoint](state-and-checkpoint.md).
+Because the offset and the state come from the *same* checkpoint, replaying from that offset plus the state
+at that point gives the same result as never having died. The foundation is in [state-and-checkpoint](state-and-checkpoint.md).
 
-### Vì sao ảnh checkpoint nhất quán: barrier alignment
+### Why the checkpoint snapshot is consistent: barrier alignment
 
-Điểm tinh tế: làm sao chụp state của *mọi* operator ở "cùng một thời điểm logic" khi
-chúng chạy song song và không đồng bộ đồng hồ? Flink dùng **checkpoint barrier** — một
-dấu đặc biệt JobMaster tiêm vào stream tại source, chảy cùng dòng dữ liệu:
+The subtle point: how do you snapshot the state of *every* operator at "the same logical moment" when
+they run in parallel with unsynchronised clocks? Flink uses a **checkpoint barrier** — a
+special mark the JobMaster injects into the stream at the sources, flowing along with the data:
 
 ```text
 source ─ r1 r2 [BARRIER-N] r3 r4 ─►  operator ─►  ...
@@ -62,198 +61,198 @@ source ─ r1 r2 [BARRIER-N] r3 r4 ─►  operator ─►  ...
    → nó snapshot state ngay tại ranh giới đó (aligned)
 ```
 
-- Khi một operator có nhiều input (ví dụ sau `keyBy` hoặc join), nó **đợi barrier-N tới ở
-  tất cả input** rồi mới snapshot — đây là **aligned checkpoint**. Record của các input
-  đến sớm (đã qua barrier ở input này nhưng input kia chưa) bị *giữ lại* cho tới khi mọi
-  barrier tới, đảm bảo state chụp phản ánh đúng "mọi thứ trước barrier-N, không gì sau nó".
-- Kết quả: ảnh state của mọi operator ứng với **cùng một ranh giới** trong dòng dữ liệu →
-  nhất quán toàn cục. Đó là thứ làm exactly-once đúng.
-- Đánh đổi: alignment *đợi* barrier chậm nhất → dưới backpressure nặng, alignment kéo dài
-  làm checkpoint lâu. Flink có **unaligned checkpoint** đổi cách này (chụp cả record đang
-  bay thay vì đợi) để checkpoint không bị kẹt vì backpressure — trả giá bằng state
-  checkpoint lớn hơn. Chọn giữa hai là một núm tuning.
+- When an operator has several inputs (e.g. after a `keyBy` or a join), it **waits for barrier-N on
+  all its inputs** before snapshotting — this is an **aligned checkpoint**. Records from inputs that
+  arrived early (past the barrier on this input while another hasn't got there) are *held back* until every
+  barrier arrives, ensuring the snapshot reflects exactly "everything before barrier-N, nothing after it".
+- The result: the state snapshots of every operator correspond to **the same boundary** in the data flow →
+  globally consistent. That's what makes exactly-once correct.
+- The trade-off: alignment *waits* for the slowest barrier → under heavy backpressure, alignment drags on
+  and makes checkpoints slow. Flink has **unaligned checkpoints** as an alternative (capturing the records in
+  flight rather than waiting) so checkpoints don't get stuck on backpressure — paying with a larger
+  checkpoint. Choosing between them is a tuning dial.
 
-## Nhưng ra ngoài là chuyện khác
+## But going out is another matter
 
-Cửa sổ tính xong, kết quả **ghi ra sink** (Kafka, Iceberg, JDBC). Vấn đề: giữa lúc ghi
-ra sink và lúc checkpoint hoàn tất, job có thể chết. Khi khôi phục, Flink replay và **ghi
-lại** kết quả đó → **trùng ở đích**, dù state nội bộ vẫn exactly-once.
+Once the window has computed, the result is **written to a sink** (Kafka, Iceberg, JDBC). The problem: between
+writing to the sink and the checkpoint completing, the job can die. On recovery, Flink replays and **writes
+that result again** → **duplicates at the destination**, even though the internal state is still exactly-once.
 
-Nên mặc định, end-to-end chỉ là **at-least-once**. Muốn exactly-once tới tận đích, sink
-phải một trong hai:
+So by default, end-to-end is only **at-least-once**. For exactly-once all the way to the destination, the sink
+must be one of two things:
 
-- **Transactional (two-phase commit)** — chỉ "công khai" dữ liệu khi checkpoint hoàn tất.
-- **Idempotent** — ghi cùng dữ liệu nhiều lần cho kết quả như một lần (ví dụ upsert theo
-  primary key). Trùng ghi không sao vì lần sau đè lần trước.
+- **Transactional (two-phase commit)** — only "publishing" the data when the checkpoint completes.
+- **Idempotent** — writing the same data several times gives the same result as once (e.g. an upsert by
+  primary key). A duplicate write is harmless because the later one overwrites the earlier.
 
-## Two-phase commit sink
+## Two-phase commit sinks
 
-Cơ chế `TwoPhaseCommitSinkFunction` (và các sink hiện đại theo mô hình này) đồng bộ
-transaction của sink với **vòng đời checkpoint**. Điểm mấu chốt: `preCommit` gắn vào lúc
-snapshot (nhận barrier), còn `commit` gắn vào lúc checkpoint **hoàn tất toàn cục**
-(`notifyCheckpointComplete` — callback JobMaster gọi sau khi *mọi* subtask đã ack):
+The `TwoPhaseCommitSinkFunction` mechanism (and modern sinks following the same model) synchronises the
+sink's transaction with the **checkpoint lifecycle**. The crucial part: `preCommit` hooks into the
+snapshot (receiving the barrier), while `commit` hooks into the checkpoint **completing globally**
+(`notifyCheckpointComplete` — the callback the JobMaster makes after *every* subtask has acked):
 
 ```mermaid
 sequenceDiagram
     participant JM as JobMaster
     participant Op as Sink subtask
-    participant Ext as Hệ đích (Kafka/Iceberg)
-    JM->>Op: barrier-N (bắt đầu checkpoint N)
-    Op->>Ext: flush + preCommit transaction N (chưa hiện ra ngoài)
-    Op->>JM: ack checkpoint N (kèm handle transaction N)
-    Note over JM: đợi ack từ MỌI subtask
+    participant Ext as The destination system (Kafka/Iceberg)
+    JM->>Op: barrier-N (checkpoint N begins)
+    Op->>Ext: flush + preCommit transaction N (not yet visible outside)
+    Op->>JM: ack checkpoint N (with transaction N's handle)
+    Note over JM: waits for acks from EVERY subtask
     JM-->>Op: notifyCheckpointComplete(N)
-    Op->>Ext: commit transaction N (giờ dữ liệu mới hiện ra)
+    Op->>Ext: commit transaction N (only now does the data appear)
 ```
 
-- **preCommit** — khi nhận barrier và snapshot, sink flush dữ liệu vào một transaction
-  *chưa commit* và ghi nhận handle của transaction đó vào state (để restore biết mà xử lý).
-- **commit** — chỉ khi JobMaster báo checkpoint N *hoàn tất* (đã gom đủ ack từ mọi
-  subtask) qua `notifyCheckpointComplete`, sink mới commit transaction. Từ đây dữ liệu mới
-  hiện ra với người đọc.
+- **preCommit** — on receiving the barrier and snapshotting, the sink flushes the data into an *uncommitted*
+  transaction and records that transaction's handle in its state (so a restore knows to deal with it).
+- **commit** — only when the JobMaster reports checkpoint N *complete* (having collected acks from every
+  subtask) via `notifyCheckpointComplete` does the sink commit the transaction. Only from then is the data
+  visible to readers.
 
-Ba nhánh khôi phục, phải xử đủ cả ba:
+Three recovery branches, all of which must be handled:
 
-- Chết **trước** khi checkpoint N hoàn tất → transaction N chưa commit; khi restore về
-  checkpoint N-1, transaction N bị **abort** → dữ liệu dở dang không lọt ra ngoài.
-- Chết **sau** preCommit nhưng **trước** commit (checkpoint đã hoàn tất) → khi restore,
-  sink đọc handle transaction từ state và **commit lại** (commit phải *idempotent* —
-  commit hai lần cùng transaction không sao). Đây là chỗ hay sai khi tự viết 2PC sink.
-- Transaction "treo" quá lâu vượt timeout của hệ đích → mất dữ liệu; xem trade-offs.
+- Dying **before** checkpoint N completes → transaction N isn't committed; when restoring to
+  checkpoint N-1, transaction N is **aborted** → the half-finished data never escapes.
+- Dying **after** preCommit but **before** the commit (the checkpoint having completed) → on restore, the
+  sink reads the transaction handle from state and **commits it again** (the commit must be *idempotent* —
+  committing the same transaction twice must be harmless). This is where people go wrong writing their own 2PC sink.
+- A transaction "hanging" long enough to exceed the destination system's timeout → data lost; see the trade-offs.
 
-## Kafka sink EXACTLY_ONCE
+## The Kafka sink's EXACTLY_ONCE mode
 
-Kafka sink của Flink hỗ trợ chế độ `EXACTLY_ONCE` bằng **Kafka transaction**: mỗi
-checkpoint mở một transaction, commit khi checkpoint hoàn tất. Cơ chế dựa trên:
+Flink's Kafka sink supports `EXACTLY_ONCE` mode using **Kafka transactions**: each
+checkpoint opens a transaction, committed when the checkpoint completes. The mechanism relies on:
 
-- **`transactional.id`** — mỗi subtask sink dùng một transactional.id ổn định để Kafka
-  broker nhận ra và **fence** (khoá) producer cũ khi có producer mới cùng id lên sau khôi
-  phục — chặn "zombie" của lần chạy chết ghi thêm.
-- **Transaction bao mọi record của một checkpoint**, commit đúng khi checkpoint hoàn tất.
+- **`transactional.id`** — each sink subtask uses a stable transactional.id so the Kafka
+  broker recognises and **fences** the old producer when a new one with the same id comes up after
+  recovery — blocking the "zombie" of the dead run from writing more.
+- **A transaction covering all of one checkpoint's records**, committed exactly when the checkpoint completes.
 
-**Bẫy phía đọc — hai nửa của cùng một bảo đảm:** transaction chỉ có nghĩa nếu consumer
-đọc topic đó đặt **`isolation.level=read_committed`**. Mặc định consumer là
-`read_uncommitted` — nó đọc cả dữ liệu chưa commit, nên vẫn thấy bản trùng của lần chạy
-bị abort. Đặt sink EXACTLY_ONCE mà quên `read_committed` phía đọc = công cốc. Xem thêm ở
+**The trap on the reading side — the two halves of one guarantee:** the transaction only means something if the
+consumer reading that topic sets **`isolation.level=read_committed`**. The consumer default is
+`read_uncommitted` — it reads uncommitted data too, and therefore still sees the duplicates of an aborted
+run. Setting the sink to EXACTLY_ONCE while forgetting `read_committed` on the reader is wasted effort. There's more in
 [Kafka delivery semantics](../../kafka/reference/delivery-semantics.md).
 
-## Iceberg / file sink
+## Iceberg / file sinks
 
-Sink kiểu file/table (Iceberg, filesystem) đạt exactly-once bằng cách **commit theo
-checkpoint**: dữ liệu được ghi ra file tạm (data file), và chỉ *commit* (thêm vào
-snapshot/manifest của bảng) khi checkpoint hoàn tất. Chết giữa chừng thì file tạm chưa
-được đưa vào snapshot bị bỏ qua ở lần khôi phục. Bản chất giống 2PC — file đã ghi là
-"preCommit", đưa vào snapshot là "commit" — chỉ là gói trong cơ chế commit của table
-format thay vì transaction của một message broker.
+File/table-style sinks (Iceberg, filesystem) achieve exactly-once by **committing per
+checkpoint**: the data is written to temporary files (data files), and only *committed* (added to the
+table's snapshot/manifest) when the checkpoint completes. Dying mid-way leaves temporary files that never
+made it into a snapshot, and they're ignored on recovery. It's essentially 2PC — a written file is
+the "preCommit" and adding it to the snapshot is the "commit" — just wrapped in a table format's commit
+mechanism instead of a message broker's transaction.
 
-## Idempotent sink vs transactional sink
+## Idempotent sinks vs transactional sinks
 
-Hai đường tới exactly-once *ngữ nghĩa*, chọn khác nhau:
+Two routes to *semantic* exactly-once, chosen differently:
 
 | | Transactional (2PC) | Idempotent (upsert) |
 |---|---|---|
-| Cơ chế | Commit dữ liệu đúng khi checkpoint hoàn tất | Ghi trùng cũng không sao vì đè theo key |
-| Cần ở đích | Hỗ trợ transaction (Kafka EOS, Iceberg commit) | Có **primary key** tự nhiên để upsert |
-| Độ trễ | Dữ liệu chỉ hiện *sau* checkpoint → trễ theo interval | Hiện ngay khi ghi, không cộng độ trễ transaction |
-| Phía đọc | Kafka cần `read_committed` | Không cần gì đặc biệt |
-| Trùng ở tầng ghi | Không có | Có, nhưng vô hại |
-| Chọn khi | Đích không dedup được (append-only, cần đúng số bản ghi) | Có PK và chỉ cần "trạng thái cuối đúng" |
+| Mechanism | Commits the data exactly when the checkpoint completes | Duplicate writes are harmless because they overwrite by key |
+| Required at the destination | Transaction support (Kafka EOS, Iceberg commits) | A natural **primary key** to upsert on |
+| Latency | Data only appears *after* a checkpoint → latency follows the interval | Appears the moment it's written, adding no transaction latency |
+| The reading side | Kafka needs `read_committed` | Nothing special needed |
+| Duplicates at the write layer | None | Yes, but harmless |
+| Choose when | The destination can't deduplicate (append-only, needing the exact record count) | You have a PK and only need "the final state to be right" |
 
-Kinh nghiệm: **có primary key thì ưu tiên idempotent** — rẻ, không cộng độ trễ. Chỉ dùng
-2PC khi đích là append-only hoặc phải đúng *số lượng* bản ghi (đếm tiền, event log).
+Rule of thumb: **with a primary key, prefer idempotent** — cheap, adding no latency. Only use
+2PC when the destination is append-only or the *number* of records must be exact (counting money, an event log).
 
-## End-to-end exactly-once cần đủ ba
+## End-to-end exactly-once needs all three
 
-Không mảnh nào tự đủ — đây là mắt xích, thiếu một mắt là gãy cả chuỗi:
+No piece is sufficient alone — this is a chain, and one missing link breaks the whole thing:
 
 ```mermaid
 flowchart LR
   A["Source<br/>replayable"] --> B["State +<br/>checkpoint"] --> C["Sink<br/>transactional/idempotent"]
-  A -. thiếu .-> A2["khôi phục không tua<br/>→ mất/lệch dữ liệu"]
-  B -. thiếu .-> B2["state lệch offset<br/>→ sai sau khôi phục"]
-  C -. thiếu .-> C2["ra ngoài TRÙNG<br/>dù nội bộ exactly-once"]
+  A -. missing .-> A2["recovery can't rewind<br/>→ data lost/skewed"]
+  B -. missing .-> B2["state out of step with the offset<br/>→ wrong after recovery"]
+  C -. missing .-> C2["DUPLICATES going out<br/>even with internal exactly-once"]
 ```
 
-| Mảnh | Nếu thiếu |
+| Piece | If it's missing |
 |---|---|
-| **Source replayable** | Khôi phục không tua lại được → mất hoặc lệch dữ liệu |
-| **State + checkpoint** | State không nhất quán với offset → sai sau khôi phục |
-| **Sink transactional / idempotent** | Ra ngoài **trùng** dù nội bộ exactly-once |
+| **A replayable source** | Recovery can't rewind → data lost or skewed |
+| **State + checkpoints** | State inconsistent with the offset → wrong after recovery |
+| **A transactional / idempotent sink** | **Duplicates** going out despite internal exactly-once |
 
-Chỉ khi cả ba khớp thì end-to-end mới thật sự exactly-once. Thiếu mắt sink là lỗi hay gặp
-nhất và im lặng nhất — đã có case study đi tới bản trùng vì đúng chỗ này:
-[trùng lặp vì sink không transaction](../case-studies/trung-lap-vi-sink-khong-transaction.md).
-Chọn sink là quyết định kiến trúc, xem [connectors](../skills/connectors.md).
+Only with all three fitting together is end-to-end genuinely exactly-once. A missing sink link is the most
+common and the most silent failure — there's a case study running all the way to a duplicate for exactly this reason:
+[duplicates from a non-transactional sink](../case-studies/trung-lap-vi-sink-khong-transaction.md).
+Choosing a sink is an architectural decision, see [connectors](../skills/connectors.md).
 
 ## Trade-offs
 
-| Được | Mất | Đổi lấy |
+| You get | You lose | In exchange for |
 |---|---|---|
-| Không trùng tới tận đích | **Độ trễ tăng** — dữ liệu chỉ hiện khi checkpoint hoàn tất | Số đúng ở nơi quan trọng (tiền, đếm) |
-| Bảo đảm mạnh nhất | Checkpoint interval dài → độ trễ end-to-end dài theo | Kiểm soát được đánh đổi |
-| — | Transaction Kafka tốn tài nguyên broker, giới hạn số transaction đồng thời | — |
-| — | Checkpoint dày để giảm trễ → nguy cơ vượt **transaction timeout** của Kafka | — |
+| No duplicates all the way to the destination | **Higher latency** — data only appears when a checkpoint completes | Correct numbers where it matters (money, counts) |
+| The strongest guarantee | A long checkpoint interval → a long end-to-end latency to match | Control over the trade-off |
+| — | Kafka transactions cost broker resources and limit concurrent transactions | — |
+| — | Frequent checkpoints to cut latency → the risk of exceeding Kafka's **transaction timeout** | — |
 
-**Đánh đổi cốt lõi về độ trễ:** với 2PC sink, dữ liệu chỉ hiện ra ngoài *sau* mỗi
-checkpoint. Checkpoint interval 60s nghĩa là độ trễ end-to-end tối thiểu ~60s. Muốn độ
-trễ thấp thì checkpoint dày hơn — nhưng dày quá thì tốn I/O.
+**The core latency trade-off:** with a 2PC sink, data only appears outside *after* each
+checkpoint. A 60s checkpoint interval means a minimum end-to-end latency of ~60s. For lower
+latency you checkpoint more often — but too often costs I/O.
 
-**Bẫy transaction timeout:** Kafka broker có `transaction.max.timeout.ms`; nếu một
-transaction (mở lúc checkpoint N, commit lúc N hoàn tất) sống lâu hơn timeout đó — ví dụ
-checkpoint bị chậm vì backpressure — broker **abort** nó và dữ liệu mất. Nên
-`transaction.timeout.ms` của producer phải lớn hơn *khoảng thời gian tệ nhất* giữa hai
-checkpoint hoàn tất, và ≤ giới hạn broker. Đây là lý do nhiều pipeline chọn **idempotent
-sink** (upsert) thay vì 2PC khi có primary key: được exactly-once *ngữ nghĩa* mà không
-phải trả độ trễ lẫn rủi ro timeout của transaction.
+**The transaction-timeout trap:** the Kafka broker has a `transaction.max.timeout.ms`; if a
+transaction (opened at checkpoint N, committed when N completes) lives longer than that timeout — say
+the checkpoint is slowed by backpressure — the broker **aborts** it and the data is lost. So the
+producer's `transaction.timeout.ms` must be larger than the *worst-case interval* between two
+completed checkpoints, and ≤ the broker's limit. This is why many pipelines choose an **idempotent
+sink** (upsert) over 2PC when they have a primary key: they get *semantic* exactly-once without
+paying either the latency or the transaction-timeout risk.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả | Phòng bằng |
+| Mistake | Consequence | Prevented by |
 |---|---|---|
-| Nghĩ exactly-once tự lan tới sink | Kết quả trùng ở đích | Chọn sink 2PC hoặc idempotent |
-| Kafka sink EXACTLY_ONCE, quên `read_committed` phía đọc | Consumer vẫn thấy bản trùng | Đặt `isolation.level=read_committed` |
-| Sink không idempotent + at-least-once | Trùng khi khôi phục | Upsert theo PK, hoặc dùng 2PC |
-| Kỳ vọng exactly-once với source không replay được | Mất/lệch dữ liệu khi khôi phục | Dùng source replayable (Kafka, file) |
-| `transaction.timeout.ms` < khoảng giữa hai checkpoint | Broker abort transaction → mất dữ liệu | Đặt timeout > interval tệ nhất, ≤ giới hạn broker |
-| Gọi API ngoài / ghi thẳng DB trong hàm xử lý | Side-effect chạy nhiều lần khi replay | Đưa hiệu ứng ra sink transactional/idempotent |
+| Thinking exactly-once spreads to the sink by itself | Duplicated results at the destination | Choosing a 2PC or idempotent sink |
+| An EXACTLY_ONCE Kafka sink with `read_committed` forgotten on the reader | The consumer still sees duplicates | Setting `isolation.level=read_committed` |
+| A non-idempotent sink + at-least-once | Duplicates on recovery | Upserting by PK, or using 2PC |
+| Expecting exactly-once with a non-replayable source | Data lost/skewed on recovery | Using a replayable source (Kafka, files) |
+| `transaction.timeout.ms` < the interval between two checkpoints | The broker aborts the transaction → data lost | Setting the timeout > the worst-case interval, ≤ the broker's limit |
+| Calling an external API / writing straight to a DB in your processing function | The side effect runs several times on replay | Moving the effect out to a transactional/idempotent sink |
 
 ## FAQ
 
 <details>
-<summary>Idempotent sink có phải exactly-once không?</summary>
+<summary>Is an idempotent sink exactly-once?</summary>
 
-Về *ngữ nghĩa* thì có: ghi trùng nhiều lần cho cùng kết quả (upsert theo PK), nên người
-đọc thấy như mỗi record chỉ áp một lần. Về *cơ chế* nó vẫn là at-least-once ở tầng ghi,
-chỉ là trùng không gây hại. Rẻ hơn 2PC và không cộng độ trễ transaction — nên ưu tiên khi
-có primary key tự nhiên.
-
-</details>
-
-<details>
-<summary>Vì sao 2PC làm tăng độ trễ?</summary>
-
-Dữ liệu chỉ commit (hiện ra ngoài) khi checkpoint *hoàn tất*. Nên độ trễ end-to-end tối
-thiểu ≈ checkpoint interval. Đây là đánh đổi trực tiếp giữa "không trùng" và "thấy dữ liệu
-nhanh".
+*Semantically* yes: duplicate writes give the same result (an upsert by PK), so a reader
+sees each record applied only once. *Mechanically* it's still at-least-once at the write layer,
+just with harmless duplicates. Cheaper than 2PC and adding no transaction latency — so prefer it when
+you have a natural primary key.
 
 </details>
 
 <details>
-<summary>Aligned và unaligned checkpoint khác nhau chỗ nào cho exactly-once?</summary>
+<summary>Why does 2PC increase latency?</summary>
 
-Cả hai đều cho exactly-once. Aligned đợi barrier tới ở mọi input rồi mới snapshot — sạch
-sẽ nhưng dưới backpressure nặng thì alignment kéo dài làm checkpoint chậm. Unaligned chụp
-luôn cả record đang bay giữa các operator thay vì đợi, nên checkpoint không bị kẹt vì
-backpressure — trả giá bằng state checkpoint lớn hơn. Đổi khi checkpoint hay timeout do
+Data is only committed (made visible) when the checkpoint *completes*. So minimum end-to-end
+latency ≈ the checkpoint interval. This is a direct trade-off between "no duplicates" and "seeing the data
+quickly".
+
+</details>
+
+<details>
+<summary>What's the difference between aligned and unaligned checkpoints for exactly-once?</summary>
+
+Both give exactly-once. Aligned waits for barriers on every input before snapshotting — clean
+but under heavy backpressure the alignment drags on and makes checkpoints slow. Unaligned captures the
+records in flight between operators rather than waiting, so checkpoints don't get stuck on
+backpressure — paying with a larger checkpoint. Switch when checkpoints often time out because of
 backpressure.
 
 </details>
 
 ## Related Topics
 
-- [State và checkpoint](state-and-checkpoint.md) — nền của exactly-once nội bộ, barrier
-- [Kiến trúc job Flink](architecture.md) — JobMaster gom ack để chốt checkpoint hoàn tất
-- [Connector](../skills/connectors.md) — chọn sink transactional / idempotent
+- [State and checkpoints](state-and-checkpoint.md) — the foundation of internal exactly-once, and barriers
+- [Flink job architecture](architecture.md) — the JobMaster collecting acks to finalise a checkpoint
+- [Connectors](../skills/connectors.md) — choosing a transactional / idempotent sink
 - [Kafka: delivery semantics](../../kafka/reference/delivery-semantics.md) — Kafka EOS, `transactional.id`, `read_committed`
-- [Trùng lặp vì sink không transaction](../case-studies/trung-lap-vi-sink-khong-transaction.md) — ví dụ đi tới bản trùng
-- [Flink](../index.md) — chủ đề chứa file này
+- [Duplicates from a non-transactional sink](../case-studies/trung-lap-vi-sink-khong-transaction.md) — an example running to a duplicate
+- [Flink](../index.md) — the topic this file belongs to

@@ -1,8 +1,7 @@
 ---
-title: Flink là gì
-i18n_status: untranslated
+title: What Flink is
 sidebar_position: 1
-description: "Engine xử lý stream có state: dữ liệu không bao giờ hết, nên phải tự định nghĩa khi nào đủ."
+description: "A stateful stream processing engine: the data never ends, so you have to define when it's enough yourself."
 tags: [flink, streaming, stream-processing, stateful, event-time]
 domain: data-engineering
 category: concept
@@ -13,80 +12,78 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Flink là gì
+# What Flink is
 
-> **Chốt:** Flink là stateful stream processor phân tán — nó xử lý dữ liệu *không bao
-> giờ hết*, nên khác biệt gốc so với batch là bạn phải tự định nghĩa **khi nào một cửa
-> sổ tính toán được coi là đủ**, và phải tự giữ state của một chương trình chạy mãi.
+> **Takeaway:** Flink is a distributed stateful stream processor — it processes data that *never
+> ends*, so the root difference from batch is that you have to define **when a computation window
+> counts as complete** yourself, and hold the state of a program that runs forever.
 
-Apache Flink là một engine phân tán để chạy tính toán **trên stream** — chuỗi event
-đến liên tục, không có điểm kết. Hai chữ quan trọng: *stateful* (Flink tự nhớ, ví dụ
-bộ đếm hay bảng join, và tự khôi phục sau khi chết) và *phân tán* (một job chạy song
-song trên nhiều máy, mỗi máy giữ một phần state).
+Apache Flink is a distributed engine for running computation **over streams** — sequences of events
+arriving continuously with no end point. Two important words: *stateful* (Flink remembers things itself,
+e.g. a counter or a join table, and restores them after a failure) and *distributed* (one job runs in
+parallel across several machines, each holding part of the state).
 
-## Mô hình dataflow: chương trình = một DAG toán tử
+## The dataflow model: a program = a DAG of operators
 
-Điều đầu tiên phải nắm: một chương trình Flink **không phải** một vòng lặp bạn viết để
-kéo từng record. Bạn *khai báo* một **đồ thị dataflow** — một DAG (có hướng, không chu
-trình) các *operator* — rồi Flink runtime cho stream record chảy qua đồ thị đó, mãi mãi.
+The first thing to grasp: a Flink program is **not** a loop you write to pull records one at a time.
+You *declare* a **dataflow graph** — a DAG (directed, acyclic) of *operators* — and then the Flink
+runtime lets the stream of records flow through that graph, forever.
 
 ```mermaid
 flowchart LR
   S["source<br/>(Kafka)"] --> M["map / filter<br/>(stateless)"]
-  M --> K["keyBy<br/>(phân vùng theo user_id)"]
-  K --> W["window / aggregate<br/>(stateful: giữ bộ đếm)"]
+  M --> K["keyBy<br/>(partitioning by user_id)"]
+  K --> W["window / aggregate<br/>(stateful: holds a counter)"]
   W --> J["join / process<br/>(stateful)"]
   J --> Snk["sink<br/>(Kafka / Iceberg)"]
 ```
 
-Ba điều rút ra từ mô hình này:
+Three things to take from this model:
 
-- **Mỗi record là một đơn vị chảy** qua đồ thị, không đợi gom lô. Record vào source, đi
-  qua từng operator, ra sink — theo dòng.
-- **Mỗi operator có thể stateful.** `map`/`filter` không giữ gì (stateless), nhưng
-  `window`, `aggregate`, `join`, hay một `ProcessFunction` tự viết đều giữ state riêng
-  cho phần dữ liệu chúng phụ trách. State đó là thứ Flink checkpoint và khôi phục.
-- **Đồ thị chạy song song.** Mỗi operator có *parallelism* — số bản song song, mỗi bản
-  xử lý một phần dữ liệu. Sau `keyBy`, mọi record cùng key luôn đi về đúng một bản, nên
-  state theo key nhất quán. Chi tiết song song hoá ở [architecture](architecture.md).
+- **Each record is a unit that flows** through the graph, without waiting for a batch to gather. A record
+  enters the source, passes through each operator, exits at the sink — in a stream.
+- **Each operator can be stateful.** `map`/`filter` hold nothing (stateless), but
+  `window`, `aggregate`, `join`, or a `ProcessFunction` you write yourself all hold their own state
+  for the data they're responsible for. That state is what Flink checkpoints and restores.
+- **The graph runs in parallel.** Each operator has a *parallelism* — the number of parallel copies, each
+  processing part of the data. After a `keyBy`, every record with the same key always goes to exactly one
+  copy, so per-key state is consistent. The parallelism details are in [architecture](architecture.md).
 
-Đây là khác biệt tư duy so với script batch: bạn thiết kế *hình dạng luồng*, không viết
-*trình tự thao tác*. Cùng một đồ thị chạy trên 1 máy lúc test và 100 máy lúc production.
+This is the mental difference from a batch script: you design the *shape of the flow*, not a *sequence of
+operations*. The same graph runs on 1 machine in testing and 100 in production.
 
-## Bounded vs unbounded stream
+## Bounded vs unbounded streams
 
-Flink mô hình hoá mọi dữ liệu là **stream**, chia làm hai:
+Flink models all data as a **stream**, split into two kinds:
 
-- **Unbounded stream** — không có kết thúc. Nguồn phát mãi (Kafka topic, CDC log). Phải
-  xử lý *ngay khi event tới*, không thể đợi "đọc hết" vì không bao giờ hết. Đây là chỗ
-  event time và watermark bắt buộc phải có: bạn cần một cách nói "cửa sổ 10:00–10:05 đã
-  đủ event, đóng lại được rồi".
-- **Bounded stream** — có điểm đầu và cuối hữu hạn (một file, một bảng snapshot). Đọc
-  hết rồi dừng.
+- **Unbounded stream** — with no end. The source emits forever (a Kafka topic, a CDC log). You have to
+  process *the moment an event arrives*, unable to wait for "reading everything" because it never ends. This is
+  where event time and watermarks become mandatory: you need a way of saying "the 10:00–10:05 window has
+  had all its events, it can be closed now".
+- **Bounded stream** — with a finite start and end (a file, a snapshot table). Read it all and stop.
 
-### Batch execution mode — cùng API, chạy như batch
+### Batch execution mode — the same API, running as batch
 
-**Batch chỉ là trường hợp đặc biệt của stream** — một stream bounded. Đây không phải
-khẩu hiệu marketing: Flink chạy cùng một runtime cho cả hai. Khi nguồn là bounded, bạn
-có thể bật **batch execution mode**, và Flink được phép tối ưu theo kiểu batch:
+**Batch is just a special case of a stream** — a bounded one. This isn't a marketing slogan: Flink runs
+the same runtime for both. When the source is bounded you can turn on **batch execution mode**, and
+Flink is permitted to optimise in a batch style:
 
-| | STREAMING mode | BATCH mode (nguồn bounded) |
+| | STREAMING mode | BATCH mode (bounded source) |
 |---|---|---|
-| Xử lý | Từng record khi tới, mọi operator chạy đồng thời | Có thể chạy theo *stage*, xong bước này mới sang bước sau |
-| State | Giữ trong state backend, checkpoint liên tục | Không cần state theo thời gian; kết quả trung gian dựng lại được |
-| Sort/aggregate | Giữ state theo thời gian, phát kết quả tăng dần | **Sort** rồi gom — như một engine batch |
-| Watermark | Bắt buộc để đóng window | Không cần — "hết dữ liệu" là điểm kết tự nhiên |
-| Khôi phục lỗi | Restore từ checkpoint gần nhất | Chạy lại stage bị hỏng từ kết quả trung gian |
+| Processing | Record by record as they arrive, every operator running simultaneously | It may run in *stages*, finishing one step before the next |
+| State | Held in a state backend, checkpointed continuously | No need for time-based state; intermediate results are rebuildable |
+| Sort/aggregate | Keeps time-based state, emitting results incrementally | **Sort** then group — like a batch engine |
+| Watermarks | Mandatory to close windows | Not needed — "the data ran out" is a natural end point |
+| Failure recovery | Restore from the most recent checkpoint | Re-run the broken stage from the intermediate results |
 
-Ý nghĩa thực tế: cùng một API (DataStream hoặc SQL) chạy được backfill lịch sử (bounded,
-bật batch mode cho nhanh) rồi chuyển sang chạy live (unbounded, streaming mode) mà
-không viết lại logic. Đây là lời hứa "unified batch & streaming" của Flink, và nó có
-thật ở tầng API — dù việc *vận hành* hai chế độ vẫn khác nhau.
+The practical meaning: the same API (DataStream or SQL) can run a historical backfill (bounded, with batch
+mode on for speed) and then switch to running live (unbounded, streaming mode) without rewriting the
+logic. This is Flink's "unified batch & streaming" promise, and it's genuinely true at the API layer —
+even though *operating* the two modes still differs.
 
-## Stack API phân tầng
+## The layered API stack
 
-Flink không phải một API duy nhất mà là một chồng nhiều tầng trừu tượng; bạn chọn tầng
-theo mức kiểm soát cần có:
+Flink isn't a single API but a stack of abstraction layers; you pick a layer by the level of control you need:
 
 ```text
 ┌─────────────────────────────────────────────┐
@@ -101,160 +98,160 @@ theo mức kiểm soát cần có:
 └─────────────────────────────────────────────┘
 ```
 
-- **SQL / Table API** — khai báo bằng SQL, Flink tự dịch xuống dataflow. Nhanh nhất để
-  ra kết quả, hợp cho phần lớn ETL/analytics streaming. Đánh đổi: ít kiểm soát chi tiết.
-- **DataStream API** — bạn tự nối `map`, `keyBy`, `window`, `join`. Kiểm soát tốt luồng
-  và state mà vẫn tiện. Đây là tầng "chủ lực" cho pipeline có logic riêng.
-- **ProcessFunction** — tầng thấp nhất người dùng thường chạm: truy cập trực tiếp keyed
-  state, đăng ký **timer** (theo event time hoặc processing time), xử lý từng event thô.
-  Cần khi logic không gói được vào window/join có sẵn (ví dụ máy trạng thái tuỳ biến).
+- **SQL / Table API** — declared in SQL, with Flink translating down to dataflow. The fastest route to
+  a result, suiting most streaming ETL/analytics. The trade-off: little fine-grained control.
+- **DataStream API** — you wire up `map`, `keyBy`, `window`, `join` yourself. Good control of the flow
+  and its state while staying convenient. This is the "workhorse" layer for a pipeline with its own logic.
+- **ProcessFunction** — the lowest layer users usually touch: direct access to keyed state, registering
+  **timers** (on event time or processing time), handling each raw event.
+  Needed when the logic can't be wrapped in a ready-made window/join (e.g. a custom state machine).
 
-Quy tắc: **bắt đầu từ tầng cao nhất giải được bài toán.** Xuống ProcessFunction chỉ khi
-SQL/DataStream không diễn đạt nổi — mỗi tầng xuống là thêm code phải tự bảo trì.
+The rule: **start at the highest layer that solves the problem.** Drop to ProcessFunction only when
+SQL/DataStream can't express it — every layer down is more code you have to maintain yourself.
 
-## Bốn trụ: vì sao chúng là "first-class"
+## The four pillars: why they're "first-class"
 
-Cái làm Flink khác một thư viện xử lý stream thường không phải danh sách operator, mà là
-bốn thứ được xây *vào lõi runtime* — không phải bolt-on:
+What makes Flink different from an ordinary stream-processing library isn't its operator list, but
+four things built *into the runtime core* — not bolted on:
 
 ```mermaid
 flowchart TB
-  subgraph core["Lõi Flink"]
-    T["① Event time<br/>thời gian của event, không phải lúc xử lý"]
+  subgraph core["Flink's core"]
+    T["① Event time<br/>the event's own time, not when it's processed"]
     St["② State<br/>keyed/operator state, RocksDB, TTL"]
-    C["③ Checkpoint<br/>chụp state + offset nhất quán, định kỳ"]
-    E["④ Exactly-once<br/>hiệu ứng lên state đúng một lần"]
+    C["③ Checkpoint<br/>a consistent, periodic snapshot of state + offsets"]
+    E["④ Exactly-once<br/>the effect on state happens exactly once"]
   end
   T --> St --> C --> E
 ```
 
-1. **Time (event time)** — Flink phân biệt *event time* (dấu thời gian gắn trong event)
-   với *processing time* (lúc máy xử lý). Nhờ **watermark**, kết quả đúng ngay cả khi
-   event tới muộn hoặc lệch thứ tự. Đây là khái niệm sai nhiều nhất — xem
+1. **Time (event time)** — Flink distinguishes *event time* (the timestamp carried in the event)
+   from *processing time* (when the machine handles it). Thanks to **watermarks**, the results are
+   correct even when events arrive late or out of order. This is the most-misunderstood concept — see
    [event-time](event-time-watermark.md).
-2. **State** — mọi operator được cấp một kho state nhất quán, có thể lớn hơn RAM (backend
-   RocksDB ghi ra đĩa), có TTL, và được checkpoint. Không phải bạn tự dựng Redis bên cạnh.
-3. **Checkpoint** — định kỳ Flink chụp một *ảnh nhất quán* của toàn bộ state cùng offset
-   nguồn, không dừng luồng. Đây là cột sống của fault tolerance — chết thì restore từ ảnh
-   gần nhất. Cơ chế ở [state-and-checkpoint](state-and-checkpoint.md).
-4. **Exactly-once** — nhờ ba trụ trên khớp nhau, mỗi event ảnh hưởng state đúng một lần
-   dù có chết giữa chừng. Lưu ý: đây là *hiệu ứng lên state*, ra sink là chuyện khác —
-   xem [exactly-once](exactly-once.md).
+2. **State** — every operator is given a consistent state store, which can be larger than RAM (the
+   RocksDB backend writes to disk), can have a TTL, and is checkpointed. You don't have to stand up a Redis alongside.
+3. **Checkpoint** — periodically Flink takes a *consistent snapshot* of all the state together with the
+   source offsets, without stopping the flow. This is the backbone of fault tolerance — on failure it
+   restores from the most recent snapshot. The mechanism is in [state-and-checkpoint](state-and-checkpoint.md).
+4. **Exactly-once** — because the three pillars above fit together, each event affects state exactly
+   once even across a mid-flight failure. Note: that's the *effect on state*; getting to the sink is another matter —
+   see [exactly-once](exactly-once.md).
 
-Vì bốn thứ này nằm trong runtime, chúng phối hợp được với nhau (checkpoint chụp cả state
-lẫn offset lẫn watermark trong *cùng một* ảnh). Một hệ mà bạn phải tự ghép state + offset
-+ đảm bảo nhất quán sẽ luôn có một khe hở lúc khôi phục.
+Because these four live inside the runtime, they can cooperate (a checkpoint captures state, offsets and
+watermarks in *one* snapshot). A system where you have to stitch state + offsets + a consistency
+guarantee together yourself will always have a gap at recovery time.
 
-## Đặc tính latency / throughput
+## Latency / throughput characteristics
 
-- **Latency thấp và ổn định** — vì xử lý từng record (true streaming), độ trễ có thể
-  xuống mili-giây và không dao động theo nhịp batch. Đánh đổi: exactly-once *end-to-end*
-  bằng 2PC sink lại buộc độ trễ theo checkpoint interval (xem
-  [exactly-once](exactly-once.md)) — nên "thấp" là nói tới xử lý, không phải luôn tới
-  lúc dữ liệu hiện ở sink.
-- **Throughput cao qua pipelining + chaining** — record chảy liên tục, và các operator
-  liền nhau được *chain* để truyền dữ liệu bằng lời gọi hàm thay vì serialize qua mạng
-  (xem [architecture](architecture.md)). Backpressure tự điều tiết khi downstream chậm.
-- **Đánh đổi latency ↔ throughput** — gom buffer lớn (`network buffer timeout` cao) tăng
-  throughput nhưng thêm độ trễ; buffer nhỏ ngược lại. Đây là núm chỉnh, không phải hằng số.
+- **Low, stable latency** — because it processes record by record (true streaming), latency can drop
+  to milliseconds without oscillating with a batch rhythm. The trade-off: *end-to-end* exactly-once
+  via a 2PC sink forces latency to follow the checkpoint interval (see
+  [exactly-once](exactly-once.md)) — so "low" refers to processing, not always to when the
+  data appears at the sink.
+- **High throughput through pipelining + chaining** — records flow continuously, and adjacent operators
+  are *chained* to pass data by function call rather than serialising over the network
+  (see [architecture](architecture.md)). Backpressure regulates itself when downstream is slow.
+- **The latency ↔ throughput trade-off** — gathering large buffers (a high `network buffer timeout`) raises
+  throughput but adds latency; small buffers do the reverse. This is a dial, not a constant.
 
 ## Flink vs Spark Structured Streaming
 
 | | Flink | Spark Structured Streaming |
 |---|---|---|
-| Mô hình | **True streaming** — xử lý từng event khi tới | **Micro-batch** — gom event thành lô nhỏ rồi chạy batch |
-| Độ trễ | Mili-giây, ổn định | Phụ thuộc batch interval; thường ~100ms–vài giây |
-| State | First-class, RocksDB, incremental checkpoint | Có, nhưng gắn với mô hình micro-batch |
-| Event time / watermark | Cốt lõi, chi tiết, hỗ trợ late data phức tạp | Có, nhưng ít linh hoạt hơn cho late data phức tạp |
-| Backpressure | Credit-based, tự lan ngược | Điều tiết theo tốc độ batch |
-| Hợp khi | Cần độ trễ thấp thật, state lớn, event-time nghiêm túc | Đã có cụm Spark cho batch, độ trễ vài giây chấp nhận được |
+| Model | **True streaming** — processing each event as it arrives | **Micro-batch** — gathering events into small batches then running batch |
+| Latency | Milliseconds, stable | Depends on the batch interval; typically ~100ms–a few seconds |
+| State | First-class, RocksDB, incremental checkpoints | Present, but tied to the micro-batch model |
+| Event time / watermarks | Core, detailed, supporting complex late data | Present, but less flexible for complex late data |
+| Backpressure | Credit-based, propagating backwards by itself | Regulated by batch rate |
+| Suits when | You need genuinely low latency, large state, serious event-time semantics | You already have a Spark cluster for batch and a few seconds' latency is acceptable |
 
-Spark có chế độ *continuous processing* nhắm độ trễ thấp, nhưng đến nay vẫn hạn chế hơn
-mô hình chính micro-batch. Đổi lại Spark thắng khi team đã có sẵn cụm Spark cho batch và
-độ trễ vài giây là chấp nhận được — dùng lại hạ tầng đáng giá hơn độ trễ.
+Spark has a *continuous processing* mode aiming at low latency, but to date it's still more limited than
+the main micro-batch model. In exchange Spark wins when the team already has a Spark cluster for batch and
+a few seconds' latency is acceptable — reusing the infrastructure is worth more than the latency.
 
 ## Flink vs Kafka Streams vs Storm / Beam
 
-- **Kafka Streams** là một **library nhúng** vào ứng dụng của bạn — không có cluster
-  riêng, scale bằng cách chạy thêm instance của app, state nằm ở RocksDB local + changelog
-  topic trên Kafka. Ràng buộc: nguồn/đích gần như bắt buộc là Kafka. Chọn nó khi pipeline
-  sống trọn trong Kafka và bạn muốn "chỉ là một app".
-- **Flink** là một **cluster riêng** (JobManager + TaskManager) — nặng vận hành hơn,
-  nhưng nhiều connector (Iceberg, JDBC, filesystem, CDC), event-time mạnh hơn, và tách
-  biệt tài nguyên khỏi app. Chọn khi cần connector đa dạng, event-time nghiêm túc, hoặc
-  job đủ lớn để đáng có cluster.
-- **Apache Storm** — thế hệ trước: true streaming nhưng state và exactly-once yếu, phần
-  lớn đã được Flink thay thế cho use case mới. Nhắc để nhận ra khi gặp hệ cũ.
-- **Apache Beam** — *không phải* một engine mà là một **API thống nhất**: bạn viết một
-  lần, chọn *runner* để chạy (Flink, Spark, Google Dataflow...). Bean-on-Flink dùng
-  Flink làm runtime. Chọn Beam khi cần tránh khoá cứng vào một engine; trả giá bằng một
-  tầng trừu tượng nữa và đôi khi không chạm được tính năng riêng của engine.
+- **Kafka Streams** is a **library embedded** in your application — no separate cluster, scaled by running
+  more instances of the app, with state in local RocksDB + a changelog topic on Kafka. The constraint: the
+  source/destination is essentially required to be Kafka. Pick it when the pipeline lives entirely inside
+  Kafka and you want it to be "just an app".
+- **Flink** is a **separate cluster** (JobManager + TaskManager) — heavier to operate,
+  but with many connectors (Iceberg, JDBC, filesystem, CDC), stronger event-time support, and resources
+  separated from the app. Pick it when you need diverse connectors, serious event-time semantics, or a
+  job big enough to justify a cluster.
+- **Apache Storm** — the previous generation: true streaming but weak on state and exactly-once, largely
+  superseded by Flink for new use cases. Mentioned so you recognise it in a legacy system.
+- **Apache Beam** — *not* an engine but a **unified API**: you write once and choose a *runner* to run it
+  (Flink, Spark, Google Dataflow…). Beam-on-Flink uses Flink as the runtime. Pick Beam when you need to
+  avoid hard lock-in to one engine; you pay with one more abstraction layer and sometimes being unable to
+  reach an engine's own features.
 
-## Khi nào KHÔNG nên dùng Flink
+## When NOT to use Flink
 
-- **Batch thuần** — dữ liệu có sẵn, chạy theo lịch, độ trễ không quan trọng. SQL + dbt,
-  hoặc Spark, đơn giản hơn nhiều. Đừng dựng cluster streaming để chạy một job mỗi đêm.
-- **Độ trễ không quan trọng** — nếu "trễ 15 phút vẫn ổn", một pipeline batch chạy mỗi
-  15 phút rẻ và dễ vận hành hơn hẳn.
-- **Team nhỏ, ngại vận hành** — Flink kéo theo cả một gánh: quản state backend, chỉnh
-  checkpoint, đọc backpressure, xử lý savepoint khi nâng cấp. Nếu không có người sẵn sàng
-  học phần đó, một stream job "chạy được lúc đầu" sẽ thành nợ kỹ thuật khi nó chết lúc 3 giờ sáng.
+- **Pure batch** — the data is already there, runs on a schedule, latency doesn't matter. SQL + dbt,
+  or Spark, is far simpler. Don't stand up a streaming cluster to run one job a night.
+- **Latency doesn't matter** — if "15 minutes late is fine", a batch pipeline running every
+  15 minutes is much cheaper and easier to operate.
+- **A small team wary of operations** — Flink drags in a whole burden: managing the state backend, tuning
+  checkpoints, reading backpressure, handling savepoints on upgrade. Without somebody willing to learn
+  that part, a stream job that "worked at first" becomes technical debt when it dies at 3am.
 
 ## Trade-offs
 
-| Được | Mất | Đổi lấy |
+| You get | You lose | In exchange for |
 |---|---|---|
-| Độ trễ mili-giây, true streaming | Phải vận hành cluster + state backend | Kết quả gần real-time |
-| Event-time đúng dù dữ liệu đến muộn | Độ phức tạp watermark, phải hiểu sâu | Số đúng thay vì số sai lặng lẽ |
-| State + checkpoint tự khôi phục | Checkpoint tốn I/O, phải tuning | Chịu lỗi không mất dữ liệu |
-| Cùng runtime cho batch và stream | Overhead so với script batch đơn giản | Không viết lại logic khi đổi chế độ |
-| Nhiều tầng API (SQL → ProcessFunction) | Chọn sai tầng dễ over/under-engineer | Đúng mức kiểm soát cho từng bài |
+| Millisecond latency, true streaming | Having to operate a cluster + a state backend | Near-real-time results |
+| Correct event-time semantics even with late data | Watermark complexity, needing deep understanding | Right numbers instead of quietly wrong ones |
+| State + checkpoints restoring themselves | Checkpoints costing I/O and needing tuning | Fault tolerance without data loss |
+| The same runtime for batch and stream | Overhead compared with a simple batch script | Not rewriting the logic when you switch modes |
+| Several API layers (SQL → ProcessFunction) | Picking the wrong layer easily over/under-engineers | The right level of control for each problem |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả | Phòng bằng |
+| Mistake | Consequence | Prevented by |
 |---|---|---|
-| Dùng Flink cho batch chạy hằng đêm | Vận hành cluster streaming vô ích | Hỏi "độ trễ có quan trọng không?" trước |
-| Nghĩ processing time là đủ | Số sai khi dữ liệu đến muộn, không lỗi nào báo | Dùng event time từ đầu — xem [event-time](event-time-watermark.md) |
-| Quên rằng exactly-once dừng ở sink | Kết quả ra ngoài vẫn trùng | Sink phải 2PC — xem [exactly-once](exactly-once.md) |
-| Không đặt state TTL | State chỉ tăng → checkpoint chậm → OOM | Đặt TTL cho keyed state ngay từ đầu |
-| Xuống ProcessFunction khi SQL đủ | Code low-level thừa phải tự bảo trì | Bắt đầu từ tầng API cao nhất giải được |
+| Using Flink for a nightly batch | Operating a streaming cluster for nothing | Asking "does latency actually matter?" first |
+| Thinking processing time is enough | Wrong numbers with late data, and no error reported | Using event time from the start — see [event-time](event-time-watermark.md) |
+| Forgetting that exactly-once stops at the sink | Results going out still duplicated | The sink must do 2PC — see [exactly-once](exactly-once.md) |
+| Not setting a state TTL | State only grows → checkpoints slow → OOM | Setting a TTL on keyed state from the start |
+| Dropping to ProcessFunction when SQL suffices | Surplus low-level code to maintain yourself | Starting from the highest API layer that works |
 
 ## FAQ
 
 <details>
-<summary>Flink có thay được Spark cho batch không?</summary>
+<summary>Can Flink replace Spark for batch?</summary>
 
-Về kỹ thuật có — Flink chạy được bounded stream như batch, và batch execution mode tối
-ưu đúng kiểu batch (sort thay vì giữ state theo thời gian). Nhưng nếu bạn đã có cụm Spark
-và toàn bộ pipeline là batch, chuyển sang Flink chỉ để "thống nhất" thường không đáng.
-Flink toả sáng khi có phần streaming độ trễ thấp; nếu không có, lợi thế mờ đi.
-
-</details>
-
-<details>
-<summary>Flink có bắt buộc dùng Kafka không?</summary>
-
-Không. Kafka là nguồn phổ biến nhất nhưng Flink có connector cho filesystem, JDBC,
-Iceberg, CDC (Debezium), Pulsar... Khác với Kafka Streams vốn gắn chặt với Kafka.
+Technically yes — Flink can run a bounded stream as batch, and batch execution mode optimises properly
+in a batch style (sorting rather than holding time-based state). But if you already have a Spark cluster
+and the whole pipeline is batch, moving to Flink just to "unify" usually isn't worth it.
+Flink shines when there's a low-latency streaming part; without one, the advantage fades.
 
 </details>
 
 <details>
-<summary>Nên viết SQL, DataStream, hay ProcessFunction?</summary>
+<summary>Does Flink require Kafka?</summary>
 
-Bắt đầu từ tầng cao nhất giải được bài toán. SQL/Table cho phần lớn ETL và analytics
-streaming. Xuống DataStream khi cần điều khiển luồng và state cụ thể. Chỉ xuống
-ProcessFunction khi cần timer tuỳ biến hoặc máy trạng thái không gói được vào window/join
-có sẵn — vì mỗi tầng thấp hơn là thêm code low-level bạn phải tự bảo trì.
+No. Kafka is the most common source but Flink has connectors for filesystems, JDBC,
+Iceberg, CDC (Debezium), Pulsar… Unlike Kafka Streams, which is tightly bound to Kafka.
+
+</details>
+
+<details>
+<summary>Should I write SQL, DataStream, or ProcessFunction?</summary>
+
+Start at the highest layer that solves the problem. SQL/Table for most streaming ETL and analytics.
+Drop to DataStream when you need specific control of the flow and its state. Only drop to
+ProcessFunction when you need custom timers or a state machine that can't be wrapped in a ready-made
+window/join — because every lower layer is more low-level code you have to maintain yourself.
 
 </details>
 
 ## Related Topics
 
-- [Kiến trúc job Flink](architecture.md) — job biến thành gì để chạy song song
-- [Event time và watermark](event-time-watermark.md) — khái niệm quan trọng nhất, chỗ sai nhiều nhất
-- [State và checkpoint](state-and-checkpoint.md) — vì sao stream cần tự nhớ và tự khôi phục
-- [Exactly-once trong Flink](exactly-once.md) — trụ thứ tư, và ranh giới của nó ở sink
-- [Kafka](../../kafka/index.md) — nguồn vào thường gặp nhất
-- [Flink](../index.md) — chủ đề chứa file này
+- [Flink job architecture](architecture.md) — what a job becomes in order to run in parallel
+- [Event time and watermarks](event-time-watermark.md) — the most important concept, and the most-mistaken
+- [State and checkpoints](state-and-checkpoint.md) — why a stream must remember and restore itself
+- [Exactly-once in Flink](exactly-once.md) — the fourth pillar, and its boundary at the sink
+- [Kafka](../../kafka/index.md) — the most common input source
+- [Flink](../index.md) — the topic this file belongs to

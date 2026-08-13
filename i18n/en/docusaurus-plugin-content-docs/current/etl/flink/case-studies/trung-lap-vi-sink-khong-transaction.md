@@ -1,8 +1,7 @@
 ---
-title: Trùng lặp vì sink không transaction
-i18n_status: untranslated
+title: Duplicates from a non-transactional sink
 sidebar_position: 4
-description: "Checkpoint cho exactly-once nội bộ, nhưng sink at-least-once làm bản ghi trùng sau mỗi lần restart."
+description: "Checkpoints give internal exactly-once, but an at-least-once sink produces duplicate records after every restart."
 tags: [flink, exactly-once, sink, transaction, idempotent]
 domain: data-engineering
 category: technology
@@ -13,44 +12,44 @@ verified_at:
 updated: 2026-08-11
 ---
 
-# Trùng lặp vì sink không transaction
+# Duplicates from a non-transactional sink
 
-> **Chốt:** `CheckpointingMode.EXACTLY_ONCE` chỉ bảo đảm exactly-once cho **state nội bộ**; nếu sink ghi ra ngoài ở chế độ at-least-once, mỗi lần restart sẽ replay và tạo **bản ghi trùng ở đích**.
+> **Takeaway:** `CheckpointingMode.EXACTLY_ONCE` only guarantees exactly-once for **internal state**; if the sink writes out in at-least-once mode, every restart replays and creates **duplicate records at the destination**.
 
-## Nhãn
+## Label
 
-**Tình huống dựng lại** — số liệu là **minh hoạ, chưa chạy trên cluster**, nhưng nhất quán trong bài.
+**A reconstructed situation** — the figures are **illustrative, not run on a cluster**, but internally consistent.
 
-## Bối cảnh
+## Context
 
-Job bật `EXACTLY_ONCE` checkpointing và mọi người tin đây là **end-to-end exactly-once**. Sink ghi kết quả ra một Kafka topic / bảng DB, nhưng để **at-least-once** (không transaction, không idempotent).
+The job has `EXACTLY_ONCE` checkpointing on and everybody believes this is **end-to-end exactly-once**. The sink writes results out to a Kafka topic / a DB table, but at **at-least-once** (no transaction, not idempotent).
 
-## Triệu chứng
+## Symptoms
 
-*Số minh hoạ — chưa chạy:*
+*Illustrative numbers — not run:*
 
-- Bình thường số bản ghi đích khớp nguồn.
-- Mỗi lần job **restart** (deploy, TaskManager chết, rebalance), đếm bản ghi đích **tăng vọt** một cụm nhỏ — vd +1.500 bản ghi thừa quanh mốc restart 14:32.
-- Các bản thừa là **bản sao y hệt** của record đã ghi trước đó, chỉ khác thời điểm ghi.
+- Normally the destination record count matches the source.
+- Every time the job **restarts** (a deploy, a TaskManager dying, a rebalance), the destination count **jumps** by a small cluster — e.g. +1,500 surplus records around the 14:32 restart.
+- The surplus records are **exact copies** of records written earlier, differing only in write time.
 
-Không có lỗi; job vẫn EXACTLY_ONCE, checkpoint vẫn xanh.
+There's no error; the job is still EXACTLY_ONCE and the checkpoints are still green.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-1. **Nghi source gửi trùng.** Kiểm nguồn: mỗi record có key duy nhất, nguồn không lặp. Loại.
-2. **Nghi bug logic gộp.** Rà pipeline → logic đúng, chỉ ra đúng số record một lần trong luồng nội bộ. Không phải logic.
+1. **Suspecting the source sent duplicates.** Checking the source: each record has a unique key and the source doesn't repeat. Ruled out.
+2. **Suspecting a bug in the aggregation logic.** Reviewing the pipeline → the logic is correct, emitting exactly the right record count once in the internal flow. Not the logic.
 
-Chỗ mất thời gian: giả định "EXACTLY_ONCE bật rồi thì cả đường ra đích cũng exactly-once". Sự thật: bảo đảm đó **dừng ở ranh giới state**, không tự lan tới sink.
+Where the time went: assuming "with EXACTLY_ONCE on, the whole path to the destination is exactly-once too". The truth: that guarantee **stops at the state boundary** and doesn't spread to the sink by itself.
 
-## Nguyên nhân thật
+## The real cause
 
-Exactly-once của Flink là về **state tất định khi restore**: khi restart, job rollback state về checkpoint cuối và **replay** các record kể từ đó. Với state nội bộ, replay là idempotent (ghi đè state). Nhưng với **side effect ra ngoài** (đã ghi vào sink at-least-once trước khi chết), replay **ghi lại lần nữa** → đích có bản trùng.
+Flink's exactly-once is about **deterministic state on restore**: on restart the job rolls state back to the last checkpoint and **replays** the records from there. For internal state, a replay is idempotent (it overwrites the state). But for **side effects going out** (already written into an at-least-once sink before the failure), the replay **writes them again** → duplicates at the destination.
 
-Để end-to-end exactly-once, sink phải tham gia giao thức 2 pha (2PC) khớp với checkpoint, **hoặc** phải idempotent.
+For end-to-end exactly-once, the sink must participate in a two-phase (2PC) protocol tied to the checkpoints, **or** it must be idempotent.
 
-## Cách sửa
+## The fix
 
-**1. Kafka sink transaction (2PC):**
+**1. A transactional Kafka sink (2PC):**
 
 ```java
 KafkaSink<String> sink = KafkaSink.<String>builder()
@@ -61,9 +60,9 @@ KafkaSink<String> sink = KafkaSink.<String>builder()
     .build();
 ```
 
-Phía đọc phải `isolation.level = read_committed` để chỉ thấy record đã commit — nếu không vẫn đọc phải record của transaction bị abort.
+The reading side must use `isolation.level = read_committed` to see only committed records — otherwise it still reads records from aborted transactions.
 
-**2. Sink idempotent (upsert theo key):** DB/`upsert-kafka` ghi đè theo primary key. Replay ghi cùng key cùng giá trị → không sinh bản mới.
+**2. An idempotent sink (an upsert by key):** a DB/`upsert-kafka` overwriting by primary key. A replay writes the same key with the same value → no new row is created.
 
 ```sql
 -- Flink SQL: upsert-kafka khử trùng theo key
@@ -75,16 +74,16 @@ CREATE TABLE sink_agg (
 ) WITH ('connector' = 'upsert-kafka', /* ... */);
 ```
 
-**3. Iceberg sink:** commit file theo từng checkpoint — dữ liệu chỉ "hiện" khi checkpoint hoàn tất, replay giữa hai checkpoint không lộ bản trùng.
+**3. An Iceberg sink:** it commits files per checkpoint — the data only "appears" when the checkpoint completes, so a replay between two checkpoints never exposes duplicates.
 
-Đánh đổi: transaction Kafka tăng latency (dữ liệu chỉ visible sau commit checkpoint) và cần cấu hình `transaction.timeout` hợp lý. Upsert cần một khoá tự nhiên ổn định.
+The trade-off: Kafka transactions increase latency (data is only visible after the checkpoint's commit) and need a sensible `transaction.timeout` configuration. An upsert needs a stable natural key.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-**Đếm bản ghi đích quanh mỗi lần job restart.** Nếu số đích **nhảy** đúng các mốc restart (deploy, failover) → gần như chắc chắn sink đang at-least-once. Đối chiếu mốc restart trong Flink UI (Job → Exceptions/restart count) với đồ thị số dòng ghi ở đích.
+**Count the destination records around each job restart.** If the destination count **jumps** exactly at the restart marks (a deploy, a failover) → the sink is almost certainly at-least-once. Cross-reference the restart marks in the Flink UI (Job → Exceptions/restart count) against the graph of rows written at the destination.
 
 ## Related Topics
 
-- [Exactly-once](../reference/exactly-once.md) — ranh giới bảo đảm của Flink và 2PC ở sink
-- [Connectors](../skills/connectors.md) — DeliveryGuarantee, upsert-kafka, Iceberg sink
-- [Flink](../index.md) — chủ đề chứa case study này
+- [Exactly-once](../reference/exactly-once.md) — the boundary of Flink's guarantee and 2PC at the sink
+- [Connectors](../skills/connectors.md) — DeliveryGuarantee, upsert-kafka, the Iceberg sink
+- [Flink](../index.md) — the topic this case study belongs to

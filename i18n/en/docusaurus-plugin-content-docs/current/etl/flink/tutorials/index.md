@@ -1,9 +1,8 @@
 ---
-title: Bài tập — Flink
-i18n_status: untranslated
+title: Exercises — Flink
 sidebar_key: flink-tutorials
 sidebar_position: 0
-description: "Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học."
+description: "Really run, with boxes to paste output into. If you couldn't run it, you haven't learnt it."
 tags: [tutorial, flink]
 domain: data-engineering
 category: index
@@ -11,14 +10,14 @@ doc_type: index
 updated: 2026-08-11
 ---
 
-# Bài tập — Flink
+# Exercises — Flink
 
-Chạy thật bằng Docker + Flink SQL Client, **dán output vào ô Kết quả**.
+Really run with Docker + the Flink SQL Client, **pasting the output into the Result box**.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [Lab Flink SQL trên Docker](flink-lab.md) | Windowed aggregation trên stream, xem watermark và late data tận mắt | 📝 |
+| 1 | [Flink SQL lab on Docker](flink-lab.md) | Windowed aggregation on a stream, seeing watermarks and late data with your own eyes | 📝 |
 
 ## Related Topics
 
-- [Flink](../index.md) — chủ đề chứa thư mục này
+- [Flink](../index.md) — the topic this directory belongs to
