@@ -1,8 +1,7 @@
 ---
-title: Bus architecture, bus matrix và value chain
-i18n_status: untranslated
+title: Bus architecture, the bus matrix and the value chain
 sidebar_position: 7
-description: "Kho dữ liệu doanh nghiệp dựng từng quy trình một mà không thành mảnh vụn — bus matrix là bản kế hoạch, và nó nên là dữ liệu chứ không phải slide."
+description: "Building an enterprise data warehouse one process at a time without ending up with fragments — the bus matrix is the plan, and it should be data rather than a slide."
 tags: [bus-matrix, bus-architecture, value-chain, conformed-dimension, kimball, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,34 +12,34 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Bus architecture, bus matrix và value chain
+# Bus architecture, the bus matrix and the value chain
 
-> **Chốt:** không ai dựng được cả kho dữ liệu doanh nghiệp trong một lần. Bus
-> architecture là câu trả lời của Kimball cho việc **dựng từng quy trình một mà cuối cùng
-> vẫn ghép lại được**: mỗi lần làm một fact, nhưng dùng chung một bộ dimension đã thống
-> nhất.
+> **Takeaway:** nobody can build an entire enterprise data warehouse in one go. Bus
+> architecture is Kimball's answer to **building one process at a time and still being able to
+> join it all up**: one fact at a time, but sharing one agreed
+> set of dimensions.
 
-## Vì sao có khái niệm này
+## Why the concept exists
 
-Hai cách tiếp cận sai đối xứng nhau:
+Two symmetrically wrong approaches:
 
-| Cách làm | Kết quả |
+| The approach | The result |
 |---|---|
-| Dựng cả kho một lượt, thiết kế xong hết rồi mới làm | Hai năm sau chưa ai dùng được gì; yêu cầu đã đổi |
-| Mỗi phòng ban tự dựng mart của mình | Chạy nhanh, và không mart nào ghép được với mart nào |
+| Build the whole warehouse at once, designing everything before building | Two years later nobody can use anything; the requirements have changed |
+| Each department builds its own mart | Fast, and no mart can be joined to any other |
 
-Bus architecture đi giữa: **giao từng mảnh nhỏ dùng được ngay**, nhưng mọi mảnh cắm vào
-cùng một "bus" — tập [conformed dimension](../skills/conformed-dimension.md) dùng chung.
-Ẩn dụ là bus dữ liệu trong máy tính: card mới cắm vào là chạy, vì chuẩn giao tiếp đã
-thống nhất từ trước.
+Bus architecture goes between them: **deliver small immediately usable pieces**, but with every piece plugging into
+the same "bus" — a shared set of [conformed dimensions](../skills/conformed-dimension.md).
+The metaphor is a computer's data bus: a new card plugs in and works, because the interface standard was
+agreed in advance.
 
-Điều kiện đổi lại: **dimension phải được thiết kế trước fact**, và phải thiết kế cho toàn
-doanh nghiệp chứ không cho một phòng ban.
+The condition in exchange: **the dimensions must be designed before the facts**, and designed for the whole
+enterprise rather than for one department.
 
-## Bus matrix — nên là một bảng dữ liệu
+## The bus matrix — it should be a data table
 
-Bus matrix thường sống dưới dạng slide rồi bị quên. Để nó dùng được, hãy để nó là **một
-bảng trong kho**: hàng là quy trình nghiệp vụ, cột là dimension.
+A bus matrix usually lives as a slide and then gets forgotten. To make it usable, let it be **a
+table in the warehouse**: rows are business processes, columns are dimensions.
 
 ```sql
 CREATE TABLE bus_matrix AS
@@ -74,12 +73,12 @@ PIVOT bus_matrix ON dimension USING bool_or(co_dung) GROUP BY quy_trinh;
 └───────────┴────────────┴─────────┴─────────┴──────────────┴──────────┘
 ```
 
-Mỗi hàng là **một fact table dự kiến**; mỗi ô `true` là một khoá ngoại. Nhìn bảng này là
-thấy ngay phạm vi của cả kho.
+Each row is **one prospective fact table**; each `true` cell is one foreign key. Looking at this table
+shows you the whole warehouse's scope at a glance.
 
-### Ba câu hỏi bảng này trả lời ngay
+### Three questions this table answers immediately
 
-**1. Dimension nào phải conform trước?** Cái nào gắn nhiều quy trình nhất:
+**1. Which dimension must be conformed first?** The one attached to the most processes:
 
 ```sql
 SELECT dimension, count(*) FILTER (WHERE co_dung) AS so_quy_trinh_dung
@@ -98,10 +97,10 @@ FROM bus_matrix GROUP BY 1 ORDER BY 2 DESC;
 └──────────────┴───────────────────┘
 ```
 
-`Ngay` và `San pham` gắn cả 5 quy trình — làm hỏng hai cái này là hỏng toàn bộ kho. Đó là
-thứ tự ưu tiên công sức, và nó có căn cứ chứ không theo cảm tính.
+`Ngay` and `San pham` attach to all 5 processes — get those two wrong and the whole warehouse is wrong. That's
+the order to spend effort in, and it's grounded rather than instinctive.
 
-**2. Kho đang liên kết chặt tới đâu?**
+**2. How tightly linked is the warehouse right now?**
 
 ```sql
 SELECT count(*) FILTER (WHERE co_dung) AS o_can_conform,
@@ -118,23 +117,23 @@ FROM bus_matrix;
 └───────────────┴──────────┴────────────┘
 ```
 
-**72%** — một chỉ số theo dõi được theo thời gian. Mật độ tăng nghĩa là kho ngày càng
-liên kết; nhiều fact dùng chung nhiều dimension.
+**72%** — a metric you can track over time. Rising density means the warehouse is increasingly
+linked; more facts sharing more dimensions.
 
-**3. Câu hỏi nào là bất khả thi?** Ô `false` cho biết luôn: không thể hỏi *"tồn kho theo
-khách hàng"*, vì tồn kho không có chiều khách hàng. Biết trước điều này rẻ hơn nhiều so
-với phát hiện sau ba tháng — xem [case study hai mart không ghép được](../case-studies/hai-mart-khong-ghep-duoc.md).
+**3. Which question is impossible?** A `false` cell tells you immediately: you can't ask *"inventory by
+customer"*, because inventory has no customer dimension. Knowing that in advance is far cheaper than
+discovering it three months later — see the [case study of two marts that couldn't be joined](../case-studies/hai-mart-khong-ghep-duoc.md).
 
-## Value chain — vì sao thứ tự các hàng có ý nghĩa
+## The value chain — why the row order matters
 
-Các quy trình trong bus matrix không rời rạc; chúng nối thành **chuỗi giá trị**:
+The processes in a bus matrix aren't discrete; they link into a **value chain**:
 
 ```text
 Mua hang → Nhap kho → Ton kho → Ban hang → Tra hang
 ```
 
-Mỗi bước là một fact riêng, grain riêng, nhịp dữ liệu riêng. Nhưng vì dùng chung
-`dim_san_pham`, chúng **drill-across** được dọc chuỗi:
+Each step is its own fact, with its own grain and its own data cadence. But because they share
+`dim_san_pham`, they can **drill across** along the chain:
 
 ```sql
 SELECT coalesce(m.san_pham, b.san_pham)     AS san_pham,
@@ -162,14 +161,14 @@ ORDER BY 1;
 └──────────┴───────┴──────────┴─────────┴────────┴────────┴────────────────────┴──────────────────────┘
 ```
 
-Hai cột cuối là lý do tồn tại của cả kiến trúc này. `hao_hut_van_chuyen = 2` cho `SP-A` —
-mua 100, nhập kho 98 — là câu hỏi **không quy trình đơn lẻ nào trả lời được**. Nó chỉ
-xuất hiện khi đặt hai fact cạnh nhau qua một dimension chung.
+The last two columns are the reason this whole architecture exists. `hao_hut_van_chuyen = 2` for `SP-A` —
+100 bought, 98 received — is a question **no single process can answer**. It only
+appears when you place two facts side by side through a shared dimension.
 
-`chua_giai_thich_duoc = 0` là bất biến đáng đặt thành test: nhập kho phải bằng tồn cộng
-bán. Khác 0 nghĩa là có thất thoát, hoặc có fact chưa nạp đủ.
+`chua_giai_thich_duoc = 0` is an invariant worth turning into a test: receipts must equal inventory plus
+sales. Anything other than 0 means there's shrinkage, or a fact hasn't been fully loaded.
 
-Và biên tệ — chỉ tính được khi hai đầu chuỗi conform:
+And the margin — computable only when both ends of the chain conform:
 
 ```text
 ┌──────────┬──────────┬───────────────┬───────┬──────────┐
@@ -180,14 +179,14 @@ Và biên tệ — chỉ tính được khi hai đầu chuỗi conform:
 └──────────┴──────────┴───────────────┴───────┴──────────┘
 ```
 
-**Lưu ý:** đây là drill-across — gộp từng fact về cùng grain **trước**, rồi mới ghép.
-Join thẳng hai fact khác grain là ca hỏng ở
-[join hai fact làm phồng tổng](../case-studies/join-hai-fact-lam-phong-tong.md).
+**Note:** this is drilling across — aggregating each fact to the same grain **first**, and only then combining.
+Joining two facts of different grain directly is the failure in
+[joining two facts inflates the total](../case-studies/join-hai-fact-lam-phong-tong.md).
 
-## Opportunity/stakeholder matrix — làm cái nào trước
+## The opportunity/stakeholder matrix — which to build first
 
-Bus matrix nói *cái gì ghép được với cái gì*. Opportunity matrix nói *nên làm cái nào
-trước*: hàng vẫn là quy trình, cột là **phòng ban**.
+The bus matrix says *what can be joined to what*. The opportunity matrix says *which to build
+first*: rows are still processes, columns are **departments**.
 
 ```sql
 SELECT quy_trinh, count(*) FILTER (WHERE quan_tam) AS so_phong_ban_quan_tam,
@@ -205,59 +204,59 @@ FROM opportunity GROUP BY 1 ORDER BY 2 DESC;
 └───────────┴───────────────────────┴───────────────────────────────────────┘
 ```
 
-Hai bảng dùng cùng nhau: bus matrix cho biết **chi phí kỹ thuật** (bao nhiêu dimension
-phải conform), opportunity matrix cho biết **giá trị** (bao nhiêu phòng ban dùng). Làm
-trước cái nhiều người dùng và ít dimension mới.
+The two tables are used together: the bus matrix gives the **technical cost** (how many dimensions
+must be conformed), and the opportunity matrix gives the **value** (how many departments will use it). Build
+first what many people use and what needs few new dimensions.
 
-## Graceful extension — mô hình chiều mở rộng được tới đâu
+## Graceful extension — how far a dimensional model can be extended
 
-Kimball xếp *graceful extensions* vào nhóm khái niệm nền vì nó là lý do bus architecture
-hoạt động: bốn thay đổi sau **không phá** báo cáo đang chạy:
+Kimball puts *graceful extensions* among the fundamental concepts because it's why bus architecture
+works: the following four changes **don't break** running reports:
 
-| Thay đổi | Vì sao không phá |
+| The change | Why it doesn't break |
 |---|---|
-| Thêm **thuộc tính** vào dimension | Query cũ không chọn cột đó |
-| Thêm **số đo** vào fact (cùng grain) | `SELECT` cũ không đụng tới |
-| Thêm **dimension** vào fact (cùng grain) | Dòng cũ trỏ vào dòng "không áp dụng" |
-| Thêm **fact mới** dùng dimension sẵn có | Không đụng gì tới fact cũ |
+| Adding an **attribute** to a dimension | Old queries don't select that column |
+| Adding a **measure** to a fact (same grain) | The old `SELECT` doesn't touch it |
+| Adding a **dimension** to a fact (same grain) | Old rows point at the "not applicable" row |
+| Adding a **new fact** using existing dimensions | Nothing touches the old facts |
 
-Cái **phá**, và không có cách nào tránh: **đổi grain của fact đang có**. Đây là lý do
-[grain](grain.md) là quyết định đắt nhất trong cả mô hình — mọi thứ khác đều sửa được
-dần.
+What **does** break, with no way of avoiding it: **changing an existing fact's grain**. This is why
+[grain](grain.md) is the most expensive decision in the whole model — everything else can be fixed
+incrementally.
 
-Hệ quả thực tế: khi phân vân giữa grain mịn và grain thô, **luôn chọn mịn hơn**. Gộp lên
-thì lúc nào cũng làm được; tách nhỏ ra thì phải dựng lại từ đầu.
+The practical consequence: when torn between a fine grain and a coarse one, **always choose finer**. Rolling up
+is always possible; splitting down means rebuilding from scratch.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Giao từng mảnh dùng được ngay | Phải thống nhất dimension **trước**, việc của tổ chức |
-| Mọi mart ghép được về sau | Dự án đầu tiên tốn thêm thời gian dựng conformed dimension |
-| Bus matrix là bảng → đo được, tra được | Phải cập nhật khi kho đổi |
-| Mở rộng không phá cái cũ | Trừ khi đổi grain — không có đường lùi |
+| Delivering immediately usable pieces | You must agree the dimensions **first**, which is organisational work |
+| Every mart can be joined later | The first project spends extra time building conformed dimensions |
+| The bus matrix as a table → measurable, queryable | It has to be updated when the warehouse changes |
+| Extensions don't break what exists | Unless you change the grain — for which there's no way back |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Mỗi phòng ban tự dựng `dim_khach` riêng | Không mart nào ghép được — [case study](../case-studies/moi-mart-mot-dim-khach.md) |
-| Bus matrix làm một lần rồi để trong slide | Sáu tháng sau không khớp thực tế |
-| Dựng fact trước, conform dimension sau | Phải sửa lại toàn bộ khoá ngoại đã nạp |
-| Chọn quy trình đầu tiên theo "ai đòi to nhất" | Có thể là quy trình ít người dùng nhất |
-| Join thẳng hai fact trong chuỗi giá trị | Phồng tổng — phải drill-across |
-| Chọn grain thô "cho gọn" | Không mở rộng được, phải dựng lại |
+| Each department building its own `dim_khach` | No mart can be joined — [case study](../case-studies/moi-mart-mot-dim-khach.md) |
+| Doing the bus matrix once and leaving it in a slide | Six months later it doesn't match reality |
+| Building the facts first and conforming the dimensions after | Every already-loaded foreign key must be fixed |
+| Choosing the first process by "who shouted loudest" | It may be the process the fewest people use |
+| Joining two facts in the value chain directly | An inflated total — you must drill across |
+| Choosing a coarse grain "to keep it tidy" | It can't be extended, and must be rebuilt |
 
 ## Related Topics
 
-- [Conformed dimension](../skills/conformed-dimension.md) — thứ mà "bus" thật sự là
-- [Conformed facts](../skills/conformed-facts.md) — ghép được rồi còn phải so được
-- [Quy trình thiết kế 4 bước](design-process.md) — bus matrix là đầu ra của bước 1
-- [Grain](grain.md) — thứ duy nhất không mở rộng mềm được
-- [CS: mỗi mart một dim_khach](../case-studies/moi-mart-mot-dim-khach.md)
-- [CS: hai mart không ghép được](../case-studies/hai-mart-khong-ghep-duoc.md)
+- [Conformed dimensions](../skills/conformed-dimension.md) — what the "bus" actually is
+- [Conformed facts](../skills/conformed-facts.md) — joining them is one thing, comparing them is another
+- [The 4-step design process](design-process.md) — the bus matrix is step 1's output
+- [Grain](grain.md) — the one thing that can't be extended gracefully
+- [CS: a dim_khach per mart](../case-studies/moi-mart-mot-dim-khach.md)
+- [CS: two marts that couldn't be joined](../case-studies/hai-mart-khong-ghep-duoc.md)
 
 ## References
 
 - Kimball Group — [Enterprise Data Warehouse Bus Architecture · Bus Matrix · Value Chain · Opportunity/Stakeholder Matrix · Graceful Extensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 4 và 16
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 4 and 16

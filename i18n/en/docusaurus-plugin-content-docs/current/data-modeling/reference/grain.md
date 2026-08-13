@@ -1,48 +1,47 @@
 ---
 title: Grain
-i18n_status: untranslated
 sidebar_position: 1
-description: Một dòng của bảng này đại diện cho cái gì — câu hỏi phải trả lời trước khi viết dòng SQL đầu tiên.
+description: What one row of this table represents — the question you must answer before writing the first line of SQL.
 tags: [grain, data-modeling, kimball]
 domain: data-engineering
 category: concept
 doc_type: reference
 status: review
 difficulty: beginner
-verified_at: 2026-07-30      # đã gặp thật ở lab dbt
+verified_at: 2026-07-30      # really encountered in the dbt lab
 updated: 2026-07-31
 ---
 
 # Grain
 
-> **Chốt:** Grain là câu trả lời cho *"một dòng của bảng này đại diện cho cái gì?"*.
-> Trả lời được bằng **một câu tiếng Việt rõ ràng** thì mọi thứ sau đó đúng theo. Chưa
-> trả lời được mà đã viết SQL thì mọi thứ sau đó sai theo.
+> **Takeaway:** grain is the answer to *"what does one row of this table represent?"*.
+> Answer it in **one clear sentence** and everything after it follows correctly. Write SQL before
+> you can answer it and everything after it follows incorrectly.
 
-## Mục tiêu
+## The goal
 
-Chặn lớp lỗi tốn kém nhất trong data engineering: **nhân bản dòng và test sai** — cả
-hai đều bắt nguồn từ việc không biết một dòng nghĩa là gì.
+To block the most expensive class of error in data engineering: **row duplication and wrong tests** — both
+of which stem from not knowing what a row means.
 
-## Tổng quan
+## Overview
 
-Grain phải là một câu **cụ thể tới mức không cãi được**:
+The grain must be a sentence **specific enough to be indisputable**:
 
-| ❌ Mơ hồ | ✅ Rõ |
+| ❌ Vague | ✅ Clear |
 |---|---|
-| "bảng đơn hàng" | "một **dòng hàng** trong một đơn hàng" |
-| "bảng khách hàng" | "một **phiên bản** của một khách hàng" (nếu SCD Type 2) |
-| "doanh thu" | "doanh thu của **một sản phẩm** trong **một ngày** tại **một cửa hàng**" |
+| "the orders table" | "one **line item** within one order" |
+| "the customers table" | "one **version** of one customer" (if SCD Type 2) |
+| "revenue" | "the revenue of **one product** on **one day** at **one store**" |
 
-Cột nào ghép lại xác định duy nhất một dòng thì đó là grain. Bảng `don_hang_chi_tiet`
-có grain là *cặp* `(don_hang_id, dong)` — không phải `don_hang_id`.
+Whichever columns together uniquely identify a row — that's the grain. The `don_hang_chi_tiet` table
+has the grain of the *pair* `(don_hang_id, dong)` — not `don_hang_id`.
 
-**Hệ quả trực tiếp:** grain quyết định test nào đúng, join nào an toàn, và `SUM` nào
-ra số thật.
+**The direct consequence:** grain decides which tests are right, which joins are safe, and which `SUM`
+gives a real number.
 
-## Ví dụ
+## The example
 
-Chạy thật 30/07/2026 tại `~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
+Really run 2026-07-30 at `~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
 
 ```text
 don_hang_id,dong,ma_hang,so_luong,don_gia
@@ -53,15 +52,15 @@ DH003,2,SP-A,3,150000
 DH003,3,SP-B,2,300000     ← DH003 có 3 dòng
 ```
 
-Đặt `unique` lên `don_hang_id` — nghe rất hợp lý, "mã đơn hàng phải là duy nhất":
+Putting `unique` on `don_hang_id` sounds perfectly reasonable — "the order code must be unique":
 
 ```text
 1 of 1 FAIL 4 unique_vd_don_hang_don_hang_id ......... [FAIL 4]
 Got 4 results, configured to fail if != 0
 ```
 
-**Dữ liệu hoàn toàn đúng. Test sai.** Grain là `(don_hang_id, dong)`, không phải
-`don_hang_id`. Sửa đúng:
+**The data is entirely correct. The test is wrong.** The grain is `(don_hang_id, dong)`, not
+`don_hang_id`. The correct fix:
 
 ```yaml
 tests:
@@ -75,59 +74,59 @@ Done. PASS=3 WARN=0 ERROR=0 SKIP=0 TOTAL=3
 
 ## Trade-offs
 
-| Grain mịn hơn | Grain thô hơn |
+| A finer grain | A coarser grain |
 |---|---|
-| Giữ được mọi chi tiết, cộng lên bất cứ mức nào cũng được | Bảng nhỏ, query nhanh |
-| Bảng lớn, query chậm hơn | **Mất chi tiết vĩnh viễn** — không tách nhỏ lại được |
+| Keeps every detail, and can be rolled up to any level | A small table, fast queries |
+| A large table, slower queries | **Detail lost permanently** — it can't be split back down |
 
-**Quy tắc Kimball: luôn chọn grain mịn nhất có thể.** Cộng lên thì lúc nào cũng được;
-tách nhỏ ra thì không. Cùng một bất đối xứng như [SCD Type 1 vs Type 2](../skills/scd.md#trade-offs).
+**Kimball's rule: always choose the finest grain you can.** Rolling up is always possible;
+splitting back down is not. The same asymmetry as [SCD Type 1 vs Type 2](../skills/scd.md#trade-offs).
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Đặt `unique` lên cột **tưởng** là khoá | Test fail, rồi đổ tại dữ liệu thay vì sửa test |
-| Join hai bảng khác grain mà không cộng trước | Dòng nhân bản → `SUM` gấp đôi, không có lỗi nào báo |
-| Trộn hai grain trong một bảng (dòng tổng + dòng chi tiết) | Mọi phép cộng đều sai gấp đôi |
-| Không viết grain vào tài liệu | Người sau đoán sai, và họ không biết là mình đang đoán |
+| Putting `unique` on a column you **assume** is the key | The test fails, and then the data gets blamed instead of the test getting fixed |
+| Joining two tables of different grain without aggregating first | Rows duplicate → `SUM` doubles, with no error reported |
+| Mixing two grains in one table (total rows + detail rows) | Every addition is doubly wrong |
+| Not writing the grain into the documentation | Whoever comes next guesses wrongly, and doesn't know they're guessing |
 
 ## FAQ
 
 <details>
-<summary>Làm sao biết grain của một bảng có sẵn mà không có tài liệu?</summary>
+<summary>How do I find the grain of an existing table with no documentation?</summary>
 
-Thử: `SELECT cot_a, cot_b, COUNT(*) FROM bang GROUP BY 1,2 HAVING COUNT(*) > 1`.
-Trả về 0 dòng thì `(cot_a, cot_b)` là ứng viên grain. Nhưng vẫn phải hỏi nghiệp vụ —
-dữ liệu hôm nay không trùng không có nghĩa là ngày mai không trùng.
-
-</details>
-
-<details>
-<summary>Grain và primary key có phải một không?</summary>
-
-Gần như. Grain là *khái niệm* ("một dòng nghĩa là gì"), primary key là *cột hiện thực
-hoá* khái niệm đó. Bảng SCD Type 2 là chỗ chúng tách nhau rõ nhất: grain là "một phiên
-bản của một khách", PK là surrogate key — một cột nhân tạo không mang nghĩa nghiệp vụ nào.
+Try: `SELECT cot_a, cot_b, COUNT(*) FROM bang GROUP BY 1,2 HAVING COUNT(*) > 1`.
+If it returns 0 rows then `(cot_a, cot_b)` is a grain candidate. But you still have to ask the business —
+today's data having no duplicates doesn't mean tomorrow's won't.
 
 </details>
 
 <details>
-<summary>Test <code>unique</code> pass nhưng số vẫn sai — liên quan gì tới grain?</summary>
+<summary>Are grain and the primary key the same thing?</summary>
 
-Có. `unique` trên một cột không nói gì về bảng có grain tổ hợp. Xác định grain TRƯỚC
-khi viết test, đừng viết test rồi suy ra grain.
+Almost. Grain is the *concept* ("what a row means"), and the primary key is the *column realising*
+that concept. An SCD Type 2 table is where they separate most clearly: the grain is "one version
+of one customer", while the PK is a surrogate key — an artificial column with no business meaning at all.
+
+</details>
+
+<details>
+<summary>The <code>unique</code> test passes but the numbers are still wrong — what has that to do with grain?</summary>
+
+Everything. `unique` on one column says nothing about a table with a composite grain. Establish the grain BEFORE
+writing tests; don't write tests and then infer the grain.
 
 </details>
 
 ## Related Topics
 
-- [SCD](../skills/scd.md) — Type 2 làm **đổi grain** của dimension
-- [Fact và Dimension](fact-and-dimension.md) — mỗi loại bảng có kiểu grain riêng
-- [Quy trình thiết kế](design-process.md) — grain là **bước 2**, trước cả việc chọn cột
-- [dbt: testing](../../etl/dbt/reference/testing.md) — nơi grain sai lộ ra
-- [SQL](../../databases/sql/index.md) — join nhân bản dòng là hệ quả của grain sai
+- [SCD](../skills/scd.md) — Type 2 **changes the grain** of a dimension
+- [Facts and dimensions](fact-and-dimension.md) — each table kind has its own kind of grain
+- [The design process](design-process.md) — grain is **step 2**, before choosing any columns
+- [dbt: testing](../../etl/dbt/reference/testing.md) — where a wrong grain surfaces
+- [SQL](../../databases/sql/index.md) — a join duplicating rows is a consequence of a wrong grain
 
 ## References
 
-- Kimball & Ross — *The Data Warehouse Toolkit*, "Declare the grain" (bước 2 trong 4 bước)
+- Kimball & Ross — *The Data Warehouse Toolkit*, "Declare the grain" (step 2 of the 4 steps)

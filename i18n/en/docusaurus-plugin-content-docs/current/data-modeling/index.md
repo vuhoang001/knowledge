@@ -1,7 +1,6 @@
 ---
 title: Data Modeling
-i18n_status: untranslated
-description: Thiết kế bảng — grain, fact/dimension, SCD, và quy trình đi từ yêu cầu nghiệp vụ tới bảng chạy được.
+description: Designing tables — grain, fact/dimension, SCD, and the process from a business requirement to a working table.
 tags: [data-modeling, kimball]
 domain: data-engineering
 category: concept
@@ -13,89 +12,89 @@ updated: 2026-07-31
 
 # Data Modeling
 
-**Đây là nhóm *khái niệm*, không phải công nghệ.** Không có lệnh nào để chạy, không có
-phiên bản nào để nâng cấp. Kimball viết những thứ này năm 1996 và chúng vẫn đúng nguyên
-trên Iceberg + Trino năm 2026 — trong khi công cụ đã đổi ba thế hệ.
+**This is a *conceptual* group, not a technology.** There are no commands to run and no
+versions to upgrade. Kimball wrote these things in 1996 and they still hold exactly
+on Iceberg + Trino in 2026 — while the tooling has gone through three generations.
 
-Vì thế đây là phần **mất giá chậm nhất** trong cả kho. Học dbt mà không biết grain là
-học cách gõ lệnh; biết grain rồi thì đổi sang công cụ nào cũng làm được.
+That makes this the **slowest-depreciating** part of the whole knowledge base. Learning dbt without knowing grain is
+learning to type commands; know grain and you can do the job with any tool.
 
-> Chỗ này trả lời câu **"thiết kế bảng thế nào"**, không phải "chạy bằng gì". Phần chạy
-> bằng gì nằm ở [dbt](../etl/dbt/index.md), [Iceberg](../storage/iceberg/index.md),
+> This is where the question **"how do I design the table"** gets answered, not "what do I run it on". The what-to-run-it-on
+> part is in [dbt](../etl/dbt/index.md), [Iceberg](../storage/iceberg/index.md),
 > [Trino](../query-engines/trino/index.md).
 
-## Nội dung
+## Contents
 
-Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ này**.
+The five standard groups — **every topic in the repo uses exactly this set**.
 
-### [Tài liệu](reference/index.md) — nó là gì, vì sao, đánh đổi ra sao
+### [Reference](reference/index.md) — what it is, why, and what the trade-offs are
 
-| # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
+| # | Document | The question it answers | Level | Status |
 |---|---|---|---|---|
-| 1 | [Grain](reference/grain.md) | Một dòng của bảng này đại diện cho **cái gì** | beginner | ✅ đã gặp thật |
-| 2 | [Fact và Dimension](reference/fact-and-dimension.md) | Hai loại bảng; ba loại fact và additivity | beginner | 📝 review |
-| 3 | [Surrogate key và Natural key](reference/surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ | intermediate | 📝 draft |
-| 4 | [Quy trình thiết kế 4 bước](reference/design-process.md) | Từ yêu cầu nghiệp vụ tới bảng — theo thứ tự nào | intermediate | 📝 review |
-| 5 | [Star, Snowflake, OBT](reference/star-snowflake-obt.md) | Ba cách bố trí; đo thật chi phí OBT, và chỗ Data Vault đứng | intermediate | 📝 review |
-| 6 | [Date dimension](reference/date-dimension.md) | Vì sao lịch phải là bảng — quý tài chính, ngày lễ, múi giờ | beginner | 📝 draft |
-| 7 | [Bus architecture và bus matrix](reference/bus-architecture.md) | Dựng từng quy trình một mà cuối cùng vẫn ghép lại được | intermediate | 📝 draft |
+| 1 | [Grain](reference/grain.md) | **What** one row of this table represents | beginner | ✅ really encountered |
+| 2 | [Facts and dimensions](reference/fact-and-dimension.md) | The two table kinds; the three fact kinds and additivity | beginner | 📝 review |
+| 3 | [Surrogate keys and natural keys](reference/surrogate-key.md) | Why you don't use a business code directly | intermediate | 📝 draft |
+| 4 | [The 4-step design process](reference/design-process.md) | From a business requirement to a table — in what order | intermediate | 📝 review |
+| 5 | [Star, snowflake, OBT](reference/star-snowflake-obt.md) | Three layouts; measuring OBT's real cost, and where Data Vault stands | intermediate | 📝 review |
+| 6 | [The date dimension](reference/date-dimension.md) | Why the calendar has to be a table — fiscal quarters, holidays, timezones | beginner | 📝 draft |
+| 7 | [Bus architecture and the bus matrix](reference/bus-architecture.md) | Building one process at a time and still being able to join it all up | intermediate | 📝 draft |
 
-### [Kỹ năng](skills/index.md) — kỹ thuật áp dụng lên phần trên
+### [Skills](skills/index.md) — techniques applied on top of the above
 
-| # | Tài liệu | Trả lời câu hỏi | Mức | Trạng thái |
+| # | Document | The question it answers | Level | Status |
 |---|---|---|---|---|
-| 1 | [**SCD**](skills/scd.md) | Giá trị đổi thì lịch sử xử lý thế nào (Type 0–7) | intermediate | 📝 review |
-| 2 | [Phát hiện thay đổi cho SCD 2](skills/scd-change-detection.md) | Biết dòng nào đã đổi: so cột, hash, `updated_at`, CDC | advanced | 📝 draft |
-| 3 | [Junk dimension](skills/junk-dimension.md) | Cột trạng thái vài giá trị: để thẳng, tách riêng, hay gộp | intermediate | 📝 draft |
-| 4 | [Mini-dimension](skills/mini-dimension.md) | Dim lớn có vài cột đổi nhanh — tách sao cho Type 2 không phình | advanced | 📝 draft |
-| 5 | [Role-playing dimension](skills/role-playing-dimension.md) | Một dim đóng nhiều vai trong cùng fact | intermediate | 📝 draft |
-| 6 | [Conformed dimension](skills/conformed-dimension.md) | Điều kiện để cộng số từ hai fact khác nhau | advanced | 📝 draft |
-| 7 | [Bridge table](skills/bridge-table.md) | Quan hệ nhiều-nhiều — tổng không bị nhân đôi | advanced | 📝 draft |
-| 8 | [Degenerate dimension](skills/degenerate-dimension.md) | Số đơn hàng: ở lại fact hay dựng bảng riêng | intermediate | 📝 draft |
-| 9 | [Cây phân cấp](skills/hierarchy.md) | Cây sâu không đều — dẹt, kéo cấp cha, hay bridge đường đi | advanced | 📝 draft |
-| 10 | [Dữ liệu về muộn](skills/late-arriving.md) | Fact về sau khi dimension đã đổi, và ngược lại | advanced | 📝 draft |
-| 11 | [Aggregate fact table](skills/aggregate-fact-table.md) | Bảng tổng hợp: cái gì được lưu, và vì sao nó trôi | intermediate | 📝 draft |
-| 12 | [Nhiều tiền tệ và đơn vị đo](skills/multi-currency-uom.md) | Số đo có đơn vị thì cột số một mình là vô nghĩa | intermediate | 📝 draft |
-| 13 | [Audit dimension](skills/audit-dimension.md) | Truy được dòng nào do lần chạy nào sinh ra | intermediate | 📝 draft |
-| 14 | [NULL trong fact và dimension](skills/null-handling.md) | Logic ba trị làm bộ lọc âm thầm nuốt dòng | intermediate | 📝 draft |
-| 15 | [Conformed facts](skills/conformed-facts.md) | Ghép được rồi, hai số đó có so được không | intermediate | 📝 draft |
-| 16 | [Thiết kế thuộc tính dimension](skills/dimension-attribute-design.md) | Cờ dạng chữ, nhiều cây phân cấp, drill down, ghi chú | beginner | 📝 draft |
-| 17 | [Header/line và phân bổ fact](skills/allocated-facts.md) | Số đo cấp đơn xuống cấp dòng, và P&L theo sản phẩm | advanced | 📝 draft |
-| 18 | [Centipede fact table](skills/centipede-fact.md) | Fact hai chục khoá ngoại cho vài chiều thật | intermediate | 📝 draft |
-| 19 | [Year-to-date và timespan](skills/ytd-timespan-facts.md) | Luỹ kế thì đừng lưu; khoảng hiệu lực thì phải lưu | intermediate | 📝 draft |
-| 20 | [Đưa hành vi vào dimension](skills/behavior-dimension.md) | Số tổng hợp, phân khoảng động, nhóm nghiên cứu, step | advanced | 📝 draft |
-| 21 | [Thực thể không đồng nhất](skills/heterogeneous-schema.md) | Supertype/subtype khi các loại không chung thuộc tính | advanced | 📝 draft |
-| 22 | [Real-time fact table](skills/real-time-fact.md) | Ngày hôm nay chưa đầy nhưng vẫn được đếm là một ngày | advanced | 📝 draft |
+| 1 | [**SCD**](skills/scd.md) | How history is handled when a value changes (Type 0–7) | intermediate | 📝 review |
+| 2 | [Change detection for SCD 2](skills/scd-change-detection.md) | Knowing which row changed: comparing columns, hashing, `updated_at`, CDC | advanced | 📝 draft |
+| 3 | [Junk dimensions](skills/junk-dimension.md) | A status column with a few values: leave it, split it out, or combine | intermediate | 📝 draft |
+| 4 | [Mini-dimensions](skills/mini-dimension.md) | A large dim with a few fast-changing columns — splitting it so Type 2 doesn't bloat | advanced | 📝 draft |
+| 5 | [Role-playing dimensions](skills/role-playing-dimension.md) | One dim playing several roles in the same fact | intermediate | 📝 draft |
+| 6 | [Conformed dimensions](skills/conformed-dimension.md) | The conditions for adding numbers from two different facts | advanced | 📝 draft |
+| 7 | [Bridge tables](skills/bridge-table.md) | Many-to-many relationships — totals that don't double | advanced | 📝 draft |
+| 8 | [Degenerate dimensions](skills/degenerate-dimension.md) | The order number: staying in the fact or getting its own table | intermediate | 📝 draft |
+| 9 | [Hierarchies](skills/hierarchy.md) | An unevenly deep tree — flattened, parent-level pulled up, or a path bridge | advanced | 📝 draft |
+| 10 | [Late-arriving data](skills/late-arriving.md) | A fact arriving after the dimension changed, and vice versa | advanced | 📝 draft |
+| 11 | [Aggregate fact tables](skills/aggregate-fact-table.md) | Summary tables: what's stored, and why they drift | intermediate | 📝 draft |
+| 12 | [Multiple currencies and units of measure](skills/multi-currency-uom.md) | A measure with a unit makes the number column alone meaningless | intermediate | 📝 draft |
+| 13 | [Audit dimensions](skills/audit-dimension.md) | Tracing which row was produced by which run | intermediate | 📝 draft |
+| 14 | [NULLs in facts and dimensions](skills/null-handling.md) | Three-valued logic makes a filter silently swallow rows | intermediate | 📝 draft |
+| 15 | [Conformed facts](skills/conformed-facts.md) | Once they join, are those two numbers comparable | intermediate | 📝 draft |
+| 16 | [Designing dimension attributes](skills/dimension-attribute-design.md) | Textual flags, several hierarchies, drill down, notes | beginner | 📝 draft |
+| 17 | [Header/line and fact allocation](skills/allocated-facts.md) | Order-level measures down to line level, and P&L by product | advanced | 📝 draft |
+| 18 | [Centipede fact tables](skills/centipede-fact.md) | A fact with twenty foreign keys for a handful of real dimensions | intermediate | 📝 draft |
+| 19 | [Year-to-date and timespan](skills/ytd-timespan-facts.md) | Don't store a running total; do store a validity interval | intermediate | 📝 draft |
+| 20 | [Putting behaviour into a dimension](skills/behavior-dimension.md) | Aggregate numbers, dynamic banding, study groups, steps | advanced | 📝 draft |
+| 21 | [Heterogeneous entities](skills/heterogeneous-schema.md) | Supertype/subtype when the kinds share no attributes | advanced | 📝 draft |
+| 22 | [Real-time fact tables](skills/real-time-fact.md) | Today isn't complete yet but still counts as a day | advanced | 📝 draft |
 
-### Ba nhóm còn lại
+### The other three groups
 
-| Nhóm | Nội dung |
+| Group | Contents |
 |---|---|
-| [Bài tập](tutorials/index.md) | **7 lab chạy thật** — star schema, SCD, nền tảng, dimension, fact nâng cao, tích hợp, vận hành |
-| [Cheatsheet](cheatsheets/index.md) | [SCD — tra nhanh](cheatsheets/scd.md) |
-| [Case study](case-studies/index.md) | **24 ca** — mỗi kỹ thuật ở trên có ít nhất một ca hỏng cụ thể |
+| [Exercises](tutorials/index.md) | **7 labs really run** — a star schema, SCD, the foundations, dimensions, advanced facts, integration, operations |
+| [Cheatsheets](cheatsheets/index.md) | [SCD — a quick lookup](cheatsheets/scd.md) |
+| [Case studies](case-studies/index.md) | **24 cases** — every technique above has at least one concrete way it broke |
 
-Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 lý thuyết, `verified_at` còn trống
+Symbols: ✅ run by hand and confirmed · 📝 theory, with `verified_at` still empty
 
-Cột `#` là thứ tự học **trong từng nhóm**, và cũng là `sidebar_position`. Hai chỗ này
-phải khớp — lệch là sidebar dẫn người đọc đi sai đường.
+The `#` column is the learning order **within each group**, and also the `sidebar_position`. Those two
+must match — a mismatch means the sidebar leads readers down the wrong path.
 
-**Tài liệu hay Kỹ năng?** Tài liệu trả lời *"nó là gì"*; Kỹ năng trả lời *"gặp tình
-huống X thì xử lý ra sao"*. SCD và junk dimension đều giả định bạn đã biết grain và
-fact/dimension — nên chúng là kỹ năng, không phải nền tảng.
+**Reference or Skill?** Reference answers *"what it is"*; Skills answer *"faced with situation
+X, what do you do"*. SCD and junk dimensions both assume you already know grain and
+fact/dimension — so they're skills, not foundations.
 
-## Vì sao tách "Tài liệu" và "Kỹ năng"
+## Why "Reference" and "Skills" are separated
 
-Biết SCD Type 2 là gì (khái niệm) **không** đồng nghĩa với biết khi nào nên dùng nó
-(cách làm). Phần lớn tài liệu chỉ dạy vế đầu — liệt kê Type 1/2/3 kèm ví dụ bảng, rồi
-hết. Vế thứ hai mới là chỗ mất tiền:
+Knowing what SCD Type 2 is (the concept) does **not** mean knowing when to use it
+(the practice). Most documentation only teaches the first half — listing Type 1/2/3 with a table
+example, and stopping. The second half is where the money goes:
 
-- Chọn Type 2 cho cột đổi hằng ngày → dimension phình gấp trăm lần, query chậm dần.
-- Chọn Type 1 cho cột dùng để chia báo cáo → **báo cáo quá khứ tự đổi số**, và không ai
-  biết vì sao tháng 6 tuần này khác tháng 6 tuần trước.
+- Choosing Type 2 for a column that changes daily → the dimension bloats a hundredfold and queries slow down.
+- Choosing Type 1 for a column used to split reports → **historical reports change their own numbers**, and nobody
+  knows why this week's June differs from last week's June.
 
-Cả hai lỗi đều **không phải lỗi kỹ thuật**. SQL đúng, test xanh, pipeline xanh. Sai ở
-bước quyết định trước khi viết dòng SQL đầu tiên.
+Neither mistake is a **technical** one. The SQL is right, the tests are green, the pipeline is green. The error is at
+the decision step, before the first line of SQL was written.
 
 ## Learning Path
 
@@ -122,38 +121,38 @@ bảng tổng hợp, nhiều tiền tệ, audit dimension
 Triển khai bằng dbt snapshot
 ```
 
-**Đường ngắn nhất tới chỗ dùng được: Grain → Fact/Dimension → SCD → Quy trình → Lab.**
+**The shortest route to being useful: Grain → Fact/Dimension → SCD → the process → the lab.**
 
-## Bản đồ so với danh sách kỹ thuật Kimball
+## A map against Kimball's technique list
 
-Kho này bám theo [danh sách kỹ thuật mô hình chiều của Kimball Group](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/).
-Bảng dưới cho biết đang phủ tới đâu — để biết cái gì còn thiếu mà không phải mở lại trang
-gốc đối chiếu.
+This repo follows [the Kimball Group's dimensional modeling technique list](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/).
+The table below shows how far the coverage goes — so you can see what's missing without reopening the
+original page to compare.
 
-| Nhóm kỹ thuật Kimball | Số kỹ thuật | Đã phủ | Còn thiếu |
+| Kimball technique group | Techniques | Covered | Missing |
 |---|---|---|---|
-| Khái niệm nền | 9 | 9 | — |
-| Fact table cơ bản | 10 | 10 | — |
-| Dimension cơ bản | 14 | 14 | — |
-| Tích hợp qua conformed dimension | 7 | 7 | — |
+| Fundamental concepts | 9 | 9 | — |
+| Basic fact tables | 10 | 10 | — |
+| Basic dimensions | 14 | 14 | — |
+| Integration via conformed dimensions | 7 | 7 | — |
 | SCD | 8 | 8 | — |
-| Cây phân cấp | 3 | 3 | — |
-| Fact table nâng cao | 13 | 13 | — |
-| Dimension nâng cao | 14 | 12 | dimension-to-dimension join và behavior tag time series mới ở mức một mục, chưa có case study riêng |
-| Schema chuyên dụng | 3 | 3 | — |
+| Hierarchies | 3 | 3 | — |
+| Advanced fact tables | 13 | 13 | — |
+| Advanced dimensions | 14 | 12 | dimension-to-dimension joins and behavior tag time series are only covered as a section, with no case study of their own |
+| Special-purpose schemas | 3 | 3 | — |
 
-Toàn bộ **81 kỹ thuật** trong danh sách Kimball đã có chỗ trong kho. Hai kỹ thuật ở dòng
-áp chót được viết như một mục bên trong file khác thay vì file riêng — chúng hiếm gặp tới
-mức dựng case study riêng sẽ là bịa tình huống, và luật [R15](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md)
-tồn tại để chặn đúng việc đó.
+All **81 techniques** in Kimball's list have a place in the repo. The two techniques in the second-to-last row
+are written as a section inside another file rather than their own file — they're rare enough
+that building a dedicated case study would mean inventing a situation, and rule [R15](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md)
+exists to prevent exactly that.
 
-Phủ hết danh sách **không** phải mục tiêu tự thân. Giá trị nằm ở chỗ mỗi kỹ thuật đều đi
-kèm một ca hỏng có số chạy thật — đọc bảng đánh đổi thì quên, nhớ được là con số.
+Covering the whole list is **not** an end in itself. The value is that each technique comes
+with a concrete failure carrying real numbers — you forget a trade-off table, but you remember a figure.
 
 ## Related Topics
 
-- [Data Quality](../data-quality/index.md) — kiểm chứng mô hình sau khi dựng
-- [dbt](../etl/dbt/index.md) — công cụ hiện thực hoá
-- [SQL](../databases/sql/index.md) — nền của mọi thứ ở đây
-- [Cheatsheet SCD](cheatsheets/scd.md)
+- [Data Quality](../data-quality/index.md) — verifying a model after you've built it
+- [dbt](../etl/dbt/index.md) — the tool that realises it
+- [SQL](../databases/sql/index.md) — the foundation of everything here
+- [The SCD cheatsheet](cheatsheets/scd.md)
 - [Glossary](../glossary/index.md)

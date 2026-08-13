@@ -1,8 +1,7 @@
 ---
-title: Fact và Dimension
-i18n_status: untranslated
+title: Facts and dimensions
 sidebar_position: 2
-description: Hai loại bảng trong mô hình chiều — cái gì đo được thì vào fact, cái gì mô tả thì vào dimension.
+description: The two table kinds in a dimensional model — what's measurable goes in a fact, what's descriptive goes in a dimension.
 tags: [fact, dimension, data-modeling, kimball, star-schema]
 domain: data-engineering
 category: concept
@@ -13,30 +12,30 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Fact và Dimension
+# Facts and dimensions
 
-> **Chốt:** Fact là **cái đo được** (bao nhiêu tiền, bao nhiêu cái) — dài, hẹp, mọc
-> thêm mỗi ngày. Dimension là **cái mô tả** (ai, cái gì, ở đâu) — ngắn, rộng, đổi chậm.
-> Đặt sai chỗ một cột là hỏng cả mô hình, không phải chuyện thẩm mỹ.
+> **Takeaway:** a fact is **what's measurable** (how much money, how many items) — long, narrow, and growing
+> every day. A dimension is **what's descriptive** (who, what, where) — short, wide, slow-changing.
+> Putting one column in the wrong place breaks the whole model; it isn't a matter of aesthetics.
 
-## Mục tiêu
+## The goal
 
-Cho một quy tắc quyết định được: cột này thuộc bảng nào. Từ đó mới có được star schema
-và mới trả lời được câu hỏi phân tích mà không phải join lung tung.
+To give you a decidable rule: which table does this column belong to. Only from there do you get a star schema
+and the ability to answer an analytical question without joining at random.
 
-## Tổng quan
+## Overview
 
 | | Fact | Dimension |
 |---|---|---|
-| Chứa gì | Số đo (`thanh_tien`, `so_luong`) + các khoá | Thuộc tính mô tả (`ten`, `khu_vuc`, `nhom`) |
-| Hình dạng | **Dài và hẹp** — triệu dòng, ít cột | **Ngắn và rộng** — nghìn dòng, nhiều cột |
-| Nhịp đổi | Thêm dòng liên tục, hiếm khi sửa | Đổi chậm, vài lần/năm → [SCD](../skills/scd.md) |
-| Vai trò trong query | `SUM` / `COUNT` cái này | `GROUP BY` / `WHERE` theo cái này |
-| Grain | Một sự kiện = một dòng | Một thực thể (hoặc một phiên bản) = một dòng |
+| Contains | Measures (`thanh_tien`, `so_luong`) + the keys | Descriptive attributes (`ten`, `khu_vuc`, `nhom`) |
+| Shape | **Long and narrow** — millions of rows, few columns | **Short and wide** — thousands of rows, many columns |
+| Change rate | Rows added continuously, rarely edited | Slow-changing, a few times a year → [SCD](../skills/scd.md) |
+| Role in a query | You `SUM` / `COUNT` this | You `GROUP BY` / `WHERE` on this |
+| Grain | One event = one row | One entity (or one version) = one row |
 
-**Phép thử một câu:** cột này bạn sẽ `SUM` hay `GROUP BY`? `SUM` → fact. `GROUP BY` → dimension.
+**The one-sentence test:** will you `SUM` this column or `GROUP BY` it? `SUM` → a fact. `GROUP BY` → a dimension.
 
-## Ví dụ
+## The example
 
 ```mermaid
 graph LR
@@ -52,24 +51,24 @@ khach_sk | hang_sk | ngay_sk  | so_luong | thanh_tien
 2        | 17      | 20260110 | 2        | 300000
 ```
 
-Fact chỉ có **khoá và số**. Muốn biết khách tên gì thì join sang dimension. Đó là chủ
-ý: tên khách đổi thì sửa **một** dòng dimension, không phải sửa triệu dòng fact.
+The fact holds only **keys and numbers**. To know the customer's name you join to a dimension. That's
+deliberate: when a customer's name changes you edit **one** dimension row, not a million fact rows.
 
-## Ba loại fact
+## The three kinds of fact
 
-Kimball chia fact thành ba loại theo **grain** và **cách nạp**. Chọn sai loại thì không
-phải chuyện thẩm mỹ — có loại **không cộng được theo thời gian**, và cộng nhầm thì ra số
-vô nghĩa mà không có gì báo.
+Kimball divides facts into three kinds by **grain** and **how they're loaded**. Choosing the wrong kind isn't
+a matter of aesthetics — some kinds **can't be summed over time**, and summing them wrongly gives a
+meaningless number with nothing reported.
 
-| Loại | Grain | Nạp thế nào | Cộng theo thời gian |
+| Kind | Grain | How it's loaded | Summable over time |
 |---|---|---|---|
-| **Transaction** | Một sự kiện | Chỉ `INSERT` | ✅ được |
-| **Periodic snapshot** | Một kỳ × một thực thể | `INSERT` mỗi kỳ | ❌ **không** |
-| **Accumulating snapshot** | Một quy trình | `INSERT` rồi `UPDATE` nhiều lần | ⚠️ tuỳ cột |
+| **Transaction** | One event | `INSERT` only | ✅ yes |
+| **Periodic snapshot** | One period × one entity | `INSERT` per period | ❌ **no** |
+| **Accumulating snapshot** | One process instance | `INSERT` then `UPDATE` several times | ⚠️ depends on the column |
 
-### 1. Transaction fact — loại phổ biến nhất
+### 1. Transaction facts — the most common kind
 
-Một dòng = **một chuyện đã xảy ra**. Ghi rồi thì không sửa.
+One row = **one thing that happened**. Once written, never edited.
 
 ```text
 fct_don_hang_chi_tiet
@@ -78,19 +77,19 @@ DH001       | 1    | 2026-07-01 | 2        | 2        | 300000
 DH001       | 2    | 2026-07-01 | 2        | 1        | 300000
 ```
 
-Đây là loại **dễ nhất và an toàn nhất**:
+This is the **easiest and safest** kind:
 
-- Cộng được theo **mọi** chiều — theo ngày, theo khách, theo hàng, theo mọi tổ hợp.
-- Chỉ `INSERT`, không bao giờ `UPDATE` → hợp `incremental` tự nhiên.
-- Sai thì dựng lại từ nguồn được.
+- Summable along **every** dimension — by day, by customer, by product, by any combination.
+- `INSERT` only, never `UPDATE` → naturally suits `incremental`.
+- If it's wrong, it can be rebuilt from the source.
 
-**Mặc định nên là loại này.** Hai loại dưới chỉ dùng khi transaction fact không trả lời
-được câu hỏi.
+**This should be your default.** The two kinds below are only for when a transaction fact can't answer
+the question.
 
-### 2. Periodic snapshot — ảnh chụp định kỳ
+### 2. Periodic snapshots — a snapshot at intervals
 
-Một dòng = **trạng thái của một thực thể tại cuối một kỳ**. Dùng khi câu hỏi là *"tại
-thời điểm đó tình hình thế nào"*, mà không có sự kiện nào để đếm.
+One row = **one entity's state at the end of one period**. Use it when the question is *"what was the
+situation at that moment"*, with no event to count.
 
 ```text
 fct_so_du_cuoi_ngay
@@ -106,10 +105,10 @@ fct_so_du_cuoi_ngay
 └────────────┴───────────┴──────────┘
 ```
 
-Số dư có tồn tại như một sự kiện không? Không — nó là **trạng thái**. Không có "giao
-dịch số dư" nào để ghi vào transaction fact.
+Does a balance exist as an event? No — it's a **state**. There's no "balance transaction"
+to write into a transaction fact.
 
-#### Bẫy: cộng theo thời gian ra số vô nghĩa
+#### The trap: summing over time gives a meaningless number
 
 ```sql
 SELECT sum(so_du) AS tong FROM fct_so_du;
@@ -123,10 +122,10 @@ SELECT sum(so_du) AS tong FROM fct_so_du;
 └───────────────┘
 ```
 
-**46 triệu không tồn tại.** Tổng tài sản thật nhiều nhất là 16 triệu. Con số 46 triệu ra
-từ việc cộng cùng một khoản tiền nhiều lần — mỗi ngày một lần.
+**46 million doesn't exist.** The real total assets are at most 16 million. The 46 million figure comes
+from adding the same money several times — once per day.
 
-Hai cách cộng **đúng**:
+The two **correct** ways to sum:
 
 ```sql
 -- Cong theo TAI KHOAN, tai MOT thoi diem: hop le
@@ -157,14 +156,14 @@ SELECT tai_khoan, round(avg(so_du)) AS so_du_tb FROM fct_so_du GROUP BY 1;
 └───────────┴────────────┘
 ```
 
-**Luật:** số đo cộng được theo *một số* chiều nhưng không phải *mọi* chiều gọi là
-**semi-additive**. Với chiều thời gian, dùng `avg`, `max`, hoặc lấy giá trị cuối kỳ —
-đừng dùng `sum`.
+**The rule:** a measure summable along *some* dimensions but not *all* of them is called
+**semi-additive**. Along the time dimension, use `avg`, `max`, or take the end-of-period value —
+don't use `sum`.
 
-### 3. Accumulating snapshot — theo dõi một quy trình
+### 3. Accumulating snapshots — tracking a process
 
-Một dòng = **một lần chạy của một quy trình nhiều bước**. Khác hai loại trên ở chỗ dòng
-bị **`UPDATE` nhiều lần** khi quy trình tiến triển.
+One row = **one run of a multi-step process**. It differs from the two above in that the row is
+**`UPDATE`d several times** as the process progresses.
 
 ```text
 fct_don_hang_qua_trinh
@@ -177,12 +176,12 @@ fct_don_hang_qua_trinh
 └─────────┴────────────┴───────────────┴────────────┴────────────┘
 ```
 
-Mỗi cột mốc là một `NULL` chờ được điền. `DH3` mới đặt, `DH2` đang giao, `DH1` xong.
+Each milestone column is a `NULL` waiting to be filled. `DH3` was just placed, `DH2` is in transit, `DH1` is done.
 
-#### Giá trị thật: đo độ trễ từng chặng
+#### The real value: measuring the latency of each stage
 
-Đây là thứ transaction fact **không** làm được — nó có các sự kiện rời rạc, nhưng không
-có chỗ nào tính được khoảng cách giữa chúng mà không self-join.
+This is what a transaction fact **can't** do — it has the discrete events, but nowhere to
+compute the gap between them without a self-join.
 
 ```sql
 SELECT ma_don,
@@ -203,7 +202,7 @@ FROM fct_don_hang_qua_trinh;
 └─────────┴──────────────┴──────────┴──────────┴────────────────┘
 ```
 
-Và đếm số đơn đang kẹt ở mỗi chặng — báo cáo vận hành kinh điển:
+And counting how many orders are stuck at each stage — the classic operations report:
 
 ```text
 ┌──────────────┬───────────────┬───────────┬──────────┐
@@ -213,69 +212,69 @@ Và đếm số đơn đang kẹt ở mỗi chặng — báo cáo vận hành ki
 └──────────────┴───────────────┴───────────┴──────────┘
 ```
 
-#### Ba cái giá phải trả
+#### The three prices you pay
 
-| Cái giá | Chi tiết |
+| The price | Detail |
 |---|---|
-| Có `UPDATE` | Không dùng `incremental` kiểu append được; cần `unique_key` |
-| Cột `NULL` khắp nơi | `JOIN` thường **loại sạch** dòng chưa xong — xem [ca thật](../case-studies/don-dang-giao-bien-mat.md) |
-| Không có lịch sử trạng thái | Chỉ biết *khi nào* tới mốc, không biết đã quay lui hay chưa |
+| There are `UPDATE`s | You can't use append-style `incremental`; you need a `unique_key` |
+| `NULL` columns everywhere | An ordinary `JOIN` **wipes out** unfinished rows — see [a real case](../case-studies/don-dang-giao-bien-mat.md) |
+| No state history | You only know *when* a milestone was reached, not whether it went backwards |
 
-### Additivity — thứ quan trọng hơn cả ba loại
+### Additivity — more important than any of the three kinds
 
-Phân loại theo *cộng được hay không* thực ra hữu ích hơn phân loại theo tên.
+Classifying by *summable or not* is in fact more useful than classifying by name.
 
-**Điểm hay bị hiểu sai:** additivity **không phải tính chất của riêng số đo** — nó là
-tính chất của **cặp (số đo × chiều)**. Cùng một cột có thể cộng được theo chiều này và
-không cộng được theo chiều kia. Đó chính là lý do có từ *semi*-additive.
+**The commonly misunderstood point:** additivity is **not a property of the measure alone** — it's
+a property of the **(measure × dimension) pair**. The same column can be summable along one dimension and
+not along another. That's exactly why the word *semi*-additive exists.
 
-| Số đo | Theo khách hàng | Theo sản phẩm | Theo **thời gian** |
+| Measure | By customer | By product | By **time** |
 |---|---|---|---|
 | `thanh_tien` | ✅ | ✅ | ✅ → **additive** |
 | `so_du` | ✅ | — | ❌ → **semi-additive** |
 | `so_luong_ton_kho` | — | ✅ | ❌ → **semi-additive** |
 | `ty_le_loi` | ❌ | ❌ | ❌ → **non-additive** |
 
-Đọc bảng theo hàng: `so_du` cộng theo khách thì đúng (tổng tài sản của tất cả khách),
-cộng theo thời gian thì vô nghĩa. `thanh_tien` cộng theo hướng nào cũng đúng.
+Read the table row by row: summing `so_du` by customer is correct (the total assets of all customers), while
+summing it over time is meaningless. `thanh_tien` sums correctly in every direction.
 
-### Additive — cộng thoải mái
+### Additive — sum freely
 
-Số đo **đếm được và cộng dồn tự nhiên**: `thanh_tien`, `so_luong`, `chi_phi`, `so_gio`.
+Measures that are **countable and naturally accumulate**: `thanh_tien`, `so_luong`, `chi_phi`, `so_gio`.
 
-Dấu hiệu nhận ra: nếu chia đôi khoảng thời gian rồi cộng hai nửa lại, có ra đúng tổng
-ban đầu không? Có → additive.
+The sign to look for: if you halve the time interval and add the two halves back, do you get the original
+total? Yes → additive.
 
-Đây là loại duy nhất **không cần suy nghĩ** khi viết báo cáo. Cố gắng thiết kế fact sao
-cho phần lớn số đo thuộc loại này.
+This is the only kind that **needs no thought** when writing a report. Try to design facts so that most of the
+measures are of this kind.
 
-### Semi-additive — cộng được, trừ chiều thời gian
+### Semi-additive — summable, except along time
 
-Gần như luôn là số đo mô tả **trạng thái tồn tại tại một thời điểm**: số dư, tồn kho, số
-nhân viên, số thuê bao đang hoạt động.
+Almost always a measure describing **a state existing at a moment**: a balance, inventory, an employee
+count, active subscriptions.
 
-Lý do không cộng theo thời gian: **cùng một thực thể tồn tại qua nhiều kỳ**. Cộng qua các
-kỳ là đếm lại chính nó — như phần [Periodic snapshot](#2-periodic-snapshot--ảnh-chụp-định-kỳ)
-đã chứng minh: 46 triệu trong khi tổng thật nhiều nhất 16 triệu.
+The reason it doesn't sum over time: **the same entity exists across several periods**. Summing across
+periods counts it again — as the [Periodic snapshots](#2-periodic-snapshots--a-snapshot-at-intervals)
+section demonstrated: 46 million when the real total is at most 16 million.
 
-Bốn cách gộp đúng theo thời gian, chọn theo **câu hỏi nghiệp vụ**:
+Four correct ways to aggregate over time, chosen by the **business question**:
 
-| Cách | Trả lời câu hỏi | Ví dụ dùng |
+| Approach | The question it answers | Example use |
 |---|---|---|
-| Giá trị **cuối kỳ** | "Hiện tại còn bao nhiêu" | Số dư cuối tháng lên báo cáo tài chính |
-| **Trung bình** | "Trung bình duy trì bao nhiêu" | Số dư bình quân để tính lãi |
-| **Lớn nhất / nhỏ nhất** | "Đỉnh / đáy là bao nhiêu" | Tồn kho cao nhất để tính sức chứa kho |
-| Giá trị **đầu kỳ** | "Bắt đầu kỳ có bao nhiêu" | Đối chiếu đầu kỳ ↔ cuối kỳ |
+| The **end-of-period** value | "How much is there now" | The month-end balance in a financial report |
+| The **average** | "How much was maintained on average" | The average balance for computing interest |
+| The **max / min** | "What was the peak / trough" | Peak inventory for sizing warehouse capacity |
+| The **start-of-period** value | "How much was there at the start" | Reconciling opening ↔ closing |
 
-Không có cách nào "đúng nhất" — sai lầm là dùng `sum`, còn chọn cái nào trong bốn cái
-này là câu hỏi nghiệp vụ.
+None is "the most correct" — the mistake is using `sum`, and choosing among these four
+is a business question.
 
-### Non-additive — không cộng được theo chiều nào
+### Non-additive — summable along no dimension at all
 
-Ba họ hay gặp, và cả ba đều hỏng theo cùng một kiểu: **chúng là kết quả của một phép
-chia đã thực hiện quá sớm.**
+Three common families, and all three break the same way: **they're the result of a division
+performed too early.**
 
-#### Họ 1 — tỷ lệ và phần trăm
+#### Family 1 — ratios and percentages
 
 ```text
 ┌──────────┬────────┬────────┬───────────────┐
@@ -294,11 +293,11 @@ chia đã thực hiện quá sớm.**
 └──────────────────────────┴────────────┘
 ```
 
-**Sai hơn năm lần** — vì hai khu vực có mẫu số chênh 10 lần, mà `avg` coi chúng ngang nhau.
+**More than five times wrong** — because the two regions' denominators differ by a factor of 10, while `avg` treats them as equals.
 
-#### Họ 2 — trung bình đã tính sẵn
+#### Family 2 — pre-computed averages
 
-Cùng bản chất nhưng hay bị bỏ qua hơn, và sai nặng hơn nhiều:
+The same nature but more often overlooked, and far more badly wrong:
 
 ```text
 ┌──────────┬────────┬───────────┬────────────┐
@@ -317,12 +316,12 @@ Cùng bản chất nhưng hay bị bỏ qua hơn, và sai nặng hơn nhiều:
 └───────────────┴──────────┘
 ```
 
-**Sai 49 lần.** Trung bình của các trung bình không phải trung bình — trừ khi mọi nhóm
-có cùng số phần tử, điều gần như không bao giờ đúng.
+**49 times wrong.** An average of averages isn't an average — unless every group
+has the same element count, which is almost never true.
 
-#### Họ 3 — đếm phân biệt (`count distinct`)
+#### Family 3 — distinct counts (`count distinct`)
 
-Họ này ít ai xếp vào non-additive, nhưng nó hỏng y hệt:
+This family is rarely classed as non-additive, but it breaks identically:
 
 ```text
 ┌────────────┬──────────────┐
@@ -334,49 +333,49 @@ Họ này ít ai xếp vào non-additive, nhưng nó hỏng y hệt:
 └────────────┴──────────────┘
 ```
 
-Vậy cả kỳ có bao nhiêu khách duy nhất?
+So how many unique customers were there over the whole period?
 
 ```text
 cộng ba ngày   = 7      ← SAI
 đếm cả kỳ      = 4      ← ĐÚNG
 ```
 
-**Phồng 75%**, vì `U1` xuất hiện cả ba ngày và bị đếm ba lần. Đây là lý do chỉ số
-*"người dùng hoạt động hàng tháng"* **không** suy ra được từ bảng ngày — phải tính lại
-từ dữ liệu gốc ở đúng mức thời gian cần.
+**75% inflated**, because `U1` appeared on all three days and got counted three times. This is why a
+*"monthly active users"* metric **can't** be derived from a daily table — it has to be recomputed
+from the raw data at exactly the time level you need.
 
-### Luật lưu trữ: đừng chia sớm
+### The storage rule: don't divide early
 
-Cả ba họ non-additive có **cùng một cách sửa**:
+All three non-additive families have **the same fix**:
 
-> **Lưu tử số và mẫu số vào fact. Để lớp báo cáo chia.**
+> **Store the numerator and the denominator in the fact. Let the reporting layer divide.**
 
-| Đừng lưu | Lưu thay bằng | Báo cáo tính |
+| Don't store | Store instead | The report computes |
 |---|---|---|
 | `ty_le_loi` | `so_loi`, `so_don` | `sum(so_loi) / sum(so_don)` |
 | `gia_tri_don_tb` | `tong_tien`, `so_don` | `sum(tong_tien) / sum(so_don)` |
 | `ty_le_chuyen_doi` | `so_mua`, `so_xem` | `sum(so_mua) / sum(so_xem)` |
 
-Nhờ vậy **mọi mức gộp đều đúng** — theo ngày, theo tháng, theo khu vực, theo mọi tổ hợp —
-mà không cần ai nhớ luật gì.
+That way **every aggregation level is correct** — by day, by month, by region, by any combination —
+without anybody having to remember a rule.
 
-Với `count distinct` thì không có tử/mẫu để lưu. Hai lựa chọn: tính lại từ fact chi tiết
-ở đúng mức cần, hoặc lưu cấu trúc xấp xỉ như HyperLogLog nếu warehouse hỗ trợ.
+With `count distinct` there's no numerator/denominator to store. Two options: recompute from the detailed fact
+at exactly the level you need, or store an approximate structure such as HyperLogLog if the warehouse supports it.
 
-### Phép thử một câu
+### The one-sentence test
 
-Trước khi đưa một cột số vào fact, hỏi:
+Before putting a numeric column into a fact, ask:
 
-> **"Cột này cộng qua hai dòng bất kỳ, kết quả có nghĩa không?"**
+> **"If this column is summed across any two rows, is the result meaningful?"**
 
-- Có với mọi chiều → additive, yên tâm.
-- Có với một số chiều → semi-additive, **ghi vào mô tả cột** chiều nào không cộng được.
-- Không với chiều nào → non-additive, **đừng lưu nó** — lưu tử và mẫu.
+- Yes along every dimension → additive, no worries.
+- Yes along some dimensions → semi-additive, and **write into the column description** which dimension doesn't sum.
+- No along any dimension → non-additive, and **don't store it** — store the numerator and denominator.
 
-Bước "ghi vào mô tả cột" quan trọng hơn vẻ ngoài: người viết báo cáo sáu tháng sau không
-đọc file này, họ đọc `schema.yml`. Xem [Docs và lineage](../../etl/dbt/reference/docs-and-lineage.md).
+That "write into the column description" step matters more than it looks: whoever writes a report six months later doesn't
+read this file, they read `schema.yml`. See [Docs and lineage](../../etl/dbt/reference/docs-and-lineage.md).
 
-### Chọn loại nào
+### Which kind to choose
 
 ```text
 Có sự kiện rời rạc để ghi không?
@@ -388,113 +387,113 @@ Có sự kiện rời rạc để ghi không?
                                           (nhớ: có UPDATE, có NULL)
 ```
 
-Ba loại **không loại trừ nhau**. Một hệ thống chín chắn thường có cả ba cho cùng một
-nghiệp vụ: transaction để phân tích chi tiết, periodic để báo cáo tồn/số dư, accumulating
-để theo dõi vận hành.
+The three kinds are **not mutually exclusive**. A mature system usually has all three for the same
+business process: transaction for detailed analysis, periodic for inventory/balance reporting, and accumulating
+for operational tracking.
 
-### Loại thứ tư ít gặp: factless fact
+### The rarer fourth kind: the factless fact
 
-Fact **không có số đo nào**, chỉ có các khoá. Dùng để ghi lại *"chuyện này đã xảy ra"*
-hoặc *"quan hệ này tồn tại"*:
+A fact with **no measures at all**, only keys. Used to record *"this happened"*
+or *"this relationship exists"*:
 
 ```text
 fct_sinh_vien_diem_danh
 ngay_sk | sinh_vien_sk | lop_sk        ← khong co cot so nao
 ```
 
-Đếm bằng `count(*)`. Giá trị lớn nhất là trả lời câu hỏi **phủ định**: *"sinh viên nào
-KHÔNG đi học buổi nào"* — thứ chỉ trả lời được khi có bảng ghi lại sự kiện đã xảy ra để
-đối chiếu với danh sách đầy đủ.
+You count with `count(*)`. Its greatest value is answering the **negative** question: *"which students
+attended NO session"* — something only answerable when you have a table recording the events that did happen
+to compare against the full list.
 
-## Số này là thuộc tính hay là fact?
+## Is this number an attribute or a fact?
 
-Không phải cột số nào cũng là fact, và không phải cột chữ nào cũng là dimension. Giá bán
-niêm yết của sản phẩm là một con số — nhưng nó **mô tả sản phẩm**, không đo một sự kiện.
+Not every numeric column is a fact, and not every text column is a dimension. A product's list
+price is a number — but it **describes the product**, it doesn't measure an event.
 
-Kimball gọi tình huống này là *numeric values as attributes or facts*, và phép thử là:
+Kimball calls this situation *numeric values as attributes or facts*, and the test is:
 
-> **Cột này bạn sẽ `SUM`, hay bạn sẽ `WHERE` và `GROUP BY`?**
+> **Will you `SUM` this column, or will you `WHERE` and `GROUP BY` on it?**
 
-| Dấu hiệu | Nó là |
+| The sign | It's |
 |---|---|
-| Cộng lại có nghĩa | **Fact** |
-| Dùng để lọc, gộp, phân khoảng | **Thuộc tính dimension** |
-| Đổi theo từng sự kiện | Fact |
-| Đổi theo thực thể, ổn định giữa các sự kiện | Thuộc tính |
-| Người dùng hỏi "tổng bao nhiêu" | Fact |
-| Người dùng hỏi "có bao nhiêu cái trong khoảng X–Y" | Thuộc tính |
+| Summing it is meaningful | **A fact** |
+| Used to filter, group, band | **A dimension attribute** |
+| Changes per event | A fact |
+| Changes per entity, stable between events | An attribute |
+| Users ask "what's the total" | A fact |
+| Users ask "how many are in the range X–Y" | An attribute |
 
-**Câu trả lời hay gặp nhất là: cả hai.** Giá niêm yết vừa là thuộc tính của
-`dim_san_pham` (để lọc "sản phẩm dưới 1 triệu"), vừa là fact trong `fct_ban` (giá thực tế
-lúc bán, có thể khác giá niêm yết do khuyến mãi).
+**The most common answer is: both.** The list price is both an attribute of
+`dim_san_pham` (to filter "products under 1 million") and a fact in `fct_ban` (the actual price
+at the time of sale, which may differ from the list price because of a promotion).
 
-Đó không phải trùng lặp — hai cột trả lời hai câu hỏi khác nhau, và **giá lúc bán mới là
-sự thật của giao dịch**. Chi tiết ở [year-to-date và timespan](../skills/ytd-timespan-facts.md):
-dùng giá hiện tại thay cho giá lúc bán làm doanh thu lệch 39%.
+That isn't duplication — the two columns answer two different questions, and **the price at the time of sale is
+the transaction's truth**. Details in [year-to-date and timespan](../skills/ytd-timespan-facts.md):
+using the current price instead of the price at sale skews revenue by 39%.
 
-Khi cột số nằm ở dimension và cần phân nhóm theo ngưỡng, dùng bảng khoảng thay vì
-`CASE WHEN` — xem [đưa hành vi vào dimension](../skills/behavior-dimension.md).
+When a numeric column sits in a dimension and needs grouping by threshold, use a band table rather than
+`CASE WHEN` — see [putting behaviour into a dimension](../skills/behavior-dimension.md).
 
 ## Trade-offs
 
-| Tách fact/dimension (star) | Gộp hết vào một bảng (OBT) |
+| Separating fact/dimension (a star) | Merging everything into one table (OBT) |
 |---|---|
-| Không lặp dữ liệu; sửa thuộc tính ở một chỗ | Không cần join, query đơn giản |
-| Phải join mọi lúc | Sửa tên khách = viết lại triệu dòng |
-| Hỗ trợ [SCD](../skills/scd.md) tự nhiên | Lịch sử lẫn lộn, rất khó làm as-was |
+| No data repetition; edit an attribute in one place | No joins needed, simple queries |
+| You have to join every time | Changing a customer's name = rewriting a million rows |
+| Naturally supports [SCD](../skills/scd.md) | History gets muddled, and as-was is very hard |
 
-Xem [Star, Snowflake, OBT](star-snowflake-obt.md).
+See [Star, snowflake, OBT](star-snowflake-obt.md).
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Để thuộc tính mô tả (`ten_khach`) trong fact | Đổi tên phải viết lại triệu dòng; và tên nào là "đúng"? |
-| Để số đo đổi liên tục trong dimension | Dimension phình vô hạn nếu là Type 2 — **đó là fact** |
-| Cộng periodic snapshot theo thời gian | Ra số vô nghĩa, không lỗi nào báo |
-| Fact giữ natural key thay vì surrogate key | Nhân bản dòng khi dim là Type 2 — xem [SCD](../skills/scd.md#common-mistakes) |
-| Không có `dim_thoi_gian`, dùng thẳng cột ngày | Không `GROUP BY` được theo quý/tuần/ngày lễ mà không viết hàm mỗi lần |
+| Keeping a descriptive attribute (`ten_khach`) in the fact | A rename means rewriting a million rows; and which name is "correct"? |
+| Keeping a continuously changing measure in a dimension | The dimension bloats without bound if it's Type 2 — **that's a fact** |
+| Summing a periodic snapshot over time | A meaningless number, with no error reported |
+| A fact holding the natural key instead of the surrogate key | Rows duplicate when the dim is Type 2 — see [SCD](../skills/scd.md#common-mistakes) |
+| No `dim_thoi_gian`, using the date column directly | You can't `GROUP BY` quarter/week/holiday without writing a function every time |
 
 ## FAQ
 
 <details>
-<summary>Cột <code>trang_thai_don_hang</code> — fact hay dimension?</summary>
+<summary>The <code>trang_thai_don_hang</code> column — fact or dimension?</summary>
 
-Bẫy kinh điển. Nó *mô tả*, nên nghe như dimension — nhưng nó đổi **liên tục** trong
-vòng đời một đơn. Cách đúng: `trang_thai` hiện tại nằm trong accumulating snapshot fact
-(cột mốc thời gian cho từng bước), còn *danh mục* trạng thái ("Đã giao", "Đã huỷ")
-là một dimension nhỏ.
+The classic trap. It *describes*, so it sounds like a dimension — but it changes **continuously** over
+an order's lifetime. The correct approach: the current `trang_thai` lives in an accumulating snapshot fact
+(a timestamp column per step), while the *catalogue* of statuses ("Delivered", "Cancelled")
+is a small dimension.
 
-Còn khi trạng thái đã chốt cứng lúc ghi thì câu hỏi đổi thành *tách dimension riêng hay
-để thẳng trong fact* — xem [Junk dimension](../skills/junk-dimension.md).
-
-</details>
-
-<details>
-<summary>Vì sao cần <code>dim_thoi_gian</code> khi bảng đã có cột ngày?</summary>
-
-Để `GROUP BY quy`, `WHERE la_ngay_le = true`, `GROUP BY tuan_tai_chinh` mà không phải
-viết hàm ngày tháng trong mọi query — và để mọi báo cáo dùng **cùng một** định nghĩa
-quý. Đây là dimension duy nhất sinh sẵn được bằng script.
+And when a status is frozen at write time, the question becomes *its own dimension or
+straight into the fact* — see [Junk dimensions](../skills/junk-dimension.md).
 
 </details>
 
 <details>
-<summary>Fact có được join thẳng vào fact khác không?</summary>
+<summary>Why do I need <code>dim_thoi_gian</code> when the table already has a date column?</summary>
 
-Tránh. Hai fact khác grain join với nhau là nhân bản dòng. Cách đúng: cộng mỗi fact về
-cùng một grain trước, rồi mới ghép — hoặc join gián tiếp qua dimension chung.
+So you can `GROUP BY quy`, `WHERE la_ngay_le = true`, `GROUP BY tuan_tai_chinh` without
+writing date functions in every query — and so every report uses **the same** definition
+of a quarter. This is the only dimension you can generate in advance with a script.
+
+</details>
+
+<details>
+<summary>Can a fact be joined directly to another fact?</summary>
+
+Avoid it. Joining two facts of different grain duplicates rows. The correct approach: aggregate each fact to
+the same grain first, and only then combine — or join indirectly through a shared dimension.
 
 </details>
 
 ## Related Topics
 
-- [Grain](grain.md) — phải khai grain của fact trước khi chọn cột
-- [SCD](../skills/scd.md) — dimension đổi thì xử lý thế nào
-- [Star, Snowflake, OBT](star-snowflake-obt.md) — cách bố trí fact quanh dimension
-- [Surrogate key](surrogate-key.md) — thứ nối fact với dimension
-- [Quy trình thiết kế](design-process.md) — bước 3 và 4 chính là chọn dim và fact
+- [Grain](grain.md) — you must declare a fact's grain before choosing columns
+- [SCD](../skills/scd.md) — how to handle a changing dimension
+- [Star, snowflake, OBT](star-snowflake-obt.md) — how to arrange facts around dimensions
+- [Surrogate keys](surrogate-key.md) — what connects a fact to a dimension
+- [The design process](design-process.md) — steps 3 and 4 are precisely choosing dims and facts
 
 ## References
 
-- Kimball & Ross — *The Data Warehouse Toolkit*, chương 1–3
+- Kimball & Ross — *The Data Warehouse Toolkit*, chapters 1–3

@@ -1,9 +1,8 @@
 ---
-title: Tài liệu — Data Modeling
-i18n_status: untranslated
+title: Reference — Data Modeling
 sidebar_key: data-modeling-reference
 sidebar_position: 0
-description: "Giải thích nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước."
+description: "Explains what it is, why, and what the trade-offs are. Read this group first."
 tags: [reference, data-modeling]
 domain: data-engineering
 category: index
@@ -11,20 +10,20 @@ doc_type: index
 updated: 2026-07-31
 ---
 
-# Tài liệu — Data Modeling
+# Reference — Data Modeling
 
-Giải thích *nó là gì, vì sao, đánh đổi ra sao*. Đọc nhóm này trước.
+Explains *what it is, why, and what the trade-offs are*. Read this group first.
 
-| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+| # | Document | The question it answers | Status |
 |---|---|---|---|
-| 1 | [Grain](grain.md) | Một dòng của bảng này đại diện cho cái gì — câu hỏi phải trả lời trước | ✅ đã chạy tay |
-| 2 | [Fact và Dimension](fact-and-dimension.md) | Hai loại bảng trong mô hình chiều — cái gì đo được thì vào fact, cái g | 📝 lý thuyết |
-| 3 | [Surrogate key và Natural key](surrogate-key.md) | Vì sao không dùng thẳng mã nghiệp vụ làm khoá của dimension — và vì sa | 🟡 draft |
-| 4 | [Quy trình thiết kế 4 bước](design-process.md) | Từ một yêu cầu nghiệp vụ mơ hồ tới bảng chạy được — làm theo thứ tự nà | 📝 lý thuyết |
-| 5 | [Star, Snowflake và One Big Table](star-snowflake-obt.md) | Ba cách bố trí fact quanh dimension — và vì sao lakehouse làm đảo chiề | 🟡 draft |
-| 6 | [Date dimension](date-dimension.md) | Vì sao lịch phải là một bảng — quý tài chính và ngày làm việc là dữ li | 📝 lý thuyết |
-| 7 | [Bus architecture, bus matrix và value chain](bus-architecture.md) | Dựng từng quy trình một mà cuối cùng vẫn ghép lại được | 📝 lý thuyết |
+| 1 | [Grain](grain.md) | What one row of this table represents — the question to answer first | ✅ run by hand |
+| 2 | [Facts and dimensions](fact-and-dimension.md) | The two table kinds in a dimensional model — what's measurable goes in a fact, what' | 📝 theory |
+| 3 | [Surrogate keys and natural keys](surrogate-key.md) | Why you don't use a business code directly as a dimension's key — and wh | 🟡 draft |
+| 4 | [The 4-step design process](design-process.md) | From a vague business requirement to a working table — in what order | 📝 theory |
+| 5 | [Star, snowflake and One Big Table](star-snowflake-obt.md) | Three ways of arranging facts around dimensions — and why the lakehouse revers | 🟡 draft |
+| 6 | [The date dimension](date-dimension.md) | Why the calendar has to be a table — fiscal quarters and working days are dat | 📝 theory |
+| 7 | [Bus architecture, the bus matrix and the value chain](bus-architecture.md) | Building one process at a time and still being able to join it all up | 📝 theory |
 
 ## Related Topics
 
-- [Data Modeling](../index.md) — chủ đề chứa thư mục này
+- [Data Modeling](../index.md) — the topic this directory belongs to
