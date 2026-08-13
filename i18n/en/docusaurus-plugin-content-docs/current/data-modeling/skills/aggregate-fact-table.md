@@ -1,8 +1,7 @@
 ---
-title: Aggregate fact table và shrunken rollup dimension
-i18n_status: untranslated
+title: Aggregate fact tables and shrunken rollup dimensions
 sidebar_position: 11
-description: "Bảng tổng hợp làm query nhanh lên, nhưng chỉ đúng khi nó cộng được và khi dimension rút gọn sinh ra từ chính dimension gốc."
+description: "A summary table speeds queries up, but it's only correct when its numbers are summable and when the shrunken dimension is generated from the original dimension."
 tags: [aggregate, shrunken-dimension, conformed-dimension, additivity, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,26 +12,26 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Aggregate fact table và shrunken rollup dimension
+# Aggregate fact tables and shrunken rollup dimensions
 
-> **Chốt:** bảng tổng hợp là **bản sao có thể sai lệch** của fact chi tiết. Hai luật giữ
-> nó không sai: chỉ lưu số **cộng được** (`sum`, `count` — không bao giờ `avg`), và
-> dimension rút gọn phải **sinh ra từ** dimension gốc chứ không gõ lại.
+> **Takeaway:** a summary table is a **copy that can drift** from the detailed fact. Two rules keep
+> it correct: store only **summable** numbers (`sum`, `count` — never `avg`), and the
+> shrunken dimension must be **generated from** the original dimension rather than retyped.
 
-## Vì sao có bảng tổng hợp
+## Why summary tables exist
 
-Fact atomic có 5 tỷ dòng; dashboard chỉ hỏi doanh thu theo tháng × khu vực. Quét 5 tỷ
-dòng để trả về 200 con số là lãng phí. Bảng tổng hợp ở grain thô hơn giải quyết đúng việc
-đó.
+The atomic fact has 5 billion rows; the dashboard only asks for revenue by month × region. Scanning 5 billion
+rows to return 200 numbers is wasteful. A summary table at a coarser grain solves exactly
+that.
 
-Kimball nhấn mạnh một điều dễ bị bỏ qua: **bảng tổng hợp không thay thế atomic**. Nó là
-lớp tăng tốc, đứng cạnh, và **phải rút được ra từ atomic bất cứ lúc nào**. Bỏ atomic đi
-để "tiết kiệm" là mất khả năng trả lời mọi câu hỏi chưa được dự đoán trước — cùng loại
-đánh đổi ở [Star, Snowflake, OBT](../reference/star-snowflake-obt.md).
+Kimball emphasises something easily overlooked: **a summary table doesn't replace the atomic one**. It's an
+acceleration layer standing beside it, and it **must be derivable from the atomic table at any time**. Dropping the atomic
+table to "save space" loses the ability to answer every unanticipated question — the same kind of
+trade-off as in [Star, snowflake, OBT](../reference/star-snowflake-obt.md).
 
-## Luật 1 — chỉ lưu số cộng được
+## Rule 1 — store only summable numbers
 
-Đây là chỗ hỏng phổ biến nhất, và nó hỏng ngay ở dòng đầu tiên.
+This is the commonest failure, and it fails right at the first row.
 
 ```sql
 CREATE TABLE fct_don AS
@@ -57,7 +56,7 @@ FROM fct_don GROUP BY ngay;
 └────────────┴───────────┴────────────┘
 ```
 
-Bảng này đúng. Nó thành sai ngay khi có người cộng lên một cấp:
+This table is correct. It becomes wrong the moment somebody rolls it up a level:
 
 ```sql
 SELECT (SELECT round(avg(doanh_thu), 1) FROM fct_don)       AS tu_atomic,
@@ -75,11 +74,11 @@ SELECT (SELECT round(avg(doanh_thu), 1) FROM fct_don)       AS tu_atomic,
 └───────────┴────────────────────┴──────────┘
 ```
 
-**200 hay 300?** Trung bình của trung bình cho mỗi ngày trọng số bằng nhau, bất kể ngày
-đó có 3 đơn hay 1 đơn. Lệch 50% trên một tập 4 dòng — trên tập thật thì lệch bao nhiêu
-không ai đoán được, và không ai phát hiện.
+**200 or 300?** An average of averages weights each day equally, whether that day had
+3 orders or 1. 50% out on a 4-row set — on a real set nobody can guess by how much,
+and nobody detects it.
 
-Cách sửa là bỏ `avg`, lưu **tử số và mẫu số**:
+The fix is to drop `avg` and store **the numerator and the denominator**:
 
 ```sql
 CREATE TABLE agg_ngay AS
@@ -99,25 +98,25 @@ FROM agg_ngay;
 └───────────┴────────┴────────────┘
 ```
 
-Luật rút ra: **bảng tổng hợp chỉ chứa fact additive**. Tỷ lệ, trung bình, phần trăm được
-tính **lúc đọc** từ hai cột cộng được. Xem thêm phần additivity ở
-[Fact và Dimension](../reference/fact-and-dimension.md).
+The rule: **a summary table contains only additive facts**. Ratios, averages and percentages are
+computed **at read time** from two summable columns. See the additivity section in
+[Facts and dimensions](../reference/fact-and-dimension.md).
 
-| Muốn có chỉ số | Lưu trong bảng tổng hợp |
+| To have the metric | Store in the summary table |
 |---|---|
-| Giá trị đơn trung bình | `sum(doanh_thu)`, `count(*)` |
-| Tỷ lệ chuyển đổi | `sum(so_don)`, `sum(so_luot_xem)` |
-| Biên lợi nhuận % | `sum(doanh_thu)`, `sum(gia_von)` |
-| Số khách phân biệt | **Không cộng được** — xem FAQ |
+| Average order value | `sum(doanh_thu)`, `count(*)` |
+| Conversion rate | `sum(so_don)`, `sum(so_luot_xem)` |
+| Margin % | `sum(doanh_thu)`, `sum(gia_von)` |
+| Distinct customers | **Not summable** — see the FAQ |
 
-## Luật 2 — shrunken rollup dimension phải sinh từ dimension gốc
+## Rule 2 — a shrunken rollup dimension must be generated from the original
 
-Bảng tổng hợp theo quý cần một `dim_quy`. Cám dỗ: gõ tay một bảng 4 dòng, 30 giây là
-xong. Hậu quả: hai định nghĩa "quý" tồn tại song song, và chúng lệch nhau vào đúng lúc
-không ai ngờ — nhất là khi công ty có [năm tài chính riêng](../reference/date-dimension.md).
+A quarterly summary table needs a `dim_quy`. The temptation: type a 4-row table by hand, done in
+30 seconds. The consequence: two definitions of "quarter" existing in parallel, diverging at exactly the moment
+nobody expects — especially when the company has [its own fiscal year](../reference/date-dimension.md).
 
-Shrunken rollup dimension là dimension gốc **rút gọn về grain thô hơn**, và nó phải được
-sinh ra bằng `SELECT DISTINCT` từ chính dimension gốc:
+A shrunken rollup dimension is the original dimension **reduced to a coarser grain**, and it must be
+generated with `SELECT DISTINCT` from the original dimension itself:
 
 ```sql
 CREATE TABLE dim_quy AS
@@ -137,7 +136,7 @@ FROM dim_ngay;
 └───────────────┴───────────────┴───────────┘
 ```
 
-Kiểm tra điều kiện conform — cùng một tháng phải mang cùng một nhãn ở cả hai bảng:
+Check the conformance condition — the same month must carry the same label in both tables:
 
 ```sql
 SELECT DISTINCT 'tu dim_ngay' AS nguon,
@@ -157,19 +156,19 @@ WHERE nam_tai_chinh = 2025 AND quy_tai_chinh = 4;
 └─────────────┴───────────┘
 ```
 
-Một dòng kết quả duy nhất sau `DISTINCT` nghĩa là hai bảng đồng ý. Đây chính là điều kiện
-conform ở [conformed dimension](conformed-dimension.md), áp cho cặp chi tiết ↔ tổng hợp:
-**tập giá trị của dimension rút gọn phải là tập con đúng nghĩa của dimension gốc.**
+A single distinct result after the `DISTINCT` means the two tables agree. This is exactly the conformance
+condition from [conformed dimensions](conformed-dimension.md), applied to the detail ↔ summary pair:
+**the shrunken dimension's value set must be a proper subset of the original dimension's.**
 
-Không có nó thì báo cáo quý và báo cáo ngày cộng ra hai con số khác nhau, và tranh cãi sẽ
-kéo dài vì cả hai đều "chạy đúng" — đúng như [case study hai mart không ghép được](../case-studies/hai-mart-khong-ghep-duoc.md).
+Without it, the quarterly report and the daily report add up to two different numbers, and the argument drags
+on because both "run correctly" — exactly the [case study of two marts that couldn't be joined](../case-studies/hai-mart-khong-ghep-duoc.md).
 
-## Luật 3 — bảng tổng hợp trôi khỏi atomic
+## Rule 3 — a summary table drifting from the atomic one
 
-Hai luật trên lo tính đúng đắn tại thời điểm dựng. Luật này lo thứ xảy ra sau đó.
+The two rules above ensure correctness at build time. This one deals with what happens afterwards.
 
-Bảng tổng hợp tháng 1 chạy xong ngày 01/02. Ngày 05/03 một đơn hàng lùi ngày về 05/01 mới
-về kho ([late arriving fact](late-arriving.md)):
+The January summary table finished running on 1 February. On 5 March an order backdated to 5 January
+reaches the warehouse ([a late arriving fact](late-arriving.md)):
 
 ```sql
 INSERT INTO fct_don VALUES ('D5', DATE '2026-01-05', 200);
@@ -191,10 +190,10 @@ SELECT (SELECT sum(doanh_thu) FROM fct_don)  AS atomic,
 └────────┴───────────────┴────────┴──────────┘
 ```
 
-Dashboard đọc bảng tổng hợp hiển thị **800**; ai query thẳng atomic thấy **1.000**. Cả
-hai đều "đúng theo bảng của mình", và cuộc họp sẽ mất một buổi.
+The dashboard reading the summary table shows **800**; whoever queries the atomic table sees **1,000**. Both
+are "right according to their own table", and the meeting will lose half a day.
 
-Cách phát hiện — một query đối soát, chạy sau mỗi lần nạp:
+How to detect it — one reconciliation query, run after every load:
 
 ```sql
 SELECT a.ngay, a.doanh_thu AS agg, f.doanh_thu AS atomic,
@@ -213,127 +212,127 @@ WHERE coalesce(a.doanh_thu, 0) <> coalesce(f.doanh_thu, 0);
 └────────────┴────────┴────────┴────────┘
 ```
 
-Nó chỉ thẳng vào ngày phải nạp lại. Biến câu này thành một test dbt `severity: error` là
-cách duy nhất giữ hai lớp đồng bộ lâu dài — xem
-[Triển khai test](../../etl/dbt/skills/implementing-tests.md).
+It points straight at the day to reload. Turning this query into a dbt test with `severity: error` is
+the only way to keep the two layers in sync long term — see
+[Implementing tests](../../etl/dbt/skills/implementing-tests.md).
 
-**Luật vận hành:** cửa sổ nạp lại của bảng tổng hợp phải **bằng hoặc rộng hơn** cửa sổ
-của fact atomic. Hẹp hơn là bảo đảm trôi.
+**The operational rule:** the summary table's reload window must be **equal to or wider than** the atomic
+fact's. Narrower is guaranteed drift.
 
-## Consolidated fact table — họ hàng gần, khác bản chất
+## Consolidated fact tables — a close relative of a different nature
 
-Aggregate và consolidated dễ bị nhầm vì cả hai đều "gộp về grain thô hơn". Khác biệt nằm
-ở **cái gì được gộp**:
+Aggregate and consolidated are easily confused because both "roll up to a coarser grain". The difference is
+in **what gets combined**:
 
 | | Aggregate fact table | Consolidated fact table |
 |---|---|---|
-| Gộp cái gì | **Một** quy trình nghiệp vụ, grain thô hơn | **Nhiều** quy trình, về cùng một grain |
-| Ví dụ | Bán hàng theo ngày → theo tháng | Doanh thu thực tế **và** kế hoạch, ở grain tháng × sản phẩm |
-| Rút lại được từ | Fact atomic của chính nó | Nhiều fact khác nhau |
-| Mục đích | Tốc độ | **Tiện cho người dùng** — khỏi tự drill-across |
+| What's combined | **One** business process at a coarser grain | **Several** processes brought to the same grain |
+| Example | Sales by day → by month | Actual **and** planned revenue, at month × product grain |
+| Derivable from | Its own atomic fact | Several different facts |
+| Purpose | Speed | **User convenience** — no drilling across by hand |
 
-Consolidated fact ra đời vì một câu hỏi lặp đi lặp lại: *"thực tế so kế hoạch chênh bao
-nhiêu"*. Người dùng có thể tự [drill-across](conformed-dimension.md) hai fact mỗi lần,
-nhưng nếu câu hỏi đó xuất hiện hằng ngày thì dựng sẵn một bảng là hợp lý.
+The consolidated fact exists because of one repeated question: *"how far is actual from
+plan"*. Users could [drill across](conformed-dimension.md) the two facts each time,
+but if that question comes up daily, pre-building a table is reasonable.
 
 ```text
 fct_ban_thang_hop_nhat
   thang_key | san_pham_sk | doanh_thu_thuc_te | doanh_thu_ke_hoach | chenh_lech
 ```
 
-**Ba điều kiện bắt buộc**, thiếu một là bảng thành nguồn sai số:
+**Three mandatory conditions**; missing one makes the table a source of wrong numbers:
 
-1. **Các quy trình phải có [conformed dimension](conformed-dimension.md)** — nếu không thì
-   dòng nào ghép với dòng nào cũng không xác định được.
-2. **Chỉ số phải [conformed fact](conformed-facts.md)** — "doanh thu" bên thực tế và bên
-   kế hoạch phải cùng công thức. Nếu kế hoạch tính gồm VAT còn thực tế thì không, cột
-   `chenh_lech` đo sai lệch định nghĩa chứ không đo sai lệch kinh doanh.
-3. **Phải xử lý độ trễ khác nhau.** Kế hoạch có sẵn từ đầu năm; thực tế về theo ngày. Ô
-   tháng 12 sẽ có kế hoạch mà chưa có thực tế — và `chenh_lech` ở đó là −100%, một con số
-   đúng về mặt số học và vô nghĩa về mặt nghiệp vụ.
+1. **The processes must have [conformed dimensions](conformed-dimension.md)** — otherwise you can't determine
+   which row pairs with which.
+2. **The metrics must be [conformed facts](conformed-facts.md)** — "revenue" on the actual side and the
+   plan side must use the same formula. If the plan includes VAT and the actual doesn't, the
+   `chenh_lech` column measures a definitional discrepancy rather than a business one.
+3. **Different delays must be handled.** The plan exists from the start of the year; actuals arrive daily. The
+   December cell will have a plan and no actual — and `chenh_lech` there is −100%, a number
+   arithmetically correct and meaningless in business terms.
 
-Điều kiện 3 là chỗ hỏng thường gặp nhất. Cách xử lý: thêm cột `co_du_lieu_thuc_te` và
-**không tính** `chenh_lech` khi nó `false` — cùng nguyên tắc với nhãn `da_chot` ở
-[real-time fact table](real-time-fact.md).
+Condition 3 is the commonest failure. The approach: add a `co_du_lieu_thuc_te` column and
+**don't compute** `chenh_lech` when it's `false` — the same principle as the `da_chot` label in
+[real-time fact tables](real-time-fact.md).
 
-## Khi nào nên dựng bảng tổng hợp
+## When to build a summary table
 
-| Dấu hiệu | Nên dựng? |
+| The sign | Build it? |
 |---|---|
-| Cùng một `GROUP BY` chạy hàng trăm lần mỗi ngày | Có |
-| Tỷ lệ nén ≥ 10 lần (5 tỷ dòng → 200 triệu) | Có |
-| Nén chỉ 2–3 lần | Không — không bù được chi phí bảo trì |
-| Câu hỏi thay đổi liên tục, chưa ổn định | Chưa — đợi mẫu truy vấn định hình |
-| Engine đã có kết quả cache / materialized view tự quản | Cân nhắc dùng cái sẵn có |
+| The same `GROUP BY` runs hundreds of times a day | Yes |
+| A compression ratio ≥ 10× (5 billion rows → 200 million) | Yes |
+| Only 2–3× compression | No — it doesn't cover the maintenance cost |
+| The questions keep changing and haven't settled | Not yet — wait for the query patterns to take shape |
+| The engine already has result caching / self-managed materialized views | Consider using what's there |
 
-Nguyên tắc: **bảng tổng hợp là tối ưu hoá, và tối ưu hoá thì phải đo trước.** Dựng vì
-"chắc sẽ nhanh hơn" là tự thêm một bảng phải giữ đồng bộ mãi mãi.
+The principle: **a summary table is an optimisation, and optimisations must be measured first.** Building it because
+"it'll probably be faster" is adding a table you have to keep in sync forever.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Query nhanh lên bậc độ lớn | Thêm một bảng phải nạp và đối soát |
-| Chi phí compute giảm cho dashboard | Rủi ro hai lớp lệch nhau |
-| Grain thô, dễ đọc | Không trả lời được câu hỏi dưới grain đó |
-| Nếu conform đúng, người dùng không cần biết nó tồn tại | Conform sai thì lỗi lan sang mọi báo cáo |
+| Queries orders of magnitude faster | Another table to load and reconcile |
+| Lower compute cost for dashboards | The risk of the two layers diverging |
+| A coarse, readable grain | You can't answer questions below that grain |
+| If conformed correctly, users needn't know it exists | Conform it wrongly and the error spreads to every report |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Lưu `avg` trong bảng tổng hợp | Trung bình của trung bình — lệch 50% |
-| Lưu `count(DISTINCT khach)` | Không cộng được, cộng lên là đếm trùng |
-| Gõ tay `dim_thang` / `dim_quy` | Nhãn lệch với `dim_ngay`, hai báo cáo hai số |
-| Cửa sổ nạp lại hẹp hơn atomic | Bảng trôi dần — [case study](../case-studies/bang-tong-hop-lech-so.md) |
-| Xoá fact atomic sau khi có bảng tổng hợp | Mất khả năng trả lời câu hỏi mới, không khôi phục được |
-| Không có query đối soát | Phát hiện lệch khi người dùng báo, không phải khi CI báo |
+| Storing `avg` in the summary table | An average of averages — 50% out |
+| Storing `count(DISTINCT khach)` | Not summable; rolling it up double-counts |
+| Typing `dim_thang` / `dim_quy` by hand | Labels diverging from `dim_ngay`, two reports with two numbers |
+| A reload window narrower than the atomic one | The table drifts gradually — [case study](../case-studies/bang-tong-hop-lech-so.md) |
+| Deleting the atomic fact once the summary exists | You lose the ability to answer new questions, irrecoverably |
+| No reconciliation query | You learn about the divergence from users, not from CI |
 
 ## FAQ
 
 <details>
-<summary>Vậy `count(DISTINCT khach)` để đâu?</summary>
+<summary>So where does `count(DISTINCT khach)` go?</summary>
 
-Không lưu được trong bảng tổng hợp theo cách thường, vì số khách phân biệt của tháng 1 và
-tháng 2 **không cộng lại thành** số khách của quý.
+It can't be stored in a summary table the ordinary way, because January's and February's distinct customer counts
+**don't add up to** the quarter's.
 
-Hai đường: (a) tính lại từ atomic khi cần — chấp nhận chậm; (b) lưu cấu trúc xấp xỉ cộng
-được như HyperLogLog sketch, engine hiện đại (DuckDB, Trino, BigQuery) đều có. Cách (b)
-cho sai số vài phần trăm, đổi lại cộng được ở mọi cấp.
-
-</details>
-
-<details>
-<summary>Bảng tổng hợp có nên để người dùng nhìn thấy không?</summary>
-
-Kimball khuyên: **không**. Lý tưởng là query rewrite tự chọn bảng phù hợp, người viết
-query chỉ biết fact atomic. Nếu nền tảng không làm được (phần lớn lakehouse hiện nay),
-thì đặt tên rõ ràng (`agg_`) và ghi grain vào mô tả bảng — để không ai vô tình join bảng
-tổng hợp với fact chi tiết rồi phồng số, như [case study join hai fact](../case-studies/join-hai-fact-lam-phong-tong.md).
+Two routes: (a) recompute from the atomic table when needed — accepting slowness; (b) store an additive
+approximate structure such as a HyperLogLog sketch, which modern engines (DuckDB, Trino, BigQuery) all have. Route (b)
+gives a few percent of error in exchange for being summable at every level.
 
 </details>
 
 <details>
-<summary>Bảng tổng hợp có thay thế được fact atomic không?</summary>
+<summary>Should users see the summary table?</summary>
 
-Không. Bảng tổng hợp chỉ trả lời được câu hỏi **ở hoặc trên** grain của nó. Bỏ atomic đi
-là mất khả năng trả lời mọi câu hỏi chưa được dự đoán trước — và câu hỏi mới là thứ luôn
-xuất hiện.
+Kimball advises: **no**. Ideally query rewriting picks the right table and whoever writes the
+query only knows the atomic fact. If the platform can't do that (most lakehouses today can't),
+then name it clearly (`agg_`) and write the grain into the table description — so nobody accidentally joins the
+summary table to the detailed fact and inflates the numbers, as in the [case study on joining two facts](../case-studies/join-hai-fact-lam-phong-tong.md).
 
-Kimball nói thẳng: aggregate là **lớp tăng tốc đứng cạnh** atomic, không phải lớp thay
-thế. Lý tưởng là người viết query chỉ biết fact atomic, còn engine tự chọn bảng phù hợp.
+</details>
+
+<details>
+<summary>Can a summary table replace the atomic fact?</summary>
+
+No. A summary table can only answer questions **at or above** its own grain. Dropping the atomic one
+loses the ability to answer every unanticipated question — and new questions are exactly what always
+appear.
+
+Kimball says it plainly: an aggregate is **an acceleration layer standing beside** the atomic one, not a
+replacement. Ideally whoever writes queries knows only the atomic fact and the engine picks the right table itself.
 
 </details>
 
 ## Related Topics
 
-- [Fact và Dimension](../reference/fact-and-dimension.md) — additivity quyết định cột nào được vào bảng tổng hợp
-- [Conformed dimension](conformed-dimension.md) — điều kiện conform áp cho dimension rút gọn
-- [Date dimension](../reference/date-dimension.md) — `dim_quy` phải sinh từ `dim_ngay`
-- [Dữ liệu về muộn](late-arriving.md) — nguyên nhân số một làm bảng tổng hợp trôi
-- [CS: bảng tổng hợp lệch số](../case-studies/bang-tong-hop-lech-so.md)
+- [Facts and dimensions](../reference/fact-and-dimension.md) — additivity decides which column may enter a summary table
+- [Conformed dimensions](conformed-dimension.md) — the conformance condition applied to a shrunken dimension
+- [The date dimension](../reference/date-dimension.md) — `dim_quy` must be generated from `dim_ngay`
+- [Late-arriving data](late-arriving.md) — the number-one reason a summary table drifts
+- [CS: the summary table with divergent numbers](../case-studies/bang-tong-hop-lech-so.md)
 
 ## References
 
 - Kimball Group — [Aggregate Fact Tables / Shrunken Rollup Dimensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 15
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 15

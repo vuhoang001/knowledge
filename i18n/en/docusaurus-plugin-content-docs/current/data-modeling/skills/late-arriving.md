@@ -1,8 +1,7 @@
 ---
-title: Dữ liệu về muộn — late arriving fact và dimension
-i18n_status: untranslated
+title: Late-arriving data — late arriving facts and dimensions
 sidebar_position: 10
-description: "Fact về sau khi dimension đã đổi, hoặc dimension về sau fact: hai ca ngược nhau, hai cách xử lý khác nhau, cùng một hậu quả nếu bỏ qua."
+description: "A fact arriving after the dimension changed, or a dimension arriving after the fact: two inverse cases, two different fixes, and the same consequence if ignored."
 tags: [late-arriving, scd, etl, dimension, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,29 +12,29 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Dữ liệu về muộn — late arriving fact và dimension
+# Late-arriving data — late arriving facts and dimensions
 
-> **Chốt:** ETL nào cũng ngầm giả định *"dữ liệu về đúng lúc nó xảy ra"*. Giả định đó sai
-> ở mọi hệ thống thật. Hai kiểu về muộn — fact về sau, dimension về sau — hỏng theo hai
-> cách ngược nhau, và cả hai đều **không sinh lỗi**.
+> **Takeaway:** every ETL implicitly assumes *"the data arrives when it happened"*. That assumption is wrong
+> in every real system. The two kinds of lateness — a late fact, a late dimension — break in two
+> inverse ways, and neither **produces an error**.
 
-## Hai ca, phân biệt bằng cái gì về muộn
+## Two cases, distinguished by what arrives late
 
-| | Late arriving **fact** | Late arriving **dimension** |
+| | A late arriving **fact** | A late arriving **dimension** |
 |---|---|---|
-| Chuyện gì xảy ra | Giao dịch ngày 10/01 mãi 05/03 mới về kho | Fact tham chiếu khách hàng mà dimension chưa có |
-| Hỏng ra sao | Gán vào **phiên bản dimension hiện tại** thay vì phiên bản lúc giao dịch | `JOIN` loại sạch dòng fact, hoặc khoá mồ côi |
-| Triệu chứng | Số của kỳ cũ đổi, thuộc tính bị gán sai | Tổng hụt mà không ai biết hụt bao nhiêu |
-| Cách xử lý | Join theo **ngày giao dịch**, không theo `la_hien_tai` | **Inferred member** — dòng giữ chỗ |
+| What happens | A 10 January transaction only reaches the warehouse on 5 March | The fact references a customer the dimension doesn't have yet |
+| How it breaks | It's assigned to the **current dimension version** instead of the version at transaction time | The `JOIN` wipes the fact row out, or the key is orphaned |
+| The symptom | An old period's numbers change, and attributes are assigned wrongly | The total falls short with nobody knowing by how much |
+| The fix | Join on the **transaction date**, not on `la_hien_tai` | An **inferred member** — a placeholder row |
 
-Cả hai đều là hệ quả của việc mô hình có [SCD](scd.md) Type 2: nếu dimension không giữ
-lịch sử thì không có "phiên bản đúng" nào để chọn sai.
+Both are consequences of the model having [SCD](scd.md) Type 2: if the dimension doesn't keep
+history, there's no "right version" to choose wrongly.
 
-## Ví dụ xuyên suốt
+## The worked example
 
-Khách `C1` chuyển từ Miền Bắc sang Miền Nam ngày 01/02/2026. Bốn giao dịch, trong đó `B1`
-xảy ra 10/01 nhưng **54 ngày sau mới về kho**, và `B4` thuộc về khách `C3` mà hồ sơ chưa
-kịp về.
+Customer `C1` moves from the North to the South on 2026-02-01. Four transactions, of which `B1`
+happened on 10 January but **only reached the warehouse 54 days later**, and `B4` belongs to customer `C3` whose record hasn't
+arrived yet.
 
 ```sql
 CREATE TABLE dim_khach AS
@@ -55,11 +54,11 @@ SELECT * FROM (VALUES
 ) t(ma_ban, khach_id, ngay_gd, ngay_nhan, doanh_thu);
 ```
 
-Sự thật: **2.500** trên **4 dòng**.
+The truth: **2,500** across **4 rows**.
 
-### Bước 1 — ETL viết theo bản năng
+### Step 1 — the ETL written on instinct
 
-Cách join hay gặp nhất trong mọi codebase: lấy bản hiện tại của dimension.
+The commonest join in every codebase: take the dimension's current version.
 
 ```sql
 SELECT d.khu_vuc, sum(s.doanh_thu) AS doanh_thu, count(*) AS so_dong
@@ -76,11 +75,11 @@ GROUP BY 1 ORDER BY 1;
 └──────────┴───────────┴─────────┘
 ```
 
-Hai lỗi cùng lúc, không lỗi nào báo:
+Two bugs at once, neither reported:
 
-1. **Miền Bắc biến mất khỏi báo cáo.** 1.000 doanh thu tháng 1 của `C1` bị gán cho Miền
-   Nam, vì ETL hỏi *"C1 bây giờ ở đâu"* thay vì *"C1 lúc đó ở đâu"*.
-2. **Mất hẳn một dòng**: `B4` không tìm được `C3`, `JOIN` ném đi 700.
+1. **The North vanishes from the report.** `C1`'s 1,000 of January revenue is attributed to the
+   South, because the ETL asked *"where is C1 now"* instead of *"where was C1 then"*.
+2. **A row is lost entirely**: `B4` can't find `C3`, and the `JOIN` throws away 700.
 
 ```sql
 SELECT sum(s.doanh_thu) AS tong_vao_kho, 4 - count(*) AS dong_bi_mat
@@ -95,11 +94,11 @@ FROM stg_ban s JOIN dim_khach d ON d.khach_id = s.khach_id AND d.la_hien_tai;
 └──────────────┴─────────────┘
 ```
 
-**1.800 / 2.500 — hụt 28%.** Pipeline xanh, không exception, không test đỏ.
+**1,800 / 2,500 — 28% short.** The pipeline is green, with no exception and no red test.
 
-### Bước 2 — sửa ca fact về muộn: join theo ngày giao dịch
+### Step 2 — fixing the late-fact case: join on the transaction date
 
-Bỏ `la_hien_tai`, dùng khoảng hiệu lực:
+Drop `la_hien_tai` and use the validity interval:
 
 ```sql
 SELECT d.khu_vuc, sum(s.doanh_thu) AS doanh_thu, count(*) AS so_dong
@@ -118,15 +117,15 @@ GROUP BY 1 ORDER BY 1;
 └──────────┴───────────┴─────────┘
 ```
 
-Miền Bắc quay lại với đúng 1.000. Đây là *as-was* — thứ Type 2 sinh ra để phục vụ, và
-cũng là thứ bị vứt đi ngay khi ETL viết `WHERE la_hien_tai`.
+The North is back with exactly 1,000. This is *as-was* — what Type 2 exists to serve, and
+also what gets thrown away the moment an ETL writes `WHERE la_hien_tai`.
 
-`B4` vẫn còn thiếu.
+`B4` is still missing.
 
-### Bước 3 — sửa ca dimension về muộn: inferred member
+### Step 3 — fixing the late-dimension case: an inferred member
 
-Khi fact trỏ tới một khoá chưa tồn tại, **đừng bỏ dòng fact và đừng chờ**. Chèn một dòng
-dimension giữ chỗ — Kimball gọi là *inferred member*:
+When a fact points at a key that doesn't exist yet, **don't drop the fact row and don't wait**. Insert a
+placeholder dimension row — Kimball calls it an *inferred member*:
 
 ```sql
 INSERT INTO dim_khach VALUES
@@ -158,14 +157,14 @@ FROM stg_ban s JOIN dim_khach d
 └────────┴─────────┘
 ```
 
-**2.500 / 4 dòng.** Khớp nguồn.
+**2,500 / 4 rows.** Matching the source.
 
-Điểm quan trọng: `Chua biet` **hiện trên báo cáo**. Dữ liệu thiếu trở thành một dòng nhìn
-thấy được thay vì một khoảng trống vô hình — đó mới là điều làm nó khác hẳn việc bỏ dòng.
+The important point: `Chua biet` **appears on the report**. Missing data becomes a visible
+row rather than an invisible gap — that's what makes it entirely different from dropping the row.
 
-### Bước 4 — khi hồ sơ thật về
+### Step 4 — when the real record arrives
 
-Inferred member được lấp bằng **Type 1 tại chỗ**, không tạo phiên bản mới:
+An inferred member is filled in **Type 1 style, in place**, creating no new version:
 
 ```sql
 UPDATE dim_khach SET khu_vuc = 'Mien Trung' WHERE khach_id = 'C3';
@@ -181,16 +180,16 @@ UPDATE dim_khach SET khu_vuc = 'Mien Trung' WHERE khach_id = 'C3';
 └────────────┴───────────┘
 ```
 
-Fact **không phải nạp lại** — nó vẫn trỏ `khach_sk = 4`. Đây chính là lý do inferred
-member phải giữ nguyên surrogate key thay vì tạo khoá mới khi hồ sơ về.
+The fact **doesn't need reloading** — it still points at `khach_sk = 4`. This is exactly why an inferred
+member must keep its surrogate key rather than getting a new one when the record arrives.
 
-Nếu dùng Type 2 cho lần lấp này, bạn sẽ có một phiên bản `Chua biet` tồn tại vĩnh viễn
-trong lịch sử — vô nghĩa, vì `Chua biet` chưa bao giờ là sự thật, nó chỉ là trạng thái
-của **kho dữ liệu**, không phải của khách hàng.
+If you used Type 2 for this fill-in, you'd have a `Chua biet` version existing forever
+in the history — meaningless, because `Chua biet` was never a truth about the customer; it's a state of
+**the data warehouse**, not of the customer.
 
-## Đo độ trễ — biến giả định thành số
+## Measuring the delay — turning an assumption into a number
 
-Không thể xử lý thứ không đo. Thêm `ngay_nhan` (hoặc `_loaded_at`) vào staging và đo:
+You can't handle what you don't measure. Add `ngay_nhan` (or `_loaded_at`) to staging and measure:
 
 ```sql
 SELECT ma_ban, ngay_gd, ngay_nhan, ngay_nhan - ngay_gd AS tre_ngay
@@ -208,7 +207,7 @@ FROM stg_ban ORDER BY tre_ngay DESC;
 └─────────┴────────────┴────────────┴──────────┘
 ```
 
-Con số quyết định cửa sổ nạp lại của mô hình incremental:
+The number decides the reload window of an incremental model:
 
 ```sql
 SELECT round(100.0 * sum(doanh_thu) FILTER (WHERE date_trunc('month', ngay_nhan)
@@ -225,37 +224,37 @@ FROM stg_ban;
 └────────────────────────┘
 ```
 
-**40% doanh thu về sau khi kỳ đã chốt.** Với con số này, mô hình incremental chỉ nạp lại
-7 ngày gần nhất sẽ vĩnh viễn thiếu — xem [materializations](../../etl/dbt/reference/materializations.md).
-Cửa sổ nạp lại phải rộng hơn độ trễ ở phân vị 99, không phải rộng hơn độ trễ trung bình.
+**40% of revenue arrives after the period is closed.** With that number, an incremental model reloading only
+the last 7 days will be permanently short — see [materializations](../../etl/dbt/reference/materializations.md).
+The reload window must be wider than the 99th-percentile delay, not wider than the average delay.
 
-## Ảnh hưởng tới bảng tổng hợp
+## The effect on summary tables
 
-Fact về muộn còn làm lệch [aggregate fact table](aggregate-fact-table.md): bảng tổng hợp
-tháng 1 đã chạy xong từ 01/02, dòng về ngày 05/03 không có ai tính lại. Hai lớp phải nạp
-lại cùng một cửa sổ, nếu không chúng trôi khỏi nhau.
+A late fact also skews an [aggregate fact table](aggregate-fact-table.md): the January summary
+table finished running on 1 February, and the row arriving on 5 March has nobody to recompute it. Both layers must reload
+the same window, otherwise they drift apart.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Join theo khoảng hiệu lực → as-was đúng | Join bất đẳng thức, chậm hơn join khoá thường |
-| Inferred member → không mất dòng nào | Báo cáo có nhóm `Chua biet` phải giải thích |
-| Đo `tre_ngay` → cửa sổ nạp lại có căn cứ | Phải mang `ngay_nhan` suốt pipeline |
-| Nạp lại cửa sổ rộng | Tốn tính toán mỗi lần chạy |
+| Joining on the validity interval → correct as-was | An inequality join, slower than a plain key join |
+| An inferred member → no rows lost | The report has a `Chua biet` group to explain |
+| Measuring `tre_ngay` → a grounded reload window | You must carry `ngay_nhan` through the whole pipeline |
+| A wide reload window | More computation on every run |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| `JOIN … AND d.la_hien_tai` cho fact lịch sử | Gán sai thuộc tính, kỳ cũ đổi số — [case study](../case-studies/fact-den-muon-gan-sai-khu-vuc.md) |
-| `INNER JOIN` với dimension | Fact có khoá chưa biết bị ném đi âm thầm |
-| Bỏ dòng fact vào bảng "chờ" rồi quên | Dữ liệu nằm đó mãi, tổng không bao giờ khớp |
-| Inferred member dùng Type 2 khi lấp | Phiên bản `Chua biet` tồn tại vĩnh viễn trong lịch sử |
-| Cửa sổ incremental hẹp hơn độ trễ thật | Dòng về muộn không bao giờ được nạp |
-| Không phân biệt `ngay_gd` và `ngay_nhan` | Không đo được độ trễ, mọi quyết định thành phỏng đoán |
+| `JOIN … AND d.la_hien_tai` for historical facts | Attributes assigned wrongly and old periods changing numbers — [case study](../case-studies/fact-den-muon-gan-sai-khu-vuc.md) |
+| An `INNER JOIN` to the dimension | A fact with an unknown key is silently thrown away |
+| Parking fact rows in a "waiting" table and forgetting them | The data sits there forever and the total never matches |
+| Using Type 2 to fill an inferred member | A `Chua biet` version exists forever in the history |
+| An incremental window narrower than the real delay | Late-arriving rows are never loaded |
+| Not distinguishing `ngay_gd` from `ngay_nhan` | You can't measure the delay, and every decision becomes guesswork |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
 ```sql
 -- 1. Fact tro toi khoa khong co trong dimension
@@ -271,19 +270,19 @@ GROUP BY 1 ORDER BY 1;
 -- 3. Tong cua mot ky da chot co doi giua hai lan chay khong
 ```
 
-Câu 3 là câu đáng đặt thành test định kỳ: chụp lại tổng của các kỳ đã đóng sổ, so mỗi
-lần chạy. Đổi = có dữ liệu về muộn, và bạn biết ngay ngày nào.
+Query 3 is worth making a periodic test: snapshot the totals of closed periods and compare on each
+run. A change = late-arriving data, and you know exactly which day.
 
 ## Related Topics
 
-- [SCD](scd.md) — Type 2 và khoảng hiệu lực là nền của cách sửa
-- [Phát hiện thay đổi cho SCD 2](scd-change-detection.md) — biết dòng nào đã đổi
-- [Date dimension](../reference/date-dimension.md) — dòng `-1` cho mốc chưa xảy ra
-- [Aggregate fact table](aggregate-fact-table.md) — bảng tổng hợp trôi vì fact về muộn
-- [CS: fact về muộn bị gán sai khu vực](../case-studies/fact-den-muon-gan-sai-khu-vuc.md)
-- [CS: một nửa số đơn biến mất](../case-studies/don-dang-giao-bien-mat.md) — cùng cơ chế `JOIN` loại dòng
+- [SCD](scd.md) — Type 2 and validity intervals are the foundation of the fix
+- [Change detection for SCD 2](scd-change-detection.md) — knowing which row changed
+- [The date dimension](../reference/date-dimension.md) — the `-1` row for a milestone that hasn't happened
+- [Aggregate fact tables](aggregate-fact-table.md) — summary tables drifting because of late facts
+- [CS: a late fact assigned the wrong region](../case-studies/fact-den-muon-gan-sai-khu-vuc.md)
+- [CS: half the orders vanished](../case-studies/don-dang-giao-bien-mat.md) — the same `JOIN`-drops-rows mechanism
 
 ## References
 
 - Kimball Group — [Late Arriving Facts / Late Arriving Dimensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 19
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 19

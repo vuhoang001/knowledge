@@ -1,8 +1,7 @@
 ---
-title: Degenerate dimension
-i18n_status: untranslated
+title: Degenerate dimensions
 sidebar_position: 8
-description: "Số đơn hàng, số hoá đơn, mã vận đơn — khoá nghiệp vụ không có thuộc tính nào đi kèm thì ở lại trong fact, không dựng bảng dimension."
+description: "Order numbers, invoice numbers, tracking numbers — a business key with no accompanying attributes stays in the fact; don't build a dimension table."
 tags: [degenerate-dimension, fact, grain, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,40 +12,40 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Degenerate dimension
+# Degenerate dimensions
 
-> **Chốt:** khi tách hết thuộc tính của một khoá nghiệp vụ ra các dimension khác mà
-> **không còn gì ngoài chính con số đó**, thì nó ở lại trong fact như một cột bình thường.
-> Dựng bảng dimension cho nó là tạo một bảng có cùng grain với fact — tức là một fact thứ
-> hai đội lốt dimension.
+> **Takeaway:** when you've split all of a business key's attributes out into other dimensions and
+> **nothing is left but the number itself**, it stays in the fact as an ordinary column.
+> Building a dimension table for it creates a table with the same grain as the fact — that is, a second
+> fact disguised as a dimension.
 
-## Vấn đề
+## The problem
 
-`fct_ban` có cột `so_don = 'DH-001'`. Phản xạ Kimball: *"mọi khoá trong fact phải trỏ tới
-một dimension"*. Nên dựng `dim_don_hang`.
+`fct_ban` has a column `so_don = 'DH-001'`. The Kimball reflex: *"every key in a fact must point to
+a dimension"*. So you build `dim_don_hang`.
 
-Nhưng thử liệt kê xem `dim_don_hang` có gì:
+But try listing what `dim_don_hang` contains:
 
-| Thuộc tính của đơn hàng | Đã ở đâu |
+| The order's attribute | Where it already lives |
 |---|---|
-| Ngày đặt | `dim_ngay` |
-| Khách hàng | `dim_khach_hang` |
-| Kênh bán | `dim_kenh` (hoặc [junk dimension](junk-dimension.md)) |
-| Trạng thái | `dim_trang_thai` / junk dimension |
-| Nhân viên bán | `dim_nhan_vien` |
-| **Số đơn** | **… chính nó** |
+| Order date | `dim_ngay` |
+| Customer | `dim_khach_hang` |
+| Sales channel | `dim_kenh` (or a [junk dimension](junk-dimension.md)) |
+| Status | `dim_trang_thai` / a junk dimension |
+| Salesperson | `dim_nhan_vien` |
+| **The order number** | **… itself** |
 
-Bảng còn lại chỉ có `don_sk` và `so_don`. Đó là **degenerate dimension** — dimension đã
-bị "rút cạn": khoá vẫn còn giá trị phân tích, nhưng không còn thuộc tính nào để mô tả.
+The remaining table has only `don_sk` and `so_don`. That's a **degenerate dimension** — a dimension
+that's been "drained": the key still has analytical value, but there's no attribute left to describe.
 
-Kimball ký hiệu là `DD` trong sơ đồ. Cách xử lý: **để nguyên trong fact**, không có bảng
-dimension, không có surrogate key.
+Kimball notates it `DD` in a diagram. The approach: **leave it in the fact**, with no dimension
+table and no surrogate key.
 
-## Vì sao dựng bảng cho nó là sai
+## Why building a table for it is wrong
 
-Điểm quyết định nằm ở [grain](../reference/grain.md): grain của `dim_don_hang` là *một
-đơn hàng* — đúng bằng (hoặc gần bằng) grain của fact. Một dimension đúng nghĩa phải **thô
-hơn** fact: 100 nghìn khách cho 50 triệu dòng bán hàng.
+The deciding point is [grain](../reference/grain.md): `dim_don_hang`'s grain is *one
+order* — exactly (or nearly) the fact's grain. A proper dimension must be **coarser**
+than the fact: 100 thousand customers for 50 million sales rows.
 
 ```sql
 CREATE TABLE fct_lon     AS SELECT i AS so_don, 100 AS doanh_thu FROM range(1, 5000001) t(i);
@@ -66,16 +65,16 @@ SELECT (SELECT count(*) FROM fct_lon)     AS dong_fact,
 └───────────┴──────────┴────────┘
 ```
 
-Tỷ lệ **1.0**. Bảng dimension này không nén gì, không mô tả gì, chỉ thêm một join vào mọi
-query. Bất kỳ dimension nào có tỷ lệ tiến về 1 đều đáng nghi.
+The ratio is **1.0**. This dimension table compresses nothing, describes nothing, and only adds a join to every
+query. Any dimension whose ratio approaches 1 is suspect.
 
-## Ví dụ xuyên suốt — chỗ nó chuyển từ thừa sang sai
+## The worked example — where it goes from redundant to wrong
 
-Bảng thừa thì chỉ tốn chỗ. Nó thành **sai số** khi có người thấy `dim_don_hang` trống
-trải quá và nhét trạng thái đơn vào, rồi bật [SCD](scd.md) Type 2 để giữ lịch sử trạng
-thái — nghe rất hợp lý.
+A redundant table only wastes space. It becomes **wrong numbers** when somebody sees how empty `dim_don_hang`
+looks and puts the order status into it, then turns on [SCD](scd.md) Type 2 to keep the status
+history — which sounds perfectly reasonable.
 
-### Bước 1 — mô hình sau khi "hoàn thiện"
+### Step 1 — the model after being "completed"
 
 ```sql
 CREATE TABLE dim_don_hang AS
@@ -108,9 +107,9 @@ SELECT (SELECT count(*) FROM fct_ban)                    AS dong_fact,
 └───────────┴──────────┴──────────────────┘
 ```
 
-Dimension giờ **nhiều dòng hơn fact**. Đây là dấu hiệu nhìn thấy được bằng mắt.
+The dimension now has **more rows than the fact**. That's a sign visible to the naked eye.
 
-### Bước 2 — báo cáo đầu tiên đã sai
+### Step 2 — the first report is already wrong
 
 ```sql
 SELECT count(*) AS dong_sau_join, sum(f.doanh_thu) AS doanh_thu_bao_cao
@@ -125,10 +124,10 @@ FROM fct_ban f JOIN dim_don_hang d USING (so_don);
 └───────────────┴───────────────────┘
 ```
 
-Doanh thu thật là **1.000**. Báo cáo ra **1.400** — phồng 40%, vì `DH-001` có ba phiên
-bản trạng thái nên được đếm ba lần.
+The real revenue is **1,000**. The report gives **1,400** — 40% inflated, because `DH-001` has three status
+versions and so gets counted three times.
 
-Nhìn qua bảng phân tích thì càng khó ngờ, vì mỗi dòng đều trông hợp lý:
+Looking at the analytical breakdown makes it even harder to suspect, because every row looks plausible:
 
 ```sql
 SELECT d.trang_thai, sum(f.doanh_thu) AS doanh_thu
@@ -146,11 +145,11 @@ GROUP BY 1 ORDER BY 2 DESC;
 └────────────┴───────────┘
 ```
 
-Ba dòng, số nào cũng "có vẻ đúng", tổng lại thành 1.400. Không có đơn nào đang ở trạng
-thái `moi` với doanh thu 600 cả — 600 là tổng của những đơn **từng đi qua** trạng thái
-`moi`. Hai câu hỏi khác nhau, không ai phân biệt trên dashboard.
+Three rows, every number "looking right", adding up to 1,400. There is no order currently in status
+`moi` with revenue of 600 — 600 is the total of orders that **passed through** status
+`moi`. Two different questions, and nobody distinguishes them on the dashboard.
 
-### Bước 3 — sửa: degenerate + dimension trạng thái riêng
+### Step 3 — the fix: degenerate + a separate status dimension
 
 ```sql
 CREATE TABLE dim_trang_thai AS
@@ -162,8 +161,8 @@ SELECT * FROM (VALUES
 ) t(so_don, trang_thai_sk, doanh_thu);
 ```
 
-`so_don` ở lại fact như một cột thường — đó là degenerate dimension. Trạng thái thành
-dimension thật (vài dòng, dùng lại được, có nhãn tiếng Việt).
+`so_don` stays in the fact as an ordinary column — that's the degenerate dimension. The status becomes
+a real dimension (a few rows, reusable, with display labels).
 
 ```sql
 SELECT t.trang_thai, count(*) AS so_don, sum(f.doanh_thu) AS doanh_thu
@@ -193,40 +192,40 @@ SELECT sum(doanh_thu) AS tong, count(DISTINCT so_don) AS so_don FROM fct_ban_dun
 └────────┴────────┘
 ```
 
-### Trước và sau
+### Before and after
 
-| | Có `dim_don_hang` Type 2 | Degenerate |
+| | With a Type 2 `dim_don_hang` | Degenerate |
 |---|---|---|
-| Doanh thu báo cáo | 1.400 | **1.000** |
-| Số bảng phải join | 2 | 2 (nhưng dim chỉ 3 dòng) |
-| Dòng dimension | 7 và tăng theo mỗi lần đổi trạng thái | 3, bất biến |
-| Đếm số đơn | `count(DISTINCT so_don)` — dễ quên `DISTINCT` | `count(*)` |
+| Reported revenue | 1,400 | **1,000** |
+| Tables to join | 2 | 2 (but the dim is only 3 rows) |
+| Dimension rows | 7 and growing with each status change | 3, immutable |
+| Counting orders | `count(DISTINCT so_don)` — easy to forget the `DISTINCT` | `count(*)` |
 
-**Còn lịch sử trạng thái thì để đâu?** Đó là một quy trình có các mốc — thuộc về
-**accumulating snapshot**, xem [Fact và Dimension](../reference/fact-and-dimension.md) và
-[bài lab](../tutorials/star-schema-duckdb.md) bước 5. Lịch sử của một quy trình là fact,
-không phải dimension.
+**So where does the status history go?** That's a process with milestones — belonging to an
+**accumulating snapshot**, see [Facts and dimensions](../reference/fact-and-dimension.md) and
+[the lab](../tutorials/star-schema-duckdb.md) step 5. A process's history is a fact,
+not a dimension.
 
-## Nhận ra một degenerate dimension
+## Recognising a degenerate dimension
 
-Ba câu hỏi, cả ba đều "có" thì nó là degenerate:
+Three questions; if all three are "yes", it's degenerate:
 
-1. Cột này có phải **khoá nghiệp vụ** người ta thật sự dùng để tra cứu không? (`so_don`
-   có; `id` tự tăng nội bộ thì không — cái đó chỉ là khoá kỹ thuật)
-2. Tách hết thuộc tính sang các dimension khác rồi thì **còn lại gì ngoài chính nó**?
-3. Số giá trị phân biệt của nó có xấp xỉ số dòng fact không?
+1. Is this column a **business key** people actually use to look things up? (`so_don`
+   is; an internal auto-increment `id` isn't — that's only a technical key)
+2. Once every attribute is split into other dimensions, **is anything left but the thing itself**?
+3. Does its distinct-value count approach the fact's row count?
 
-Ứng viên hay gặp: số đơn hàng, số hoá đơn, mã vận đơn, số phiếu khám, mã giao dịch, số
-hợp đồng, mã lô hàng.
+Common candidates: order numbers, invoice numbers, tracking numbers, consultation numbers, transaction codes, contract
+numbers, batch codes.
 
-## Nó dùng để làm gì trong fact
+## What it's for inside the fact
 
-Degenerate dimension không phải cột chết. Nó là thứ:
+A degenerate dimension isn't a dead column. It's what:
 
-- **Gom nhóm dòng cùng một giao dịch**: `count(DISTINCT so_don)` cho ra số đơn khi grain
-  là dòng đơn — chỉ số "giỏ hàng trung bình" sống nhờ nó.
-- **Truy ngược về hệ nguồn** khi có người cãi số.
-- **Nối header với line** — xem mục dưới.
+- **Groups rows belonging to one transaction**: `count(DISTINCT so_don)` gives the order count when the grain
+  is a line item — the "average basket" metric lives off it.
+- **Traces back to the source system** when somebody disputes a number.
+- **Links the header to the lines** — see the section below.
 
 ```sql
 -- gia tri gio hang trung binh, grain fact la mot DONG don
@@ -234,19 +233,18 @@ SELECT round(sum(thanh_tien) * 1.0 / count(DISTINCT so_don), 0) AS gio_hang_tb
 FROM fct_ban_chi_tiet;
 ```
 
-## Header/line — nơi degenerate dimension hay xuất hiện
+## Header/line — where degenerate dimensions usually appear
 
-Đơn hàng có phần đầu (header: ngày, khách, phí ship) và các dòng (line: sản phẩm, số
-lượng). Ba cách dựng:
+An order has a header (date, customer, shipping fee) and lines (product, quantity). Three ways to build it:
 
-| Cách | Mô tả | Vấn đề |
+| Approach | Description | The problem |
 |---|---|---|
-| Hai fact riêng | `fct_don_header` + `fct_don_line` | Join hai fact khác grain → phồng, xem [case study](../case-studies/join-hai-fact-lam-phong-tong.md) |
-| Một fact grain line, header nhân bản | Phí ship lặp ở mọi dòng | `sum(phi_ship)` sai gấp số dòng |
-| **Một fact grain line, header phân bổ** | Phí ship chia theo tỷ trọng tiền hàng | Cách Kimball khuyên |
+| Two separate facts | `fct_don_header` + `fct_don_line` | Joining two facts of different grain → inflation, see the [case study](../case-studies/join-hai-fact-lam-phong-tong.md) |
+| One line-grain fact with the header duplicated | The shipping fee repeats on every line | `sum(phi_ship)` is wrong by the line count |
+| **One line-grain fact with the header allocated** | The shipping fee split by amount weight | The approach Kimball recommends |
 
-Ở cả ba, `so_don` là degenerate dimension nối các dòng lại. Cách 3 dùng đúng kỹ thuật hệ
-số phân bổ ở [bridge table](bridge-table.md):
+In all three, `so_don` is the degenerate dimension linking the lines together. Approach 3 uses exactly the
+allocation-factor technique from [bridge tables](bridge-table.md):
 
 ```sql
 SELECT so_don, dong_so, thanh_tien,
@@ -255,40 +253,40 @@ SELECT so_don, dong_so, thanh_tien,
 FROM fct_don_line;
 ```
 
-Sau khi phân bổ, `sum(phi_ship_phan_bo)` trên toàn bảng bằng đúng tổng phí ship thật —
-cộng theo chiều nào cũng đúng.
+After allocation, `sum(phi_ship_phan_bo)` over the whole table equals exactly the real total shipping fee —
+correct summed along any dimension.
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Không thêm bảng, không thêm join | Cột `VARCHAR` dài nằm trong bảng lớn nhất |
-| Grain của fact giữ nguyên, không phồng | Không nén được như surrogate key `INT` |
-| Truy ngược hệ nguồn dễ | Không có chỗ treo thuộc tính nếu sau này phát sinh |
+| No extra table, no extra join | A long `VARCHAR` column inside your largest table |
+| The fact's grain unchanged, no inflation | No compression like an `INT` surrogate key |
+| Easy tracing back to the source system | Nowhere to hang an attribute if one appears later |
 
-Về chi phí lưu trữ: `so_don` kiểu chuỗi trong 500 triệu dòng là đáng kể, nhưng format cột
-(Parquet/Iceberg) nén dictionary rất tốt cho cột này. Đo trước khi tối ưu.
+On storage cost: a string `so_don` across 500 million rows is significant, but a columnar
+format (Parquet/Iceberg) dictionary-compresses this column very well. Measure before optimising.
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Dựng `dim_don_hang` rồi nhét trạng thái + Type 2 | Fan-out, doanh thu phồng 40% — [case study](../case-studies/dim-don-hang-lam-phong-doanh-thu.md) |
-| Bỏ hẳn `so_don` khỏi fact "cho gọn" | Mất khả năng đếm số đơn và truy ngược hệ nguồn |
-| Đếm đơn bằng `count(*)` khi grain là dòng đơn | Số đơn = số dòng, phồng theo số mặt hàng |
-| Coi mọi khoá trong fact đều phải có dimension | Đẻ ra bảng có grain bằng fact |
-| Nhét phí ship của header vào mọi dòng rồi `SUM` | Phí ship nhân lên bằng số dòng đơn |
+| Building `dim_don_hang` then adding status + Type 2 | Fan-out, revenue 40% inflated — [case study](../case-studies/dim-don-hang-lam-phong-doanh-thu.md) |
+| Dropping `so_don` from the fact entirely "to keep it tidy" | You lose the ability to count orders and trace back to the source |
+| Counting orders with `count(*)` when the grain is a line item | The order count = the line count, inflated by the item count |
+| Believing every key in a fact must have a dimension | You spawn a table whose grain equals the fact's |
+| Putting the header's shipping fee on every line and then `SUM`ing | The shipping fee multiplies by the order's line count |
 
 ## Related Topics
 
-- [Grain](../reference/grain.md) — phép thử "dimension có thô hơn fact không"
-- [Junk dimension](junk-dimension.md) — chỗ đúng cho các cờ cardinality thấp bị bỏ lại
-- [Fact và Dimension](../reference/fact-and-dimension.md) — accumulating snapshot cho lịch sử quy trình
-- [Bridge table](bridge-table.md) — hệ số phân bổ cho header/line
-- [CS: dim đơn hàng làm phồng doanh thu 40%](../case-studies/dim-don-hang-lam-phong-doanh-thu.md)
-- [Lab dựng star schema](../tutorials/star-schema-duckdb.md) — bước 3 giữ `so_don` trong fact
+- [Grain](../reference/grain.md) — the "is the dimension coarser than the fact" test
+- [Junk dimensions](junk-dimension.md) — the right home for the low-cardinality flags left behind
+- [Facts and dimensions](../reference/fact-and-dimension.md) — accumulating snapshots for process history
+- [Bridge tables](bridge-table.md) — allocation factors for header/line
+- [CS: the order dim inflating revenue 40%](../case-studies/dim-don-hang-lam-phong-doanh-thu.md)
+- [The star-schema lab](../tutorials/star-schema-duckdb.md) — step 3 keeps `so_don` in the fact
 
 ## References
 
 - Kimball Group — [Degenerate Dimensions](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 3 và 6
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapters 3 and 6

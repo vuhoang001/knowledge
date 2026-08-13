@@ -1,8 +1,7 @@
 ---
-title: Cây phân cấp — cố định, hơi lệch và lệch hẳn
-i18n_status: untranslated
+title: Hierarchies — fixed, slightly ragged and fully ragged
 sidebar_position: 9
-description: "Cây danh mục hay sơ đồ tổ chức có độ sâu không đều: bảng dẹt cố định làm mất dòng, bridge đường đi thì rollup ở mọi cấp đều đúng."
+description: "A category tree or org chart with uneven depth: a fixed flattened table loses rows, while a path bridge makes rollup correct at every level."
 tags: [hierarchy, ragged-hierarchy, bridge-table, dimension, kimball, data-modeling]
 domain: data-engineering
 category: pattern
@@ -13,29 +12,29 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Cây phân cấp — cố định, hơi lệch và lệch hẳn
+# Hierarchies — fixed, slightly ragged and fully ragged
 
-> **Chốt:** cây có độ sâu **đều** thì dẹt thành cột (`cap_1`, `cap_2`, `cap_3`) là cách
-> nhanh và dễ hiểu nhất. Cây có độ sâu **không đều** mà vẫn dẹt thì mỗi báo cáo theo cấp
-> lá lại âm thầm bỏ rơi một phần dữ liệu — và tổng vẫn trông hợp lý.
+> **Takeaway:** for a tree of **even** depth, flattening into columns (`cap_1`, `cap_2`, `cap_3`) is the
+> fastest and most understandable approach. Flatten a tree of **uneven** depth and every leaf-level report
+> silently abandons part of the data — while the total still looks plausible.
 
-## Ba loại cây, ba cách xử lý
+## Three tree kinds, three approaches
 
-Kimball tách rõ ba trường hợp; chọn sai ngay từ đầu là nguồn gốc của mọi rắc rối sau đó:
+Kimball separates the three cases clearly; choosing wrongly at the start is the source of all the trouble that follows:
 
-| Loại | Đặc điểm | Cách dựng |
+| Kind | Characteristics | How to build it |
 |---|---|---|
-| **Fixed depth** — cố định | Mọi nhánh đúng N cấp, cấp nào cũng có tên riêng | Dẹt thành N cột trong dimension |
-| **Slightly ragged** — hơi lệch | Độ sâu 2–4, chênh ít, biết trước cận trên | Dẹt tới cấp sâu nhất + kéo cấp cha xuống lấp chỗ trống |
-| **Ragged** — lệch hẳn | Độ sâu tuỳ ý, thay đổi theo thời gian (sơ đồ tổ chức, cây tài khoản) | **Bridge đường đi** (closure table) |
+| **Fixed depth** | Every branch exactly N levels, each level with its own name | Flatten into N columns in the dimension |
+| **Slightly ragged** | Depth 2–4, a small spread, with a known upper bound | Flatten to the deepest level + pull the parent level down to fill the gaps |
+| **Ragged** | Arbitrary depth, changing over time (an org chart, a chart of accounts) | A **path bridge** (a closure table) |
 
-Phép thử một câu: *"nếu ngày mai thêm một cấp giữa thì phải sửa gì?"* Nếu câu trả lời là
-"sửa DDL và sửa mọi báo cáo" thì bạn đang dùng fixed depth cho một cây ragged.
+The one-sentence test: *"if a level were inserted in the middle tomorrow, what would have to change?"* If the answer is
+"the DDL and every report", you're using fixed depth for a ragged tree.
 
-## Ví dụ xuyên suốt
+## The worked example
 
-Cây danh mục sản phẩm, độ sâu 1 đến 3 — hoàn toàn bình thường ở bán lẻ: ngành hàng lớn
-được chia nhỏ, ngành hàng mới thì chưa.
+A product category tree, depth 1 to 3 — entirely normal in retail: big product lines
+get subdivided, while new lines haven't been yet.
 
 ```text
 Dien tu (1)
@@ -63,9 +62,9 @@ SELECT * FROM (VALUES
 ) t(san_pham, dm_id, doanh_thu);
 ```
 
-Tổng thật: **1.000**.
+The real total: **1,000**.
 
-### Cách 1 — dẹt cố định 3 cấp
+### Approach 1 — flattening to a fixed 3 levels
 
 ```sql
 CREATE TABLE dim_dm_det AS
@@ -91,7 +90,7 @@ LEFT JOIN danh_muc l1 ON l2.cha_id = l1.dm_id;
 └───────┴────────────┴────────────┴────────────┘
 ```
 
-Bảng trông ổn. Vấn đề xuất hiện ở báo cáo đầu tiên theo cấp lá:
+The table looks fine. The problem appears in the first leaf-level report:
 
 ```sql
 SELECT coalesce(d.cap_3, '(khong co cap 3)') AS cap_3, sum(f.doanh_thu) AS doanh_thu
@@ -124,12 +123,12 @@ FROM fct_ban f JOIN dim_dm_det d USING (dm_id);
 └─────────────┴──────────┴─────────┘
 ```
 
-**Một nửa doanh thu** rơi vào ô `NULL`. Trên BI, ô `NULL` thường bị lọc mặc định hoặc bị
-người xem lướt qua — nên báo cáo hiển thị 500 và không ai thấy 500 còn lại đã đi đâu.
+**Half the revenue** falls into the `NULL` bucket. In BI, a `NULL` bucket is usually filtered by default or
+skimmed past by the viewer — so the report shows 500 and nobody sees where the other 500 went.
 
-### Cách 2 — kéo cấp cha xuống (slightly ragged)
+### Approach 2 — pulling the parent level down (slightly ragged)
 
-Cách chữa rẻ nhất cho cây **hơi** lệch: lấp `NULL` bằng chính giá trị cấp trên.
+The cheapest fix for a **slightly** ragged tree: fill the `NULL` with the level above's own value.
 
 ```sql
 CREATE TABLE dim_dm_keo AS
@@ -149,15 +148,15 @@ FROM dim_dm_det;
 └────────────┴───────────┘
 ```
 
-Tổng khớp lại 1.000, `NULL` biến mất, mọi công cụ BI drill-down đều chạy.
+The total matches 1,000 again, the `NULL` is gone, and every BI drill-down works.
 
-**Cái phải chấp nhận:** cột `cap_3` giờ chứa cả node không phải cấp 3 thật. Câu *"có bao
-nhiêu danh mục cấp 3"* không còn trả lời được từ bảng này. Đánh đổi hợp lý khi độ sâu
-chênh 1–2 cấp và biết trước cận trên; sai hẳn khi cây có thể sâu tuỳ ý.
+**What you have to accept:** the `cap_3` column now contains nodes that aren't genuinely level 3. The question
+*"how many level-3 categories are there"* is no longer answerable from this table. A reasonable trade-off when the depth
+spread is 1–2 levels with a known upper bound; entirely wrong when the tree can be arbitrarily deep.
 
-### Cách 3 — bridge đường đi, cho cây lệch hẳn
+### Approach 3 — a path bridge, for a fully ragged tree
 
-Sinh mọi cặp (tổ tiên → con cháu), kể cả chính nó ở khoảng cách 0:
+Generate every (ancestor → descendant) pair, including the node itself at distance 0:
 
 ```sql
 CREATE TABLE bridge_dm AS
@@ -187,7 +186,7 @@ SELECT * FROM duong_di;
 └────────────┴────────────┴────────┴────────────┴────────┘
 ```
 
-Giờ rollup cho **bất kỳ node nào**, sâu bao nhiêu cấp cũng được, bằng đúng một câu:
+Now you can roll up for **any node**, at any depth, in exactly one statement:
 
 ```sql
 SELECT t.ten AS danh_muc, sum(f.doanh_thu) AS doanh_thu_ca_nhanh
@@ -209,12 +208,12 @@ GROUP BY 1 ORDER BY 2 DESC;
 └────────────┴────────────────────┘
 ```
 
-`Dien tu` = 800 = 500 (Smartphone, cách 2 cấp) + 300 (Phu kien, cách 1 cấp). Không cấu
-hình gì thêm.
+`Dien tu` = 800 = 500 (Smartphone, 2 levels away) + 300 (Phu kien, 1 level away). With no extra
+configuration.
 
-**Lưu ý quan trọng:** bảng này **cố tình** nhân bản dòng — cộng cả cột `doanh_thu_ca_nhanh`
-lại sẽ ra 2.300, không phải 1.000. Đó là bản chất của bridge, giống hệt cảnh báo ở
-[bridge table](bridge-table.md). Muốn tổng đúng thì lọc về đúng một mức:
+**An important note:** this table **deliberately** duplicates rows — summing the whole `doanh_thu_ca_nhanh`
+column gives 2,300, not 1,000. That's the nature of a bridge, exactly the warning in
+[bridge tables](bridge-table.md). For a correct total, filter down to a single level:
 
 ```sql
 SELECT sum(f.doanh_thu) AS tong_qua_bridge
@@ -232,18 +231,18 @@ WHERE t.cha_id IS NULL;          -- chi cac node goc
 └─────────────────┘
 ```
 
-### Bảng so sánh ba cách
+### The three approaches compared
 
-| | Dẹt cố định | Kéo cấp cha | Bridge đường đi |
+| | Fixed flattening | Pulling the parent down | A path bridge |
 |---|---|---|---|
-| Doanh thu báo cáo cấp lá | 500 (**mất 50%**) | 1.000 | 1.000 |
-| Rollup cho node giữa cây | Chỉ node có cấp riêng | Có, nhưng nhãn lẫn lộn | Mọi node |
-| Thêm một cấp mới | Sửa DDL + mọi báo cáo | Sửa DDL | **Không sửa gì** |
-| SQL của báo cáo | `GROUP BY cap_2` | `GROUP BY cap_2` | Thêm một join |
-| Nguy cơ đếm trùng | Không | Không | **Có** — phải lọc `so_cap` hoặc mức |
-| BI drill-down có sẵn | Có | Có | Phải cấu hình |
+| Leaf-level reported revenue | 500 (**50% lost**) | 1,000 | 1,000 |
+| Rollup for a mid-tree node | Only nodes with their own level | Yes, but the labels are muddled | Every node |
+| Adding a new level | Change the DDL + every report | Change the DDL | **Change nothing** |
+| The report's SQL | `GROUP BY cap_2` | `GROUP BY cap_2` | One extra join |
+| Double-counting risk | No | No | **Yes** — you must filter `so_cap` or a level |
+| BI drill-down out of the box | Yes | Yes | Needs configuring |
 
-## Khi nào chọn cái nào
+## Which to choose when
 
 ```text
 Do sau co co dinh va on dinh khong?
@@ -255,16 +254,16 @@ Do sau co co dinh va on dinh khong?
           → bridge duong di. Ton mot join, doi lai khong bao gio phai sua DDL.
 ```
 
-Sơ đồ tổ chức nhân sự và cây tài khoản kế toán **luôn** thuộc nhánh cuối. Đừng thử dẹt
-chúng.
+An HR org chart and an accounting chart of accounts **always** belong in the last branch. Don't try to flatten
+them.
 
-## Cây thay đổi theo thời gian
+## A tree that changes over time
 
-Bridge giải quyết độ sâu, không giải quyết thời gian. Nếu tháng sau `Phu kien` được
-chuyển sang `Thoi trang` thì báo cáo tháng trước ra sao?
+A bridge solves depth, not time. If `Phu kien` gets moved under `Thoi trang` next month, what happens
+to last month's report?
 
-Đây đúng là câu hỏi của [SCD](scd.md), áp lên bảng bridge: thêm `hieu_luc_tu` /
-`hieu_luc_den` cho mỗi cặp đường đi, rồi join theo ngày giao dịch.
+That's exactly the [SCD](scd.md) question, applied to the bridge table: add `hieu_luc_tu` /
+`hieu_luc_den` to each path pair, then join on the transaction date.
 
 ```sql
 SELECT t.ten, sum(f.doanh_thu)
@@ -275,36 +274,36 @@ JOIN danh_muc t ON t.dm_id = b.to_tien_id
 GROUP BY 1;
 ```
 
-Không có hai cột đó thì cây được sắp lại một lần là **toàn bộ lịch sử báo cáo đổi số** —
-cùng cơ chế với [case study báo cáo quá khứ tự đổi số](../case-studies/bao-cao-qua-khu-tu-doi-so.md).
+Without those two columns, one restructuring of the tree means **all the reporting history changes its numbers** —
+the same mechanism as the [case study on historical reports changing their own numbers](../case-studies/bao-cao-qua-khu-tu-doi-so.md).
 
 ## Trade-offs
 
-| Được | Mất |
+| You get | You lose |
 |---|---|
-| Bridge: rollup đúng ở mọi cấp, không sửa DDL | Thêm một join, và **phải hiểu rủi ro đếm trùng** |
-| Dẹt: BI drill-down chạy ngay, không dạy ai gì | Chết khi cây lệch — mất dữ liệu âm thầm |
-| Kéo cấp cha: rẻ, tổng khớp | Nhãn cấp không còn nghĩa thật |
+| A bridge: correct rollup at every level, no DDL changes | One extra join, and **you must understand the double-counting risk** |
+| Flattening: BI drill-down works immediately, nothing to teach anybody | It dies when the tree is ragged — silent data loss |
+| Pulling the parent down: cheap, and the total matches | The level labels no longer mean what they say |
 
 ## Common Mistakes
 
-| Lỗi | Hậu quả |
+| Mistake | Consequence |
 |---|---|
-| Dẹt cố định cho cây lệch | Báo cáo cấp lá mất 50% doanh thu — [case study](../case-studies/bao-cao-cap-3-mat-mot-nua.md) |
-| Lọc `WHERE cap_3 IS NOT NULL` cho "sạch" | Chính thức hoá việc mất dữ liệu |
-| `SUM` toàn bảng sau khi join bridge | Đếm trùng — 2.300 thay vì 1.000 |
-| Bridge không có cột hiệu lực | Sắp lại cây một lần, lịch sử báo cáo đổi hết |
-| Đệ quy không chặn vòng | Cây có vòng thì query chạy mãi |
+| Fixed flattening for a ragged tree | The leaf-level report loses 50% of revenue — [case study](../case-studies/bao-cao-cap-3-mat-mot-nua.md) |
+| Filtering `WHERE cap_3 IS NOT NULL` "to keep it clean" | It formalises the data loss |
+| `SUM`ming the whole table after joining a bridge | Double counting — 2,300 instead of 1,000 |
+| A bridge with no validity columns | One tree restructuring changes all the reporting history |
+| Recursion without cycle protection | A tree with a cycle makes the query run forever |
 
 ## Related Topics
 
-- [Bridge table](bridge-table.md) — cùng cơ chế nhân bản dòng, cho quan hệ nhiều-nhiều
-- [SCD](scd.md) — khi chính cấu trúc cây thay đổi theo thời gian
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — dẹt cây là một dạng denormalize
-- [Grain](../reference/grain.md) — join bridge làm grain kết quả đổi, phải khai lại
-- [CS: báo cáo cấp 3 mất một nửa doanh thu](../case-studies/bao-cao-cap-3-mat-mot-nua.md)
+- [Bridge tables](bridge-table.md) — the same row-duplicating mechanism, for many-to-many relationships
+- [SCD](scd.md) — when the tree structure itself changes over time
+- [Star, snowflake, OBT](../reference/star-snowflake-obt.md) — flattening a tree is a form of denormalisation
+- [Grain](../reference/grain.md) — joining a bridge changes the result's grain, which must be redeclared
+- [CS: the level-3 report losing half the revenue](../case-studies/bao-cao-cap-3-mat-mot-nua.md)
 
 ## References
 
 - Kimball Group — [Ragged/Variable Depth Hierarchies](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
-- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chương 7
+- Kimball & Ross, *The Data Warehouse Toolkit* (3rd ed.), chapter 7
