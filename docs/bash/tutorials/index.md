@@ -1,5 +1,6 @@
 ---
 title: Bài tập — Bash
+sidebar_key: bash-tutorials
 sidebar_position: 0
 description: "Lab chạy thật, gõ theo là ra đúng output đã dán — luyện tay pipeline xử lý văn bản và viết script."
 tags: [tutorials, bash]

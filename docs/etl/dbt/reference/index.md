@@ -1,5 +1,6 @@
 ---
 title: Tài liệu — dbt
+sidebar_key: dbt-reference
 sidebar_position: 0
 description: "Giải thích nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước."
 tags: [reference, dbt]

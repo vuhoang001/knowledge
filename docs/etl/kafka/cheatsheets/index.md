@@ -1,5 +1,6 @@
 ---
 title: Cheatsheet — Kafka
+sidebar_key: kafka-cheatsheets
 sidebar_position: 0
 description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
 tags: [cheatsheet, kafka]

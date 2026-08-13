@@ -1,5 +1,6 @@
 ---
 title: Case study — Kafka
+sidebar_key: kafka-case-studies
 sidebar_position: 0
 description: "Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu."
 tags: [case-study, kafka]

@@ -62,7 +62,7 @@ huống X thì xử lý ra sao"*. `text-processing` và `viet-script-an-toan` đ
 
 ## Learning Path
 
-```text
+```text i18n-prose
 Shell là gì            ← bắt đầu ở đây
       ↓
 Streams và redirection   ·   File permissions

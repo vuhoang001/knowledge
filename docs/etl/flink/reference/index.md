@@ -1,5 +1,6 @@
 ---
 title: Tài liệu — Flink
+sidebar_key: flink-reference
 sidebar_position: 0
 description: "Giải thích nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước."
 tags: [reference, flink]

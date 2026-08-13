@@ -1,5 +1,6 @@
 ---
 title: Bài tập — Design Patterns
+sidebar_key: patterns-tutorials
 sidebar_position: 0
 description: "Chạy thật bằng dotnet run, có ô dán output. Chưa chạy được thì chưa gọi là học."
 tags: [tutorial, design-pattern]

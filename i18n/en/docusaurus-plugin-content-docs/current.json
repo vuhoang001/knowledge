@@ -1,0 +1,174 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.main.category.Design Patterns": {
+    "message": "Design Patterns",
+    "description": "The label for category 'Design Patterns' in sidebar 'main'"
+  },
+  "sidebar.main.category.patterns-reference": {
+    "message": "Reference",
+    "description": "The label for category 'Tài liệu' in sidebar 'main'"
+  },
+  "sidebar.main.category.patterns-skills": {
+    "message": "Skills",
+    "description": "The label for category 'Kỹ năng' in sidebar 'main'"
+  },
+  "sidebar.main.category.patterns-tutorials": {
+    "message": "Exercises",
+    "description": "The label for category 'Bài tập' in sidebar 'main'"
+  },
+  "sidebar.main.category.patterns-cheatsheets": {
+    "message": "Cheatsheet",
+    "description": "The label for category 'Cheatsheet' in sidebar 'main'"
+  },
+  "sidebar.main.category.patterns-case-studies": {
+    "message": "Case study",
+    "description": "The label for category 'Case study' in sidebar 'main'"
+  },
+  "sidebar.main.category.Data Modeling": {
+    "message": "Data Modeling",
+    "description": "The label for category 'Data Modeling' in sidebar 'main'"
+  },
+  "sidebar.main.category.data-modeling-reference": {
+    "message": "Reference",
+    "description": "The label for category 'Tài liệu' in sidebar 'main'"
+  },
+  "sidebar.main.category.data-modeling-skills": {
+    "message": "Skills",
+    "description": "The label for category 'Kỹ năng' in sidebar 'main'"
+  },
+  "sidebar.main.category.data-modeling-tutorials": {
+    "message": "Exercises",
+    "description": "The label for category 'Bài tập' in sidebar 'main'"
+  },
+  "sidebar.main.category.data-modeling-cheatsheets": {
+    "message": "Cheatsheet",
+    "description": "The label for category 'Cheatsheet' in sidebar 'main'"
+  },
+  "sidebar.main.category.data-modeling-case-studies": {
+    "message": "Case study",
+    "description": "The label for category 'Case study' in sidebar 'main'"
+  },
+  "sidebar.main.category.Data Quality": {
+    "message": "Data Quality",
+    "description": "The label for category 'Data Quality' in sidebar 'main'"
+  },
+  "sidebar.main.category.Databases": {
+    "message": "Databases",
+    "description": "The label for category 'Databases' in sidebar 'main'"
+  },
+  "sidebar.main.category.Storage": {
+    "message": "Storage",
+    "description": "The label for category 'Storage' in sidebar 'main'"
+  },
+  "sidebar.main.category.Query Engines": {
+    "message": "Query Engines",
+    "description": "The label for category 'Query Engines' in sidebar 'main'"
+  },
+  "sidebar.main.category.ETL & Streaming": {
+    "message": "ETL & Streaming",
+    "description": "The label for category 'ETL & Streaming' in sidebar 'main'"
+  },
+  "sidebar.main.category.dbt": {
+    "message": "dbt",
+    "description": "The label for category 'dbt' in sidebar 'main'"
+  },
+  "sidebar.main.category.dbt-reference": {
+    "message": "Reference",
+    "description": "The label for category 'Tài liệu' in sidebar 'main'"
+  },
+  "sidebar.main.category.dbt-skills": {
+    "message": "Skills",
+    "description": "The label for category 'Kỹ năng' in sidebar 'main'"
+  },
+  "sidebar.main.category.dbt-tutorials": {
+    "message": "Exercises",
+    "description": "The label for category 'Bài tập' in sidebar 'main'"
+  },
+  "sidebar.main.category.dbt-case-studies": {
+    "message": "Case study",
+    "description": "The label for category 'Case study' in sidebar 'main'"
+  },
+  "sidebar.main.category.Flink": {
+    "message": "Flink",
+    "description": "The label for category 'Flink' in sidebar 'main'"
+  },
+  "sidebar.main.category.flink-reference": {
+    "message": "Reference",
+    "description": "The label for category 'Tài liệu' in sidebar 'main'"
+  },
+  "sidebar.main.category.flink-skills": {
+    "message": "Skills",
+    "description": "The label for category 'Kỹ năng' in sidebar 'main'"
+  },
+  "sidebar.main.category.flink-tutorials": {
+    "message": "Exercises",
+    "description": "The label for category 'Bài tập' in sidebar 'main'"
+  },
+  "sidebar.main.category.flink-cheatsheets": {
+    "message": "Cheatsheet",
+    "description": "The label for category 'Cheatsheet' in sidebar 'main'"
+  },
+  "sidebar.main.category.flink-case-studies": {
+    "message": "Case study",
+    "description": "The label for category 'Case study' in sidebar 'main'"
+  },
+  "sidebar.main.category.Kafka": {
+    "message": "Kafka",
+    "description": "The label for category 'Kafka' in sidebar 'main'"
+  },
+  "sidebar.main.category.kafka-reference": {
+    "message": "Reference",
+    "description": "The label for category 'Tài liệu' in sidebar 'main'"
+  },
+  "sidebar.main.category.kafka-skills": {
+    "message": "Skills",
+    "description": "The label for category 'Kỹ năng' in sidebar 'main'"
+  },
+  "sidebar.main.category.kafka-tutorials": {
+    "message": "Exercises",
+    "description": "The label for category 'Bài tập' in sidebar 'main'"
+  },
+  "sidebar.main.category.kafka-cheatsheets": {
+    "message": "Cheatsheet",
+    "description": "The label for category 'Cheatsheet' in sidebar 'main'"
+  },
+  "sidebar.main.category.kafka-case-studies": {
+    "message": "Case study",
+    "description": "The label for category 'Case study' in sidebar 'main'"
+  },
+  "sidebar.main.category.Orchestration": {
+    "message": "Orchestration",
+    "description": "The label for category 'Orchestration' in sidebar 'main'"
+  },
+  "sidebar.main.category.Languages": {
+    "message": "Languages",
+    "description": "The label for category 'Languages' in sidebar 'main'"
+  },
+  "sidebar.main.category.Bash": {
+    "message": "Bash",
+    "description": "The label for category 'Bash' in sidebar 'main'"
+  },
+  "sidebar.main.category.bash-reference": {
+    "message": "Reference",
+    "description": "The label for category 'Tài liệu' in sidebar 'main'"
+  },
+  "sidebar.main.category.bash-skills": {
+    "message": "Skills",
+    "description": "The label for category 'Kỹ năng' in sidebar 'main'"
+  },
+  "sidebar.main.category.bash-tutorials": {
+    "message": "Exercises",
+    "description": "The label for category 'Bài tập' in sidebar 'main'"
+  },
+  "sidebar.main.category.bash-cheatsheets": {
+    "message": "Cheatsheet",
+    "description": "The label for category 'Cheatsheet' in sidebar 'main'"
+  },
+  "sidebar.main.category.bash-case-studies": {
+    "message": "Case study",
+    "description": "The label for category 'Case study' in sidebar 'main'"
+  }
+}

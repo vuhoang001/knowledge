@@ -1,5 +1,6 @@
 ---
 title: Tài liệu — Data Modeling
+sidebar_key: data-modeling-reference
 sidebar_position: 0
 description: "Giải thích nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước."
 tags: [reference, data-modeling]

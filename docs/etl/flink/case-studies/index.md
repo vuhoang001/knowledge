@@ -1,5 +1,6 @@
 ---
 title: Case study — Flink
+sidebar_key: flink-case-studies
 sidebar_position: 0
 description: "Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu."
 tags: [case-study, flink]

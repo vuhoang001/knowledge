@@ -1,5 +1,6 @@
 ---
 title: Cheatsheet — Bash
+sidebar_key: bash-cheatsheets
 sidebar_position: 0
 description: "Bảng tra nhanh khi đang gõ — lệnh theo nhóm, toán tử test và parameter expansion."
 tags: [cheatsheets, bash]

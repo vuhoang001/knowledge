@@ -1,5 +1,6 @@
 ---
 title: Tài liệu — Bash
+sidebar_key: bash-reference
 sidebar_position: 0
 description: "Nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước khi viết dòng script đầu tiên."
 tags: [reference, bash]

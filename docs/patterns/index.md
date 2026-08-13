@@ -77,7 +77,7 @@ Cả hai lỗi đều **không phải lỗi kỹ thuật**. Code đúng, test xa
 
 ## Learning Path
 
-```text
+```text i18n-prose
 C# co ban (interface, ke thua, delegate)
       ↓
 Design pattern la gi        ← bat dau o day

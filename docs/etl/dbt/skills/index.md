@@ -1,5 +1,6 @@
 ---
 title: Kỹ năng — dbt
+sidebar_key: dbt-skills
 sidebar_position: 0
 description: "Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần Tài liệu, không thay thế nó."
 tags: [skill, dbt]

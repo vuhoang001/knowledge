@@ -1,5 +1,6 @@
 ---
 title: Case study — Design Patterns
+sidebar_key: patterns-case-studies
 sidebar_position: 0
 description: "Mười chín kiểu hỏng khi dùng pattern sai chỗ, mỗi ca kèm triệu chứng có số, giả thuyết sai lúc đầu, và cách sửa."
 tags: [case-study, design-pattern]

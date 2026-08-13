@@ -1,5 +1,6 @@
 ---
 title: Tài liệu — Design Patterns
+sidebar_key: patterns-reference
 sidebar_position: 0
 description: "Nền tảng phải nắm trước 23 pattern — pattern là gì, SOLID, composition, coupling, và cách tra ngược từ triệu chứng."
 tags: [reference, design-pattern]

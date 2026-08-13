@@ -1,5 +1,6 @@
 ---
 title: Tài liệu — Kafka
+sidebar_key: kafka-reference
 sidebar_position: 0
 description: "Giải thích nó là gì, vì sao, đánh đổi ra sao. Đọc nhóm này trước."
 tags: [reference, kafka]

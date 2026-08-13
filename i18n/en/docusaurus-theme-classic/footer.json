@@ -1,0 +1,6 @@
+{
+  "copyright": {
+    "message": "If you can't run it, you haven't learned it — an empty <code>verified_at</code> means unverified.",
+    "description": "The footer copyright"
+  }
+}

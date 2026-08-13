@@ -1,5 +1,6 @@
 ---
 title: Case study — Data Modeling
+sidebar_key: data-modeling-case-studies
 sidebar_position: 0
 description: Hai mươi tư kiểu hỏng kinh điển của mô hình chiều, mỗi cái kèm triệu chứng, giả thuyết sai lúc đầu, và cách sửa.
 tags: [case-study, data-modeling]

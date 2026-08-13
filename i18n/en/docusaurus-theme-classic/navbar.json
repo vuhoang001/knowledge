@@ -1,0 +1,26 @@
+{
+  "title": {
+    "message": "Second Brain",
+    "description": "The title in the navbar"
+  },
+  "item.label.Docs": {
+    "message": "Docs",
+    "description": "Navbar item with label Docs"
+  },
+  "item.label.Data Modeling": {
+    "message": "Data Modeling",
+    "description": "Navbar item with label Data Modeling"
+  },
+  "item.label.dbt": {
+    "message": "dbt",
+    "description": "Navbar item with label dbt"
+  },
+  "item.label.Thư viện": {
+    "message": "Library",
+    "description": "Navbar item with label Thư viện"
+  },
+  "item.label.Glossary": {
+    "message": "Glossary",
+    "description": "Navbar item with label Glossary"
+  }
+}

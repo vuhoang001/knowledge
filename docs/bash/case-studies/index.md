@@ -1,5 +1,6 @@
 ---
 title: Case study — Bash
+sidebar_key: bash-case-studies
 sidebar_position: 0
 description: "Bốn kiểu hỏng script kinh điển, mỗi cái kèm triệu chứng chạy thật, giả thuyết sai lúc đầu, và cách sửa."
 tags: [case-study, bash]

@@ -1,5 +1,6 @@
 ---
 title: Kỹ năng — Flink
+sidebar_key: flink-skills
 sidebar_position: 0
 description: "Đã nắm reference rồi, giờ gặp tình huống X thì xử lý ra sao."
 tags: [skills, flink]

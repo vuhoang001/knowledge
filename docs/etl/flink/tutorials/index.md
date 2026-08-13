@@ -1,5 +1,6 @@
 ---
 title: Bài tập — Flink
+sidebar_key: flink-tutorials
 sidebar_position: 0
 description: "Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học."
 tags: [tutorial, flink]

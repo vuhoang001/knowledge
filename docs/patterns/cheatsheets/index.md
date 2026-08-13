@@ -1,5 +1,6 @@
 ---
 title: Cheatsheet — Design Patterns
+sidebar_key: patterns-cheatsheets
 sidebar_position: 0
 description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
 tags: [cheatsheet, design-pattern]

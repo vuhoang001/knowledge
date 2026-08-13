@@ -1,5 +1,6 @@
 ---
 title: Cheatsheet — Data Modeling
+sidebar_key: data-modeling-cheatsheets
 sidebar_position: 0
 description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
 tags: [cheatsheet, data-modeling]

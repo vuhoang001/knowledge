@@ -1,5 +1,6 @@
 ---
 title: Kỹ năng — Data Modeling
+sidebar_key: data-modeling-skills
 sidebar_position: 0
 description: "Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần Tài liệu, không thay thế nó."
 tags: [skill, data-modeling]

@@ -15,9 +15,17 @@ const config = {
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'warn',
 
+  // Bản en là MIRROR của docs/, sống ở i18n/en/docusaurus-plugin-content-docs/current/.
+  // File nào chưa dịch thì Docusaurus fallback về bản vi — không vỡ link, không chết build.
+  // Cái giá: lint-docs.mjs chỉ walk docs/, nên cây i18n/ vô hình với 12 rule định tuyến.
+  // `npm run lint:i18n` bù chỗ đó — bắt cặp vi/en lệch `updated:`.
   i18n: {
     defaultLocale: 'vi',
-    locales: ['vi'],
+    locales: ['vi', 'en'],
+    localeConfigs: {
+      vi: { label: 'Tiếng Việt', htmlLang: 'vi-VN' },
+      en: { label: 'English', htmlLang: 'en-US' },
+    },
   },
 
   // Mermaid: bật cả parser markdown lẫn theme, thiếu một trong hai là fence không render
@@ -82,6 +90,8 @@ const config = {
           { to: '/etl/dbt/', label: 'dbt', position: 'left' },
           { to: '/catalog', label: 'Thư viện', position: 'right' },
           { to: '/glossary/', label: 'Glossary', position: 'right' },
+          // Nhãn của các item trên dịch trong i18n/en/docusaurus-theme-classic/navbar.json
+          { type: 'localeDropdown', position: 'right' },
         ],
       },
       footer: {

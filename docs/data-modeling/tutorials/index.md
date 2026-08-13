@@ -1,5 +1,6 @@
 ---
 title: Bài tập — Data Modeling
+sidebar_key: data-modeling-tutorials
 sidebar_position: 0
 description: "Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là học."
 tags: [tutorial, data-modeling]

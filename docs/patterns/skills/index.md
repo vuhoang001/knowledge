@@ -1,5 +1,6 @@
 ---
 title: Kỹ năng — 23 pattern GoF
+sidebar_key: patterns-skills
 sidebar_position: 0
 description: "Hai mươi ba pattern Gang of Four, mỗi cái kèm một ca hỏng chạy được bằng C# và mục khi nào đừng dùng."
 tags: [skill, design-pattern, gof]

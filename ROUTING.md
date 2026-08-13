@@ -147,6 +147,89 @@ updated: 2026-07-31
 | R7 | File có trong manifest `docs/index.md` |
 | R8 | File có mục `## Related Topics` |
 
+## Bản dịch tiếng Anh — `npm run lint:i18n`
+
+`lint-docs.mjs` chỉ `walk('docs')`, nên **cây `i18n/en/` vô hình với toàn bộ R1–R16 ở
+trên.** `scripts/lint-i18n.mjs` bù đúng chỗ đó, với bộ rule riêng:
+
+**ERROR:**
+
+| # | Rule | Vì sao |
+|---|---|---|
+| I1 | Mỗi file `docs/` phải có file tương ứng trong `i18n/en/…/current/` | Nội dung thì fallback về vi, **nhưng link `.md` tương đối thì không** — file en đã dịch trỏ tới file en không tồn tại là `onBrokenLinks:'throw'` giết build |
+| I2 | `updated` của bản en phải khớp bản vi | Sửa bản vi mà không sửa bản en = bản en thành tài liệu sai, im lặng |
+| I4 | `sidebar_position` phải khớp | Lệch thì sidebar en sắp khác vi, không lỗi nào báo — cùng cái bẫy của R5 |
+| I5 | Khối code phải copy **nguyên byte**, chỉ dòng comment được dịch | Luật cứng #2. Đây đúng là chỗ AI "giúp" viết lại `SHOW CATALOGS` thành `SHOW SCHEMAS` |
+| I6 | `verified_at` phải bằng bản vi | Luật cứng #1 — bản dịch không tạo ra bằng chứng mới |
+| I7 | File en không được mồ côi | Bản vi đã đổi tên hoặc bị xoá |
+| I9 | Số `<details>` phải cân, và khớp bản vi | `<details>` thiếu thẻ đóng là MDX chết — nhưng chỉ `npm run build` thấy, mà build mất 30 giây. Rule này bắt trong 1 giây. Nhắc `<details>` trong backtick không tính |
+
+**WARN:**
+
+| # | Rule |
+|---|---|
+| I8 | File còn là stub (`i18n_status: untranslated`) — thước đo tiến độ |
+| I3 | `description` còn nguyên tiếng Việt trong file đã bỏ nhãn stub |
+
+Ba ngoại lệ của I5, cả ba đều có lý do:
+
+- **`mermaid`** được miễn — nhãn node là văn xuôi nằm trong fence, không phải output thật.
+  Nhưng số lượng và thứ tự khối vẫn bị bắt.
+- **Comment được dịch** — cả dòng lẫn cuối dòng (`which cd   # không thấy vì cd không phải file`).
+  Lệnh thì không. Dấu comment **theo ngôn ngữ của fence**: `#` cho bash/python/yaml,
+  `--` cho sql, `//` cho js/cs. Cố ý không bỏ bừa `--` ở mọi nơi — nếu không thì
+  `npm run lint -- --locale en` trong khối bash bị cắt mất một nửa.
+- **Khối ```` ```text ```` và khối không khai ngôn ngữ bị so nguyên văn**, không bỏ comment
+  gì cả — đó là output thật dán lại, output không có comment.
+- **Fence đánh nhãn `i18n-prose`** được miễn — dành cho sơ đồ ASCII, learning path, thứ
+  nằm trong ```` ```text ```` nhưng là văn xuôi chứ không phải output. Mặc định **không**
+  được miễn; phải gõ nhãn vào **cả bản vi lẫn bản en**:
+
+  ````text
+  ```text i18n-prose
+  Shell là gì   ← bắt đầu ở đây
+  ```
+  ````
+
+  Nhãn không lọt ra HTML. Bắt tác giả khai báo ý định ngay trong nguồn là cố ý — mặc định
+  phải là "khối code là bằng chứng, cấm sửa".
+
+`catalog.md` được miễn các rule nội dung vì `scripts/gen-catalog.mjs` sinh nó — dịch tay
+sẽ bị ghi đè lần chạy `npm run catalog` tiếp theo. Nó **vẫn phải tồn tại** trong cây en
+vì `docs/index.md` trỏ tới.
+
+### Anchor vỡ trong lúc dịch dở — bình thường, nhưng phải về 0
+
+Dịch một tiêu đề là đổi anchor của nó (`#khi-nào-không-nên-dùng-pattern` →
+`#when-not-to-use-a-pattern`). Các file **còn là stub** vẫn trỏ anchor tiếng Việt, nên
+`npm run build` sẽ báo `broken anchors` cho tới khi dịch xong hết. `onBrokenAnchors: 'warn'`
+nên build không chết.
+
+**Tiêu chí nghiệm thu cuối:** dịch hết 235 file rồi build phải **không còn** cảnh báo
+anchor nào. Còn cảnh báo = có file dịch mà quên sửa anchor trỏ tới tiêu đề đã đổi tên.
+
+```bash
+npm run build 2>&1 | grep -A100 "broken anchors"
+```
+
+### Thêm file mới thì phải sinh stub
+
+```bash
+npm run i18n:stub     # copy mọi file docs/ chưa có bản en, dán nhãn untranslated
+npm run lint:i18n     # 0 error, và xem còn bao nhiêu stub
+```
+
+Chạy lại bao nhiêu lần cũng được — file đã có thì bỏ qua, **không ghi đè bản dịch**.
+Dịch xong một file thì **xoá dòng `i18n_status: untranslated`** — đó là cách linter biết.
+
+### Ràng buộc mới trên `index.md` của các nhóm
+
+30 file `index.md` trong `reference/`, `skills/`, `tutorials/`, `cheatsheets/`,
+`case-studies/` giờ có thêm `sidebar_key` (ví dụ `kafka-reference`). Sáu subtree dùng lại
+cùng nhãn category (`Tài liệu`, `Kỹ năng`, `Bài tập`…) nên không có key này thì Docusaurus
+**không sinh nổi** file dịch sidebar và `write-translations` chết. Thêm nhóm mới cho một
+công nghệ mới thì phải thêm `sidebar_key` cho nó.
+
 ## Ví dụ áp dụng — khi bắt đầu viết Kafka
 
 Kafka đã có mục lục dự kiến 10 mục trong [`docs/etl/kafka/index.md`](docs/etl/kafka/index.md).

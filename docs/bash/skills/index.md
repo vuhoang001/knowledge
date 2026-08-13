@@ -1,5 +1,6 @@
 ---
 title: Kỹ năng — Bash
+sidebar_key: bash-skills
 sidebar_position: 0
 description: "Gặp tình huống X thì xử lý ra sao — giả định đã nắm phần Tài liệu, tập trung vào kỹ thuật áp dụng."
 tags: [skills, bash]

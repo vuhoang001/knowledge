@@ -16,6 +16,7 @@ sản phẩm dẫn xuất, đã gitignore — đừng sửa tay, đừng commit.
 | Thêm một file mới đúng quy trình | skill [`kb-add`](.claude/skills/kb-add/SKILL.md) — chạy ba trục, sinh frontmatter, cập nhật 4 mục lục, lint |
 | **Quy trình từ "vừa học được" tới "đã thuộc"** | [`WORKFLOW.md`](WORKFLOW.md) — ba tầng, toàn bộ lệnh, vòng lặp thường ngày, khi hỏng thì làm gì |
 | Sinh thẻ Anki từ một file docs | skill [`kb-cards`](.claude/skills/kb-cards/SKILL.md) — sinh vào `anki/_pending.tsv` để duyệt trước khi gộp |
+| **Quy trình bản dịch tiếng Anh** | mục [Bản tiếng Anh](#bản-tiếng-anh) bên dưới — mirror ở `i18n/en/`, `npm run lint:i18n` |
 | Bản đồ tri thức tổng | [`README.md`](README.md) |
 | Bản đồ khái niệm của một công nghệ | `docs/<lĩnh vực>/<công nghệ>/index.md` |
 | Khuôn để viết file mới | `templates/full-topic.md` (chủ đề lớn) · `templates/short-topic.md` (ngắn) |
@@ -132,8 +133,9 @@ nghi phạm.
 ```bash
 npm start          # dev server localhost:3000, hot reload khi sửa .md
 npm run lint       # bộ rule định tuyến — bắt cái build không thấy
-npm run check      # lint + build, chạy cái này trước khi commit
-npm run build      # build tĩnh
+npm run lint:i18n  # bộ rule cây dịch en — lint trên KHÔNG thấy cây i18n/
+npm run check      # lint + lint:i18n + build, chạy cái này trước khi commit
+npm run build      # build tĩnh, cả hai locale
 npm run serve      # xem thử bản build
 ```
 
@@ -153,6 +155,36 @@ Search chỉ có ở bản build (`npm run build && npm run serve`), **không c�
 | Thư mục có `_category_.json` nhưng không có `.md` nào | Category rỗng — thêm `index.md` giữ chỗ |
 
 Sửa nội dung xong mà chưa chạy `npm run build` thì chưa biết nó có hỏng gì không.
+
+## Bản tiếng Anh
+
+Site có hai locale: `vi` (mặc định, ở `/knowledge/`) và `en` (ở `/knowledge/en/`).
+**Nguồn sự thật vẫn là `docs/` tiếng Việt.** Bản dịch là mirror sống ở
+`i18n/en/docusaurus-plugin-content-docs/current/`, cùng cấu trúc đường dẫn.
+
+```bash
+npm start -- --locale en    # dev server bản en
+npm run i18n:stub           # file docs/ mới chưa có bản en → sinh stub
+npm run lint:i18n           # 0 error, và còn bao nhiêu stub chưa dịch
+```
+
+**Sửa `docs/` thì phải sửa cả bản en**, nếu không I2 báo drift. Đây là cái giá thật của
+việc có hai locale — mọi note từ giờ tốn gấp đôi.
+
+Ba thứ dễ làm sai, đã có linter chặn (chi tiết ở [`ROUTING.md`](ROUTING.md)):
+
+| Đừng | Vì sao |
+|---|---|
+| **Đừng để bản en thiếu file** | Nội dung thì fallback về vi, nhưng **link `.md` tương đối thì không** — file en trỏ tới file en không tồn tại là build chết. Cây en phải luôn đủ 235 file; chạy `npm run i18n:stub` |
+| **Đừng dịch nội dung khối code** | Lệnh, output, tên catalog, số đo phải copy nguyên byte — chỉ dòng comment được dịch. Đây là luật cứng #2 áp sang bản dịch. Sơ đồ văn xuôi trong fence (`mermaid`, hoặc fence gõ nhãn `i18n-prose`) là ngoại lệ duy nhất |
+| **Đừng tự điền `verified_at` ở bản en** | Luật cứng #1 — dịch không tạo ra bằng chứng chạy tay mới |
+
+Dịch xong một file thì **xoá dòng `i18n_status: untranslated`** trong frontmatter — đó là
+cách linter đếm tiến độ.
+
+Số đo thì chuyển sang quy ước số tiếng Anh (`77,5%` → `77.5%`, `1.800.000` → `1,800,000`)
+— **giá trị giữ nguyên**, chỉ đổi dấu phân cách. Để nguyên dấu phẩy thập phân thì người
+đọc tiếng Anh hiểu `77,5` thành `775`.
 
 ## Git
 

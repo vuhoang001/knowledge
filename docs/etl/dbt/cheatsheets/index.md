@@ -1,5 +1,6 @@
 ---
 title: Cheatsheet — dbt
+sidebar_key: dbt-cheatsheets
 sidebar_position: 0
 description: "Tra nhanh khi đang làm, không dùng để học lần đầu."
 tags: [cheatsheet, dbt]
