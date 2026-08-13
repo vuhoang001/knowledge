@@ -1,8 +1,7 @@
 ---
-title: Chọn OBT xong, sáu tháng sau sếp hỏi câu as-is
-i18n_status: untranslated
+title: Choosing OBT, and six months later the boss asks an as-is question
 sidebar_position: 7
-description: One Big Table cho as-was miễn phí, nhưng câu hỏi "theo khu vực hiện tại" thì không có cách nào trả lời.
+description: One Big Table gives as-was for free, but the question "by current region" has no way of being answered.
 tags: [case-study, obt, star-schema, scd, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,18 +12,18 @@ verified_at:
 updated: 2026-07-31
 ---
 
-# Chọn OBT xong, sáu tháng sau sếp hỏi câu as-is
+# Choosing OBT, and six months later the boss asks an as-is question
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. **Con số chạy thật trên DuckDB.**
+> **A reconstructed situation**, not an incident encountered here. **The numbers were really run on DuckDB.**
 
-> **Chốt:** [OBT](../reference/star-snowflake-obt.md) trả lời as-was miễn phí và **mất
-> hẳn** as-is. Chọn OBT làm nơi lưu trữ duy nhất là khoá mình vào đúng một loại câu hỏi
-> — mà bạn không biết trước mình sẽ cần loại nào.
+> **Takeaway:** [OBT](../reference/star-snowflake-obt.md) answers as-was for free and **loses
+> as-is entirely**. Choosing OBT as the only place data is stored locks you into exactly one kind of question
+> — and you don't know in advance which kind you'll need.
 
-## Bối cảnh
+## Context
 
-Lakehouse, Parquet, cột nén tốt. Đo thấy OBT không tốn chỗ hơn star bao nhiêu, query lại
-nhanh vì không join. Quyết định: **dẹt hết vào một bảng**.
+A lakehouse, Parquet, well-compressed columns. Measurement shows OBT costs barely more space than a star, and
+queries are faster because there are no joins. The decision: **flatten everything into one table**.
 
 ```sql
 CREATE TABLE obt AS SELECT * FROM (VALUES
@@ -35,7 +34,7 @@ CREATE TABLE obt AS SELECT * FROM (VALUES
  AS t(ma_don, ngay, khach_id, ho_ten, khu_vuc, tien);
 ```
 
-Sáu tháng đầu chạy tốt. Câu hỏi as-was trả lời miễn phí:
+The first six months go well. The as-was question is answered for free:
 
 ```text
 ┌──────────┬───────────┐
@@ -46,15 +45,15 @@ Sáu tháng đầu chạy tốt. Câu hỏi as-was trả lời miễn phí:
 └──────────┴───────────┘
 ```
 
-Đúng — `KH01` mua ở Bắc rồi chuyển vào Nam, và OBT giữ nguyên khu vực **lúc mua**.
+Correct — `KH01` bought in the North and then moved south, and OBT preserves the region **at purchase time**.
 
-## Triệu chứng
+## Symptoms
 
-Sếp hỏi:
+The boss asks:
 
-> *"Nhóm khách hiện đang ở Miền Nam, tổng cộng từ trước tới nay họ mua bao nhiêu?"*
+> *"For the customers currently in the South, how much have they bought in total, all time?"*
 
-Đây là câu **as-is** — gom theo khu vực *hiện tại*, không phải lúc mua. Thử:
+That's an **as-is** question — grouping by *current* region, not by region at purchase. Try it:
 
 ```sql
 SELECT khach_id, count(DISTINCT khu_vuc) AS so_khu_vuc_khac_nhau
@@ -70,12 +69,12 @@ FROM obt GROUP BY 1;
 └──────────┴──────────────────────┘
 ```
 
-`KH01` có **hai** khu vực trong OBT. Cái nào là hiện tại? **OBT không biết.** Nó chỉ có
-những ảnh chụp rời rạc, không có khái niệm "phiên bản hiện hành".
+`KH01` has **two** regions in the OBT. Which is the current one? **OBT doesn't know.** It has only
+discrete snapshots and no notion of "the current version".
 
-## Giả thuyết sai lúc đầu
+## The wrong hypothesis at first
 
-**"Lấy dòng mới nhất của mỗi khách là ra khu vực hiện tại."** Nghe rất hợp lý:
+**"Take each customer's most recent row and you have the current region."** It sounds perfectly reasonable:
 
 ```sql
 SELECT khach_id, khu_vuc, ngay FROM obt
@@ -91,57 +90,57 @@ WHERE (khach_id, ngay) IN (SELECT khach_id, max(ngay) FROM obt GROUP BY 1);
 └──────────┴──────────┴────────────┘
 ```
 
-Trông đúng. **Nhưng chỉ đúng với khách vẫn còn mua.**
+It looks right. **But it's only right for customers who are still buying.**
 
-Khách ngừng mua từ 2024 thì "dòng mới nhất" là khu vực **năm 2024** — không phải hiện
-tại. Họ có thể đã chuyển nhà hai lần từ đó. Và OBT **không có cách nào biết**, vì thông
-tin đó chỉ đi vào OBT khi có giao dịch.
+For a customer who stopped buying in 2024, the "most recent row" holds the region **as of 2024** — not the
+present. They may have moved twice since. And OBT **has no way of knowing**, because that
+information only enters the OBT when there's a transaction.
 
-Đây là chỗ giả thuyết nguy hiểm: nó **đúng với đa số dòng**, nên kiểm mẫu vài khách là
-thấy hợp lý — và sai đúng với nhóm khách đã rời bỏ, tức nhóm mà câu hỏi hay nhắm tới.
+This is where the hypothesis becomes dangerous: it's **right for most rows**, so spot-checking a few customers
+looks fine — and it's wrong for exactly the churned customers, the group the question usually targets.
 
-## Nguyên nhân thật
+## The real cause
 
-OBT nhúng thuộc tính vào fact **tại thời điểm ghi**. Hệ quả:
+OBT embeds attributes into the fact **at write time**. The consequences:
 
-| | OBT có | OBT không có |
+| | OBT has | OBT lacks |
 |---|---|---|
-| Giá trị lúc giao dịch | ✅ | |
-| Giá trị hiện tại | | ❌ |
-| Thời điểm giá trị thay đổi | | ❌ |
-| Giá trị tại một ngày bất kỳ | | ❌ |
+| The value at transaction time | ✅ | |
+| The current value | | ❌ |
+| When the value changed | | ❌ |
+| The value on an arbitrary date | | ❌ |
 
-Ba dòng cuối cần khái niệm **phiên bản** — `valid_from` / `valid_to` — mà OBT không có
-và không thể suy ra. Xem [SCD](../skills/scd.md).
+The last three rows require the notion of a **version** — `valid_from` / `valid_to` — which OBT doesn't have
+and can't derive. See [SCD](../skills/scd.md).
 
-**Columnar không cứu được.** Nén giải quyết chi phí lưu trữ; nó không tạo ra thông tin
-chưa từng được ghi.
+**Columnar storage can't rescue this.** Compression solves the storage cost; it doesn't create information
+that was never recorded.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` mọi cột | ✅ xanh |
-| `unique` trên `ma_don` | ✅ xanh |
-| Tổng doanh thu | ✅ đúng |
+| `not_null` on every column | ✅ green |
+| `unique` on `ma_don` | ✅ green |
+| Total revenue | ✅ correct |
 
-Không có gì sai với OBT. Nó làm chính xác thứ nó được thiết kế để làm.
+Nothing is wrong with the OBT. It's doing exactly what it was designed to do.
 
-Đây là loại "lỗi" mà test **về nguyên tắc** không bắt được: dữ liệu cần thiết **chưa bao
-giờ được ghi vào**. Không có bất biến nào bị phá — chỉ có một câu hỏi không trả lời được.
+This is the class of "bug" tests **in principle** can't catch: the needed data **was never
+recorded**. No invariant is broken — there's just a question that can't be answered.
 
-## Cách sửa
+## The fix
 
-Không sửa được bằng query. Phải **đổi mô hình**, và đó là lý do nó đắt.
+It can't be fixed with a query. You have to **change the model**, and that's why it's expensive.
 
-Cách đúng — mô hình lai:
+The correct approach — a hybrid model:
 
 ```text
 nguồn → silver: star schema, dim Type 2 đầy đủ    ← nguồn sự thật
       → gold:   OBT dẹt cho từng use case BI      ← sản phẩm dẫn xuất
 ```
 
-Với silver có `dim_khach_hang` Type 2, cả hai câu hỏi đều trả lời được:
+With silver holding a Type 2 `dim_khach_hang`, both questions are answerable:
 
 ```sql
 -- as-was: khu vuc luc mua
@@ -151,12 +150,12 @@ JOIN dim_khach_hang d ON f.khach_sk = d.khach_sk
 JOIN dim_khach_hang d ON f.khach_id = d.khach_id AND d.is_current
 ```
 
-**Chi phí sửa muộn:** không có nguồn nào dựng lại lịch sử đã mất. Sáu tháng qua chỉ có
-ảnh chụp rời rạc — Type 2 dựng từ hôm nay chỉ có lịch sử **từ hôm nay**. Phần trước đó
-mất vĩnh viễn.
+**The cost of fixing it late:** no source can rebuild the lost history. The past six months contain only
+discrete snapshots — a Type 2 built from today only has history **from today**. Everything before that
+is lost permanently.
 
-Còn một chi phí nhỏ hơn nhưng dai dẳng: sửa một lỗi chính tả tên khách phải viết lại mọi
-dòng của khách đó.
+There's also a smaller but persistent cost: fixing a typo in a customer's name means rewriting every
+row for that customer.
 
 ```text
 ┌──────────────────┐
@@ -166,16 +165,16 @@ dòng của khách đó.
 └──────────────────┘
 ```
 
-Ba dòng trong ví dụ đồ chơi. Ở quy mô thật là hàng triệu.
+Three rows in the toy example. At real scale it's millions.
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Đang có **OBT là nơi lưu trữ duy nhất**, không có star schema đứng sau.
-2. Chưa ai hỏi *"cột này cần as-was hay as-is"* cho từng thuộc tính.
-3. Có thuộc tính mô tả (khu vực, hạng, phân khúc) nhúng thẳng vào OBT mà **không** có
-   dimension tương ứng ở tầng dưới.
+1. You have an **OBT as the only place data is stored**, with no star schema behind it.
+2. Nobody has asked *"does this column need as-was or as-is"* for each attribute.
+3. There are descriptive attributes (region, tier, segment) embedded straight into the OBT with **no**
+   corresponding dimension in a layer below.
 
-**Phép thử một câu, làm được ngay hôm nay:**
+**The one-sentence test, runnable today:**
 
 ```sql
 SELECT count(*) AS so_khach_da_doi_thuoc_tinh FROM (
@@ -183,12 +182,12 @@ SELECT count(*) AS so_khach_da_doi_thuoc_tinh FROM (
 );
 ```
 
-Ra số lớn hơn 0 nghĩa là thuộc tính đó **có thay đổi theo thời gian** — và bạn đang không
-lưu được lịch sử của nó ở dạng truy vấn được.
+A result greater than 0 means that attribute **does change over time** — and you aren't storing its
+history in a queryable form.
 
 ## Related Topics
 
-- [Star, Snowflake, OBT](../reference/star-snowflake-obt.md) — ba cách bố trí, đo thật chi phí
-- [SCD](../skills/scd.md) — thứ OBT không có: khái niệm phiên bản
-- [Báo cáo quá khứ tự đổi số](bao-cao-qua-khu-tu-doi-so.md) — ca ngược lại: chỉ có as-is, mất as-was
-- [Grain](../reference/grain.md) — OBT không đổi grain của fact, chỉ đổi cách lưu thuộc tính
+- [Star, snowflake, OBT](../reference/star-snowflake-obt.md) — the three layouts, with the cost really measured
+- [SCD](../skills/scd.md) — what OBT lacks: the notion of a version
+- [Historical reports changing their own numbers](bao-cao-qua-khu-tu-doi-so.md) — the inverse case: only as-is, as-was lost
+- [Grain](../reference/grain.md) — OBT doesn't change the fact's grain, only how attributes are stored

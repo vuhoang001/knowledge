@@ -1,8 +1,7 @@
 ---
-title: Dựng dim_don_hang cho "đúng chuẩn Kimball", doanh thu phồng 40%
-i18n_status: untranslated
+title: Building dim_don_hang "properly per Kimball", and revenue inflates 40%
 sidebar_position: 9
-description: "Số đơn hàng được tách thành dimension riêng rồi bật Type 2 cho trạng thái — mỗi đơn nhân lên bằng số lần đổi trạng thái."
+description: "The order number gets split into its own dimension and then Type 2 is turned on for the status — each order multiplies by its number of status changes."
 tags: [case-study, degenerate-dimension, scd, grain, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,25 +12,25 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Dựng `dim_don_hang` cho "đúng chuẩn Kimball", doanh thu phồng 40%
+# Building `dim_don_hang` "properly per Kimball", and revenue inflates 40%
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** không phải khoá nào trong fact cũng cần một dimension. Khoá đã bị rút hết
-> thuộc tính thì ở lại fact — đó là
-> [degenerate dimension](../skills/degenerate-dimension.md). Dựng bảng cho nó là tạo một
-> bảng có cùng grain với fact, và bảng đó sẽ nhân bản dòng.
+> **Takeaway:** not every key in a fact needs a dimension. A key drained of all its
+> attributes stays in the fact — that's a
+> [degenerate dimension](../skills/degenerate-dimension.md). Building a table for it creates a
+> table with the same grain as the fact, and that table will duplicate rows.
 
-## Bối cảnh
+## Context
 
-Review thiết kế. Một người nhận xét: *"`fct_ban` có cột `so_don` mà không trỏ tới
-dimension nào — chưa chuẩn hoá xong."* Nghe rất thuyết phục, và nó đúng với mọi khoá còn
-lại trong bảng.
+A design review. Somebody comments: *"`fct_ban` has a `so_don` column pointing at no
+dimension — the normalisation isn't finished."* It sounds very convincing, and it's true of every other key
+in the table.
 
-`dim_don_hang` ra đời. Nhưng bảng chỉ có `don_sk` và `so_don` — trống trải. Nên `trang_thai`
-được chuyển từ fact sang đây, và vì trạng thái thay đổi theo thời gian, [SCD](../skills/scd.md)
-Type 2 được bật lên để giữ lịch sử. Mỗi quyết định trong chuỗi này đều hợp lý.
+`dim_don_hang` is born. But the table has only `don_sk` and `so_don` — it looks empty. So `trang_thai`
+is moved from the fact into it, and because the status changes over time, [SCD](../skills/scd.md)
+Type 2 is turned on to keep the history. Every decision in that chain is reasonable.
 
 ```sql
 CREATE TABLE dim_don_hang AS
@@ -50,11 +49,11 @@ SELECT * FROM (VALUES ('DH-001', 100), ('DH-002', 200), ('DH-003', 300), ('DH-00
   t(so_don, doanh_thu);
 ```
 
-Doanh thu thật: **1.000** trên 4 đơn.
+Real revenue: **1,000** across 4 orders.
 
-## Triệu chứng
+## Symptoms
 
-Dashboard báo doanh thu **1.400**.
+The dashboard reports revenue of **1,400**.
 
 ```sql
 SELECT count(*) AS dong_sau_join, sum(f.doanh_thu) AS doanh_thu_bao_cao
@@ -69,7 +68,7 @@ FROM fct_ban f JOIN dim_don_hang d USING (so_don);
 └───────────────┴───────────────────┘
 ```
 
-**Phồng 40%.** Điều làm ca này khó chịu hơn hẳn: bảng chi tiết vẫn trông hoàn toàn hợp lý.
+**40% inflated.** What makes this case even more irritating: the detail table still looks entirely plausible.
 
 ```sql
 SELECT d.trang_thai, sum(f.doanh_thu) AS doanh_thu
@@ -87,22 +86,22 @@ GROUP BY 1 ORDER BY 2 DESC;
 └────────────┴───────────┘
 ```
 
-Ba dòng, ba con số tròn trịa. Chỉ tổng của chúng là sai. Và không ai cộng ba dòng trong
-đầu khi nhìn dashboard.
+Three rows, three round numbers. Only their total is wrong. And nobody adds three rows up in their
+head while looking at a dashboard.
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Dữ liệu nguồn có đơn trùng | `count(DISTINCT so_don)` trong nguồn = 4, sạch |
-| ETL chạy hai lần | Kiểm log: chạy đúng một lần |
-| `fct_ban` bị nạp trùng | `count(*) FROM fct_ban` = 4, đúng |
-| Có join nào đó thiếu điều kiện | **Gần đúng** — nhưng điều kiện join *có vẻ* đủ: `USING (so_don)` |
+| Duplicate orders in the source data | `count(DISTINCT so_don)` in the source = 4, clean |
+| The ETL ran twice | Checking the log: it ran exactly once |
+| `fct_ban` was loaded twice | `count(*) FROM fct_ban` = 4, correct |
+| Some join is missing a condition | **Nearly right** — but the join condition *appears* complete: `USING (so_don)` |
 
-Cả buổi soi `fct_ban` vì phản xạ mặc định là "phồng số thì fact bị trùng". Fact hoàn toàn
-sạch — **dimension mới là bên nhân bản**.
+A whole session goes into examining `fct_ban`, because the default reflex is "inflated numbers mean the fact
+duplicated". The fact is entirely clean — **the dimension is the duplicating side**.
 
-Một câu hỏi rẽ hướng cả cuộc điều tra:
+One query redirects the whole investigation:
 
 ```sql
 SELECT (SELECT count(*) FROM fct_ban)                    AS dong_fact,
@@ -118,46 +117,46 @@ SELECT (SELECT count(*) FROM fct_ban)                    AS dong_fact,
 └───────────┴──────────┴──────────────────┘
 ```
 
-**Dimension nhiều dòng hơn fact.** Với một dimension đúng nghĩa, con số này phải nhỏ hơn
-fact hàng trăm lần.
+**The dimension has more rows than the fact.** With a proper dimension, that number should be hundreds of
+times smaller than the fact.
 
-## Nguyên nhân thật
+## The real cause
 
-Hai lỗi chồng lên nhau:
+Two bugs stacked on each other:
 
-1. **`so_don` không đáng có dimension riêng.** Tách hết thuộc tính của đơn hàng ra
-   (`dim_ngay`, `dim_khach`, `dim_kenh`) thì `dim_don_hang` không còn gì ngoài chính con
-   số đơn. Grain của nó bằng grain của fact — nó là một fact thứ hai đội lốt dimension.
+1. **`so_don` doesn't deserve its own dimension.** Once every order attribute is split out
+   (`dim_ngay`, `dim_khach`, `dim_kenh`), `dim_don_hang` has nothing left but the order number
+   itself. Its grain equals the fact's grain — it's a second fact disguised as a dimension.
 
-2. **Type 2 trên bảng đó biến 1 đơn thành N dòng.** Join `USING (so_don)` không có điều
-   kiện thời gian, nên mỗi đơn khớp với mọi phiên bản trạng thái của nó. `DH-001` có 3
-   phiên bản → 3 lần được đếm.
+2. **Type 2 on that table turns 1 order into N rows.** A `USING (so_don)` join has no time
+   condition, so each order matches every one of its status versions. `DH-001` has 3
+   versions → counted 3 times.
 
-Đây là fan-out cùng loại với [join hai fact làm phồng tổng](join-hai-fact-lam-phong-tong.md),
-chỉ khác là bên phồng đội tên "dimension" nên không ai nghi.
+This is the same class of fan-out as [joining two facts inflating the total](join-hai-fact-lam-phong-tong.md),
+except the duplicating side wears the name "dimension", so nobody suspects it.
 
-Con số 1.400 = 100×3 + 200×2 + 300×1 + 400×1.
+The figure 1,400 = 100×3 + 200×2 + 300×1 + 400×1.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `unique` trên `dim_don_hang.don_sk` | ✅ xanh |
-| `not_null` trên `so_don` cả hai bảng | ✅ xanh |
-| `relationships` fact → dim | ✅ xanh |
-| `unique_combination_of_columns [so_don, hieu_luc_tu]` | ✅ xanh |
-| `unique` trên `fct_ban.so_don` | ✅ xanh |
+| `unique` on `dim_don_hang.don_sk` | ✅ green |
+| `not_null` on `so_don` in both tables | ✅ green |
+| `relationships` fact → dim | ✅ green |
+| `unique_combination_of_columns [so_don, hieu_luc_tu]` | ✅ green |
+| `unique` on `fct_ban.so_don` | ✅ green |
 
-Từng bảng đều đúng. Cái sai chỉ xuất hiện **sau khi join** — và không có test mặc định
-nào chạy trên kết quả join.
+Each table is correct. The error only appears **after the join** — and no default test
+runs over a join's result.
 
-Test duy nhất bắt được là loại ít ai viết: *"tổng doanh thu sau khi join dimension phải
-bằng tổng doanh thu trong fact"*.
+The only test that catches it is one few people write: *"total revenue after joining the dimension must
+equal total revenue in the fact"*.
 
-## Cách sửa
+## The fix
 
-`so_don` về lại fact như một cột thường. Trạng thái thành dimension thật — vài dòng, dùng
-lại được.
+`so_don` goes back into the fact as an ordinary column. The status becomes a real dimension — a few rows,
+reusable.
 
 ```sql
 CREATE TABLE dim_trang_thai AS
@@ -191,23 +190,23 @@ GROUP BY 1 ORDER BY 3 DESC;
 └────────┴────────┘
 ```
 
-**Còn lịch sử trạng thái?** Nó không mất đi — nó chuyển sang đúng chỗ của nó là một
-**accumulating snapshot**: một dòng một đơn, các cột mốc thời gian, cập nhật tại chỗ khi
-đơn đi tiếp. Xem [Fact và Dimension](../reference/fact-and-dimension.md) và
-[bài lab bước 5](../tutorials/star-schema-duckdb.md).
+**And the status history?** It isn't lost — it moves to its proper home, an
+**accumulating snapshot**: one row per order, with timestamp milestone columns updated in place as
+the order progresses. See [Facts and dimensions](../reference/fact-and-dimension.md) and
+[the lab, step 5](../tutorials/star-schema-duckdb.md).
 
-Lịch sử của một **quy trình** là fact. Lịch sử của một **thực thể** mới là dimension
-Type 2.
+The history of a **process** is a fact. Only the history of an **entity** is a Type 2
+dimension.
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Doanh thu báo cáo | 1.400 | **1.000** |
-| Dòng dimension | 7, tăng mỗi lần đổi trạng thái | 3, bất biến |
-| Trả lời "đơn kẹt khâu nào" | Có, nhưng số sai | Có, ở accumulating snapshot |
+| Reported revenue | 1,400 | **1,000** |
+| Dimension rows | 7, growing with each status change | 3, immutable |
+| Answering "where is the order stuck" | Yes, but with wrong numbers | Yes, in the accumulating snapshot |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. **Tỷ lệ dòng dimension / dòng fact tiến về 1.** Đây là dấu hiệu mạnh nhất:
+1. **The dimension-rows / fact-rows ratio approaching 1.** This is the strongest sign:
 
 ```sql
 SELECT 'dim_don_hang' AS bang,
@@ -217,12 +216,12 @@ SELECT 'dim_don_hang' AS bang,
 FROM dim_don_hang;
 ```
 
-Tỷ lệ > 0.5 là đáng nghi; ≥ 1 thì gần như chắc chắn sai.
+A ratio > 0.5 is suspect; ≥ 1 is almost certainly wrong.
 
-2. Có bảng tên `dim_<danh từ số ít của giao dịch>`: `dim_don_hang`, `dim_hoa_don`,
+2. There's a table named `dim_<singular noun for a transaction>`: `dim_don_hang`, `dim_hoa_don`,
    `dim_giao_dich`.
 
-3. Test bất biến nên có sẵn: tổng sau join phải bằng tổng trước join.
+3. An invariant test you should already have: the total after a join must equal the total before it.
 
 ```sql
 SELECT (SELECT sum(doanh_thu) FROM fct_ban)                      AS truoc_join,
@@ -230,12 +229,12 @@ SELECT (SELECT sum(doanh_thu) FROM fct_ban)                      AS truoc_join,
         JOIN dim_don_hang d USING (so_don))                      AS sau_join;
 ```
 
-Hai số khác nhau là có fan-out, bất kể bảng bên kia tên là gì.
+Two different numbers means fan-out, whatever the other table happens to be called.
 
 ## Related Topics
 
-- [Degenerate dimension](../skills/degenerate-dimension.md) — kỹ thuật đúng cho ca này
-- [Grain](../reference/grain.md) — phép thử "dimension có thô hơn fact không"
-- [SCD](../skills/scd.md) — Type 2 dùng đúng chỗ thì không gây fan-out
-- [Fact và Dimension](../reference/fact-and-dimension.md) — accumulating snapshot cho lịch sử quy trình
-- [CS: join hai fact làm phồng tổng](join-hai-fact-lam-phong-tong.md) — cùng cơ chế nhân bản dòng
+- [Degenerate dimensions](../skills/degenerate-dimension.md) — the correct technique for this case
+- [Grain](../reference/grain.md) — the "is the dimension coarser than the fact" test
+- [SCD](../skills/scd.md) — Type 2 used in the right place causes no fan-out
+- [Facts and dimensions](../reference/fact-and-dimension.md) — accumulating snapshots for process history
+- [CS: joining two facts inflating the total](join-hai-fact-lam-phong-tong.md) — the same row-duplicating mechanism

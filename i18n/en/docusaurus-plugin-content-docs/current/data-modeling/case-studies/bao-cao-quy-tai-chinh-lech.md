@@ -1,8 +1,7 @@
 ---
-title: Quý 1 trong họp hội đồng lệch 202% so với quý 1 trên dashboard
-i18n_status: untranslated
+title: The board meeting's Q1 is 202% out from the dashboard's Q1
 sidebar_position: 8
-description: "Không có date dimension, dashboard dùng quarter() của SQL — trong khi năm tài chính công ty bắt đầu 01/04."
+description: "With no date dimension, the dashboard uses SQL's quarter() — while the company's fiscal year starts on 1 April."
 tags: [case-study, date-dimension, calendar, data-modeling]
 domain: data-engineering
 category: concept
@@ -13,23 +12,23 @@ verified_at:
 updated: 2026-08-04
 ---
 
-# Quý 1 trong họp hội đồng lệch 202% so với quý 1 trên dashboard
+# The board meeting's Q1 is 202% out from the dashboard's Q1
 
-> **Tình huống dựng lại**, không phải sự cố đã gặp ở đây. Mọi con số bên dưới chạy thật
-> trên DuckDB.
+> **A reconstructed situation**, not an incident encountered here. Every number below was really run
+> on DuckDB.
 
-> **Chốt:** `quarter()` trả lời quý **dương lịch**. Không doanh nghiệp nào hỏi câu đó.
-> Không có [date dimension](../reference/date-dimension.md) thì hai phòng ban dùng hai
-> định nghĩa "quý" mà không ai biết.
+> **Takeaway:** `quarter()` answers about **calendar** quarters. No business asks that question.
+> Without a [date dimension](../reference/date-dimension.md), two departments use two
+> definitions of "quarter" and nobody knows.
 
-## Bối cảnh
+## Context
 
-Công ty bán hàng theo mùa, cao điểm tháng 4–6. **Năm tài chính bắt đầu 01/04** — điều
-này ghi trong điều lệ, ai trong phòng tài chính cũng biết, và không có ở đâu trong kho dữ
-liệu.
+A company selling seasonally, peaking in April–June. **The fiscal year starts on 1 April** — it's
+in the articles of association, everybody in finance knows it, and it appears nowhere in the data
+warehouse.
 
-Mô hình đơn giản nhất có thể: một fact, một cột `ngay DATE`. Không có `dim_ngay` vì "đã
-có cột ngày rồi, thêm bảng làm gì".
+The simplest model possible: one fact, one `ngay DATE` column. No `dim_ngay`, because "we already
+have a date column, what's another table for".
 
 ```sql
 CREATE TABLE fct_ban AS
@@ -48,12 +47,12 @@ FROM (SELECT (DATE '2026-01-01' + INTERVAL (i) DAY)::DATE AS ngay
 └─────────┴────────┘
 ```
 
-## Triệu chứng
+## Symptoms
 
-Họp hội đồng tháng 7. Slide của phòng tài chính: *"doanh thu quý 1 đạt 34.146"*.
-Dashboard trên màn hình lớn: **11.286**.
+The July board meeting. Finance's slide: *"Q1 revenue reached 34,146"*.
+The dashboard on the big screen: **11,286**.
 
-Không ai sai chính tả, không ai gõ nhầm. Hai con số cùng nhãn "Quý 1", chênh nhau ba lần.
+Nobody made a typo, nobody mistyped. Two numbers under the same "Q1" label, three times apart.
 
 ```sql
 SELECT sum(doanh_thu) FILTER (WHERE quarter(ngay) = 1) AS quy1_theo_lich,
@@ -73,53 +72,53 @@ FROM fct_ban;
 └────────────────┴────────────────┴──────────┘
 ```
 
-**Lệch 202,6%** — và đây là quý mùa cao điểm, tức là dashboard đang báo cáo mùa thấp điểm
-dưới tên "quý 1".
+**202.6% out** — and this is the peak-season quarter, meaning the dashboard is reporting the low
+season under the name "Q1".
 
-## Giả thuyết sai lúc đầu
+## The wrong hypotheses at first
 
-| Nghi | Kết quả |
+| Suspected | The result |
 |---|---|
-| Dashboard lọc thiếu đơn hàng | Đếm dòng: khớp nguồn 100% |
-| Có đơn huỷ bị tính vào một bên | Không có đơn huỷ trong kỳ |
-| Múi giờ làm lệch ngày ở biên | Kiểm biên tháng: đúng cả hai bên |
-| Phòng tài chính cộng nhầm | **Sai** — họ cộng đúng, chỉ là cộng tháng 4,5,6 |
+| The dashboard filters out some orders | Counting rows: matching the source 100% |
+| A cancelled order counted on one side | There are no cancelled orders in the period |
+| Timezones skewing dates at the boundary | Checking the month boundaries: correct on both sides |
+| Finance added it up wrongly | **Wrong** — they added correctly, they just added April, May and June |
 
-Mất nửa buổi vì cả hai bên đều đi tìm **lỗi dữ liệu**. Không có lỗi dữ liệu nào. Cùng một
-tập dòng, cùng một phép `SUM`, chỉ khác nhau ở **những dòng nào được coi là thuộc quý 1**.
+Half a session is lost because both sides go looking for a **data bug**. There is no data bug. The same
+row set, the same `SUM`, differing only in **which rows count as being in Q1**.
 
-Câu hỏi tách bạch đúng ra phải là câu đầu tiên: *"quý 1 của bạn gồm những tháng nào?"*
+The clarifying question should have been the first one: *"which months does your Q1 consist of?"*
 
-## Nguyên nhân thật
+## The real cause
 
-Dashboard viết `GROUP BY quarter(ngay)`. Hàm này của SQL chỉ biết lịch dương: quý 1 =
-tháng 1, 2, 3.
+The dashboard writes `GROUP BY quarter(ngay)`. That SQL function only knows the Gregorian calendar: Q1 =
+January, February, March.
 
-Với công ty này, quý 1 của FY2026 là **tháng 4, 5, 6**. Tháng 1/2026 thực ra thuộc
-**quý 4 của FY2025**.
+For this company, FY2026's Q1 is **April, May, June**. January 2026 actually belongs to
+**FY2025's Q4**.
 
-Không có nơi nào trong kho dữ liệu ghi lại điều đó. Lịch tài chính tồn tại trong đầu
-người, trong file Excel của phòng tài chính, và trong điều lệ công ty — ba chỗ mà SQL
-không đọc được.
+Nowhere in the data warehouse records that. The fiscal calendar exists in people's
+heads, in finance's Excel file, and in the articles of association — three places SQL
+can't read.
 
-## Vì sao không test nào bắt được
+## Why no test catches it
 
-| Test | Kết quả |
+| Test | The result |
 |---|---|
-| `not_null` trên `ngay` | ✅ xanh |
-| Tổng doanh thu khớp hệ nguồn | ✅ xanh |
-| `accepted_values` cho `quarter(ngay)` — `[1,2,3,4]` | ✅ xanh |
-| Số dòng khớp | ✅ xanh |
+| `not_null` on `ngay` | ✅ green |
+| Total revenue matching the source | ✅ green |
+| `accepted_values` for `quarter(ngay)` — `[1,2,3,4]` | ✅ green |
+| Matching row counts | ✅ green |
 
-Mọi thứ xanh, vì **dữ liệu không sai**. Sai ở chỗ một khái niệm nghiệp vụ ("quý") được
-suy ra bằng một hàm kỹ thuật thay vì được khai báo thành dữ liệu.
+Everything is green, because **the data isn't wrong**. What's wrong is that a business concept ("a quarter") is
+derived by a technical function rather than declared as data.
 
-Không test nào bắt được một định nghĩa **không tồn tại trong kho**.
+No test can catch a definition that **doesn't exist in the warehouse**.
 
-## Cách sửa
+## The fix
 
-Đưa lịch tài chính vào [`dim_ngay`](../reference/date-dimension.md) — biến nó từ tri thức
-ngầm thành một cột:
+Put the fiscal calendar into [`dim_ngay`](../reference/date-dimension.md) — turning it from implicit
+knowledge into a column:
 
 ```sql
 CREATE TABLE dim_ngay AS
@@ -145,37 +144,37 @@ GROUP BY 1, 2 ORDER BY 1, 2;
 └───────────────┴───────────────┴───────────┘
 ```
 
-Hai con số cũ vẫn còn nguyên, nhưng giờ **mang nhãn khác nhau**: 11.286 là FY2025-Q4,
-34.146 là FY2026-Q1. Không còn hai thứ cùng tên "Quý 1".
+Both old numbers are still there, but now they **carry different labels**: 11,286 is FY2025-Q4 and
+34,146 is FY2026-Q1. There are no longer two different things both called "Q1".
 
-### Trước và sau
+### Before and after
 
-| | Trước | Sau |
+| | Before | After |
 |---|---|---|
-| Định nghĩa quý nằm ở | Hàm `quarter()` + trí nhớ người | Một cột trong `dim_ngay` |
-| Đổi lịch tài chính | Sửa mọi query có `quarter()` | Sửa một bảng |
-| Hai phòng ban ra hai số | Có, không ai phát hiện | Không thể — cùng một bảng |
-| "Ngày làm việc", "ngày lễ" | Không trả lời được | Thêm cột là xong |
+| The quarter definition lives in | The `quarter()` function + people's memory | A column in `dim_ngay` |
+| Changing the fiscal calendar | Fix every query using `quarter()` | Fix one table |
+| Two departments getting two numbers | Yes, with nobody noticing | Impossible — the same table |
+| "Working day", "holiday" | Unanswerable | Add a column and you're done |
 
-## Dấu hiệu nhận ra sớm
+## How to spot it early
 
-1. Trong codebase có **bất kỳ** chỗ nào gọi `quarter()`, `year()`, `week()` để phân kỳ
-   báo cáo.
-2. Có ngày tháng hardcode kiểu `BETWEEN '2026-04-01' AND '2026-06-30'` trong query.
-3. Không có bảng nào tên `dim_ngay` / `dim_date` trong kho.
-4. Hỏi hai người ở hai phòng *"quý 1 gồm tháng nào"* và nhận hai câu trả lời.
+1. **Anywhere** in the codebase calls `quarter()`, `year()` or `week()` to split reports into
+   periods.
+2. There are hardcoded dates like `BETWEEN '2026-04-01' AND '2026-06-30'` in queries.
+3. No table named `dim_ngay` / `dim_date` exists in the warehouse.
+4. Ask two people in two departments *"which months is Q1"* and get two answers.
 
-Kiểm nhanh trong repo:
+A quick check in the repo:
 
 ```bash
 grep -rn "quarter(\|date_trunc('quarter'\|EXTRACT(QUARTER" models/ | wc -l
 ```
 
-Kết quả lớn hơn 0 mà kho không có `dim_ngay` thì gần như chắc chắn đang mắc ca này.
+A result greater than 0 with no `dim_ngay` in the warehouse means you're almost certainly in this case.
 
 ## Related Topics
 
-- [Date dimension](../reference/date-dimension.md) — kỹ thuật bị bỏ qua ở đây
-- [Conformed dimension](../skills/conformed-dimension.md) — một định nghĩa dùng chung mọi mart
-- [Aggregate fact table](../skills/aggregate-fact-table.md) — `dim_quy` phải sinh từ `dim_ngay`
-- [CS: thêm trạng thái thứ tám](them-trang-thai-thu-tam.md) — cùng bệnh: định nghĩa nghiệp vụ nằm trong query
+- [The date dimension](../reference/date-dimension.md) — the technique skipped here
+- [Conformed dimensions](../skills/conformed-dimension.md) — one definition shared by every mart
+- [Aggregate fact tables](../skills/aggregate-fact-table.md) — `dim_quy` must be generated from `dim_ngay`
+- [CS: adding an eighth status](them-trang-thai-thu-tam.md) — the same illness: a business definition living in a query
