@@ -9,7 +9,7 @@ status: review
 difficulty: intermediate
 verified_at: 2026-07-30
 lab: ~/Documents/learn-lab/dbt
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 # dbt (data build tool)
 
@@ -34,7 +34,36 @@ Chạy: `.venv/bin/dbt <lệnh> --profiles-dir .`
 | 06 | [Test và data quality](reference/testing.md) | 3 tầng: test · contract · unit test | 📝 lý thuyết, chưa chạy |
 | 07 | [Macro, Jinja, package](reference/macros-jinja-packages.md) | Khi SQL bắt đầu bị copy-paste | 📝 có output thật |
 | 08 | [Docs và lineage](reference/docs-and-lineage.md) | `dbt docs`, rà tác động khi sửa cột | 📝 có output thật |
-| 09 | [Bài tập](tutorials/dbt-lab-duckdb.md) | Chạy thật, có output dán lại | 🔄 đang làm |
+| 09 | [dbt Core và dbt Cloud](reference/dbt-core-vs-cloud.md) | Cùng engine, khác vỏ — chọn theo mảnh đội mình thiếu | 🟡 draft |
+| 10 | [Tổ chức layer và đặt tên](reference/layer-va-dat-ten.md) | staging → intermediate → marts: ba luật, grep được | 📝 có output thật |
+
+## Mục lục — kỹ năng (làm được, không chỉ hiểu)
+
+| # | Kỹ năng | Trả lời câu hỏi | Trạng thái |
+|---|---|---|---|
+| 01 | [Khởi tạo project](skills/khoi-tao-dbt-project.md) | Từ `pip install` tới `dbt debug` xanh | 📝 có output thật |
+| 02 | [Model đầu tiên với `ref()`](skills/model-dau-tien-voi-ref.md) | Một `SELECT`, không `create`, không `;` | 📝 có output thật |
+| 03 | [Khai báo source](skills/khai-bao-source.md) | `source()` + `freshness`, và vì sao `STALE` không phải lúc nào cũng là lỗi | 📝 có output thật |
+| 04 | [Incremental model](skills/viet-incremental-model.md) | Bốn câu hỏi phải trả lời trước khi bật | 📝 có output thật |
+| 05 | [Triển khai test](skills/implementing-tests.md) | Sáu loại test, khai ở đâu, ra output nào | 📝 có output thật |
+| 06 | [Macro và Jinja](skills/macro-va-jinja.md) | Jinja chạy trước, debug ở `target/compiled/` | 📝 có output thật |
+| 07 | [Snapshot SCD2](skills/snapshot-scd2.md) | Máy ghi âm, không phải máy thời gian | 📝 có output thật |
+| 08 | [Quản lý package](skills/quan-ly-package.md) | `dbt_utils` và vì sao phải commit lock file | 📝 có output thật |
+| 09 | [Viết documentation](skills/viet-documentation.md) | Grain, đơn vị, cảnh báo — thứ máy không suy ra được | 🟡 draft |
+| 10 | [CI/CD cho dbt](skills/ci-cd-cho-dbt.md) | `state:modified+ --defer` | 📝 có output thật |
+
+## Mục lục — bài tập, tra cứu, sự cố
+
+| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+|---|---|---|---|
+| BT | [Lab dbt trên DuckDB](tutorials/dbt-lab-duckdb.md) | Bảy bài từ `dbt debug` tới Trino | ✅ đã chạy tay |
+| BT | [Bài tập — Cơ bản](tutorials/bt-01-co-ban.md) | 5 bài, có đáp số phải ra | 📝 có output thật |
+| BT | [Bài tập — Trung bình](tutorials/bt-02-trung-binh.md) | 5 bài về lỗi không báo lỗi | 📝 có output thật |
+| BT | [Bài tập — Nâng cao](tutorials/bt-03-nang-cao.md) | 5 bài chỉ lộ ra ở production | 📝 có output thật |
+| CS | [Tra nhanh dbt](cheatsheets/tra-nhanh-dbt.md) | CLI, selector, Jinja, YAML, materialization, đặt tên | 📝 có output thật |
+| SC | [Incremental đánh rơi đơn sửa muộn](case-studies/incremental-mat-don-sua-muon.md) | Lệch 300k, số dòng vẫn khớp | 📝 có output thật |
+| SC | [Snapshot ghi nhầm mốc thời gian](case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | as-was lệch 25% | 📝 có output thật |
+| SC | [Phí ship cộng lặp sau join](case-studies/phi-ship-cong-lap-sau-join.md) | Phồng 7% vì join đổi grain | 📝 có output thật |
 
 Ký hiệu: ✅ đã chạy tay · 📝 lý thuyết chưa kiểm chứng · 🔄 đang làm · ⬜ chưa viết
 
@@ -124,6 +153,9 @@ Chi tiết nằm ở [`case-studies/`](case-studies/index.md) — trang này ch�
 |---|---|---|
 | 30/07/2026 | [AI sinh sai tên catalog Trino](case-studies/ai-sinh-sai-ten-catalog-trino.md) | Chi tiết môi trường phải kiểm bằng lệnh, không bằng cách đọc |
 | 30/07/2026 | [`unique` trên `don_hang_id`](reference/testing.md#5-trường-hợp-thật--test-fail-vì-test-sai-không-phải-dữ-liệu-sai) | Xác định grain trước khi viết test — test sai chứ dữ liệu không sai |
+| 11/09/2026 | [Incremental đánh rơi đơn sửa muộn](case-studies/incremental-mat-don-sua-muon.md) | Số dòng khớp không chứng minh dữ liệu đúng — phải đối chiếu tổng số đo |
+| 11/09/2026 | [Snapshot ghi nhầm mốc thời gian](case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | `dbt_valid_from` là giờ chạy job, không phải giờ nghiệp vụ |
+| 11/09/2026 | [Phí ship cộng lặp sau join](case-studies/phi-ship-cong-lap-sau-join.md) | Sau mỗi join phải hỏi lại: một dòng bây giờ là gì |
 
 ## Nguồn
 
@@ -138,10 +170,10 @@ Tài liệu về dbt nhưng **không nằm trong thư mục này** — chúng �
 
 | Dạng | Tài liệu | Dùng khi |
 |---|---|---|
-| Bài tập | [dbt lab — DuckDB](tutorials/dbt-lab-duckdb.md) | chạy thật, có ô dán output |
-| Case study | *(chưa có)* | đã debug xong một sự cố dbt thật |
-| Cheatsheet | *(chưa có)* | đang làm, cần tra nhanh cú pháp |
-| Kỹ năng | [Triển khai test](skills/implementing-tests.md) | cần viết test thật, không phải hiểu khái niệm |
+| Bài tập | [Cơ bản](tutorials/bt-01-co-ban.md) · [Trung bình](tutorials/bt-02-trung-binh.md) · [Nâng cao](tutorials/bt-03-nang-cao.md) · [lab DuckDB](tutorials/dbt-lab-duckdb.md) | chạy thật, có đáp số phải ra |
+| Case study | [ba sự cố đã dựng lại](case-studies/index.md) | đã debug xong một sự cố dbt thật |
+| Cheatsheet | [Tra nhanh dbt](cheatsheets/tra-nhanh-dbt.md) | đang làm, cần tra nhanh cú pháp |
+| Kỹ năng | [mười kỹ năng](skills/index.md) | cần làm được, không phải hiểu khái niệm |
 
 Xem đầy đủ mọi thứ mang tag này: **[`/tags/dbt`](/tags/dbt)** — trang đó gom tất cả bất
 kể thư mục.

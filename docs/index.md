@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Mục lục `docs/`
@@ -182,10 +182,31 @@ Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, se
 | 06 | [testing](etl/dbt/reference/testing.md) | Ba tầng: test · contract · unit test | 📝 |
 | 07 | [macros-jinja-packages](etl/dbt/reference/macros-jinja-packages.md) | Jinja biến mất trong SQL compile; macro, run_query, hook | 📝 |
 | 08 | [docs-and-lineage](etl/dbt/reference/docs-and-lineage.md) | manifest = ý định, catalog = hiện thực; `state:modified` cho CI | 📝 |
+| 09 | [dbt-core-vs-cloud](etl/dbt/reference/dbt-core-vs-cloud.md) | Cùng engine, khác vỏ — Cloud bán scheduler/IDE/quyền | 🟡 |
+| 10 | [layer-va-dat-ten](etl/dbt/reference/layer-va-dat-ten.md) | staging → intermediate → marts: ba luật, cả ba grep được | 📝 |
+| SK | [skills/khoi-tao-dbt-project](etl/dbt/skills/khoi-tao-dbt-project.md) | Hai file cấu hình, và ba lỗi kết nối chiếm hết thời gian người mới | 📝 |
+| SK | [skills/model-dau-tien-voi-ref](etl/dbt/skills/model-dau-tien-voi-ref.md) | Một `SELECT`, không `create`, không `;`; chứng minh cạnh DAG bằng lệnh | 📝 |
+| SK | [skills/khai-bao-source](etl/dbt/skills/khai-bao-source.md) | `source()` + freshness; vì sao `STALE` không phải lúc nào cũng là lỗi | 📝 |
+| SK | [skills/viet-incremental-model](etl/dbt/skills/viet-incremental-model.md) | Bốn câu hỏi trước khi bật; cửa sổ nhìn lại cho dòng sửa muộn | 📝 |
 | SK | [skills/implementing-tests](etl/dbt/skills/implementing-tests.md) | Sáu loại test dbt: generic, package, singular, tự viết, unit test, contract | 📝 |
-| CS | [case-studies/ai-sinh-sai-ten-catalog-trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | Vì sao `verified_at` tồn tại — AI bịa tên catalog, mất một buổi | 📝 |
+| SK | [skills/macro-va-jinja](etl/dbt/skills/macro-va-jinja.md) | Jinja chạy xong trước khi SQL rời máy; `{%- -%}`, `run_query`, `execute` | 📝 |
+| SK | [skills/snapshot-scd2](etl/dbt/skills/snapshot-scd2.md) | Máy ghi âm, không phải máy thời gian; join as-was cần `coalesce` | 📝 |
+| SK | [skills/quan-ly-package](etl/dbt/skills/quan-ly-package.md) | `dbt_utils`, `package-lock.yml`, năm macro đáng nhớ | 📝 |
+| SK | [skills/viet-documentation](etl/dbt/skills/viet-documentation.md) | Grain, đơn vị, cảnh báo — thứ `dbt docs` không tự sinh được | 🟡 |
+| SK | [skills/ci-cd-cho-dbt](etl/dbt/skills/ci-cd-cho-dbt.md) | `state:modified+ --defer`; schema theo PR; dọn `if: always()` | 📝 |
+| BT | [tutorials/bt-01-co-ban](etl/dbt/tutorials/bt-01-co-ban.md) | 5 bài: project chạy được, `ref()`, source, generic test, mart | 📝 |
+| BT | [tutorials/bt-02-trung-binh](etl/dbt/tutorials/bt-02-trung-binh.md) | 5 bài về lỗi không báo lỗi: incremental, test, Jinja, package, snapshot | 📝 |
+| BT | [tutorials/bt-03-nang-cao](etl/dbt/tutorials/bt-03-nang-cao.md) | 5 bài: unit test, SCD2 giờ nghiệp vụ, `on_schema_change`, CI, run_results | 📝 |
+| CS | [cheatsheets/tra-nhanh-dbt](etl/dbt/cheatsheets/tra-nhanh-dbt.md) | CLI, selector, Jinja, YAML mẫu, materialization, đặt tên, 7 lỗi im lặng | 📝 |
+| SC | [case-studies/ai-sinh-sai-ten-catalog-trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | Vì sao `verified_at` tồn tại — AI bịa tên catalog, mất một buổi | 📝 |
+| SC | [case-studies/incremental-mat-don-sua-muon](etl/dbt/case-studies/incremental-mat-don-sua-muon.md) | Số dòng khớp, test xanh, doanh thu lệch 300k | 📝 |
+| SC | [case-studies/snapshot-ghi-nham-moc-thoi-gian](etl/dbt/case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | `dbt_valid_from` là giờ chạy job — as-was lệch 25% | 📝 |
+| SC | [case-studies/phi-ship-cong-lap-sau-join](etl/dbt/case-studies/phi-ship-cong-lap-sau-join.md) | Join đổi grain, `sum()` cột cấp đơn phồng 7% | 📝 |
 
-Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md).
+Bài tập chạy thật: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md)
+và ba bộ [`bt-01`](etl/dbt/tutorials/bt-01-co-ban.md) ·
+[`bt-02`](etl/dbt/tutorials/bt-02-trung-binh.md) ·
+[`bt-03`](etl/dbt/tutorials/bt-03-nang-cao.md).
 
 ### Kafka — [`etl/kafka/`](etl/kafka/index.md)
 

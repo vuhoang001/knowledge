@@ -17,9 +17,9 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**183 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**201 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (37)
+## Tài liệu tham chiếu (39)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
@@ -39,7 +39,9 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Star, Snowflake và One Big Table](data-modeling/reference/star-snowflake-obt.md) | `data-modeling/reference` | data-engineering | 📝 lý thuyết |
 | [Surrogate key và Natural key](data-modeling/reference/surrogate-key.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
 | [Sáu chiều chất lượng dữ liệu](data-quality/six-dimensions.md) | `data-quality` | data-engineering | 📝 lý thuyết |
+| [dbt Core và dbt Cloud — chọn cái nào](etl/dbt/reference/dbt-core-vs-cloud.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
 | [dbt docs và lineage](etl/dbt/reference/docs-and-lineage.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
+| [Tổ chức layer và quy ước đặt tên](etl/dbt/reference/layer-va-dat-ten.md) | `etl/dbt/reference` | data-engineering | 🟡 draft |
 | [Macro, Jinja và package](etl/dbt/reference/macros-jinja-packages.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Materialization](etl/dbt/reference/materializations.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
 | [Model và ref() — DAG mọc ra từ đâu](etl/dbt/reference/models-and-ref.md) | `etl/dbt/reference` | data-engineering | 📝 lý thuyết |
@@ -63,7 +65,7 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [SOLID — năm nguyên lý, năm ca hỏng chạy được](patterns/reference/solid.md) | `patterns/reference` | backend | 🟡 draft |
 | [Design pattern là gì — và khi nào đừng dùng](patterns/reference/what-is-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
 
-## Kỹ năng (62)
+## Kỹ năng (71)
 
 Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.
 
@@ -97,7 +99,16 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Phát hiện thay đổi cho SCD Type 2](data-modeling/skills/scd-change-detection.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
 | [SCD — Slowly Changing Dimension](data-modeling/skills/scd.md) | `data-modeling/skills` | data-engineering | 📝 lý thuyết |
 | [Year-to-date và timespan trong fact](data-modeling/skills/ytd-timespan-facts.md) | `data-modeling/skills` | data-engineering | 🟡 draft |
+| [Thiết lập CI/CD cho dbt project](etl/dbt/skills/ci-cd-cho-dbt.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
 | [Triển khai test trong dbt](etl/dbt/skills/implementing-tests.md) | `etl/dbt/skills` | data-engineering | 📝 lý thuyết |
+| [Khai báo source và kiểm tra độ tươi](etl/dbt/skills/khai-bao-source.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Khởi tạo và cấu hình một dbt project](etl/dbt/skills/khoi-tao-dbt-project.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Viết macro và dùng Jinja logic](etl/dbt/skills/macro-va-jinja.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Viết model đầu tiên với ref()](etl/dbt/skills/model-dau-tien-voi-ref.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Quản lý dependencies với package](etl/dbt/skills/quan-ly-package.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Snapshot — bắt lịch sử thay đổi (SCD Type 2)](etl/dbt/skills/snapshot-scd2.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Viết documentation cho model](etl/dbt/skills/viet-documentation.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
+| [Viết incremental model](etl/dbt/skills/viet-incremental-model.md) | `etl/dbt/skills` | data-engineering | 🟡 draft |
 | [Backpressure và tuning](etl/flink/skills/backpressure-tuning.md) | `etl/flink/skills` | data-engineering | 🟡 draft |
 | [Connector Flink](etl/flink/skills/connectors.md) | `etl/flink/skills` | data-engineering | 🟡 draft |
 | [DataStream API vs Table/SQL API](etl/flink/skills/datastream-vs-table-sql.md) | `etl/flink/skills` | data-engineering | 🟡 draft |
@@ -132,7 +143,7 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (22)
+## Bài tập (25)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -156,12 +167,15 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | ["Lab vận hành — khi số sai, mất bao lâu để biết dòng nào sai"](data-modeling/tutorials/lab-van-hanh.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | [SCD Type 2 bằng dbt snapshot — và cái bẫy không sách nào nói](data-modeling/tutorials/scd-bang-dbt-snapshot.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | [Dựng một star schema từ đầu bằng DuckDB](data-modeling/tutorials/star-schema-duckdb.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập dbt — Cơ bản"](etl/dbt/tutorials/bt-01-co-ban.md) | `etl/dbt/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập dbt — Trung bình"](etl/dbt/tutorials/bt-02-trung-binh.md) | `etl/dbt/tutorials` | data-engineering | 🟡 draft |
+| ["Bài tập dbt — Nâng cao"](etl/dbt/tutorials/bt-03-nang-cao.md) | `etl/dbt/tutorials` | data-engineering | 🟡 draft |
 | [Lab dbt trên DuckDB](etl/dbt/tutorials/dbt-lab-duckdb.md) | `etl/dbt/tutorials` | data-engineering | ✅ đã chạy tay |
 | [Lab Flink SQL trên Docker](etl/flink/tutorials/flink-lab.md) | `etl/flink/tutorials` | data-engineering | 🟡 draft |
 | [Lab Kafka trên Docker](etl/kafka/tutorials/kafka-lab.md) | `etl/kafka/tutorials` | data-engineering | 🟡 draft |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
 
-## Case study (56)
+## Case study (59)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
@@ -196,6 +210,9 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Doanh thu trung bình mỗi ngày nhảy từ 862 lên 1.050 trong cùng một ngày](data-modeling/case-studies/so-hom-nay-nhay-suot-ngay.md) | `data-modeling/case-studies` | data-engineering | 🟡 draft |
 | [Thêm trạng thái thứ tám, năm báo cáo sai năm kiểu](data-modeling/case-studies/them-trang-thai-thu-tam.md) | `data-modeling/case-studies` | data-engineering | 📝 lý thuyết |
 | [Nội dung AI sinh ghi sai tên catalog Trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | `etl/dbt/case-studies` | data-engineering | 📘 ổn định, chưa chạy tay |
+| ["E-commerce — incremental đánh rơi đơn sửa muộn, lệch 300k không ai thấy"](etl/dbt/case-studies/incremental-mat-don-sua-muon.md) | `etl/dbt/case-studies` | data-engineering | 🟡 draft |
+| ["Marketplace — phí ship cộng lặp sau join, doanh thu phồng 7%"](etl/dbt/case-studies/phi-ship-cong-lap-sau-join.md) | `etl/dbt/case-studies` | data-engineering | 🟡 draft |
+| ["Fintech — snapshot ghi mốc theo giờ chạy, báo cáo as-was lệch 25%"](etl/dbt/case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | `etl/dbt/case-studies` | data-engineering | 🟡 draft |
 | [Cửa sổ không bao giờ chạy vì partition im lặng](etl/flink/case-studies/cua-so-khong-chay-idle-partition.md) | `etl/flink/case-studies` | data-engineering | 🟡 draft |
 | [Số sai vì dùng processing time](etl/flink/case-studies/so-sai-vi-processing-time.md) | `etl/flink/case-studies` | data-engineering | 🟡 draft |
 | [State phình vì thiếu TTL](etl/flink/case-studies/state-phinh-thieu-ttl.md) | `etl/flink/case-studies` | data-engineering | 🟡 draft |
@@ -224,7 +241,7 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Thêm một toán tử, sáu nơi phải sửa](patterns/case-studies/them-node-moi-sua-moi-visitor.md) | `patterns/case-studies` | backend | 🟡 draft |
 | [Hoàn tác hai lệnh, tồn kho từ 10 thành 24](patterns/case-studies/undo-khong-tra-lai-trang-thai-cu.md) | `patterns/case-studies` | backend | 🟡 draft |
 
-## Cheatsheet (6)
+## Cheatsheet (7)
 
 Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 
@@ -233,6 +250,7 @@ Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 | [Cheatsheet lệnh bash](bash/cheatsheets/commands.md) | `bash/cheatsheets` | devops | 🟡 draft |
 | [Cheatsheet toán tử test và expansion](bash/cheatsheets/test-operators-va-expansion.md) | `bash/cheatsheets` | devops | 🟡 draft |
 | [SCD — Cheatsheet](data-modeling/cheatsheets/scd.md) | `data-modeling/cheatsheets` | data-engineering | 📘 ổn định, chưa chạy tay |
+| [Tra nhanh dbt — CLI, Jinja, YAML, materialization](etl/dbt/cheatsheets/tra-nhanh-dbt.md) | `etl/dbt/cheatsheets` | data-engineering | 🟡 draft |
 | [Flink config và SQL](etl/flink/cheatsheets/config-and-sql.md) | `etl/flink/cheatsheets` | data-engineering | 🟡 draft |
 | [Kafka CLI và config](etl/kafka/cheatsheets/cli-and-config.md) | `etl/kafka/cheatsheets` | data-engineering | 🟡 draft |
 | [23 pattern GoF — tra nhanh](patterns/cheatsheets/gof-23.md) | `patterns/cheatsheets` | backend | 🟡 draft |

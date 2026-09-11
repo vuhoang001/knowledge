@@ -7,14 +7,16 @@ tags: [cheatsheet, dbt]
 domain: data-engineering
 category: index
 doc_type: index
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Cheatsheet — dbt
 
 Tra nhanh khi **đang làm**, không dùng để học lần đầu.
 
-*Chưa có file nào.* Thêm vào đây khi có — xem [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
+| # | Tài liệu | Trả lời câu hỏi | Trạng thái |
+|---|---|---|---|
+| 1 | [Tra nhanh dbt](tra-nhanh-dbt.md) | CLI, selector, Jinja, YAML mẫu, materialization, đặt tên, 7 lỗi im lặng | 📝 có output thật |
 
 ## Related Topics
 

@@ -7,7 +7,7 @@ tags: [reference, dbt]
 domain: data-engineering
 category: index
 doc_type: index
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Tài liệu — dbt
@@ -24,6 +24,8 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*. Đọc nhóm này tr
 | 6 | [Test và data quality trong dbt](testing.md) | Ba tầng test/contract/unit test, bốn cơ chế test, và ca test fail vì t | 📝 lý thuyết |
 | 7 | [Macro, Jinja và package](macros-jinja-packages.md) | Jinja chạy trước khi SQL rời máy — và ngưỡng nào thì nên viết macro. | 🟡 draft |
 | 8 | [dbt docs và lineage](docs-and-lineage.md) | Sơ đồ lineage chính xác đúng bằng mức bạn dùng ref() kỷ luật. | 🟡 draft |
+| 9 | [dbt Core và dbt Cloud](dbt-core-vs-cloud.md) | Cùng engine, khác phần vỏ — Cloud bán scheduler/IDE/quyền, không bán transform | 🟡 draft |
+| 10 | [Tổ chức layer và quy ước đặt tên](layer-va-dat-ten.md) | staging → intermediate → marts: ba luật, mỗi luật hỏng một kiểu | 📝 có output thật |
 
 ## Related Topics
 

@@ -7,14 +7,16 @@ tags: [cheatsheet, dbt]
 domain: data-engineering
 category: index
 doc_type: index
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Cheatsheet — dbt
 
 Quick lookup while **working**, not for learning something the first time.
 
-*No files yet.* Add them here when there are — see [`ROUTING.md`](https://github.com/vuhoang001/knowledge/blob/main/ROUTING.md).
+| # | Document | Answers the question | Status |
+|---|---|---|---|
+| 1 | [dbt quick reference](tra-nhanh-dbt.md) | CLI, selectors, Jinja, sample YAML, materializations, naming, 7 silent failures | 📝 has real output |
 
 ## Related Topics
 

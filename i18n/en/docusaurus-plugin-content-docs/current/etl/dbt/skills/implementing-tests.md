@@ -1,6 +1,6 @@
 ---
 title: Implementing tests in dbt
-sidebar_position: 1
+sidebar_position: 5
 description: "The six kinds of dbt test — where you declare each, how to write it, what it prints: generic, package, singular, your own generic, unit test, contract."
 tags: [dbt, test, data-quality, dbt-utils, unit-test, contract]
 domain: data-engineering
@@ -9,7 +9,7 @@ doc_type: skill
 status: review
 difficulty: intermediate
 verified_at:
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Implementing tests in dbt

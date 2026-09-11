@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # `docs/` table of contents
@@ -184,10 +184,31 @@ seeds ready to go.
 | 06 | [testing](etl/dbt/reference/testing.md) | Three layers: test · contract · unit test | 📝 |
 | 07 | [macros-jinja-packages](etl/dbt/reference/macros-jinja-packages.md) | Jinja disappears in the compiled SQL; macros, run_query, hooks | 📝 |
 | 08 | [docs-and-lineage](etl/dbt/reference/docs-and-lineage.md) | manifest = intent, catalog = reality; `state:modified` for CI | 📝 |
+| 09 | [dbt-core-vs-cloud](etl/dbt/reference/dbt-core-vs-cloud.md) | Same engine, different shell — Cloud sells the scheduler/IDE/permissions | 🟡 |
+| 10 | [layer-va-dat-ten](etl/dbt/reference/layer-va-dat-ten.md) | staging → intermediate → marts: three rules, all three greppable | 📝 |
+| SK | [skills/khoi-tao-dbt-project](etl/dbt/skills/khoi-tao-dbt-project.md) | Two config files, and the three connection errors that eat a beginner's time | 📝 |
+| SK | [skills/model-dau-tien-voi-ref](etl/dbt/skills/model-dau-tien-voi-ref.md) | One `SELECT`, no `create`, no `;`; prove the DAG edge with a command | 📝 |
+| SK | [skills/khai-bao-source](etl/dbt/skills/khai-bao-source.md) | `source()` + freshness; why `STALE` isn't always a failure | 📝 |
+| SK | [skills/viet-incremental-model](etl/dbt/skills/viet-incremental-model.md) | Four questions before turning it on; a lookback window for late edits | 📝 |
 | SK | [skills/implementing-tests](etl/dbt/skills/implementing-tests.md) | Six kinds of dbt test: generic, package, singular, custom, unit test, contract | 📝 |
+| SK | [skills/macro-va-jinja](etl/dbt/skills/macro-va-jinja.md) | Jinja finishes before SQL leaves your machine; `{%- -%}`, `run_query`, `execute` | 📝 |
+| SK | [skills/snapshot-scd2](etl/dbt/skills/snapshot-scd2.md) | A tape recorder, not a time machine; as-was joins need `coalesce` | 📝 |
+| SK | [skills/quan-ly-package](etl/dbt/skills/quan-ly-package.md) | `dbt_utils`, `package-lock.yml`, five macros worth remembering | 📝 |
+| SK | [skills/viet-documentation](etl/dbt/skills/viet-documentation.md) | Grain, units, warnings — what `dbt docs` can't generate | 🟡 |
+| SK | [skills/ci-cd-cho-dbt](etl/dbt/skills/ci-cd-cho-dbt.md) | `state:modified+ --defer`; schema per PR; cleanup with `if: always()` | 📝 |
+| EX | [tutorials/bt-01-co-ban](etl/dbt/tutorials/bt-01-co-ban.md) | 5 exercises: a working project, `ref()`, sources, generic tests, a mart | 📝 |
+| EX | [tutorials/bt-02-trung-binh](etl/dbt/tutorials/bt-02-trung-binh.md) | 5 exercises on errors that raise no error: incremental, tests, Jinja, packages, snapshots | 📝 |
+| EX | [tutorials/bt-03-nang-cao](etl/dbt/tutorials/bt-03-nang-cao.md) | 5 exercises: unit tests, SCD2 on business time, `on_schema_change`, CI, run_results | 📝 |
+| CH | [cheatsheets/tra-nhanh-dbt](etl/dbt/cheatsheets/tra-nhanh-dbt.md) | CLI, selectors, Jinja, sample YAML, materializations, naming, 7 silent failures | 📝 |
 | CS | [case-studies/ai-sinh-sai-ten-catalog-trino](etl/dbt/case-studies/ai-sinh-sai-ten-catalog-trino.md) | Why `verified_at` exists — an AI invented a catalog name and cost an afternoon | 📝 |
+| CS | [case-studies/incremental-mat-don-sua-muon](etl/dbt/case-studies/incremental-mat-don-sua-muon.md) | Row counts match, tests green, revenue off by 300k | 📝 |
+| CS | [case-studies/snapshot-ghi-nham-moc-thoi-gian](etl/dbt/case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | `dbt_valid_from` is the job's run time — as-was off by 25% | 📝 |
+| CS | [case-studies/phi-ship-cong-lap-sau-join](etl/dbt/case-studies/phi-ship-cong-lap-sau-join.md) | The join changed the grain; `sum()` on an order-level column inflated it 7% | 📝 |
 
-Hands-on exercises: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md).
+Hands-on exercises: [`etl/dbt/tutorials/dbt-lab-duckdb.md`](etl/dbt/tutorials/dbt-lab-duckdb.md)
+plus three sets — [`bt-01`](etl/dbt/tutorials/bt-01-co-ban.md) ·
+[`bt-02`](etl/dbt/tutorials/bt-02-trung-binh.md) ·
+[`bt-03`](etl/dbt/tutorials/bt-03-nang-cao.md).
 
 ### Kafka — [`etl/kafka/`](etl/kafka/index.md)
 

@@ -1,6 +1,6 @@
 ---
 title: Triển khai test trong dbt
-sidebar_position: 1
+sidebar_position: 5
 description: "Sáu loại test dbt — khai ở đâu, viết thế nào, chạy ra gì: generic, package, singular, generic tự viết, unit test, contract."
 tags: [dbt, test, data-quality, dbt-utils, unit-test, contract]
 domain: data-engineering
@@ -9,7 +9,7 @@ doc_type: skill
 status: review
 difficulty: intermediate
 verified_at:
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Triển khai test trong dbt

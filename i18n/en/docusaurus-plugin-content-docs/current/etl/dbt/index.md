@@ -9,7 +9,7 @@ status: review
 difficulty: intermediate
 verified_at: 2026-07-30
 lab: ~/Documents/learn-lab/dbt
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 # dbt (data build tool)
 
@@ -34,7 +34,36 @@ Run it with: `.venv/bin/dbt <command> --profiles-dir .`
 | 06 | [Testing and data quality](reference/testing.md) | The 3 layers: test · contract · unit test | 📝 theory, not yet run |
 | 07 | [Macros, Jinja, packages](reference/macros-jinja-packages.md) | When SQL starts getting copy-pasted | 📝 has real output |
 | 08 | [Docs and lineage](reference/docs-and-lineage.md) | `dbt docs`, and impact analysis when changing a column | 📝 has real output |
-| 09 | [Exercises](tutorials/dbt-lab-duckdb.md) | Really run, with the output pasted back | 🔄 in progress |
+| 09 | [dbt Core and dbt Cloud](reference/dbt-core-vs-cloud.md) | Same engine, different shell — choose by the piece your team is missing | 🟡 draft |
+| 10 | [Layering and naming](reference/layer-va-dat-ten.md) | staging → intermediate → marts: three rules, all greppable | 📝 has real output |
+
+## Contents — skills (being able to do it, not just understand it)
+
+| # | Skill | Answers the question | Status |
+|---|---|---|---|
+| 01 | [Setting up a project](skills/khoi-tao-dbt-project.md) | From `pip install` to a green `dbt debug` | 📝 has real output |
+| 02 | [First model with `ref()`](skills/model-dau-tien-voi-ref.md) | One `SELECT`, no `create`, no `;` | 📝 has real output |
+| 03 | [Declaring sources](skills/khai-bao-source.md) | `source()` + `freshness`, and why `STALE` isn't always a failure | 📝 has real output |
+| 04 | [Incremental models](skills/viet-incremental-model.md) | The four questions to answer before turning it on | 📝 has real output |
+| 05 | [Implementing tests](skills/implementing-tests.md) | Six kinds of test, where to declare them, what output they give | 📝 has real output |
+| 06 | [Macros and Jinja](skills/macro-va-jinja.md) | Jinja runs first; debug in `target/compiled/` | 📝 has real output |
+| 07 | [SCD2 snapshots](skills/snapshot-scd2.md) | A tape recorder, not a time machine | 📝 has real output |
+| 08 | [Managing packages](skills/quan-ly-package.md) | `dbt_utils`, and why the lock file must be committed | 📝 has real output |
+| 09 | [Writing documentation](skills/viet-documentation.md) | Grain, units, warnings — what a machine can't infer | 🟡 draft |
+| 10 | [CI/CD for dbt](skills/ci-cd-cho-dbt.md) | `state:modified+ --defer` | 📝 has real output |
+
+## Contents — exercises, quick reference, incidents
+
+| # | Document | Answers the question | Status |
+|---|---|---|---|
+| EX | [dbt lab on DuckDB](tutorials/dbt-lab-duckdb.md) | Seven exercises from `dbt debug` to Trino | ✅ run by hand |
+| EX | [Exercises — Basic](tutorials/bt-01-co-ban.md) | 5 exercises, each with the answer it must produce | 📝 has real output |
+| EX | [Exercises — Intermediate](tutorials/bt-02-trung-binh.md) | 5 exercises on errors that raise no error | 📝 has real output |
+| EX | [Exercises — Advanced](tutorials/bt-03-nang-cao.md) | 5 exercises that only surface in production | 📝 has real output |
+| CH | [dbt quick reference](cheatsheets/tra-nhanh-dbt.md) | CLI, selectors, Jinja, YAML, materializations, naming | 📝 has real output |
+| CS | [The incremental model dropped a late-edited order](case-studies/incremental-mat-don-sua-muon.md) | Off by 300k while the row count still matched | 📝 has real output |
+| CS | [The snapshot recorded the wrong timestamp](case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | as-was off by 25% | 📝 has real output |
+| CS | [Shipping fees double-counted after a join](case-studies/phi-ship-cong-lap-sau-join.md) | Inflated 7% because the join changed the grain | 📝 has real output |
 
 Symbols: ✅ run by hand · 📝 theory, unverified · 🔄 in progress · ⬜ not written
 
@@ -124,6 +153,9 @@ The details are in [`case-studies/`](case-studies/index.md) — this page only l
 |---|---|---|
 | 2026-07-30 | [The AI generated the wrong Trino catalog name](case-studies/ai-sinh-sai-ten-catalog-trino.md) | Environment details must be verified by running a command, not by reading |
 | 2026-07-30 | [`unique` on `don_hang_id`](reference/testing.md#5-a-real-case--the-test-fails-because-the-test-is-wrong-not-the-data) | Establish the grain before writing tests — the test was wrong, not the data |
+| 2026-09-11 | [The incremental model dropped a late-edited order](case-studies/incremental-mat-don-sua-muon.md) | A matching row count doesn't prove the data is right — reconcile the measure totals |
+| 2026-09-11 | [The snapshot recorded the wrong timestamp](case-studies/snapshot-ghi-nham-moc-thoi-gian.md) | `dbt_valid_from` is the job's run time, not business time |
+| 2026-09-11 | [Shipping fees double-counted after a join](case-studies/phi-ship-cong-lap-sau-join.md) | After every join, ask again: what is one row now? |
 
 ## Sources
 
@@ -138,10 +170,10 @@ Documents about dbt that **aren't in this directory** — they live by *document
 
 | Type | Document | Use when |
 |---|---|---|
-| Exercises | [dbt lab — DuckDB](tutorials/dbt-lab-duckdb.md) | really running it, with a box to paste output |
-| Case study | *(none yet)* | a real dbt incident has been debugged |
-| Cheatsheet | *(none yet)* | working, and needing a quick syntax lookup |
-| Skills | [Implementing tests](skills/implementing-tests.md) | needing to write real tests, not understand the concept |
+| Exercises | [Basic](tutorials/bt-01-co-ban.md) · [Intermediate](tutorials/bt-02-trung-binh.md) · [Advanced](tutorials/bt-03-nang-cao.md) · [DuckDB lab](tutorials/dbt-lab-duckdb.md) | really running it, with the answer it must produce |
+| Case study | [three reconstructed incidents](case-studies/index.md) | a real dbt incident has been debugged |
+| Cheatsheet | [dbt quick reference](cheatsheets/tra-nhanh-dbt.md) | working, and needing a quick syntax lookup |
+| Skills | [ten skills](skills/index.md) | needing to be able to do it, not understand the concept |
 
 To see everything carrying this tag: **[`/tags/dbt`](/tags/dbt)** — that page gathers it all regardless
 of directory.

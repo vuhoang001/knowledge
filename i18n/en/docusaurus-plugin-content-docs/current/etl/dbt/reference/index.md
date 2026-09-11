@@ -7,7 +7,7 @@ tags: [reference, dbt]
 domain: data-engineering
 category: index
 doc_type: index
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Reference — dbt
@@ -24,6 +24,8 @@ Explains *what it is, why, and what the trade-offs are*. Read this group first.
 | 6 | [Testing and data quality in dbt](testing.md) | The three layers test/contract/unit test, the four test mechanisms, and a test failing because t | 📝 theory |
 | 7 | [Macros, Jinja and packages](macros-jinja-packages.md) | Jinja runs before the SQL leaves your machine — and the threshold for writing a macro. | 🟡 draft |
 | 8 | [dbt docs and lineage](docs-and-lineage.md) | The lineage diagram is exactly as accurate as your discipline with ref(). | 🟡 draft |
+| 9 | [dbt Core and dbt Cloud](dbt-core-vs-cloud.md) | Same engine, different shell — Cloud sells the scheduler/IDE/permissions, not transformation | 🟡 draft |
+| 10 | [Layering and naming conventions](layer-va-dat-ten.md) | staging → intermediate → marts: three rules, each breaking in its own way | 📝 has real output |
 
 ## Related Topics
 
