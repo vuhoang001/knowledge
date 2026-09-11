@@ -35,7 +35,7 @@ Viết SQL của bạn trước. So số. Trùng thì mở lời giải để đ
 sửa cho tới khi trùng. **Mở lời giải trước khi thử là đọc, không phải luyện.**
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 Dữ liệu: [seed dùng chung](index.md#dữ-liệu-dùng-chung-cho-lab-27) cộng mười bảng mới ở

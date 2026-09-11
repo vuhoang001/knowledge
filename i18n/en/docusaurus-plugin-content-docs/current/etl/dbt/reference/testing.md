@@ -90,7 +90,7 @@ to understand why.
 
 ## 5. A real case — the test fails because the test is wrong, not the data
 
-**Really run 2026-07-30** at `~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
+**Really run 2026-07-30** at `~/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
 
 The seed data: `don_hang_chi_tiet` — 15 rows, where each order has **several line items**:
 

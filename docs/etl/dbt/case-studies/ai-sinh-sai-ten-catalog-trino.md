@@ -9,7 +9,7 @@ doc_type: case-study
 status: stable
 difficulty: beginner
 verified_at:
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Nội dung AI sinh ghi sai tên catalog Trino
@@ -25,7 +25,7 @@ updated: 2026-07-31
 Đang dựng module dbt, cần cấu hình `profiles.yml` trỏ sang Trino. Bản đầu của tài liệu
 do AI sinh ghi:
 
-> *"`profiles.yml` trỏ `192.168.100.60:8080`, catalog `iceberg`"*
+> *"`profiles.yml` trỏ `<host>:8080`, catalog `iceberg`"*
 
 Làm theo y nguyên. `dbt debug` fail.
 
@@ -38,17 +38,22 @@ adapter, thiếu quyền. Mất một buổi đi loanh quanh trong dbt.
 
 ## Cái thật sự sai
 
-Chạy `SHOW CATALOGS` trên Trino `.60`:
+Chạy `SHOW CATALOGS` trên chính cụm đó:
 
 ```
-hdos_silver
-polaris
-polaris_silver
+<catalog_1>
+<catalog_2>
+<catalog_3>
 system
 ```
 
+> Tên thật đã lược bỏ — chúng là tên dự án nội bộ, và **giữ lại cũng vô dụng với bạn**:
+> cụm của bạn sẽ ra tên khác. Thứ cần nhớ là *hình dạng* của sự việc, không phải mấy
+> chuỗi ký tự cụ thể.
+
 **Không hề có catalog tên `iceberg`.** Cái tên đó AI bịa ra — nó là tên *thường gặp*
-trong tài liệu Trino trên mạng, không phải tên thật của môi trường này.
+trong tài liệu Trino trên mạng (thực ra là tên **connector**), không phải tên catalog
+thật của môi trường nào cả. Catalog tên gì là do người dựng cụm đặt.
 
 ## Vì sao khó bắt
 

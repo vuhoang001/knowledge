@@ -51,7 +51,7 @@ cột sống của kho, và nội dung do AI sinh chính là thứ nó tồn t�
 Ví dụ SQL tự chứa thì **chạy rồi dán output thật**, đừng ghi *chưa chạy*:
 
 ```bash
-~/Documents/learn-lab/dbt/.venv/bin/python -c "
+~/learn-lab/dbt/.venv/bin/python -c "
 import duckdb; print(duckdb.connect().sql('SELECT 1'))"
 ```
 
@@ -119,14 +119,39 @@ updated: 2026-07-31             # cập nhật khi sửa nội dung
 Ký hiệu trạng thái dùng trong bảng mục lục:
 ✅ đã chạy tay · 📝 lý thuyết chưa kiểm chứng · 🔄 đang làm · 🟡 mới có khung · ⬜ chưa viết · 🗂️ mục lục
 
-## Lab sống ngoài repo
+## Lab sống ngoài repo, dữ liệu nguồn sống trong repo
 
-Code thực hành ở `~/Documents/learn-lab/` (ví dụ `~/Documents/learn-lab/dbt` — venv
-riêng, `dbt-duckdb`). **Đừng tạo file lab trong repo này.** `.gitignore` đã chặn
-`*.duckdb`, `target/`, `dbt_packages/`, `logs/` phòng khi lỡ tay.
+Code thực hành ở `~/learn-lab/` (ví dụ `~/learn-lab/dbt` — venv riêng, `dbt-duckdb`).
+**Đừng tạo file lab trong repo này.** `.gitignore` đã chặn `*.duckdb`, `target/`,
+`dbt_packages/`, `logs/` phòng khi lỡ tay.
+
+Nhưng **dữ liệu nguồn thì nằm trong repo**, ở `lab-starter/`: 15 file `seeds/*.csv`,
+`dbt_project.yml`, `profiles.yml`, và `setup.sh` dựng tất cả từ số không. Đây không phải
+lab — nó là **input** của lab. Tách như vậy vì trước đây hai bảng nền
+(`don_hang_chi_tiet.csv`, `hang_hoa.csv`) chỉ tồn tại trên một máy, nên người đọc ngoài
+không dựng lại được bài tập nào.
+
+```bash
+./lab-starter/setup.sh          # dung vao ~/learn-lab/dbt
+```
+
+Sửa seed thì phải chạy lại `setup.sh` **và** kiểm bốn số mốc `10 / 15 / 10215000 / 400000`.
 
 Lab chọn công cụ đơn giản nhất chạy được (DuckDB thay vì Trino) để mỗi lỗi chỉ có một
 nghi phạm.
+
+## Không đưa thông tin máy/mạng cụ thể vào repo
+
+Repo này public. Trước khi commit, không được để lọt: tên đăng nhập hệ thống, đường dẫn
+`/home/<ai đó>/`, IP nội bộ, hostname nội bộ, tên catalog/schema của cụm công ty.
+
+Cần minh hoạ thì dùng placeholder (`user`, `<host>`, `<catalog_1>`) và **nói rõ ngay cạnh
+là đã lược bỏ**. Cần giá trị thật thì hướng dẫn người đọc tự lấy bằng lệnh
+(`SHOW CATALOGS`, `whoami`) thay vì chép sẵn. Quét nhanh trước khi commit:
+
+```bash
+grep -rnE "/home/[a-z]|192\.168\.|10\.[0-9]+\.[0-9]+\.[0-9]+:" docs/ i18n/ anki/
+```
 
 ## Site Docusaurus
 

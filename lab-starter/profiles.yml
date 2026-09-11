@@ -1,0 +1,13 @@
+# Nơi dbt học biết "chạy SQL ở đâu". Bình thường file này nằm ở ~/.dbt/profiles.yml;
+# để ngay trong project cho gọn — chạy dbt với `--profiles-dir .`.
+#
+# DuckDB: không server, không cụm, không cấu hình mạng. Cả kho dữ liệu là MỘT FILE
+# `lab.duckdb`. Xoá file đó đi là về trạng thái trắng — rất hợp để học vì làm hỏng
+# thoải mái.
+dbt_lab:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: lab.duckdb
+      threads: 4

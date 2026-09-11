@@ -17,6 +17,9 @@ lộ trình chi tiết — trang này chỉ trả lời *"thứ tôi cần nằm
 
 **Ký hiệu:** ✅ đã chạy tay · 📝 lý thuyết, chưa kiểm chứng · 🟡 mới có khung + bẫy · 🗂️ mục lục
 
+> 🚀 **Lần đầu tới đây?** Đọc [**Bắt đầu từ đâu**](getting-started.md) trước — dựng lab
+> trong năm phút rồi đi theo lộ trình sáu bước. Kho này viết để **chạy**, không để đọc.
+
 > **Hai đường vào cùng một tập file.** Trang này gom theo **chủ đề**. Muốn gom theo
 > **dạng tài liệu** — tài liệu tham chiếu / bài tập / case study / cheatsheet — thì xem
 > [`catalog.md`](catalog.md). Muốn cắt theo cả hai cùng lúc thì dùng trang tag, ví dụ
@@ -169,7 +172,8 @@ là tài liệu **tra**, không phải giáo trình đọc tuần tự.
 
 ### dbt — [`etl/dbt/`](etl/dbt/index.md)
 
-Lab ở `~/Documents/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, seed sẵn.
+Lab ở `~/learn-lab/dbt` (ngoài repo): venv riêng, `dbt-duckdb`, 15 bảng seed.
+Dựng bằng `./lab-starter/setup.sh` — xem [Bắt đầu từ đâu](getting-started.md).
 
 | # | File | Trả lời câu hỏi | TT |
 |---|---|---|---|

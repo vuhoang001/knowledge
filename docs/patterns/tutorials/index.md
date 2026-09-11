@@ -19,7 +19,7 @@ Chạy thật, có ô dán output. Chưa chạy được thì chưa gọi là h�
 | 1 | [Leo thang từ `switch` tới Strategy + Decorator](refactor-switch-sang-pattern.md) | Đi bốn bậc leo thang trên cùng một bài toán, và biết **dừng ở bậc nào** — kèm ca thứ tự decorator lệch 22.500 đồng | ~30 phút |
 
 Lab chạy bằng .NET 10+ với file-based app (`dotnet run <ten>.cs`), **không cần tạo
-project**. Đặt file ở ngoài repo này, ví dụ `~/Documents/learn-lab/patterns`.
+project**. Đặt file ở ngoài repo này, ví dụ `~/learn-lab/patterns`.
 
 **Ô *Của bạn* để trống nghĩa là chưa chạy.** Chạy rồi mới điền `verified_at`.
 

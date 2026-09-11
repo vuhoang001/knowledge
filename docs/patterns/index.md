@@ -138,7 +138,7 @@ Cần .NET 10 trở lên. Phiên bản dùng để chạy các output trong kho:
 ```
 
 Lần chạy đầu mất ~40 giây (khôi phục gói), các lần sau dưới 1 giây. Đặt file lab **ngoài
-repo này**, ví dụ `~/Documents/learn-lab/patterns`.
+repo này**, ví dụ `~/learn-lab/patterns`.
 
 ## Related Topics
 

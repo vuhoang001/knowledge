@@ -25,10 +25,10 @@ cách làm. **Mở lời giải trước khi thử là đọc, không phải luy
 
 ## Dữ liệu dùng chung
 
-Lab: `~/Documents/learn-lab/dbt` — venv riêng, `dbt-duckdb`, seed sẵn.
+Lab: `~/learn-lab/dbt` — venv riêng, `dbt-duckdb`, seed sẵn.
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 ./.venv/bin/dbt deps --profiles-dir .
 ./.venv/bin/dbt seed --profiles-dir .
 ```

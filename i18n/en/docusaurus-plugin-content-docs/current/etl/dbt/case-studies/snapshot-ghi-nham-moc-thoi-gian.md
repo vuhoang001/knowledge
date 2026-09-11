@@ -21,7 +21,7 @@ updated: 2026-09-11
 
 > **On authenticity.** The business context is a reconstruction. **The snapshot output and both
 > as-was/as-is revenue tables are real numbers**, produced on the lab at
-> `~/Documents/learn-lab/dbt` (dbt-core 1.12.0 + dbt-duckdb 1.10.1). `verified_at` is empty
+> `~/learn-lab/dbt` (dbt-core 1.12.0 + dbt-duckdb 1.10.1). `verified_at` is empty
 > because the repo owner hasn't re-run it.
 
 ## Context

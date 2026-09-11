@@ -7,7 +7,7 @@ tags: [tutorial, data-modeling]
 domain: data-engineering
 category: index
 doc_type: index
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Exercises — Data Modeling
@@ -64,7 +64,7 @@ technique → exercise in the table below.
 | [Conformed dimensions](../skills/conformed-dimension.md) · [Conformed facts](../skills/conformed-facts.md) · [Bus architecture](../reference/bus-architecture.md) · [Multi-currency](../skills/multi-currency-uom.md) | [Set 6](bt-06-tich-hop.md) |
 | [The date dimension](../reference/date-dimension.md) · [Audit dimensions](../skills/audit-dimension.md) · [Real-time facts](../skills/real-time-fact.md) | [Set 7](bt-07-van-hanh.md) |
 
-The labs run in a venv outside the repo: `~/Documents/learn-lab/dbt/.venv/bin/python`. Every SQL statement is
+The labs run in a venv outside the repo: `~/learn-lab/dbt/.venv/bin/python`. Every SQL statement is
 self-contained, so pasting it straight into DuckDB runs.
 
 **An empty *Your result* box means it hasn't been run.** Only fill in `verified_at` once it has.
@@ -75,8 +75,16 @@ The tier-3 exercise set uses **ten further tables** — the full contents and ea
 [the seed appendix](bt-00-seed.md). The five original tables below are still the foundation, and **the four
 landmark numbers never change**.
 
-The lab code lives **outside the repo** (`~/Documents/learn-lab/dbt`, see `CLAUDE.md`), so the seed contents are
-copied here to make it rebuildable from zero. The four original numbers to remember:
+No lab yet? One command builds it — see [Where to start](../../getting-started.md):
+
+```bash
+./lab-starter/setup.sh
+```
+
+The lab code lives **outside the repo** (`~/learn-lab/dbt`, see `CLAUDE.md`); the source CSV files do
+live in the repo, at [`lab-starter/seeds/`](https://github.com/vuhoang001/knowledge/tree/main/lab-starter/seeds).
+The seed contents are copied here so you can read them without opening a file. The four original numbers
+to remember:
 
 ```text
 10 don · 15 dong · doanh thu 10.215.000 · phi ship 400.000
@@ -134,11 +142,12 @@ The trap: `DH003` was returned **twice** → joining the two facts directly doub
 
 </details>
 
-`seeds/don_hang_chi_tiet.csv` (15 rows) and `seeds/hang_hoa.csv` already exist in the lab from
-earlier — see [the dbt exercises](../../etl/dbt/tutorials/dbt-lab-duckdb.md).
+`seeds/don_hang_chi_tiet.csv` (15 rows) and `seeds/hang_hoa.csv` are the two base tables of
+[the dbt exercises](../../etl/dbt/tutorials/dbt-lab-duckdb.md); both sit in `lab-starter/seeds/` and
+are loaded for you by `setup.sh`.
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 ## Related Topics

@@ -29,7 +29,7 @@ updated: 2026-08-04
 ## Chuẩn bị
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 Ba bảng chính: `nhan_vien_don` (bridge, có **một đơn hệ số không khép kín**),

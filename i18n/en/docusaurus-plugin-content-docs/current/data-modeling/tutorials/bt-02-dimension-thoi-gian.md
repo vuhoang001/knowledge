@@ -31,7 +31,7 @@ updated: 2026-08-04
 ## Preparation
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 This set lives on `khach_hang_lich_su` — 4 customers × 5 days, see

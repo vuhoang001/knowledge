@@ -19,7 +19,7 @@ updated: 2026-09-11
 > của dòng cũ đều nằm dưới mốc và không bao giờ lọt vào lô.
 
 > **Về tính xác thực.** Bối cảnh doanh nghiệp dưới đây là dựng lại cho dễ kể. **Toàn bộ
-> code, output và con số là thật**, chạy trên lab `~/Documents/learn-lab/dbt`
+> code, output và con số là thật**, chạy trên lab `~/learn-lab/dbt`
 > (dbt-core 1.12.0 + dbt-duckdb 1.10.1) — kể cả lỗi. `verified_at` vẫn trống vì chủ repo
 > chưa tự chạy lại.
 

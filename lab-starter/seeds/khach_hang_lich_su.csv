@@ -1,0 +1,21 @@
+ngay_trich,khach_id,ho_ten,khu_vuc,hang,nhom_tuoi,khoang_thu_nhap,diem_tin_dung,updated_at
+2026-07-01,C1,Nguyen Van A,Mien Bac,Bac,25-34,10-20tr,700,2026-06-28
+2026-07-01,C2,Tran Thi B,Mien Nam,Vang,35-44,20-30tr,780,2026-06-30
+2026-07-01,C3,Le Van C,Mien Trung,Bac,45-54,5-10tr,650,2026-06-25
+2026-07-01,C4,Pham Thi D,Mien Bac,Kim cuong,25-34,tren-30tr,820,2026-06-20
+2026-07-02,C1,Nguyen Van A,Mien Bac,Bac,25-34,10-20tr,705,2026-06-28
+2026-07-02,C2,Tran Thi B,Mien Nam,Vang,35-44,20-30tr,782,2026-06-30
+2026-07-02,C3,Le Van C,Mien Trung,Bac,45-54,5-10tr,655,2026-06-25
+2026-07-02,C4,Pham Thi D,Mien Bac,Kim cuong,25-34,tren-30tr,825,2026-06-20
+2026-07-03,C1,Nguyen Van A,Mien Nam,Bac,25-34,10-20tr,705,2026-06-28
+2026-07-03,C2,Tran Thi B,Mien Nam,Vang,35-44,20-30tr,782,2026-07-03
+2026-07-03,C3,Le Van C,Mien Trung,Bac,45-54,5-10tr,655,2026-06-25
+2026-07-03,C4,Pham Thi D,Mien Bac,Kim cuong,25-34,tren-30tr,830,2026-06-20
+2026-07-04,C1,Nguyen Van A,Mien Nam,Bac,25-34,20-30tr,710,2026-07-04
+2026-07-04,C2,Tran Thi B,Mien Nam,Vang,35-44,20-30tr,785,2026-07-03
+2026-07-04,C3,Le Van C,Mien Trung,Vang,45-54,10-20tr,700,2026-07-04
+2026-07-04,C4,Pham Thi D,Mien Bac,Kim cuong,25-34,tren-30tr,835,2026-06-20
+2026-07-05,C1,Nguyen Van A,Mien Nam,Bac,25-34,20-30tr,712,2026-07-04
+2026-07-05,C2,Tran Thi B,Mien Nam,Vang,35-44,20-30tr,788,2026-07-03
+2026-07-05,C3,Le Van C,Mien Trung,Vang,45-54,10-20tr,702,2026-07-04
+2026-07-05,C4,Pham Thi D,Mien Bac,Kim cuong,25-34,tren-30tr,840,2026-06-20

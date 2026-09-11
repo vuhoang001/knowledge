@@ -29,7 +29,7 @@ Opening the solution before writing is reading, not practising. Getting it wrong
 for six months; reading the solution is forgotten in six minutes.
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 The data and the reconciliation benchmarks are on [the exercises page](index.md#the-data-shared-by-labs-27).

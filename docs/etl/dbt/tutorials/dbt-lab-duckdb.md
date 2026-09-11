@@ -9,20 +9,23 @@ doc_type: tutorial
 status: review
 difficulty: beginner
 verified_at: 2026-07-30       # bài 1–3 đã chạy
-lab: ~/Documents/learn-lab/dbt
-updated: 2026-07-31
+lab: ~/learn-lab/dbt
+updated: 2026-09-11
 ---
 # Bài tập dbt
 
-Làm trong `~/Documents/learn-lab/dbt`. Mỗi bài **chạy thật, dán output vào ô Kết quả**.
+Làm trong `~/learn-lab/dbt`. Mỗi bài **chạy thật, dán output vào ô Kết quả**.
 Đọc hiểu không tính.
 
-> **Vì sao lab dùng DuckDB chứ không phải Trino `.60`.** Học dbt trên Trino là học ba
+> **Vì sao lab dùng DuckDB chứ không phải Trino.** Học dbt trên Trino là học ba
 > thứ cùng lúc — dbt, Trino, Iceberg — và lỗi nào cũng có ba nghi phạm, không phân
 > biệt được lỗi hiểu sai dbt với lỗi cấu hình cụm. DuckDB không server, cả kho là
 > một file, xoá đi là về trắng. Chuyển sang Trino ở bài 7, khi dbt đã không còn là biến số.
 
-Dữ liệu seed sẵn: `don_hang_chi_tiet.csv` (15 dòng, đơn hàng nhiều dòng hàng) và
+Chưa có lab? `./lab-starter/setup.sh` dựng xong trong vài phút — xem
+[Bắt đầu từ đâu](../../../getting-started.md).
+
+Hai bài đầu chỉ dùng `don_hang_chi_tiet.csv` (15 dòng, đơn hàng nhiều dòng hàng) và
 `hang_hoa.csv` (4 mặt hàng). Nhỏ để soi được bằng mắt — cố ý.
 
 ---
@@ -32,7 +35,7 @@ Dữ liệu seed sẵn: `don_hang_chi_tiet.csv` (15 dòng, đơn hàng nhiều d
 **Làm gì:**
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 .venv/bin/dbt debug --profiles-dir .
 .venv/bin/dbt seed  --profiles-dir .
 ```
@@ -116,14 +119,22 @@ sai dữ liệu → test bắt; sai kiểu cột → contract chặn trước kh
 
 ## Bài 7 — Chuyển sang Trino
 
-**Chỉ làm sau khi bài 1–6 xong.** Đổi `profiles.yml` sang `dbt-trino` trỏ `.60:8080`.
+**Bài này cần một cụm Trino** — của công ty bạn, hoặc tự dựng bằng Docker:
+
+```bash
+docker run -d --name trino -p 8080:8080 trinodb/trino
+```
+
+**Chỉ làm sau khi bài 1–6 xong.** Đổi `profiles.yml` sang `dbt-trino` trỏ vào cụm đó.
 Chạy lại chính các model đó.
 
 **Xong khi:** nói được cái gì phải đổi và cái gì giữ nguyên — đó là câu trả lời thật
 cho "dbt độc lập với warehouse tới mức nào".
 
-> ⚠ Catalog trên `.60` tên là `hdos_silver` / `polaris_silver`, **không có catalog
-> tên `iceberg`**. Xem mục "Sai lầm đã mắc" ở [README](../index.md).
+> ⚠ **Lấy tên catalog bằng lệnh, đừng chép từ tài liệu.** Chạy `SHOW CATALOGS` trên
+> chính cụm của bạn rồi mới điền vào `profiles.yml`. `iceberg` là tên **connector**,
+> không phải tên catalog — đặt nhầm là `dbt debug` fail mà lỗi trông như lỗi dbt.
+> Xem [case study](../case-studies/ai-sinh-sai-ten-catalog-trino.md).
 
 **Kết quả:**
 

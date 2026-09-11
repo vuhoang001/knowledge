@@ -89,7 +89,7 @@ khái niệm để hiểu vì sao.
 
 ## 5. Trường hợp thật — test fail vì test sai, không phải dữ liệu sai
 
-**Đã chạy thật 30/07/2026** tại `~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
+**Đã chạy thật 30/07/2026** tại `~/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
 
 Dữ liệu seed: `don_hang_chi_tiet` — 15 dòng, mỗi đơn hàng có **nhiều dòng hàng**:
 

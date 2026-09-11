@@ -62,19 +62,19 @@ This box has `ls`→`lsd` aliased, so we have to call `command ls -l` to get the
 ```bash
 $ touch data.csv
 $ command ls -l data.csv
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 644 data.csv; command ls -l data.csv
--rw-r--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw-r--r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 600 data.csv; command ls -l data.csv
--rw------- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw------- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 755 data.csv; command ls -l data.csv
--rwxr-xr-x 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwxr-xr-x 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 700 data.csv; command ls -l data.csv
--rwx------ 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwx------ 1 user user 0 Aug  5 20:48 data.csv
 ```
 
 A single `chmod 644` sets **all three groups at once** — which is why octal is fast and unambiguous when you want to set an absolute state.
@@ -85,16 +85,16 @@ Symbolic form edits **relatively** (adding to or removing from the current state
 
 ```bash
 $ chmod 644 data.csv; command ls -l data.csv
--rw-r--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw-r--r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod u+x data.csv; command ls -l data.csv     # add x for the user
--rwxr--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwxr--r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod go-r data.csv; command ls -l data.csv     # remove r from group + other
--rwx------ 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwx------ 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod a+r data.csv; command ls -l data.csv       # a = all, add r for every group
--rwxr--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwxr--r-- 1 user user 0 Aug  5 20:48 data.csv
 ```
 
 The syntax: `[ugoa][+-=][rwx]`. `u`=user, `g`=group, `o`=other, `a`=all. `+` adds, `-` removes, `=` sets exactly.
@@ -110,7 +110,7 @@ echo "hello tu script"
 EOF
 
 $ command ls -l hello.sh
--rw-rw-r-- 1 hoanggggf hoanggggf 43 Aug  5 20:48 hello.sh
+-rw-rw-r-- 1 user user 43 Aug  5 20:48 hello.sh
 ```
 
 Not one `x` character — the file isn't marked executable. Try running it:
@@ -126,7 +126,7 @@ $ ./hello.sh
 ```bash
 $ chmod +x hello.sh
 $ command ls -l hello.sh
--rwxrwxr-x 1 hoanggggf hoanggggf 43 Aug  5 20:48 hello.sh
+-rwxrwxr-x 1 user user 43 Aug  5 20:48 hello.sh
 
 $ ./hello.sh
 hello tu script
@@ -142,7 +142,7 @@ Remove `x` from a directory and watch what happens even though the file inside i
 $ mkdir -p vault && echo "bi mat" > vault/secret.txt
 $ chmod 644 vault          # rw-r--r--: the directory NO LONGER has x
 $ command ls -ld vault
-drw-r--r-- 2 hoanggggf hoanggggf 60 Aug  5 20:48 vault
+drw-r--r-- 2 user user 60 Aug  5 20:48 vault
 
 $ cat vault/secret.txt
 cat: vault/secret.txt: Permission denied
@@ -153,7 +153,7 @@ Without `x` on the directory you can't **access** the file inside — even thoug
 ```bash
 $ chmod 755 vault
 $ command ls -ld vault
-drwxr-xr-x 2 hoanggggf hoanggggf 60 Aug  5 20:48 vault
+drwxr-xr-x 2 user user 60 Aug  5 20:48 vault
 
 $ cat vault/secret.txt
 bi mat
@@ -171,7 +171,7 @@ $ umask
 
 $ touch file-002.txt
 $ command ls -l file-002.txt
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 file-002.txt   # 666 - 002 = 664
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 file-002.txt   # 666 - 002 = 664
 ```
 
 Change the umask to `022` (the common default on many Linux distributions) and a new file comes out `644`:
@@ -180,11 +180,11 @@ Change the umask to `022` (the common default on many Linux distributions) and a
 $ umask 022
 $ touch file-022.txt
 $ command ls -l file-022.txt
--rw-r--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 file-022.txt   # 666 - 022 = 644
+-rw-r--r-- 1 user user 0 Aug  5 20:48 file-022.txt   # 666 - 022 = 644
 
 $ mkdir dir-022
 $ command ls -ld dir-022
-drwxr-xr-x 2 hoanggggf hoanggggf 40 Aug  5 20:48 dir-022        # 777 - 022 = 755
+drwxr-xr-x 2 user user 40 Aug  5 20:48 dir-022        # 777 - 022 = 755
 ```
 
 `umask 022` is why new files usually come out `644` rather than `666`: it **turns off the write bit for group and other** on every new file. It's the default fence that keeps you from accidentally creating a file anyone can write.
@@ -203,11 +203,11 @@ Changing it back to **yourself** doesn't need root, and really runs:
 ```bash
 $ touch owned.txt
 $ command ls -l owned.txt
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 owned.txt
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 owned.txt
 
 $ chown "$(whoami)":"$(id -gn)" owned.txt
 $ command ls -l owned.txt
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 owned.txt       # owner/group unchanged, still hoanggggf
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 owned.txt       # owner/group unchanged, still user
 ```
 
 ## Trade-offs

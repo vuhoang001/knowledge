@@ -36,7 +36,7 @@ dotnet --version
 
 ```
 
-Tạo một thư mục làm việc bất kỳ **ngoài repo này** — ví dụ `~/Documents/learn-lab/patterns`.
+Tạo một thư mục làm việc bất kỳ **ngoài repo này** — ví dụ `~/learn-lab/patterns`.
 Mỗi bước là một file độc lập, chạy bằng `dotnet run <ten>.cs`.
 
 Lần chạy đầu mất ~40 giây (khôi phục gói); các lần sau dưới 1 giây.

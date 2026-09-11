@@ -19,7 +19,7 @@ updated: 2026-09-11
 > hàng. SQL đúng cú pháp, dbt chạy xanh, số sai.
 
 > **Về tính xác thực.** Bối cảnh là dựng lại; **output và con số là thật**, chạy trên lab
-> `~/Documents/learn-lab/dbt` (dbt-core 1.12.0 + dbt-duckdb 1.10.1). `verified_at` trống
+> `~/learn-lab/dbt` (dbt-core 1.12.0 + dbt-duckdb 1.10.1). `verified_at` trống
 > vì chủ repo chưa chạy lại.
 
 ## Bối cảnh

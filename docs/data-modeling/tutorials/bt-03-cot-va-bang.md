@@ -31,7 +31,7 @@ updated: 2026-08-04
 ## Chuẩn bị
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 Bộ này dùng `don_hang` (cờ trạng thái) và `giao_dich_tai_chinh` (rừng `NULL`) — xem

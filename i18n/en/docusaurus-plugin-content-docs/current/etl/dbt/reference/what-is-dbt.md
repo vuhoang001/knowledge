@@ -18,7 +18,7 @@ updated: 2026-07-31
 > remains — the DAG, the tests, the documentation — grows out of a single function: `ref()`.
 
 All the output in this page was **really run** on 2026-07-30 at
-`~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB). Not one section is a bare description.
+`~/learn-lab/dbt` (dbt 1.12.0 + DuckDB). Not one section is a bare description.
 
 ---
 

@@ -20,7 +20,7 @@ updated: 2026-09-11
 > runs green, the numbers are wrong.
 
 > **On authenticity.** The context is a reconstruction; **the output and the numbers are real**,
-> produced on the lab at `~/Documents/learn-lab/dbt` (dbt-core 1.12.0 + dbt-duckdb 1.10.1).
+> produced on the lab at `~/learn-lab/dbt` (dbt-core 1.12.0 + dbt-duckdb 1.10.1).
 > `verified_at` is empty because the repo owner hasn't re-run it.
 
 ## Context

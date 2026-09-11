@@ -8,7 +8,7 @@ doc_type: index
 status: review
 difficulty: intermediate
 verified_at: 2026-07-30
-lab: ~/Documents/learn-lab/dbt
+lab: ~/learn-lab/dbt
 updated: 2026-09-11
 ---
 # dbt (data build tool)
@@ -19,7 +19,8 @@ thuần rồi gửi cho warehouse chạy. Là chữ **T** trong ELT — không p
 Hiểu sai chỗ này là mọi thứ sai theo: sẽ đi tìm "dbt chạy chậm" trong khi phải tìm
 ở warehouse, và sẽ tưởng dbt thay được Spark/Flink.
 
-**Lab:** `~/Documents/learn-lab/dbt` — venv riêng, `dbt-duckdb`, seed sẵn.
+**Lab:** `~/learn-lab/dbt` — venv riêng, `dbt-duckdb`, 15 bảng seed.
+Dựng bằng `./lab-starter/setup.sh` (xem [Bắt đầu từ đâu](../../getting-started.md)).
 Chạy: `.venv/bin/dbt <lệnh> --profiles-dir .`
 
 ## Mục lục — các component của dbt

@@ -1,0 +1,13 @@
+gd_id,ngay,khach_id,loai_gd,so_tien,ky_han_thang,lai_suat,ma_the,phi_giao_dich,don_hang_id
+GD01,2026-07-01,C1,nap_tien,5000000,,,,,
+GD02,2026-07-01,C2,thanh_toan_the,2400000,,,THE-9012,,DH002
+GD03,2026-07-02,C1,gui_tiet_kiem,20000000,6,5.8,,,
+GD04,2026-07-02,C3,nap_tien,3000000,,,,,
+GD05,2026-07-03,C2,rut_tien,1000000,,,,22000,
+GD06,2026-07-03,C4,thanh_toan_the,1500000,,,THE-3344,,DH006
+GD07,2026-07-04,C1,thanh_toan_the,195000,,,THE-1122,,DH007
+GD08,2026-07-04,C3,gui_tiet_kiem,10000000,12,6.5,,,
+GD09,2026-07-05,C2,rut_tien,500000,,,,11000,
+GD10,2026-07-05,C4,nap_tien,8000000,,,,,
+GD11,2026-07-06,C1,rut_tien,2000000,,,,44000,
+GD12,2026-07-06,C3,thanh_toan_the,900000,,,THE-5566,,

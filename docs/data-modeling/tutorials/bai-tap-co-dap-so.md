@@ -29,7 +29,7 @@ Mở lời giải trước khi viết là đọc, không phải luyện. Sai và
 được sáu tháng; đọc lời giải thì quên sau sáu phút.
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 Dữ liệu và mốc đối chiếu ở [trang bài tập](index.md#dữ-liệu-dùng-chung-cho-lab-27).

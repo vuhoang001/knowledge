@@ -31,7 +31,7 @@ updated: 2026-08-04
 ## Preparation
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 This set uses `don_hang` (status flags) and `giao_dich_tai_chinh` (a `NULL` forest) — see

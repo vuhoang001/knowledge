@@ -8,7 +8,7 @@ doc_type: index
 status: review
 difficulty: intermediate
 verified_at: 2026-07-30
-lab: ~/Documents/learn-lab/dbt
+lab: ~/learn-lab/dbt
 updated: 2026-09-11
 ---
 # dbt (data build tool)
@@ -19,7 +19,8 @@ warehouse to run. It's the **T** in ELT — not the E, not the L.
 Get this wrong and everything follows: you'll go looking for "dbt is slow" when you should be looking
 in the warehouse, and you'll think dbt can replace Spark/Flink.
 
-**Lab:** `~/Documents/learn-lab/dbt` — its own venv, `dbt-duckdb`, seeds ready.
+**Lab:** `~/learn-lab/dbt` — its own venv, `dbt-duckdb`, 15 seed tables.
+Build it with `./lab-starter/setup.sh` (see [Where to start](../../getting-started.md)).
 Run it with: `.venv/bin/dbt <command> --profiles-dir .`
 
 ## Contents — dbt's components

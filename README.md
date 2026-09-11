@@ -4,6 +4,9 @@ Wikipedia cá nhân cho Software Engineering, Data Engineering, Backend, DevOps 
 Markdown thuần trong git, tương thích [Docusaurus](https://docusaurus.io/) — mở bằng
 VS Code, duyệt bằng GitLab, dựng thành site khi cần.
 
+> 🚀 **Lần đầu tới đây?** Đọc [**Bắt đầu từ đâu**](docs/getting-started.md) — dựng lab
+> trong năm phút (`./lab-starter/setup.sh`) rồi đi theo lộ trình sáu bước.
+
 **Ba nguyên tắc, mọi thứ dưới đây phục vụ chúng:**
 
 1. **Một kiến thức một chỗ.** Không có bản sao. Trùng thì merge, không tạo file mới.
@@ -16,15 +19,24 @@ VS Code, duyệt bằng GitLab, dựng thành site khi cần.
 
 | Thư mục | Chứa gì |
 |---|---|
-| [`docs/`](docs/) | **Tài liệu tham chiếu.** Giải thích *nó là gì, vì sao, đánh đổi ra sao* |
-| [`tutorials/`](docs/tutorials/) | **Bài tập chạy thật**, có ô dán output |
-| [`case-studies/`](docs/case-studies/) | Trường hợp thật đã gặp, kèm cái sai lúc đầu |
-| [`examples/`](docs/examples/) | Đoạn code chạy được nguyên trạng, để copy |
-| [`cheatsheets/`](docs/cheatsheets/) | Bảng tra nhanh khi **đang làm**, không dùng để học lần đầu |
-| [`faqs/`](docs/faqs/) | Câu hỏi cắt ngang nhiều chủ đề |
-| [`glossary/`](docs/glossary/) | Thuật ngữ, định nghĩa một câu |
+| [`docs/`](docs/) | **Toàn bộ nội dung.** Mỗi chủ đề tự chứa tài liệu tham chiếu, bài tập, case study của nó |
+| [`lab-starter/`](lab-starter/) | **Dữ liệu nguồn** — 15 seed CSV + `setup.sh` dựng lab từ số không |
+| [`docs/faqs/`](docs/faqs/) | Câu hỏi cắt ngang nhiều chủ đề |
+| [`docs/glossary/`](docs/glossary/) | Thuật ngữ, định nghĩa một câu |
 | [`inbox/`](inbox/) | Quăng thô, chưa phân loại. Dọn hằng tuần |
 | [`templates/`](templates/) | Khuôn cho tài liệu mới |
+| [`anki/`](anki/) | Thẻ ôn tập TSV sinh từ `docs/` |
+
+**Bài tập, case study, cheatsheet nằm *trong* từng chủ đề**, không gom ở thư mục toàn
+cục: mở `docs/etl/dbt/` là thấy luôn `reference/`, `tutorials/`, `case-studies/`,
+`cheatsheets/` của dbt.
+
+| Dạng | Ở đâu | Ví dụ |
+|---|---|---|
+| Tài liệu tham chiếu | `docs/<chủ đề>/reference/` | [data-modeling/reference/](docs/data-modeling/reference/grain.md) |
+| Bài tập chạy thật | `docs/<chủ đề>/tutorials/` | [etl/dbt/tutorials/](docs/etl/dbt/tutorials/index.md) |
+| Case study | `docs/<chủ đề>/case-studies/` | [etl/dbt/case-studies/](docs/etl/dbt/case-studies/index.md) |
+| Cheatsheet | `docs/<chủ đề>/cheatsheets/` | [data-modeling/cheatsheets/](docs/data-modeling/cheatsheets/index.md) |
 
 ## Bản đồ tri thức
 
@@ -54,7 +66,7 @@ graph TD
 
 | Nhóm | Nội dung | Trạng thái |
 |---|---|---|
-| [Data Modeling](docs/data-modeling/) | [Grain](docs/data-modeling/foundations/grain.md) · [Fact/Dimension](docs/data-modeling/foundations/fact-and-dimension.md) · [**SCD**](docs/data-modeling/dimension-techniques/scd.md) · [Junk dimension](docs/data-modeling/dimension-techniques/junk-dimension.md) · [Surrogate key](docs/data-modeling/foundations/surrogate-key.md) · [Star/Snowflake/OBT](docs/data-modeling/layout-and-process/star-snowflake-obt.md) · [Quy trình thiết kế](docs/data-modeling/layout-and-process/design-process.md) | 📝 đang viết |
+| [Data Modeling](docs/data-modeling/) | [Grain](docs/data-modeling/reference/grain.md) · [Fact/Dimension](docs/data-modeling/reference/fact-and-dimension.md) · [**SCD**](docs/data-modeling/skills/scd.md) · [Junk dimension](docs/data-modeling/skills/junk-dimension.md) · [Surrogate key](docs/data-modeling/reference/surrogate-key.md) · [Star/Snowflake/OBT](docs/data-modeling/reference/star-snowflake-obt.md) · [Quy trình thiết kế](docs/data-modeling/reference/design-process.md) | 📝 đang viết |
 | [Data Quality](docs/data-quality/) | [Sáu chiều chất lượng](docs/data-quality/six-dimensions.md) | 📝 đang viết |
 | [ETL & Streaming](docs/etl/) | [**dbt**](docs/etl/dbt/) · [Kafka](docs/etl/kafka/) · [Flink](docs/etl/flink/) | 🔄 dbt đang học |
 | [Query Engines](docs/query-engines/) | [Trino](docs/query-engines/trino/) | ⬜ chưa bắt đầu |
@@ -116,8 +128,8 @@ trường. Trống nghĩa là chưa ai chạy thật.
 | Đọc được cái hay, chưa hiểu | Đã hiểu chưa? **Chưa** | [`inbox/`](inbox/) |
 | Hiểu một khái niệm không phụ thuộc công cụ | Đúng cả khi đổi công cụ? **Có** | `docs/<nhóm khái niệm>/` |
 | Hiểu một tính năng của công cụ | Gắn với một công nghệ? **Có** | `docs/<nhóm>/<công nghệ>/` |
-| Chạy được một thứ, có output | Người khác làm lại được? **Có** | [`tutorials/`](docs/tutorials/) |
-| Debug xong một sự cố thật | Có bài học rộng hơn ca này? **Có** | [`case-studies/`](docs/case-studies/) |
+| Chạy được một thứ, có output | Người khác làm lại được? **Có** | `docs/<chủ đề>/tutorials/` |
+| Debug xong một sự cố thật | Có bài học rộng hơn ca này? **Có** | `docs/<chủ đề>/case-studies/` |
 
 **Trước khi tạo file mới, tìm xem đã có chưa.** Có rồi thì cập nhật, đừng tạo bản thứ hai.
 

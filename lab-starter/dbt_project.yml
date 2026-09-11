@@ -1,0 +1,39 @@
+name: dbt_lab
+version: '1.0'
+profile: dbt_lab
+
+# Thư mục mặc định của dbt. Giữ nguyên tên — mọi tài liệu, mọi câu trả lời trên
+# mạng đều giả định bố cục này.
+model-paths: ['models']
+seed-paths: ['seeds']
+test-paths: ['tests']
+snapshot-paths: ['snapshots']
+macro-paths: ['macros']
+
+clean-targets: ['target', 'dbt_packages']
+
+models:
+  dbt_lab:
+    # Mặc định `view`: rẻ, luôn tươi, không tốn chỗ. Chỉ đổi sang `table` hoặc
+    # `incremental` khi ĐO ĐƯỢC là cần — đó là bài 5.
+    +materialized: view
+
+    # staging: 1:1 với nguồn, chỉ đổi tên cột + ép kiểu.
+    staging:
+      +schema: staging
+
+    # intermediate: gộp/biến đổi trung gian, KHÔNG dành cho người dùng cuối.
+    intermediate:
+      +schema: intermediate
+
+    # marts: lớp cuối, người dùng đọc trực tiếp.
+    marts:
+      +schema: marts
+      dimensions:
+        +schema: marts
+      facts:
+        +schema: marts
+      bridge:
+        +schema: marts
+      reports:
+        +schema: marts

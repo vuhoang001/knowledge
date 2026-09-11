@@ -30,7 +30,7 @@ updated: 2026-08-04
 ## Chuẩn bị
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 Bộ này dùng `hang_hoa` ⟷ `cay_nhom_hang` (**hai cách viết cùng một tên nhóm**),

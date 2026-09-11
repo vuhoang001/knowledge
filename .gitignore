@@ -8,7 +8,7 @@
 .DS_Store
 Thumbs.db
 
-# Lab dbt/Flink nếu lỡ tạo trong repo — lab sống ở ~/Documents/learn-lab/
+# Lab dbt/Flink nếu lỡ tạo trong repo — lab sống ở ~/learn-lab/
 *.duckdb
 target/
 dbt_packages/

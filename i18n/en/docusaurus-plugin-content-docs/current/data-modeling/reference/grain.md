@@ -41,7 +41,7 @@ gives a real number.
 
 ## The example
 
-Really run 2026-07-30 at `~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
+Really run 2026-07-30 at `~/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
 
 ```text
 don_hang_id,dong,ma_hang,so_luong,don_gia

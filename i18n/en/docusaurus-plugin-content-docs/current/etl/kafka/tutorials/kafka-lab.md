@@ -18,11 +18,11 @@ updated: 2026-08-12
 > form an ISR and can't show you `min.insync.replicas` blocking a write, which means missing
 > exactly the most important part.
 
-**Run this in a lab directory OUTSIDE the repo** (`~/Documents/learn-lab/kafka`), **creating no
-files inside this repo.** The knowledge repo only holds `.md`; lab code lives in `~/Documents/learn-lab/`.
+**Run this in a lab directory OUTSIDE the repo** (`~/learn-lab/kafka`), **creating no
+files inside this repo.** The knowledge repo only holds `.md`; lab code lives in `~/learn-lab/`.
 
 ```bash
-mkdir -p ~/Documents/learn-lab/kafka && cd ~/Documents/learn-lab/kafka
+mkdir -p ~/learn-lab/kafka && cd ~/learn-lab/kafka
 ```
 
 > **The output in this document is real**, taken from a run on 2026-08-12 on
@@ -568,7 +568,7 @@ assuming `acks=1` is also blocked by `min.insync.replicas`.
 ## Cleanup
 
 ```bash
-cd ~/Documents/learn-lab/kafka
+cd ~/learn-lab/kafka
 docker compose down -v   # -v also removes the data volumes
 ```
 

@@ -9,7 +9,7 @@ doc_type: tutorial
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-08-04
+updated: 2026-09-11
 ---
 
 # Phụ lục seed — mười bảng cho bộ bài tập
@@ -47,7 +47,7 @@ Lệch một trong bốn số là seed đã bị sửa — `dbt seed --full-refr
 ## Nạp toàn bộ
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 ```text

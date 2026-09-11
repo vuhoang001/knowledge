@@ -62,19 +62,19 @@ Box này có alias `ls`→`lsd` nên phải gọi `command ls -l` để lấy đ
 ```bash
 $ touch data.csv
 $ command ls -l data.csv
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 644 data.csv; command ls -l data.csv
--rw-r--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw-r--r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 600 data.csv; command ls -l data.csv
--rw------- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw------- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 755 data.csv; command ls -l data.csv
--rwxr-xr-x 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwxr-xr-x 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod 700 data.csv; command ls -l data.csv
--rwx------ 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwx------ 1 user user 0 Aug  5 20:48 data.csv
 ```
 
 Một lệnh `chmod 644` đặt **cả ba nhóm cùng lúc** — đây là lý do octal nhanh và không mơ hồ khi bạn muốn đặt trạng thái tuyệt đối.
@@ -85,16 +85,16 @@ Symbolic sửa **tương đối** (thêm/bớt so với hiện tại), dễ đ�
 
 ```bash
 $ chmod 644 data.csv; command ls -l data.csv
--rw-r--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rw-r--r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod u+x data.csv; command ls -l data.csv     # thêm x cho user
--rwxr--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwxr--r-- 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod go-r data.csv; command ls -l data.csv     # bỏ r của group + other
--rwx------ 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwx------ 1 user user 0 Aug  5 20:48 data.csv
 
 $ chmod a+r data.csv; command ls -l data.csv       # a = all, thêm r cho mọi nhóm
--rwxr--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 data.csv
+-rwxr--r-- 1 user user 0 Aug  5 20:48 data.csv
 ```
 
 Cú pháp: `[ugoa][+-=][rwx]`. `u`=user, `g`=group, `o`=other, `a`=all. `+` thêm, `-` bớt, `=` đặt đúng bằng.
@@ -110,7 +110,7 @@ echo "hello tu script"
 EOF
 
 $ command ls -l hello.sh
--rw-rw-r-- 1 hoanggggf hoanggggf 43 Aug  5 20:48 hello.sh
+-rw-rw-r-- 1 user user 43 Aug  5 20:48 hello.sh
 ```
 
 Không có ký tự `x` nào — file không được đánh dấu là chạy được. Thử chạy:
@@ -126,7 +126,7 @@ $ ./hello.sh
 ```bash
 $ chmod +x hello.sh
 $ command ls -l hello.sh
--rwxrwxr-x 1 hoanggggf hoanggggf 43 Aug  5 20:48 hello.sh
+-rwxrwxr-x 1 user user 43 Aug  5 20:48 hello.sh
 
 $ ./hello.sh
 hello tu script
@@ -142,7 +142,7 @@ Bỏ `x` của một thư mục và xem điều gì xảy ra dù file bên trong
 $ mkdir -p vault && echo "bi mat" > vault/secret.txt
 $ chmod 644 vault          # rw-r--r--: thư mục KHÔNG còn x
 $ command ls -ld vault
-drw-r--r-- 2 hoanggggf hoanggggf 60 Aug  5 20:48 vault
+drw-r--r-- 2 user user 60 Aug  5 20:48 vault
 
 $ cat vault/secret.txt
 cat: vault/secret.txt: Permission denied
@@ -153,7 +153,7 @@ Không có `x` trên thư mục thì không **truy cập** được file bên tr
 ```bash
 $ chmod 755 vault
 $ command ls -ld vault
-drwxr-xr-x 2 hoanggggf hoanggggf 60 Aug  5 20:48 vault
+drwxr-xr-x 2 user user 60 Aug  5 20:48 vault
 
 $ cat vault/secret.txt
 bi mat
@@ -171,7 +171,7 @@ $ umask
 
 $ touch file-002.txt
 $ command ls -l file-002.txt
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 file-002.txt   # 666 - 002 = 664
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 file-002.txt   # 666 - 002 = 664
 ```
 
 Đổi umask sang `022` (mặc định phổ biến trên nhiều bản Linux) thì file mới ra `644`:
@@ -180,11 +180,11 @@ $ command ls -l file-002.txt
 $ umask 022
 $ touch file-022.txt
 $ command ls -l file-022.txt
--rw-r--r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 file-022.txt   # 666 - 022 = 644
+-rw-r--r-- 1 user user 0 Aug  5 20:48 file-022.txt   # 666 - 022 = 644
 
 $ mkdir dir-022
 $ command ls -ld dir-022
-drwxr-xr-x 2 hoanggggf hoanggggf 40 Aug  5 20:48 dir-022        # 777 - 022 = 755
+drwxr-xr-x 2 user user 40 Aug  5 20:48 dir-022        # 777 - 022 = 755
 ```
 
 `umask 022` là lý do file mới thường ra `644` chứ không `666`: nó **tắt bit write của group và other** cho mọi file mới. Đây là hàng rào mặc định để bạn không vô tình tạo file ai cũng ghi được.
@@ -203,11 +203,11 @@ $ sudo chown alice:developers data.csv
 ```bash
 $ touch owned.txt
 $ command ls -l owned.txt
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 owned.txt
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 owned.txt
 
 $ chown "$(whoami)":"$(id -gn)" owned.txt
 $ command ls -l owned.txt
--rw-rw-r-- 1 hoanggggf hoanggggf 0 Aug  5 20:48 owned.txt       # owner/group giu nguyen hoanggggf
+-rw-rw-r-- 1 user user 0 Aug  5 20:48 owned.txt       # owner/group giu nguyen user
 ```
 
 ## Trade-offs

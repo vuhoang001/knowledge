@@ -23,7 +23,7 @@ updated: 2026-08-04
 The lab lives **outside** this repo (see `CLAUDE.md`). Run it with the existing venv:
 
 ```bash
-~/Documents/learn-lab/dbt/.venv/bin/python -c "import duckdb; print(duckdb.__version__)"
+~/learn-lab/dbt/.venv/bin/python -c "import duckdb; print(duckdb.__version__)"
 ```
 
 ```text

@@ -9,7 +9,7 @@ doc_type: case-study
 status: stable
 difficulty: beginner
 verified_at:
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # AI-generated content wrote the wrong Trino catalog name
@@ -25,7 +25,7 @@ updated: 2026-07-31
 Building the dbt module, needing to configure `profiles.yml` to point at Trino. The first draft of the
 documentation, AI-generated, said:
 
-> *"`profiles.yml` points at `192.168.100.60:8080`, catalog `iceberg`"*
+> *"`profiles.yml` points at `<host>:8080`, catalog `iceberg`"*
 
 Followed exactly. `dbt debug` failed.
 
@@ -38,17 +38,22 @@ version, missing permissions. Lost an afternoon going round in circles inside db
 
 ## What was actually wrong
 
-Running `SHOW CATALOGS` on the `.60` Trino:
+Running `SHOW CATALOGS` on that cluster:
 
 ```
-hdos_silver
-polaris
-polaris_silver
+<catalog_1>
+<catalog_2>
+<catalog_3>
 system
 ```
 
+> The real names have been redacted — they were internal project names, and **keeping them would be
+> useless to you anyway**: your cluster will return different ones. What matters is the *shape* of what
+> happened, not those particular strings.
+
 **There is no catalog named `iceberg` at all.** The AI invented that name — it's the name *commonly seen*
-in Trino documentation online, not this environment's real name.
+in Trino documentation online (it is in fact a **connector** name), not the real catalog name of any
+environment. What a catalog is called is chosen by whoever built the cluster.
 
 ## Why it was hard to catch
 

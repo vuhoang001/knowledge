@@ -21,10 +21,10 @@ updated: 2026-08-04
 
 ## Chuẩn bị
 
-Lab nằm **ngoài repo** (xem `CLAUDE.md`): `~/Documents/learn-lab/dbt`.
+Lab nằm **ngoài repo** (xem `CLAUDE.md`): `~/learn-lab/dbt`.
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 ./.venv/bin/dbt --version      # dbt-core 1.12.0 · dbt-duckdb 1.10.1
 ```
 

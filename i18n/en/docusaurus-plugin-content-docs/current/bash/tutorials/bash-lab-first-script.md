@@ -54,7 +54,7 @@ has **no** execute bit, so calling `./hello.sh` is refused.
 
 ```console
 $ command ls -l hello.sh
--rw-rw-r-- 1 hoanggggf hoanggggf 55 Aug  5 21:02 hello.sh
+-rw-rw-r-- 1 user user 55 Aug  5 21:02 hello.sh
 
 $ ./hello.sh
 bash: line 2: ./hello.sh: Permission denied
@@ -68,7 +68,7 @@ execute permission. Add that bit and run again:
 ```console
 $ chmod +x hello.sh
 $ command ls -l hello.sh
--rwxrwxr-x 1 hoanggggf hoanggggf 55 Aug  5 21:02 hello.sh
+-rwxrwxr-x 1 user user 55 Aug  5 21:02 hello.sh
 
 $ ./hello.sh
 Xin chào từ script bash!

@@ -64,6 +64,6 @@
     { "id": "perm-h27", "level": "hard", "question": "umask 002 vs 022 khac nhau the nao ve an toan va lam viec nhom?", "answer": "022 an toan hon (chi owner ghi duoc, group khong ghi file ban tao). 002 cho group ghi (tien team) nhung long hon. Chon theo boi canh." },
     { "id": "perm-h28", "level": "hard", "question": "chmod u+x data.csv tren -rw-r--r-- cho ra gi, va giai thich vi sao chi user co x?", "answer": "-rwxr--r-- : symbolic u+x chi them x cho user, khong dong toi group/other nen chung giu r-- va r--." },
     { "id": "perm-h29", "level": "hard", "question": "Cap r cho thu muc ma quen x. Hau qua cu the la gi?", "answer": "Liet ke duoc ten file nhung khong mo duoc file nao ben trong. Thu muc dung duoc can ca r lan x." },
-    { "id": "perm-h30", "level": "hard", "question": "chown \"$(whoami)\":\"$(id -gn)\" owned.txt tren -rw-rw-r-- cua chinh minh cho ket qua gi va can root khong?", "answer": "Owner/group giu nguyen hoanggggf, quyen -rw-rw-r-- khong doi. Doi ve chinh minh khong can root nen chay duoc that." }
+    { "id": "perm-h30", "level": "hard", "question": "chown \"$(whoami)\":\"$(id -gn)\" owned.txt tren -rw-rw-r-- cua chinh minh cho ket qua gi va can root khong?", "answer": "Owner/group giu nguyen user, quyen -rw-rw-r-- khong doi. Doi ve chinh minh khong can root nen chay duoc that." }
   ]
 }

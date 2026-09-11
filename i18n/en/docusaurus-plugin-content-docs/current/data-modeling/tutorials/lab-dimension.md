@@ -20,7 +20,7 @@ updated: 2026-08-04
 ## Preparation
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 The reconciliation benchmark: **10 orders · 15 lines · 10,215,000**.

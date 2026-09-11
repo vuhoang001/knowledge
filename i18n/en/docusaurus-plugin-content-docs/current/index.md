@@ -170,7 +170,7 @@ are **lookup** material, not a course to read front to back.
 
 ### dbt — [`etl/dbt/`](etl/dbt/index.md)
 
-The lab lives at `~/Documents/learn-lab/dbt` (outside this repo): its own venv, `dbt-duckdb`,
+The lab lives at `~/learn-lab/dbt` (outside this repo): its own venv, `dbt-duckdb`,
 seeds ready to go.
 
 | # | File | Answers the question | St |

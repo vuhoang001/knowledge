@@ -18,7 +18,7 @@ updated: 2026-07-31
 > lại — DAG, test, tài liệu — đều mọc ra từ một hàm duy nhất: `ref()`.
 
 Toàn bộ output trong bài này là **chạy thật** ngày 30/07/2026 tại
-`~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB). Không có đoạn nào mô tả suông.
+`~/learn-lab/dbt` (dbt 1.12.0 + DuckDB). Không có đoạn nào mô tả suông.
 
 ---
 

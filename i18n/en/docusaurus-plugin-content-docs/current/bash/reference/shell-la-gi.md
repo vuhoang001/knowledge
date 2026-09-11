@@ -93,7 +93,7 @@ type -a python3
 ```
 
 ```text
-/home/hoanggggf/.local/bin:...:/usr/local/bin:/usr/bin:/bin:...
+/home/user/.local/bin:...:/usr/local/bin:/usr/bin:/bin:...
 python3 is /usr/bin/python3
 python3 is /bin/python3
 ```

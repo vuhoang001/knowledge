@@ -36,7 +36,7 @@ Yours:
 
 ```
 
-Create any working directory **outside this repo** — for example `~/Documents/learn-lab/patterns`.
+Create any working directory **outside this repo** — for example `~/learn-lab/patterns`.
 Each step is an independent file, run with `dotnet run <name>.cs`.
 
 The first run takes ~40 seconds (restoring packages); subsequent runs under 1 second.

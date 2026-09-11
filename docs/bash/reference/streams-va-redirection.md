@@ -179,7 +179,7 @@ EOF
 ```
 
 ```
-Xin chao hoanggggf
+Xin chao user
 Hom nay la 2026-08-05
 ```
 

@@ -19,7 +19,7 @@ updated: 2026-09-11
 > snapshot trả lời sai — hoặc trả lời rỗng — và cú pháp join thì không có gì để sửa.
 
 > **Về tính xác thực.** Bối cảnh doanh nghiệp là dựng lại. **Output snapshot và hai bảng
-> doanh thu as-was/as-is là số thật**, chạy trên lab `~/Documents/learn-lab/dbt`
+> doanh thu as-was/as-is là số thật**, chạy trên lab `~/learn-lab/dbt`
 > (dbt-core 1.12.0 + dbt-duckdb 1.10.1). `verified_at` trống vì chủ repo chưa chạy lại.
 
 ## Bối cảnh

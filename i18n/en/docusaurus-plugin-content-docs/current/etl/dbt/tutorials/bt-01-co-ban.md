@@ -27,10 +27,10 @@ trying is reading, not practising.**
 
 ## Shared data
 
-Lab: `~/Documents/learn-lab/dbt` — its own venv, `dbt-duckdb`, seeds already there.
+Lab: `~/learn-lab/dbt` — its own venv, `dbt-duckdb`, seeds already there.
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 ./.venv/bin/dbt deps --profiles-dir .
 ./.venv/bin/dbt seed --profiles-dir .
 ```

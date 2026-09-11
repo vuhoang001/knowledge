@@ -1,0 +1,5 @@
+nv_id,ho_ten,phong_ban,cap_bac,nv_quan_ly_id
+NV01,Vu Van E,Kinh doanh,Nhan vien,NV02
+NV02,Do Thi F,Kinh doanh,Truong nhom,NV04
+NV03,Bui Van G,Ho tro,Nhan vien,NV04
+NV04,Ngo Thi H,Kinh doanh,Giam doc,

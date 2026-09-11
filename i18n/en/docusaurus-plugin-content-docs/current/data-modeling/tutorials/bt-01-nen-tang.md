@@ -35,7 +35,7 @@ Write your SQL first. Compare the numbers. If they match, open the solution to c
 fix it until they do. **Opening the solution before trying is reading, not practising.**
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 The data: [the shared seeds](index.md#the-data-shared-by-labs-27) plus the ten new tables in

@@ -8,7 +8,7 @@ doc_type: index
 status: draft
 difficulty: intermediate
 verified_at:
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 # Trino
 
@@ -32,12 +32,24 @@ Trạng thái: **chưa bắt đầu**. Nội dung dưới là mục lục dự k
 | 08 | Bộ nhớ và spill | Query chết vì hết memory — chỉnh gì | ⬜ |
 | 09 | Bài tập | Chạy thật, có output | ⬜ |
 
-## Ghi nhớ về cụm đang chạy
+## Lấy thông tin cụm của bạn
 
-Trino ở `192.168.100.60:8080`. Catalog thật (chạy `SHOW CATALOGS` ngày 30/07/2026):
-`hdos_silver`, `polaris`, `polaris_silver`, `system` — **không có catalog tên `iceberg`**.
+Tài liệu này **cố ý không ghi host hay tên catalog cụ thể nào** — mỗi cụm Trino một
+khác, và chép tên từ tài liệu người khác là cách mất một buổi debug nhanh nhất.
 
-Nhầm chỗ này từng mất một buổi debug dbt trong khi lỗi nằm ở tên catalog. Xem
+Cụm của bạn tên gì thì hỏi chính nó:
+
+```sql
+SHOW CATALOGS;                  -- có đúng những catalog nào
+SHOW SCHEMAS FROM <catalog>;    -- trong catalog đó có schema nào
+SHOW TABLES FROM <catalog>.<schema>;
+```
+
+Chép output về rồi mới viết vào `profiles.yml`. Đừng đoán tên: `iceberg`, `hive`,
+`lakehouse` nghe rất hợp lý nhưng **là tên connector, không phải tên catalog** — catalog
+tên gì là do người dựng cụm đặt.
+
+Đây đúng là chỗ từng mất một buổi debug dbt trong khi lỗi chỉ nằm ở tên catalog. Xem
 [dbt § Sai lầm đã mắc](../../etl/dbt/index.md#sai-lầm-đã-mắc).
 
 ## Liên kết

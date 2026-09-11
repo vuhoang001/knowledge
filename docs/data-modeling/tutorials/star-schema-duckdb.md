@@ -23,7 +23,7 @@ updated: 2026-08-04
 Lab nằm **ngoài repo** này (xem `CLAUDE.md`). Chạy bằng venv sẵn có:
 
 ```bash
-~/Documents/learn-lab/dbt/.venv/bin/python -c "import duckdb; print(duckdb.__version__)"
+~/learn-lab/dbt/.venv/bin/python -c "import duckdb; print(duckdb.__version__)"
 ```
 
 ```text

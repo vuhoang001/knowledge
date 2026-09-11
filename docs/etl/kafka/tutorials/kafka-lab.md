@@ -16,10 +16,10 @@ updated: 2026-08-11
 
 > **Chốt:** Một broker KRaft chạy Docker là đủ để thấy tận mắt produce/consume, một consumer group **rebalance**, và compaction — ba thứ đọc lý thuyết không thay được.
 
-**Chạy trong thư mục lab NGOÀI repo** (`~/Documents/learn-lab/kafka`), **KHÔNG tạo file nào trong repo này.** Repo knowledge chỉ chứa `.md`; code lab sống ở `~/Documents/learn-lab/`.
+**Chạy trong thư mục lab NGOÀI repo** (`~/learn-lab/kafka`), **KHÔNG tạo file nào trong repo này.** Repo knowledge chỉ chứa `.md`; code lab sống ở `~/learn-lab/`.
 
 ```bash
-mkdir -p ~/Documents/learn-lab/kafka && cd ~/Documents/learn-lab/kafka
+mkdir -p ~/learn-lab/kafka && cd ~/learn-lab/kafka
 ```
 
 Các ô **Kết quả** để trống có chủ đích — chạy xong tự dán output vào. Chưa dán = chưa gọi là học.

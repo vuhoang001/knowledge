@@ -1,0 +1,9 @@
+nhom_id,ten_nhom,nhom_cha_id
+N1,Cong nghe,
+N2,May tinh,N1
+N3,Thiet bi ngoai vi,N1
+N4,Laptop,N2
+N5,Thiet bi nhap,N3
+N6,Man hinh,N3
+N7,Hang thanh ly,
+N8,Laptop van phong,N4

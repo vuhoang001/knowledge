@@ -21,7 +21,7 @@ updated: 2026-09-11
 ## Chuẩn bị
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 ./.venv/bin/dbt deps --profiles-dir .
 ./.venv/bin/dbt seed --profiles-dir .
 ```

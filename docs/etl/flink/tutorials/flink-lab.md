@@ -17,7 +17,7 @@ updated: 2026-08-11
 > **Chốt:** Dựng một Flink cluster tối thiểu bằng Docker, dùng `datagen` connector (không cần Kafka) để tận mắt thấy windowed aggregation, watermark tiến, và late data bị bỏ.
 
 :::warning Chạy ngoài repo
-Làm lab này trong **thư mục lab NGOÀI repo**: `~/Documents/learn-lab/flink`. **KHÔNG tạo file lab trong repo knowledge này** — `.gitignore` chỉ chặn một số artifact, còn `docker-compose.yml` thì không.
+Làm lab này trong **thư mục lab NGOÀI repo**: `~/learn-lab/flink`. **KHÔNG tạo file lab trong repo knowledge này** — `.gitignore` chỉ chặn một số artifact, còn `docker-compose.yml` thì không.
 :::
 
 Mọi ô **Kết quả** dưới đây để trống — tự chạy rồi dán output vào. Chưa chạy thì chưa gọi là học.
@@ -26,7 +26,7 @@ Mọi ô **Kết quả** dưới đây để trống — tự chạy rồi dán 
 
 `image` Flink và số version dưới đây là **ví dụ — tự kiểm version** trước khi chạy (xem tag hiện có trên Docker Hub `apache/flink`). Lab dùng `datagen` connector nên **không cần Kafka**.
 
-```yaml title="~/Documents/learn-lab/flink/docker-compose.yml (ví dụ, tự kiểm version)"
+```yaml title="~/learn-lab/flink/docker-compose.yml (ví dụ, tự kiểm version)"
 services:
   jobmanager:
     image: apache/flink:1.20-scala_2.12   # ví dụ — tự kiểm tag
@@ -53,7 +53,7 @@ services:
 ## Bài 1 — Dựng cluster, mở UI, vào SQL Client
 
 ```bash
-cd ~/Documents/learn-lab/flink
+cd ~/learn-lab/flink
 docker compose up -d
 # mở http://localhost:8081  (Flink UI — cổng 8081 là mặc định tài liệu)
 

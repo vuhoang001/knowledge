@@ -41,7 +41,7 @@ ra số thật.
 
 ## Ví dụ
 
-Chạy thật 30/07/2026 tại `~/Documents/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
+Chạy thật 30/07/2026 tại `~/learn-lab/dbt` (dbt 1.12.0 + DuckDB).
 
 ```text
 don_hang_id,dong,ma_hang,so_luong,don_gia

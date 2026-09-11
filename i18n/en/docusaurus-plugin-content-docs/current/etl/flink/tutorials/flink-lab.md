@@ -17,7 +17,7 @@ updated: 2026-08-11
 > **Takeaway:** stand up a minimal Flink cluster with Docker and use the `datagen` connector (no Kafka needed) to see windowed aggregation, watermarks advancing, and late data being dropped with your own eyes.
 
 :::warning Run this outside the repo
-Do this lab in a **lab directory OUTSIDE the repo**: `~/Documents/learn-lab/flink`. **Don't create lab files inside this knowledge repo** — `.gitignore` only blocks certain artifacts, and `docker-compose.yml` isn't one of them.
+Do this lab in a **lab directory OUTSIDE the repo**: `~/learn-lab/flink`. **Don't create lab files inside this knowledge repo** — `.gitignore` only blocks certain artifacts, and `docker-compose.yml` isn't one of them.
 :::
 
 Every **Result** box below is empty — run it yourself and paste the output in. If you haven't run it, you haven't learnt it.
@@ -26,7 +26,7 @@ Every **Result** box below is empty — run it yourself and paste the output in.
 
 The Flink `image` and version number below are **an example — check the version yourself** before running (see the existing tags on Docker Hub under `apache/flink`). The lab uses the `datagen` connector, so **no Kafka is needed**.
 
-```yaml title="~/Documents/learn-lab/flink/docker-compose.yml (ví dụ, tự kiểm version)"
+```yaml title="~/learn-lab/flink/docker-compose.yml (ví dụ, tự kiểm version)"
 services:
   jobmanager:
     image: apache/flink:1.20-scala_2.12   # ví dụ — tự kiểm tag
@@ -53,7 +53,7 @@ services:
 ## Exercise 1 — Stand up the cluster, open the UI, enter the SQL Client
 
 ```bash
-cd ~/Documents/learn-lab/flink
+cd ~/learn-lab/flink
 docker compose up -d
 # mở http://localhost:8081  (Flink UI — cổng 8081 là mặc định tài liệu)
 

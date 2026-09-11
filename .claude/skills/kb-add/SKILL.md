@@ -55,7 +55,7 @@ Bắt buộc:
 - **`verified_at` để TRỐNG.** Luật cứng #1, không có ngoại lệ. Chỉ chủ repo điền sau
   khi chạy tay và thấy output.
 - **Chạy thật rồi dán output.** Luật cứng #2 — DuckDB có sẵn ở
-  `~/Documents/learn-lab/dbt/.venv/bin/python`. Đừng để ô *Kết quả* trống.
+  `~/learn-lab/dbt/.venv/bin/python`. Đừng để ô *Kết quả* trống.
   Không chạy được thì minh hoạ nhưng **phải ghi nhãn**. Chi tiết môi trường (tên
   catalog, host, version) thì cấm bịa tuyệt đối.
 - Note giải thích một **quyết định** (chọn A hay B) phải có **ví dụ xuyên suốt**: dữ
@@ -95,4 +95,4 @@ quả `npm run check`.
 - **Không commit/push** trừ khi được yêu cầu rõ ràng.
 - **Không điền `verified_at`.**
 - **Không sửa `build/`, `.docusaurus/`, `node_modules/`** — đều là sản phẩm dẫn xuất.
-- **Không tạo file lab trong repo này** — lab sống ở `~/Documents/learn-lab/`.
+- **Không tạo file lab trong repo này** — lab sống ở `~/learn-lab/`.

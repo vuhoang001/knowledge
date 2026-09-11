@@ -29,7 +29,7 @@ updated: 2026-08-04
 ## Preparation
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 Three main tables: `nhan_vien_don` (a bridge, with **one order whose weights don't close**),

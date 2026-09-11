@@ -7,7 +7,7 @@ tags: [tutorial, data-modeling]
 domain: data-engineering
 category: index
 doc_type: index
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 
 # Bài tập — Data Modeling
@@ -64,7 +64,7 @@ thuật sang bài tập ở bảng dưới.
 | [Conformed dimension](../skills/conformed-dimension.md) · [Conformed facts](../skills/conformed-facts.md) · [Bus architecture](../reference/bus-architecture.md) · [Đa tiền tệ](../skills/multi-currency-uom.md) | [Bộ 6](bt-06-tich-hop.md) |
 | [Date dimension](../reference/date-dimension.md) · [Audit dimension](../skills/audit-dimension.md) · [Real-time fact](../skills/real-time-fact.md) | [Bộ 7](bt-07-van-hanh.md) |
 
-Lab chạy bằng venv ngoài repo: `~/Documents/learn-lab/dbt/.venv/bin/python`. Mọi câu SQL
+Lab chạy bằng venv ngoài repo: `~/learn-lab/dbt/.venv/bin/python`. Mọi câu SQL
 tự chứa, dán thẳng vào DuckDB là chạy.
 
 **Ô *Kết quả của bạn* để trống nghĩa là chưa chạy.** Chạy rồi mới điền `verified_at`.
@@ -75,8 +75,15 @@ Bộ bài tập tầng 3 dùng thêm **mười bảng nữa** — nội dung đ�
 [phụ lục seed](bt-00-seed.md). Năm bảng gốc dưới đây vẫn là nền, và **bốn số mốc không
 bao giờ đổi**.
 
-Lab code sống **ngoài repo** (`~/Documents/learn-lab/dbt`, xem `CLAUDE.md`), nên nội dung
-seed chép lại đây để dựng lại được từ số không. Bốn số gốc phải nhớ:
+Chưa có lab thì dựng bằng một lệnh — xem [Bắt đầu từ đâu](../../getting-started.md):
+
+```bash
+./lab-starter/setup.sh
+```
+
+Lab code sống **ngoài repo** (`~/learn-lab/dbt`, xem `CLAUDE.md`); file CSV nguồn thì nằm
+trong repo ở [`lab-starter/seeds/`](https://github.com/vuhoang001/knowledge/tree/main/lab-starter/seeds).
+Nội dung seed chép lại đây để đọc được ngay không cần mở file. Bốn số gốc phải nhớ:
 
 ```text
 10 don · 15 dong · doanh thu 10.215.000 · phi ship 400.000
@@ -134,11 +141,12 @@ Bẫy: `DH003` bị trả **hai lần** → join thẳng hai fact là nhân đô
 
 </details>
 
-`seeds/don_hang_chi_tiet.csv` (15 dòng) và `seeds/hang_hoa.csv` đã có sẵn trong lab từ
-trước — xem [bài tập dbt](../../etl/dbt/tutorials/dbt-lab-duckdb.md).
+`seeds/don_hang_chi_tiet.csv` (15 dòng) và `seeds/hang_hoa.csv` là hai bảng nền của
+[bài tập dbt](../../etl/dbt/tutorials/dbt-lab-duckdb.md); cả hai nằm trong `lab-starter/seeds/`
+và được `setup.sh` nạp sẵn.
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 ## Related Topics

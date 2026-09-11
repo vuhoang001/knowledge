@@ -21,10 +21,10 @@ updated: 2026-08-04
 
 ## Preparation
 
-The lab lives **outside the repo** (see `CLAUDE.md`): `~/Documents/learn-lab/dbt`.
+The lab lives **outside the repo** (see `CLAUDE.md`): `~/learn-lab/dbt`.
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 ./.venv/bin/dbt --version      # dbt-core 1.12.0 · dbt-duckdb 1.10.1
 ```
 

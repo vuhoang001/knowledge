@@ -9,7 +9,7 @@ doc_type: tutorial
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-08-04
+updated: 2026-09-11
 ---
 
 # Seed appendix — ten tables for the exercise sets
@@ -47,7 +47,7 @@ Any of the four being off means a seed has been edited — `dbt seed --full-refr
 ## Load everything
 
 ```bash
-cd ~/Documents/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
+cd ~/learn-lab/dbt && ./.venv/bin/dbt seed --profiles-dir .
 ```
 
 ```text

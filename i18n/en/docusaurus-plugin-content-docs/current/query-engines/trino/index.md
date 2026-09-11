@@ -8,7 +8,7 @@ doc_type: index
 status: draft
 difficulty: intermediate
 verified_at:
-updated: 2026-07-31
+updated: 2026-09-11
 ---
 # Trino
 
@@ -32,13 +32,26 @@ Status: **not started**. What follows is the planned table of contents; no file 
 | 08 | Memory and spilling | A query dies out of memory — what do you tune | ⬜ |
 | 09 | Exercises | Really run, with output | ⬜ |
 
-## Notes on the running cluster
+## Getting your own cluster's details
 
-Trino is at `192.168.100.60:8080`. The real catalogs (from running `SHOW CATALOGS` on 2026-07-30):
-`hdos_silver`, `polaris`, `polaris_silver`, `system` — **there is no catalog named `iceberg`**.
+This page **deliberately names no host and no specific catalog** — every Trino cluster is different,
+and copying names out of somebody else's documentation is the fastest way to lose an afternoon
+debugging.
 
-Getting this wrong once cost an afternoon of debugging dbt while the error was in the catalog name. See
-[dbt § Mistakes already made](../../etl/dbt/index.md#mistakes-already-made).
+Ask the cluster itself what it is called:
+
+```sql
+SHOW CATALOGS;                  -- exactly which catalogs exist
+SHOW SCHEMAS FROM <catalog>;    -- which schemas live in that catalog
+SHOW TABLES FROM <catalog>.<schema>;
+```
+
+Copy the output back, and only then write it into `profiles.yml`. Don't guess names: `iceberg`,
+`hive`, `lakehouse` all read plausibly but **they are connector names, not catalog names** — what a
+catalog is called is chosen by whoever built the cluster.
+
+This is exactly the spot that once cost an afternoon of debugging dbt while the error was nothing but
+a catalog name. See [dbt § Mistakes already made](../../etl/dbt/index.md#mistakes-already-made).
 
 ## Links
 

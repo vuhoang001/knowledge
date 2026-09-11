@@ -9,20 +9,23 @@ doc_type: tutorial
 status: review
 difficulty: beginner
 verified_at: 2026-07-30       # exercises 1–3 have been run
-lab: ~/Documents/learn-lab/dbt
-updated: 2026-07-31
+lab: ~/learn-lab/dbt
+updated: 2026-09-11
 ---
 # dbt exercises
 
-Do these in `~/Documents/learn-lab/dbt`. For each one, **really run it and paste the output into the
+Do these in `~/learn-lab/dbt`. For each one, **really run it and paste the output into the
 Result box**. Reading and understanding doesn't count.
 
-> **Why the lab uses DuckDB rather than Trino `.60`.** Learning dbt on Trino means learning three
+> **Why the lab uses DuckDB rather than Trino.** Learning dbt on Trino means learning three
 > things at once — dbt, Trino, Iceberg — and every error has three suspects, so you can't tell a
 > misunderstanding of dbt from a cluster misconfiguration. DuckDB has no server, the whole warehouse is
 > one file, and deleting it puts you back at zero. You switch to Trino in exercise 7, once dbt is no longer a variable.
 
-The seed data is ready: `don_hang_chi_tiet.csv` (15 rows, orders with several line items) and
+No lab yet? `./lab-starter/setup.sh` builds one in a couple of minutes — see
+[Where to start](../../../getting-started.md).
+
+The first two exercises use only `don_hang_chi_tiet.csv` (15 rows, orders with several line items) and
 `hang_hoa.csv` (4 items). Small enough to inspect by eye — deliberately.
 
 ---
@@ -32,7 +35,7 @@ The seed data is ready: `don_hang_chi_tiet.csv` (15 rows, orders with several li
 **What to do:**
 
 ```bash
-cd ~/Documents/learn-lab/dbt
+cd ~/learn-lab/dbt
 .venv/bin/dbt debug --profiles-dir .
 .venv/bin/dbt seed  --profiles-dir .
 ```
@@ -116,14 +119,22 @@ wrong data → the test catches it; wrong column type → the contract blocks it
 
 ## Exercise 7 — Switching to Trino
 
+**This exercise needs a Trino cluster** — your company's, or one you spin up with Docker:
+
+```bash
+docker run -d --name trino -p 8080:8080 trinodb/trino
+```
+
 **Only do this after exercises 1–6 are finished.** Switch `profiles.yml` to `dbt-trino` pointing at
-`.60:8080`. Re-run those same models.
+that cluster. Re-run those same models.
 
 **Done when:** you can say what had to change and what stayed the same — that's the real answer to
 "how warehouse-independent is dbt".
 
-> ⚠ The catalogs on `.60` are named `hdos_silver` / `polaris_silver`; there is **no catalog named
-> `iceberg`**. See the "Mistakes already made" section in the [README](../index.md).
+> ⚠ **Get the catalog name from a command, don't copy it out of documentation.** Run `SHOW CATALOGS`
+> on your own cluster, and only then fill in `profiles.yml`. `iceberg` is a **connector** name, not a
+> catalog name — get it wrong and `dbt debug` fails with an error that looks like a dbt error.
+> See the [case study](../case-studies/ai-sinh-sai-ten-catalog-trino.md).
 
 **Result:**
 

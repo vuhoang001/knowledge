@@ -138,7 +138,7 @@ It needs .NET 10 or later. The version used to produce the output in this knowle
 ```
 
 The first run takes ~40 seconds (restoring packages), and subsequent runs under 1 second. Put the lab
-file **outside this repo**, for example `~/Documents/learn-lab/patterns`.
+file **outside this repo**, for example `~/learn-lab/patterns`.
 
 ## Related Topics
 
