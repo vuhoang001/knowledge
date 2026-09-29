@@ -16,20 +16,21 @@ laptop. Không GPU, không vòng lặp train tự viết, không `tensorflow`.
 hằng ngày — gradient boosting ở chương 7 thường thắng mạng nơ-ron, và chỉ mất vài phút
 để train.
 
-Trạng thái: **chưa bắt đầu**. Bảng dưới là mục lục dự kiến.
+Trạng thái: **đang viết**. 4/12 tài liệu và 2 case study đã có, kèm output chạy thật.
+Phần còn lại là mục lục dự kiến.
 
 ## Nội dung
 
 Năm nhóm chuẩn — giống mọi chủ đề khác trong kho.
 
-### Tài liệu — nó là gì, vì sao, đánh đổi ra sao
+### [Tài liệu](reference/index.md) — nó là gì, vì sao, đánh đổi ra sao
 
 | # | Tài liệu | Trả lời câu hỏi | Chương | Mức | TT |
 |---|---|---|---|---|---|
-| 1 | ML landscape | Supervised/unsupervised, batch/online, instance/model-based | 1 | beginner | ⬜ |
-| 2 | Overfitting và underfitting | Vì sao học thuộc lòng khác với học, và bias/variance | 1 | beginner | ⬜ |
-| 3 | Metric hiệu năng | RMSE vs MAE; precision, recall, F1, ROC-AUC — dùng cái nào khi nào | 2, 3 | beginner | ⬜ |
-| 4 | Thiết kế API của Scikit-Learn | Estimator, Transformer, Predictor — vì sao mọi thứ ghép được vào pipeline | 2 | beginner | ⬜ |
+| 1 | [ML landscape](reference/ml-landscape.md) | Supervised/unsupervised, batch/online, instance/model-based | 1 | beginner | 🟡 |
+| 2 | [Overfitting và underfitting](reference/overfitting-underfitting.md) | Vì sao học thuộc lòng khác với học, và bias/variance | 1, 4 | beginner | 🟡 |
+| 3 | [Metric hiệu năng](reference/performance-metrics.md) | RMSE vs MAE; precision, recall, F1, ROC-AUC — dùng cái nào khi nào | 2, 3 | beginner | 🟡 |
+| 4 | [Thiết kế API của Scikit-Learn](reference/sklearn-api-design.md) | Estimator, Transformer, Predictor — vì sao mọi thứ ghép được vào pipeline | 2 | beginner | 🟡 |
 | 5 | Linear models và gradient descent | Normal equation vs batch/stochastic/mini-batch GD | 4 | intermediate | ⬜ |
 | 6 | Regularization | Ridge, Lasso, Elastic Net, early stopping — cái nào zero hoá feature | 4 | intermediate | ⬜ |
 | 7 | Logistic và Softmax regression | Từ tổng có trọng số tới xác suất, và nhiều lớp cùng lúc | 4 | intermediate | ⬜ |
@@ -65,13 +66,19 @@ Năm nhóm chuẩn — giống mọi chủ đề khác trong kho.
 
 ### Ba nhóm còn lại
 
-| Nhóm | Nội dung dự kiến |
+| Nhóm | Nội dung |
 |---|---|
+| [**Case study**](case-studies/index.md) | **2 ca đã viết** — [chọn feature trước khi tách](case-studies/chon-feature-truoc-khi-tach.md) (86,67% trên dữ liệu ngẫu nhiên) · [accuracy cao mà model vô dụng](case-studies/accuracy-cao-ma-model-vo-dung.md) (0.8981 với recall 0) |
 | Bài tập | 8 lab chạy thật — dự án end-to-end (ch2), MNIST (ch3), gradient descent viết tay (ch4), SVM boundary (ch5), cây vs rừng (ch6–7), PCA nén ảnh (ch8), phân đoạn ảnh bằng clustering (ch9), và bộ bài tập có đáp số từ end-of-chapter exercises |
 | Cheatsheet | API Scikit-Learn · Công thức metric · Bảng chọn thuật toán |
-| Case study | 8 ca — scale trước khi split, accuracy 99% vô dụng, data snooping, split ngẫu nhiên lệch phân tầng, one-hot phình cột, inertia chọn sai k, grid search chạm test set, cây thuộc lòng nhiễu |
+| Case study (còn lại) | 6 ca nữa — scale trước khi split, data snooping, split ngẫu nhiên lệch phân tầng, one-hot phình cột, inertia chọn sai k, cây thuộc lòng nhiễu |
 
-Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 lý thuyết, `verified_at` còn trống · ⬜ chưa viết
+Ký hiệu: ✅ chủ repo đã chạy tay và điền `verified_at` · 🟡 có output chạy thật dán lại,
+`verified_at` còn trống · 📝 lý thuyết chưa kiểm chứng · ⬜ chưa viết
+
+**Vì sao 🟡 chứ không phải ✅:** toàn bộ output trong bốn file đầu là thật, chạy tại
+`~/learn-lab/ml` ngày 29/09/2026. Nhưng [luật cứng #1](https://github.com/vuhoang001/knowledge/blob/main/CLAUDE.md)
+nói `verified_at` chỉ do chủ repo điền sau khi tự chạy — nên nó còn trống.
 
 Cột `#` là thứ tự học **trong từng nhóm**, và cũng là `sidebar_position`.
 

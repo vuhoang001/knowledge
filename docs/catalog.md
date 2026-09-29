@@ -17,9 +17,9 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**201 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**207 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (39)
+## Tài liệu tham chiếu (43)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
@@ -59,6 +59,10 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Retention và log compaction](etl/kafka/reference/retention-compaction.md) | `etl/kafka/reference` | data-engineering | 🟡 draft |
 | [Topic, partition, offset](etl/kafka/reference/topic-partition-offset.md) | `etl/kafka/reference` | data-engineering | 🟡 draft |
 | [Kafka là gì](etl/kafka/reference/what-is-kafka.md) | `etl/kafka/reference` | data-engineering | 🟡 draft |
+| [Bản đồ Machine Learning](machine-learning/foundations/reference/ml-landscape.md) | `machine-learning/foundations/reference` | ai | 🟡 draft |
+| [Overfitting và underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | `machine-learning/foundations/reference` | ai | 🟡 draft |
+| [Metric hiệu năng](machine-learning/foundations/reference/performance-metrics.md) | `machine-learning/foundations/reference` | ai | 🟡 draft |
+| [Thiết kế API của Scikit-Learn](machine-learning/foundations/reference/sklearn-api-design.md) | `machine-learning/foundations/reference` | ai | 🟡 draft |
 | [Chọn pattern nào — đi từ triệu chứng, không từ danh sách](patterns/reference/choosing-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
 | [Composition over inheritance](patterns/reference/composition-over-inheritance.md) | `patterns/reference` | backend | 🟡 draft |
 | [Coupling và cohesion — thước đo pattern thật sự phục vụ](patterns/reference/coupling-cohesion.md) | `patterns/reference` | backend | 🟡 draft |
@@ -175,7 +179,7 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | [Lab Kafka trên Docker](etl/kafka/tutorials/kafka-lab.md) | `etl/kafka/tutorials` | data-engineering | 🟡 draft |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
 
-## Case study (59)
+## Case study (61)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
@@ -221,6 +225,8 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Mất dữ liệu với acks=1](etl/kafka/case-studies/mat-du-lieu-acks-1.md) | `etl/kafka/case-studies` | data-engineering | 🟡 draft |
 | [Mất thứ tự vì đổi partition key](etl/kafka/case-studies/mat-thu-tu-vi-doi-key.md) | `etl/kafka/case-studies` | data-engineering | 🟡 draft |
 | [Consumer rebalance không dứt](etl/kafka/case-studies/rebalance-lien-tuc.md) | `etl/kafka/case-studies` | data-engineering | 🟡 draft |
+| [Accuracy 89,81% cho một model không làm gì cả](machine-learning/foundations/case-studies/accuracy-cao-ma-model-vo-dung.md) | `machine-learning/foundations/case-studies` | ai | 🟡 draft |
+| [Chọn feature trước khi tách — 86,67% trên dữ liệu ngẫu nhiên](machine-learning/foundations/case-studies/chon-feature-truoc-khi-tach.md) | `machine-learning/foundations/case-studies` | ai | 🟡 draft |
 | [Sáu kiểu để làm việc của hai kiểu](patterns/case-studies/abstract-factory-cho-mot-hien-thuc.md) | `patterns/case-studies` | backend | 🟡 draft |
 | [Báo cáo thiếu 4,2 triệu, không có lỗi nào](patterns/case-studies/adapter-nuot-loi-thanh-danh-sach-rong.md) | `patterns/case-studies` | backend | 🟡 draft |
 | [Giao hàng trước khi khách trả tiền](patterns/case-studies/chuyen-trang-thai-trai-phep.md) | `patterns/case-studies` | backend | 🟡 draft |

@@ -16,20 +16,21 @@ It is also the part that **pays off fastest**. On tabular data — what a Data E
 meets every day — the gradient boosting of chapter 7 usually beats a neural network, and
 trains in minutes.
 
-Status: **not started**. The tables below are a planned table of contents.
+Status: **in progress**. 4 of 12 reference documents and 2 case studies exist, with real
+pasted output. The rest is a planned table of contents.
 
 ## Contents
 
 The five standard groups — same as every other topic in this repo.
 
-### Reference — what it is, why, what the trade-off is
+### [Reference](reference/index.md) — what it is, why, what the trade-off is
 
 | # | Document | Answers the question | Ch. | Level | St |
 |---|---|---|---|---|---|
-| 1 | ML landscape | Supervised/unsupervised, batch/online, instance- vs model-based | 1 | beginner | ⬜ |
-| 2 | Overfitting and underfitting | Why memorising differs from learning, and bias/variance | 1 | beginner | ⬜ |
-| 3 | Performance metrics | RMSE vs MAE; precision, recall, F1, ROC-AUC — which one, when | 2, 3 | beginner | ⬜ |
-| 4 | Scikit-Learn's API design | Estimator, Transformer, Predictor — why everything composes into a pipeline | 2 | beginner | ⬜ |
+| 1 | [ML landscape](reference/ml-landscape.md) | Supervised/unsupervised, batch/online, instance- vs model-based | 1 | beginner | 🟡 |
+| 2 | [Overfitting and underfitting](reference/overfitting-underfitting.md) | Why memorising differs from learning, and bias/variance | 1, 4 | beginner | 🟡 |
+| 3 | [Performance metrics](reference/performance-metrics.md) | RMSE vs MAE; precision, recall, F1, ROC-AUC — which one, when | 2, 3 | beginner | 🟡 |
+| 4 | [Scikit-Learn's API design](reference/sklearn-api-design.md) | Estimator, Transformer, Predictor — why everything composes into a pipeline | 2 | beginner | 🟡 |
 | 5 | Linear models and gradient descent | Normal equation vs batch/stochastic/mini-batch GD | 4 | intermediate | ⬜ |
 | 6 | Regularization | Ridge, Lasso, Elastic Net, early stopping — which one zeroes features out | 4 | intermediate | ⬜ |
 | 7 | Logistic and Softmax regression | From a weighted sum to a probability, and to many classes at once | 4 | intermediate | ⬜ |
@@ -65,13 +66,19 @@ The five standard groups — same as every other topic in this repo.
 
 ### The other three groups
 
-| Group | Planned content |
+| Group | Content |
 |---|---|
+| [**Case studies**](case-studies/index.md) | **2 written** — [selecting features before the split](case-studies/chon-feature-truoc-khi-tach.md) (86.67% on random data) · [accuracy high, model useless](case-studies/accuracy-cao-ma-model-vo-dung.md) (0.8981 with recall 0) |
 | Exercises | 8 hands-on labs — end-to-end project (ch2), MNIST (ch3), gradient descent from scratch (ch4), SVM decision boundary (ch5), tree vs forest (ch6–7), PCA image compression (ch8), image segmentation by clustering (ch9), plus an exercise set with answers drawn from the end-of-chapter exercises |
 | Cheatsheets | Scikit-Learn API · Metric formulas · Algorithm picker |
-| Case studies | 8 cases — scaling before the split, a useless 99% accuracy, data snooping, a random split skewing strata, one-hot blowing up the column count, inertia picking the wrong k, grid search touching the test set, a tree memorising noise |
+| Case studies (remaining) | 6 more — scaling before the split, data snooping, a random split skewing strata, one-hot blowing up the column count, inertia picking the wrong k, a tree memorising noise |
 
-Symbols: ✅ run by hand and confirmed · 📝 theory, `verified_at` still empty · ⬜ not written
+Symbols: ✅ the repo owner ran it by hand and filled `verified_at` · 🟡 real pasted output,
+`verified_at` still empty · 📝 unverified theory · ⬜ not written
+
+**Why 🟡 and not ✅:** every output in the first four files is real, produced at
+`~/learn-lab/ml` on 2026-09-29. But [hard rule #1](https://github.com/vuhoang001/knowledge/blob/main/CLAUDE.md)
+says `verified_at` is filled by the repo owner alone, after running it themselves — so it stays empty.
 
 The `#` column is the learning order **within each group**, and also the `sidebar_position`.
 

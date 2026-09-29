@@ -312,6 +312,12 @@ training loop yourself.
 | [machine-learning/index](machine-learning/index.md) | Shared learning path, the five big traps, coverage across 19 chapters | 🗂️ |
 | [foundations/index](machine-learning/foundations/index.md) | Chapters 1–9 — metrics, linear models, SVM, trees, ensembles, PCA, clustering | 🗂️ |
 | [deep-learning/index](machine-learning/deep-learning/index.md) | Chapters 10–19 — MLP, CNN, RNN, transformers, generative models, RL, deployment | 🗂️ |
+| [ml-landscape](machine-learning/foundations/reference/ml-landscape.md) | Four classification axes; two models share MAE 42.8 yet disagree by 88.89 per case | 🟡 |
+| [overfitting-underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | A two-way diagnostic table; a degree-25 polynomial gives test RMSE 4.4× its training RMSE | 🟡 |
+| [performance-metrics](machine-learning/foundations/reference/performance-metrics.md) | Accuracy has `TN` in its numerator so it lies under imbalance; precision/recall do not | 🟡 |
+| [sklearn-api-design](machine-learning/foundations/reference/sklearn-api-design.md) | Estimator/Transformer/Predictor; the pipeline is what mechanically blocks leakage | 🟡 |
+| [cs: selecting features before the split](machine-learning/foundations/case-studies/chon-feature-truoc-khi-tach.md) | 86.67% accuracy on 5,000 pure noise columns with coin-flip labels | 🟡 |
+| [cs: high accuracy, useless model](machine-learning/foundations/case-studies/accuracy-cao-ma-model-vo-dung.md) | `DummyClassifier` scores 0.8981 with precision and recall both 0 | 🟡 |
 
 ## Foundations
 

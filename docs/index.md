@@ -313,6 +313,12 @@ init, optimizer và vòng lặp train.
 | [machine-learning/index](machine-learning/index.md) | Lộ trình chung, năm cái bẫy lớn, bảng độ phủ 19 chương | 🗂️ |
 | [foundations/index](machine-learning/foundations/index.md) | Chương 1–9 — metric, linear model, SVM, cây, ensemble, PCA, clustering | 🗂️ |
 | [deep-learning/index](machine-learning/deep-learning/index.md) | Chương 10–19 — MLP, CNN, RNN, transformer, mô hình sinh, RL, deploy | 🗂️ |
+| [ml-landscape](machine-learning/foundations/reference/ml-landscape.md) | Bốn trục phân loại; hai model cùng MAE 42.8 nhưng lệch 88.89 trên từng ca | 🟡 |
+| [overfitting-underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | Bảng chẩn đoán hai chiều; đa thức bậc 25 cho RMSE test gấp 4,4 lần train | 🟡 |
+| [performance-metrics](machine-learning/foundations/reference/performance-metrics.md) | Accuracy có `TN` ở tử số nên nói dối khi lệch lớp; precision/recall thì không | 🟡 |
+| [sklearn-api-design](machine-learning/foundations/reference/sklearn-api-design.md) | Estimator/Transformer/Predictor; pipeline là thứ cơ học chặn rò rỉ | 🟡 |
+| [cs: chọn feature trước khi tách](machine-learning/foundations/case-studies/chon-feature-truoc-khi-tach.md) | 86,67% accuracy trên 5.000 cột nhiễu thuần tuý, nhãn tung đồng xu | 🟡 |
+| [cs: accuracy cao mà model vô dụng](machine-learning/foundations/case-studies/accuracy-cao-ma-model-vo-dung.md) | `DummyClassifier` đạt 0.8981 với precision và recall bằng 0 | 🟡 |
 
 ## Nền tảng
 
