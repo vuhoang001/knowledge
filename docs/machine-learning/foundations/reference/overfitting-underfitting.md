@@ -1,8 +1,8 @@
 ---
 title: Overfitting và underfitting
-sidebar_position: 2
-description: "Học thuộc lòng khác với học. Đo bằng khoảng cách giữa lỗi train và lỗi test, và so với sàn nhiễu."
-tags: [overfitting, underfitting, bias-variance, regularization, homl3]
+sidebar_position: 6
+description: "Model xấu theo hai hướng ngược nhau, và cách chữa cũng chạy ngược nhau. Quy tắc 'tên có chữ w' đúng 4/4 và không nói gì về thế giới."
+tags: [overfitting, underfitting, regularization, hyperparameter, bias-variance, homl3, chuong-1]
 domain: ai
 category: concept
 doc_type: reference
@@ -14,107 +14,185 @@ updated: 2026-09-29
 
 # Overfitting và underfitting
 
-> **Chốt:** Mô hình không có nhiệm vụ khớp dữ liệu train — nó có nhiệm vụ khớp dữ liệu
-> **chưa từng thấy**. Lỗi train thấp mà lỗi test cao là **overfit**; cả hai cùng cao là
-> **underfit**. Không nhìn cả hai con số thì không biết mình đang ở đâu.
+> **Chốt:** Overfitting là model **quá phức tạp so với dữ liệu của nó**; underfitting là
+> quá đơn giản. Chữ **"so với"** gánh cả ý nghĩa: **không model nào tự nó quá phức tạp**
+> — một đường cong overfit 27 quốc gia có thể vừa khít với 27 triệu dòng.
 
 ## Mục tiêu
 
-Biến câu hỏi mơ hồ *"model này có tốt không"* thành một phép đo có hai số, và từ hai số
-đó **suy ra phải sửa gì tiếp** — chứ không phải thử bừa.
+Biến câu hỏi *"model này có tốt không"* thành một chẩn đoán hai chiều, và **biết phải
+sửa gì tiếp** — vì thuốc chữa hai bệnh này **chạy ngược chiều nhau**, uống nhầm là làm
+bệnh nặng thêm.
 
 ## Tổng quan
 
-### Ba con số, không phải một
+### Hai đầu của cùng một dải
 
-| Số | Ý nghĩa | Đọc thế nào |
-|---|---|---|
-| **Lỗi train** | Model khớp dữ liệu nó đã thấy đến đâu | Cao = model quá yếu |
-| **Lỗi test** | Model khớp dữ liệu mới đến đâu | Đây mới là con số thật |
-| **Sàn nhiễu** | Lỗi thấp nhất **về lý thuyết** có thể đạt | Không có mô hình nào xuống dưới mà còn đúng |
-
-Sàn nhiễu là thứ hay bị bỏ quên nhất. Nếu nhãn có nhiễu với độ lệch chuẩn 1.0 thì RMSE
-1.0 là **hoàn hảo**, không phải kém. Đuổi theo RMSE 0.3 nghĩa là đang học thuộc nhiễu.
+```text
+qua don gian  <----- can bang -----> qua phuc tap
+UNDERFITTING                         OVERFITTING
+sai ngay ca tren               tot tren train,
+du lieu train                  te tren du lieu moi
+```
 
 ### Bảng chẩn đoán
 
 | Lỗi train | Lỗi test | Chẩn đoán | Sửa gì |
 |---|---|---|---|
-| Cao | Cao | **Underfit** | Model mạnh hơn, thêm feature, bớt regularization |
-| Thấp | Cao | **Overfit** | Thêm dữ liệu, bớt feature, tăng regularization |
+| Cao | Cao | **Underfit** | Model mạnh hơn, feature tốt hơn, **bớt** regularization |
+| Thấp | Cao | **Overfit** | Đơn giản hoá, **thêm dữ liệu**, bớt nhiễu, **thêm** regularization |
 | Thấp | Thấp | Vừa | Dừng lại, đừng nghịch thêm |
-| Cao | **Thấp** | Nghi ngờ — thường là bug | Test set rò vào train, hoặc chia dữ liệu sai |
+| Cao | **Thấp** | Nghi có bug | Test set rò vào train, hoặc chia dữ liệu sai |
 
-Dòng cuối là dòng hay bị bỏ qua. Lỗi test **thấp hơn** lỗi train một cách đáng kể gần
-như luôn là lỗi lập trình, không phải may mắn.
+Dòng cuối hay bị bỏ qua: lỗi test **thấp hơn đáng kể** lỗi train gần như luôn là lỗi
+lập trình, không phải may mắn. Xem
+[case study rò rỉ](../case-studies/chon-feature-truoc-khi-tach.md).
+
+### Overfitting: học cả nhiễu
+
+Model làm tốt trên tập train nhưng **khái quát hoá kém**. Xảy ra khi model **quá phức
+tạp so với lượng dữ liệu và độ nhiễu của nó**.
+
+Ba cách chữa:
+
+1. **Đơn giản hoá model** — ít tham số hơn, lớp model đơn giản hơn, ít thuộc tính hơn.
+2. **Lấy thêm dữ liệu train.**
+3. **Giảm nhiễu** trong dữ liệu — sửa lỗi, bỏ outlier.
+
+> **Chú ý hai trong ba cách chữa đổi *dữ liệu*, không đổi model.** Vì định nghĩa là
+> "phức tạp **so với** dữ liệu", **bạn được phép dịch chuyển vế nào cũng được**.
 
 ### Bias và variance
-
-Hai nguyên nhân khác nhau dẫn tới lỗi, và chúng **kéo ngược chiều nhau**:
 
 | | Bias cao | Variance cao |
 |---|---|---|
 | Nguyên nhân | Giả định sai về hình dạng dữ liệu | Quá nhạy với từng mẫu train |
-| Biểu hiện | Underfit — sai đều ở mọi nơi | Overfit — đổi vài dòng train là đổi model |
-| Ví dụ | Dùng đường thẳng cho dữ liệu cong | Cây quyết định không giới hạn độ sâu |
+| Biểu hiện | **Underfit** — sai đều ở mọi nơi | **Overfit** — đổi vài dòng train là đổi model |
+| Ví dụ | Đường thẳng cho dữ liệu cong | Cây quyết định không giới hạn độ sâu |
 | Chữa bằng | Model phức tạp hơn | Nhiều dữ liệu hơn, regularization |
 
-**Tăng độ phức tạp của model thì bias giảm, variance tăng.** Đó là toàn bộ nội dung của
-"bias/variance trade-off". Chỗ tối ưu nằm ở giữa, và **không tìm được bằng lý thuyết** —
-phải đo.
+Tăng độ phức tạp thì **bias giảm, variance tăng**. Đó là toàn bộ nội dung của
+"bias/variance trade-off". Chỗ tối ưu nằm ở giữa và **không tìm được bằng lý thuyết**.
 
-### Regularization: ghìm model lại có chủ đích
+### Regularization và hyperparameter
 
-Regularization là **cố tình làm model kém đi trên tập train** để nó tốt hơn trên tập
-test. Ba cách thông dụng, chi tiết ở [Regularization](#):
+**Regularization** là ràng buộc model cho đơn giản lại để giảm overfitting; cường độ
+điều khiển bằng một **hyperparameter**.
 
-- Ràng buộc tham số (Ridge, Lasso)
-- Giới hạn cấu trúc (`max_depth` của cây)
-- Dừng sớm (early stopping)
+| | Model parameter | Hyperparameter |
+|---|---|---|
+| Thuộc về | **model** | **thuật toán học** |
+| Ví dụ | `theta_0`, `theta_1` | cường độ regularization, `k` của k-NN |
+| Ai đặt | **training** | **bạn**, trước khi train |
+| Trong lúc train | bị chỉnh để khớp | **đứng yên** |
+| Ví von | giá trị mà job tính ra | một `--conf` truyền lúc submit job |
+
+**Degrees of freedom — cách dễ nhất để thấy regularization làm gì.** Model tuyến tính
+có hai tham số, nên thuật toán có **hai bậc tự do**: θ₀ chỉnh độ cao, θ₁ chỉnh độ dốc.
+
+- Ép θ₁ = 0 → còn **một** bậc tự do. Chỉ nâng lên hạ xuống được, và nó dừng quanh **giá
+  trị trung bình**.
+- Cho θ₁ thay đổi nhưng **phải nhỏ** → giữa một và hai bậc tự do. **Đó chính là
+  regularization.**
+
+> **Regularization là một núm vặn, và cả hai đầu đều là thất bại.** Vặn quá nhẹ thì model
+> bám nhiễu. Vặn quá mạnh thì độ dốc ghim về 0, đường phẳng ra quanh trung bình: **không
+> overfit được, và cũng không học được gì.** Nên cường độ là thứ phải **tinh chỉnh và
+> đo**, không bao giờ đặt một lần theo nguyên lý — và vì nó là hyperparameter, **training
+> không chọn hộ bạn được.**
+
+### Underfitting: quá đơn giản để học
+
+Model quá đơn giản để nắm cấu trúc bên dưới, nên dự đoán **sai ngay cả trên chính các ví
+dụ train**. Thuốc chữa chạy ngược lại:
+
+1. Chọn model **mạnh hơn**, nhiều tham số hơn.
+2. Đưa vào **feature tốt hơn** — feature engineering.
+3. **Nới** ràng buộc bằng cách giảm hyperparameter regularization.
 
 ## Ví dụ
 
-Chạy thật 29/09/2026 tại `~/learn-lab/ml` — Python 3.12.3, scikit-learn 1.9.1,
-numpy 2.5.3. Seed `default_rng(42)` và `random_state=42`.
+Chạy thật 29/09/2026 tại `~/learn-lab/ml` — Python 3.12.3, scikit-learn 1.9.1, trên bộ
+dữ liệu 36 quốc gia của sách (`lifesat_full.csv`).
 
-Dữ liệu sinh từ một đa thức **bậc 2** cộng nhiễu chuẩn `sigma = 1.0`. Vì biết công thức
-thật nên biết luôn đáp án: bậc 2 là đúng, và RMSE 1.0 là sàn.
-
-```python
-rng = np.random.default_rng(42)
-X = rng.uniform(-3, 3, size=(60, 1))
-y = 0.5 * X[:, 0] ** 2 + X[:, 0] + 2 + rng.normal(0, 1, 60)   # bac 2 + nhieu
-Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=42)
-
-for d in (1, 2, 3, 10, 25):
-    m = make_pipeline(PolynomialFeatures(d), StandardScaler(), LinearRegression()).fit(Xtr, ytr)
-```
+### 1 · Quy tắc "tên có chữ w" — hình dạng chung của overfitting
 
 ```text
-san nhieu ly thuyet (do lech chuan cua nhieu) = 1.000 — khong mo hinh nao xuong duoi ma con dung
-
- bac  RMSE train  RMSE test  chenh lech  chan doan
-----------------------------------------------------------
-   1       1.304      1.735       0.431  underfit (train > san nhieu)
-   2       0.722      0.845       0.123  vua
-   3       0.707      0.797       0.089  vua
-  10       0.583      0.813       0.231  vua
-  25       0.550      2.414       1.864  overfit
+quy tac 'ten co chu w' tren 36 nuoc:
+   New Zealand    7.3
+   Sweden         7.3
+   Norway         7.6
+   Switzerland    7.5
+   -> 4/4 tren 7, trong khi ca bang chi 12/36 tren 7
 ```
 
-Bốn điều đọc được, không điều nào thấy được nếu chỉ nhìn một con số:
+Đưa cho một model linh hoạt một thuộc tính vô nghĩa — **tên quốc gia** — và nó có thể
+nhận ra rằng **mọi** nước có chữ *w* trong tên đều có life satisfaction trên 7.
 
-1. **Bậc 1 underfit.** RMSE train 1.304 **cao hơn sàn nhiễu 1.0** — model còn chưa học
-   xong cái học được. Thêm dữ liệu ở đây là vô ích.
-2. **Bậc 2 là đáp án đúng**, và đúng là nó cho khoảng cách train/test nhỏ nhất trong
-   nhóm hợp lý (0.123).
-3. **Bậc 10 vẫn ổn một cách bất ngờ** — RMSE test 0.813. Thừa tham số không tự động là
-   thảm hoạ khi dữ liệu còn đủ.
-4. **Bậc 25 thì sập.** Train 0.550 (đã chui xuống dưới sàn nhiễu — dấu hiệu học thuộc
-   nhiễu), test 2.414. **Lỗi test gấp 4,4 lần lỗi train.**
+Bằng SQL: nó đã học `CASE WHEN country LIKE '%w%' THEN 'tren 7'`. **Đúng 4 trên 4.**
+Trong khi cả bảng chỉ có **12 trên 36** nước vượt 7 — nên đoán bừa chỉ đúng một phần ba.
 
-Chú ý con số quan trọng nhất: ở bậc 25, **RMSE train đẹp hơn mọi bậc khác**. Một người
-chỉ báo cáo lỗi train sẽ kết luận bậc 25 là model tốt nhất.
+Và nó là **thuần tuý ngẫu nhiên**. Không có gì nói nó đúng cho **Rwanda** hay **Zimbabwe**.
+
+> **Một quy tắc hoàn hảo trên tập train là bằng chứng về *tập train đó*, không phải về
+> thế giới.** Đó chính xác là lý do bài sau giữ dữ liệu lại.
+
+### 2 · Đường cong quá linh hoạt
+
+```text
+RMSE tren 36 nuoc:  duong thang 0.61   da thuc bac 10 0.29
+```
+
+Đa thức bậc 10 lệch 36 quốc gia **0,29** điểm; đường thẳng lệch **0,61**. Đường cong
+**trông tốt hơn gấp đôi** — cho tới khi hỏi nó về những mức thu nhập nó chưa thấy:
+
+| GDP đầu người | đa thức bậc 10 dự đoán |
+|---|---|
+| 75.000 | 8,13 |
+| 80.000 | 8,34 |
+| 100.000 | **4,64** |
+
+Giữa 80.000 và 100.000, dự đoán **rơi 3,7 điểm** mà không có gì trong dữ liệu biện minh.
+Đường cong đã đi theo nhiễu của 36 điểm, và **ở giữa chúng nó không mang nghĩa gì**.
+
+> **Một phát hiện khi tái hiện, không có trong sách.** Sách in những con số ngoại suy
+> khác hẳn (−0,20 tại 80.000; **136,25** tại 100.000). Chúng tôi tái hiện **đúng con số
+> RMSE 0,29**, nhưng phần ngoại suy thì **phụ thuộc mạnh vào cách chuẩn hoá đầu vào**:
+>
+> ```text
+> chia 1e4         RMSE train 0.60 | 75k         8.88 | 80k         8.86 | 100k           2.33
+> chia 1e5         RMSE train 0.29 | 75k         8.13 | 80k         8.34 | 100k           4.64
+> StandardScaler   RMSE train 0.30 | 75k        10.25 | 80k        13.45 | 100k         -64.43
+> ```
+>
+> **Bản thân sự bất ổn đó mới là bài học.** Cùng một bậc 10, cùng một dữ liệu, chia đầu
+> vào cho 1e4 hay 1e5 hay chuẩn hoá — ra **2,33 / 4,64 / −64,43** tại cùng một điểm. Một
+> model overfit không chỉ sai; nó **sai theo cách không tái lập được**, vì lời giải của
+> nó nằm ở vùng số học không ổn định.
+
+### 3 · Regularization, bằng số
+
+```text
+duong tren 27 nuoc: 3.749 + 0.0000678 x GDP
+Ridge (alpha=3e9) tren 27 nuoc: he so 0.0000302 -> Luxembourg 8.64
+duong tren 36 nuoc: 5.580 + 0.0000233 x GDP  ->  Luxembourg 8.15
+```
+
+| Model | Train trên | Độ dốc | Luxembourg (GDP 110.261, thật 6,9) |
+|---|---|---|---|
+| Đường thẳng thường | 27 nước | 0,0000678 | **11,22** — vượt trần thang 0–10 |
+| **Ridge, regularization rất mạnh** | **27 nước** | 0,0000302 | **8,64** |
+| Đường thẳng thường | **36 nước** (sự thật đầy đủ) | 0,0000233 | 8,15 |
+
+Đọc kỹ dòng giữa: **Ridge chỉ nhìn thấy đúng 27 quốc gia như đường dốc kia**, nhưng một
+ràng buộc giữ độ dốc của nó xuống, và nó **hạ cánh gần như đúng chỗ của đường biết cả
+36 nước** — 8,64 so với 8,15, thay vì 11,22.
+
+**Đó chính là thứ regularization mua được:** khớp dữ liệu train **kém đi một chút**, khái
+quát hoá **tốt hơn đáng kể**.
+
+*(Sách in 0,0000293 và 8,58; chúng tôi ra 0,0000302 và 8,64 — chênh lệch đến từ giá trị
+`alpha` cụ thể, sách không công bố. Kết luận không đổi.)*
 
 ## Trade-offs
 
@@ -123,77 +201,101 @@ chỉ báo cáo lỗi train sẽ kết luận bậc 25 là model tốt nhất.
 | Bias thấp — bắt được quan hệ phi tuyến | Bias cao — bỏ sót cấu trúc thật |
 | Variance cao — nhạy với nhiễu | Variance thấp — ổn định |
 | Cần nhiều dữ liệu hơn để không overfit | Chạy tốt với ít dữ liệu |
-| Khó giải thích | Dễ giải thích, dễ bảo vệ trước nghiệp vụ |
+| Khó giải thích, **và ngoại suy bất ổn** | Dễ giải thích, dễ bảo vệ |
 
 | Thêm dữ liệu | Thêm regularization |
 |---|---|
-| Chữa được overfit **mà không tăng bias** | Chữa overfit bằng cách **tăng bias** |
+| Chữa overfit **mà không tăng bias** | Chữa overfit **bằng cách tăng bias** |
 | Đắt, chậm, đôi khi bất khả thi | Rẻ, chỉ là một tham số |
-| **Không chữa được underfit** | Làm underfit nặng thêm |
+| **Không chữa được underfit** | **Làm underfit nặng thêm** |
 
-**Khi underfit thì thêm dữ liệu là vô ích.** Đây là kết luận thực dụng nhất của cả mục
-này, và nó tiết kiệm được nhiều tuần: đo lỗi train trước, thấy nó cao hơn sàn nhiễu thì
-đừng đi xin thêm dữ liệu.
+**Khi underfit thì thêm dữ liệu là vô ích.** Đây là kết luận thực dụng nhất của cả bài,
+và nó tiết kiệm được nhiều tuần.
 
 ## Common Mistakes
 
 | Lỗi | Hậu quả |
 |---|---|
-| Chỉ báo cáo lỗi train | Bậc 25 trông như model tốt nhất — xem ví dụ trên |
-| Không ước lượng sàn nhiễu | Đuổi theo RMSE bất khả thi, học thuộc nhiễu |
+| Chỉ báo cáo lỗi train | Đa thức bậc 10 trông tốt gấp đôi đường thẳng |
 | Chọn model bằng **test set** | Test set thành tập train thứ hai; điểm báo cáo là điểm giả |
-| Thấy overfit là đi xin thêm dữ liệu ngay | Đôi khi đúng, nhưng phải kiểm underfit trước |
-| Coi "thừa tham số = overfit" | Bậc 10 ở trên vẫn ổn; điều quyết định là tỷ lệ tham số / dữ liệu |
-| Tin lỗi test thấp hơn lỗi train | Gần như luôn là rò rỉ dữ liệu — xem [Scikit-Learn API](sklearn-api-design.md) |
+| Thấy overfit là đi xin thêm dữ liệu ngay | Đôi khi đúng, nhưng phải **kiểm underfit trước** |
+| Coi "thừa tham số = overfit" | Chữ **"so với"** mới là chỗ quyết định, không phải số tham số |
+| Đặt cường độ regularization một lần theo nguyên lý | Cả hai đầu núm vặn đều là thất bại; phải đo |
+| Đi tìm hyperparameter trong output của `fit` | Nó không ở đó — training không chạm vào nó |
+| Tin một model overfit ở ngoài vùng dữ liệu | Không chỉ sai, mà **sai không tái lập được** |
+| Tin lỗi test thấp hơn lỗi train | Gần như luôn là rò rỉ |
 
 ## FAQ
 
 <details>
-<summary>Làm sao ước lượng sàn nhiễu khi không biết công thức sinh dữ liệu?</summary>
+<summary>Model đạt 99% trên train và 62% trên tập giữ lại. Bệnh gì, và hai cách chữa?</summary>
 
-Không có cách chính xác, nhưng có ba cách xấp xỉ dùng được: lỗi của **người** làm cùng
-việc đó; lỗi của hai lần đo lặp lại trên cùng một đối tượng; hoặc lỗi của model tốt
-nhất đã biết trên cùng bộ dữ liệu. Có một con số thô còn hơn không có gì — không có nó
-thì không biết khi nào nên dừng.
+**Overfitting** — định nghĩa đúng nguyên văn: tốt trên dữ liệu train, tệ trên dữ liệu
+mới. Hai cách chữa bất kỳ trong ba: **đơn giản hoá model** (ít tham số, ít feature),
+**lấy thêm dữ liệu train**, hoặc **giảm nhiễu** (sửa lỗi, bỏ outlier).
 
-</details>
-
-<details>
-<summary>Nếu chọn model bằng test set là sai, thì chọn bằng gì?</summary>
-
-Bằng **validation set** hoặc cross-validation, cả hai đều cắt ra từ tập train. Test set
-chỉ được chạm đúng **một lần**, ở cuối cùng, để báo cáo. Chạm nhiều lần thì con số báo
-cáo mất ý nghĩa — xem [Cross-validation](#).
+Cách thứ tư không nằm trong ba cái đó nhưng thường là cái rẻ nhất: **tăng regularization**.
 
 </details>
 
 <details>
-<summary>Khoảng cách train/test bao nhiêu thì gọi là overfit?</summary>
+<summary>Cường độ regularization chọn thế nào, khi không được phép chỉnh trên test set?</summary>
 
-Không có ngưỡng chung, vì nó phụ thuộc vào sàn nhiễu. Cách dùng được: so **tỷ lệ**
-lỗi test / lỗi train và nhìn xu hướng khi tăng độ phức tạp. Trong ví dụ trên, tỷ lệ đi
-1.33 → 1.17 → 1.13 → 1.39 → **4.39**. Chỗ nó bật lên là chỗ cần dừng.
+Bằng **validation set** hoặc cross-validation — cả hai cắt ra từ tập train. Trong
+`scikit-learn`, `Ridge` có tham số `alpha`, và `GridSearchCV` dò giá trị cho nó.
+
+Test set chỉ được chạm **một lần**, ở cuối. Xem
+[Kiểm thử và thẩm định](testing-and-validating.md).
 
 </details>
 
 <details>
-<summary>Train-dev set là gì và khi nào cần?</summary>
+<summary>Vì sao quy tắc "chữ w" lại là ví dụ tốt, khi không ai đưa tên nước vào model?</summary>
 
-Khi dữ liệu train khác phân phối với dữ liệu production (ví dụ: train bằng ảnh tải từ
-web, chạy thật trên ảnh chụp điện thoại). Cắt thêm một phần từ *train* gọi là train-dev.
-Lỗi cao trên train-dev = overfit; lỗi thấp trên train-dev nhưng cao trên dev thật =
-**lệch phân phối**, không phải overfit. Hai bệnh này chữa khác nhau hoàn toàn.
+Vì nó là **hình dạng chung** ở dạng dễ thấy nhất. Đưa cho một model đủ linh hoạt **đủ
+nhiều cột và đủ ít dòng**, nó sẽ **luôn** tìm được một quy tắc đúng với mọi dòng train.
+
+Trong dự án thật, "chữ w" là một ID khách hàng tương quan tình cờ với nhãn, một timestamp
+mã hoá thứ tự nạp dữ liệu, hay một mã chi nhánh chỉ xuất hiện trong dữ liệu cũ. Xem
+[case study: 86,67% trên dữ liệu ngẫu nhiên](../case-studies/chon-feature-truoc-khi-tach.md)
+— cùng cơ chế, 5.000 cột nhiễu.
+
+</details>
+
+<details>
+<summary>Độ phức tạp "so với dữ liệu" — có cách nào ước lượng ngưỡng không?</summary>
+
+Không có công thức chung, nhưng có một tỷ lệ đáng nhìn: **số tham số so với số dòng**.
+Đa thức bậc 10 có 11 tham số cho 36 dòng — khoảng 3 dòng cho mỗi tham số. Đường thẳng có
+2 tham số cho 36 dòng — 18 dòng mỗi tham số.
+
+Đây là dấu hiệu, không phải ngưỡng. Cách chắc chắn duy nhất vẫn là **đo trên dữ liệu giữ
+lại**.
+
+</details>
+
+<details>
+<summary>Vì sao ngoại suy của đa thức lại phụ thuộc vào cách chia đầu vào?</summary>
+
+Vì `PolynomialFeatures(10)` tạo ra các cột từ x tới x¹⁰. Với GDP cỡ 10⁵, cột x¹⁰ có độ
+lớn cỡ 10⁵⁰ — vượt xa khả năng biểu diễn ổn định của số thực 64 bit. Bài toán trở nên
+**điều kiện xấu** (*ill-conditioned*): những thay đổi cực nhỏ ở đầu vào làm hệ số nhảy rất xa.
+
+Đó cũng là lý do thực hành chuẩn là **luôn scale trước khi tạo feature đa thức** — và
+lý do `make_pipeline(PolynomialFeatures(d), StandardScaler(), LinearRegression())` là
+thứ tự đáng dùng.
 
 </details>
 
 ## Related Topics
 
-- [Bản đồ Machine Learning](ml-landscape.md) — loại bài toán quyết định cách chia dữ liệu
-- [Metric hiệu năng](performance-metrics.md) — đo bằng cái gì thì "lỗi" mới có nghĩa
-- [Thiết kế API của Scikit-Learn](sklearn-api-design.md) — pipeline là thứ giữ test set sạch
-- [Case study: chọn feature trước khi tách](../case-studies/chon-feature-truoc-khi-tach.md) — lỗi test thấp giả
-- [Foundations](../index.md) — chủ đề chứa file này
+- [Dữ liệu xấu](bad-data.md) — nhánh còn lại của cây "cái gì có thể hỏng"
+- [Kiểm thử và thẩm định](testing-and-validating.md) — cách phát hiện hai bệnh này bằng số
+- [Instance-based và model-based](instance-vs-model-based.md) — parameter so với hyperparameter
+- [Metric hiệu năng](performance-metrics.md) — RMSE và các thước đo khác
+- [Thiết kế API của Scikit-Learn](sklearn-api-design.md) — pipeline giữ test set sạch
+- [Case study: chọn feature trước khi tách](../case-studies/chon-feature-truoc-khi-tach.md)
 
 ## References
 
-- Aurélien Géron — *Hands-On Machine Learning*, 3rd ed., chương 1 và chương 4
+- Aurélien Géron — *Hands-On Machine Learning*, 3rd ed., chương 1, bài b10

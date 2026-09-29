@@ -1,6 +1,6 @@
 ---
 title: Thiết kế API của Scikit-Learn
-sidebar_position: 4
+sidebar_position: 9
 description: "Ba giao diện Estimator, Transformer, Predictor — và vì sao pipeline là thứ duy nhất giữ test set không bị rò."
 tags: [scikit-learn, pipeline, estimator, transformer, data-leakage, homl3]
 domain: ai

@@ -1,6 +1,6 @@
 ---
 title: Metric hiệu năng
-sidebar_position: 3
+sidebar_position: 8
 description: "RMSE, MAE, precision, recall, F1, ROC-AUC — cái nào nói thật và cái nào nói dối khi dữ liệu lệch lớp."
 tags: [metrics, precision, recall, roc-auc, confusion-matrix, homl3]
 domain: ai

@@ -27,8 +27,13 @@ The five standard groups — same as every other topic in this repo.
 
 | # | Document | Answers the question | Ch. | Level | St |
 |---|---|---|---|---|---|
-| 1 | [ML landscape](reference/ml-landscape.md) | Supervised/unsupervised, batch/online, instance- vs model-based | 1 | beginner | 🟡 |
-| 2 | [Overfitting and underfitting](reference/overfitting-underfitting.md) | Why memorising differs from learning, and bias/variance | 1, 4 | beginner | 🟡 |
+| 1 | [What ML is, and when it is worth it](reference/ml-landscape.md) | Supervised/unsupervised, batch/online, instance- vs model-based | 1 | beginner | 🟡 |
+| 2 | [Axis 1 — Supervised and unsupervised](reference/supervised-unsupervised.md) | Five kinds of supervision; the label column is the biggest bill | 1 | beginner | 🟡 |
+| 2b | [Axis 2 — Batch and online](reference/batch-vs-online.md) | Full refresh or incremental load; model rot | 1 | beginner | 🟡 |
+| 2c | [Axis 3 — Instance vs model-based](reference/instance-vs-model-based.md) | Cyprus by hand; the workflow in ten lines | 1 | beginner | 🟡 |
+| 2d | [Bad data](reference/bad-data.md) | Four silent failures; sampling noise vs bias | 1 | beginner | 🟡 |
+| 2e | [Overfitting and underfitting](reference/overfitting-underfitting.md) | The "w" rule right 4/4; regularization as a dial | 1, 4 | beginner | 🟡 |
+| 2f | [Testing and validating](reference/testing-and-validating.md) | One set one question; the train-dev set | 1 | beginner | 🟡 |
 | 3 | [Performance metrics](reference/performance-metrics.md) | RMSE vs MAE; precision, recall, F1, ROC-AUC — which one, when | 2, 3 | beginner | 🟡 |
 | 4 | [Scikit-Learn's API design](reference/sklearn-api-design.md) | Estimator, Transformer, Predictor — why everything composes into a pipeline | 2 | beginner | 🟡 |
 | 5 | Linear models and gradient descent | Normal equation vs batch/stochastic/mini-batch GD | 4 | intermediate | ⬜ |
@@ -68,7 +73,7 @@ The five standard groups — same as every other topic in this repo.
 
 | Group | Content |
 |---|---|
-| [**Case studies**](case-studies/index.md) | **2 written** — [selecting features before the split](case-studies/chon-feature-truoc-khi-tach.md) (86.67% on random data) · [accuracy high, model useless](case-studies/accuracy-cao-ma-model-vo-dung.md) (0.8981 with recall 0) |
+| [**Case studies**](case-studies/index.md) | **5 written** — [selecting features before the split](case-studies/chon-feature-truoc-khi-tach.md) (86.67% on random data) · [accuracy high, model useless](case-studies/accuracy-cao-ma-model-vo-dung.md) (0.8981 with recall 0) |
 | Exercises | 8 hands-on labs — end-to-end project (ch2), MNIST (ch3), gradient descent from scratch (ch4), SVM decision boundary (ch5), tree vs forest (ch6–7), PCA image compression (ch8), image segmentation by clustering (ch9), plus an exercise set with answers drawn from the end-of-chapter exercises |
 | Cheatsheets | Scikit-Learn API · Metric formulas · Algorithm picker |
 | Case studies (remaining) | 6 more — scaling before the split, data snooping, a random split skewing strata, one-hot blowing up the column count, inertia picking the wrong k, a tree memorising noise |

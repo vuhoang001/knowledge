@@ -1,8 +1,8 @@
 ---
-title: Bản đồ Machine Learning
+title: Machine Learning là gì, và khi nào đáng dùng
 sidebar_position: 1
-description: "Bốn trục phân loại mô hình — có nhãn hay không, học một lần hay học tiếp, so sánh hay khái quát hoá — và vì sao trục cuối quyết định mọi thứ."
-tags: [machine-learning, supervised, unsupervised, online-learning, homl3]
+description: "Định nghĩa T/E/P của Mitchell biến một mong muốn thành ba thứ đi lấy được; bốn tình huống ML trả công hơn luật viết tay."
+tags: [machine-learning, mitchell, supervised, homl3, chuong-1]
 domain: ai
 category: concept
 doc_type: reference
@@ -12,198 +12,200 @@ verified_at:
 updated: 2026-09-29
 ---
 
-# Bản đồ Machine Learning
+# Machine Learning là gì, và khi nào đáng dùng
 
-> **Chốt:** Machine Learning là lập trình bằng **ví dụ** thay vì bằng **luật**. Mọi thuật
-> toán trong kho này chỉ khác nhau ở bốn trục: *có nhãn không*, *học một lần hay học
-> tiếp*, *so sánh với dữ liệu cũ hay rút ra quy luật*, và *ai chịu trách nhiệm khi nó sai*.
+> **Chốt:** Machine Learning là lập trình bằng **ví dụ** thay vì bằng **luật** — mũi tên
+> đảo chiều. Và một bài toán chỉ có thật khi gọi tên được **cả ba** chữ T, E, P. Thiếu
+> một chữ thì đó là một *mong muốn*, không phải bài toán ML.
 
 ## Mục tiêu
 
-Trả lời được **"bài toán này thuộc loại gì"** trước khi chọn thuật toán. Chọn sai loại
-thì mọi thứ sau đó — metric, cách chia dữ liệu, cách đánh giá — đều sai theo, và sai
-một cách **im lặng**: code chạy, số ra đẹp, không có lỗi nào báo.
+Có một phép thử **mang tính phá huỷ có chủ đích**: đặt ba câu hỏi làm chết phần lớn
+yêu cầu "hãy dùng AI cho việc này" ngay trong một cuộc họp, thay vì sau một quý.
 
 ## Tổng quan
 
-### ML là gì, nói cho chặt
+### Mũi tên đảo chiều
 
-Định nghĩa của Tom Mitchell (1997), dùng được vì nó **đo được**:
+```text
+Lập trình truyền thống:  dữ liệu + luật     ->  chương trình  ->  đáp án
+Machine Learning:        dữ liệu + đáp án   ->  training      ->  luật (model)
+```
 
-> Một chương trình học từ kinh nghiệm **E** với nhiệm vụ **T** và thước đo **P**,
-> nếu hiệu năng của nó trên T — đo bằng P — **cải thiện theo E**.
+Nói bằng ngôn ngữ SQL: lập trình truyền thống là bạn tự viết các `CASE WHEN`. Machine
+Learning là bạn đưa vào những dòng **đã điền sẵn cột đáp án**, và training tự tìm ra
+`CASE WHEN` đó.
 
-Ba chữ cái đó chính là ba câu hỏi phải trả lời trước khi viết dòng code đầu tiên:
+### Hai định nghĩa, và chỉ một cái dùng được
 
-| Chữ | Câu hỏi | Ví dụ lọc thư rác |
+| | Phát biểu | Dùng để làm gì |
 |---|---|---|
-| **T** | Nhiệm vụ là gì | Gắn nhãn *rác* / *không rác* cho một email |
-| **E** | Học từ cái gì | 10.000 email đã được người gắn nhãn |
-| **P** | Đo bằng gì | Tỷ lệ thư rác bị chặn, và tỷ lệ thư thật bị chặn nhầm |
+| **Arthur Samuel, 1959** | Lĩnh vực cho máy tính khả năng học mà không cần được lập trình tường minh | Giải thích *ý tưởng* cho người ngoài |
+| **Tom Mitchell, 1997** | Một chương trình học từ kinh nghiệm **E** với nhiệm vụ **T** và thước đo **P**, nếu hiệu năng trên T — đo bằng P — cải thiện theo E | **Quyết định có bắt đầu được hay không** |
 
-**Không trả lời được P thì không làm được ML.** Đây là chỗ hay bị bỏ qua nhất: "làm
-model dự đoán khách rời bỏ" không phải một bài toán, vì nó không nói *sai kiểu nào
-thì tệ hơn*.
+Định nghĩa của Samuel nói ML *là gì*. Định nghĩa của Mitchell nói bạn *có bài toán để
+bắt đầu hay chưa*. Chỉ cái thứ hai đo được.
 
-### Trục 1 — Có nhãn hay không
+### Ba chỗ trống phải điền
 
-| Loại | Dữ liệu train | Trả lời câu hỏi | Ví dụ |
-|---|---|---|---|
-| **Supervised** | Có nhãn `y` | "Giá trị/lớp của cái này là gì" | Hồi quy giá nhà, lọc thư rác |
-| **Unsupervised** | Không nhãn | "Dữ liệu này có cấu trúc gì" | Phân cụm khách, phát hiện bất thường |
-| **Semi-supervised** | Ít nhãn + nhiều không nhãn | Như supervised nhưng nhãn đắt | Google Photos nhận mặt người |
-| **Self-supervised** | Không nhãn, **tự sinh nhãn** | "Đoán phần bị che" | Model ngôn ngữ, BERT |
-| **Reinforcement** | Không nhãn, có **phần thưởng** | "Hành động nào tốt về lâu dài" | Chơi game, điều khiển robot |
-
-Ranh giới hay nhầm nhất là **self-supervised vs unsupervised**. Che một từ trong câu
-rồi bắt model đoán — dữ liệu không có nhãn người gán, nhưng bài toán vẫn là supervised,
-vì nhãn được **sinh ra một cách máy móc từ chính dữ liệu**. Đó là lý do model ngôn ngữ
-train được trên toàn bộ internet mà không cần ai ngồi gán nhãn.
-
-### Trục 2 — Học một lần hay học tiếp
-
-| | Batch (offline) | Online (incremental) |
+| Chữ | Phải gọi tên được | Trong bộ lọc thư rác |
 |---|---|---|
-| Cách học | Train trên toàn bộ dữ liệu, rồi đóng băng | Nạp từng mẩu, cập nhật dần |
-| Dữ liệu mới | Train lại **từ đầu** | Nạp thêm, không train lại |
-| Tài nguyên | Cần cả bộ dữ liệu trong RAM/đĩa | Chỉ cần một mini-batch |
-| Rủi ro | Model cũ dần, *model rot* | **Dữ liệu xấu làm hỏng model trong vài phút** |
+| **T** — task | Việc cần làm | Gắn nhãn *rác* / *không rác* cho một email |
+| **E** — experience | Dữ liệu nó học từ đó; một ví dụ gọi là *training instance* | Những email người dùng đã gắn nhãn |
+| **P** — performance measure | Thước đo để phán xử | Tỷ lệ email phân loại đúng |
 
-Trong `scikit-learn`, online learning là các estimator có `partial_fit`:
-`SGDClassifier`, `SGDRegressor`, `MiniBatchKMeans`.
+**Phần lớn yêu cầu ML chết ở E hoặc ở P** — không ai có dữ liệu đã gắn nhãn, hoặc không
+ai thống nhất được "tốt hơn" nghĩa là gì. Phát hiện ra điều đó tốn một cuộc họp; phát
+hiện muộn tốn một quý.
 
-**Cái bẫy của online learning không phải kỹ thuật mà là vận hành.** Một sensor hỏng
-gửi số rác vào lúc 2 giờ sáng sẽ kéo model đi trong khi không ai nhìn. Batch learning
-có một thứ online learning không có: **một phiên bản model đứng yên để so sánh**. Vì
-thế mặc định nên là batch, và chỉ chuyển sang online khi dữ liệu thật sự không vừa bộ nhớ.
+> **P không phải báo cáo đọc sau, mà là cái đích.** Định nghĩa nói hiệu năng cải thiện
+> *đo bằng P*, nên **bất cứ thứ gì P bỏ qua, hệ thống được phép làm tệ**. P của bộ lọc
+> thư rác ở trên — tỷ lệ phân loại đúng — coi *để lọt một thư rác* và *chặn nhầm một thư
+> thật* là **cùng một lỗi**. Với một hệ thống mail thì hai cái đó không hề giống nhau.
+> Chọn P là một **quyết định thiết kế**, không phải thủ tục.
 
-### Trục 3 — Instance-based hay model-based
+### Dữ liệu một mình không phải kinh nghiệm
 
-Đây là trục **quan trọng nhất**, vì nó quyết định cái gì bị mang đi lúc deploy.
+Tải toàn bộ Wikipedia về máy là rất nhiều dữ liệu, nhưng **không có gì học được cả**:
+không có T, không có P nào đang cải thiện theo nó.
 
-| | Instance-based | Model-based |
-|---|---|---|
-| Cách khái quát hoá | So sánh điểm mới với các điểm **đã thuộc lòng** | Rút ra **tham số**, rồi vứt dữ liệu train đi |
-| Lúc `fit` | Gần như không làm gì — chỉ lưu dữ liệu | Tối ưu hoá, tốn thời gian |
-| Lúc `predict` | Chậm — phải duyệt dữ liệu train | Nhanh — chỉ là vài phép nhân |
-| Deploy phải mang theo | **Toàn bộ dữ liệu train** | Vài chục số |
-| Ví dụ | k-Nearest Neighbors | Linear/Logistic Regression, mạng nơ-ron |
+Đây đúng là ranh giới hay bị vượt trong công việc dữ liệu: đổ một bảng lớn vào lake
+**không** làm báo cáo nào chính xác hơn trong ngày nó hạ cánh. Câu *"chúng ta có dữ
+liệu"* tự nó chưa bao giờ là lập luận rằng một model là khả thi.
+
+### Bốn tình huống ML trả công hơn luật viết tay
+
+| Tình huống | Vì sao ML thắng |
+|---|---|
+| Giải pháp hiện tại là một danh sách luật dài, chỉnh tay | ML rút ngắn code, dễ bảo trì hơn |
+| **Không có giải pháp truyền thống nào tốt** | Nhận dạng giọng nói — không ai viết nổi luật phân biệt "one" với "two" qua mọi giọng, mọi phòng ồn |
+| **Môi trường thay đổi liên tục** | Train lại trên dữ liệu mới; đây là lợi thế sắc nhất |
+| Hiểu dữ liệu lớn / phức tạp | Mở model ra xem nó học gì — **data mining** |
+
+**Tình huống thứ ba khác hẳn ba cái kia về bản chất.** Ba cái còn lại: ML là *công cụ
+tốt hơn cho cùng một việc*. Cái này: ML là **một mô hình vận hành khác**. Bộ lọc luật
+cần một người phát hiện ra spammer đã đổi "4U" thành "For U" rồi vá tay. Bộ lọc được
+train lại tự khép vòng đó.
+
+Cái giá phải trả: **hệ thống giờ thay đổi mà không ai quyết định là nó nên thay đổi** —
+chính xác là lý do phần sau dành nhiều chỗ cho dữ liệu xấu và giám sát.
+
+### Khi nào ML *không* phải câu trả lời
+
+**Khi luật ngắn và ổn định.** Bảng dưới là phép so sánh thật, không phải giả định.
 
 ## Ví dụ
 
 Chạy thật 29/09/2026 tại `~/learn-lab/ml` — Python 3.12.3, scikit-learn 1.9.1,
-numpy 2.5.3. Seed `random_state=42`.
+trên **chính bộ dữ liệu của sách** (`ageron/data`, `lifesat.csv`, 27 quốc gia).
 
-Hai mô hình trên cùng bộ `load_diabetes`: một model-based, một instance-based.
+Một người có thể viết tay luật này: *GDP đầu người trên 40.000 USD thì đoán 7, còn lại
+đoán 6.* Một dòng `CASE WHEN`. So với đường thẳng mà training tìm ra:
 
-```python
-X, y = load_diabetes(return_X_y=True)
-Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=42)
-
-lin = LinearRegression().fit(Xtr, ytr)
-knn = KNeighborsRegressor(n_neighbors=5).fit(Xtr, ytr)
-```
+| Quốc gia | GDP đầu người | điểm thật | luật viết tay | đường đã train |
+|---|---|---|---|---|
+| Hungary | 31.008 | 5,6 | 6 | 5,85 |
+| Israel | 38.341 | 7,2 | 6 | 6,35 |
+| Denmark | 55.938 | 7,6 | 7 | 7,54 |
+| United States | 60.236 | 6,9 | 7 | 7,83 |
 
 ```text
-so mau train / test        : 353 / 89
-so tham so LinearRegression: 11
-so tham so KNeighbors      : 0  (luu lai 28240 byte du lieu train)
-
-MAE LinearRegression : 42.79
-MAE KNeighbors(k=5)  : 42.77
-
-chenh lech du doan giua hai mo hinh: trung binh 26.70, lon nhat 88.89
+sai so tuyet doi trung binh tren 27 nuoc: 0.3125
+lech nhieu nhat: United States — du doan 7.83, that 6.9
 ```
 
-Đọc kỹ ba con số này, vì chúng là cả bài học:
+Luật viết tay lệch trung bình **0,33** điểm; đường đã train lệch **0,31**. Với *một*
+cột đầu vào và *27* dòng, một dòng `CASE WHEN` gần như ngang ngửa cả một model.
 
-1. **MAE gần như bằng nhau — 42.79 và 42.77.** Nếu chỉ nhìn bảng điểm thì hai mô hình
-   này thay thế được cho nhau.
-2. **Nhưng trên từng mẫu chúng lệch trung bình 26.70, cao nhất 88.89** — tức là gần
-   bằng chính sai số của chúng. Hai mô hình "ngang nhau" đang **trả lời khác hẳn nhau
-   cho cùng một bệnh nhân**.
-3. **Chi phí deploy lệch nhau hoàn toàn**: 11 con số so với 28.240 byte dữ liệu bệnh nhân
-   thật phải mang theo ra production.
-
-Điểm số bằng nhau **không** có nghĩa là hai mô hình tương đương. Nếu dữ liệu train chứa
-thông tin cá nhân, điểm 3 một mình đã đủ để loại k-NN.
+**Đó chính là luận điểm.** ML không trả công ở đây. Nó trả công khi luật phải dài (bộ
+lọc thư rác cần hàng trăm luật, không phải một), hoặc khi luật **ôi thiu**: khi sách
+thêm 9 quốc gia nữa, đường thẳng chỉ cần train lại trên 36 dòng, còn luật viết tay cần
+một người phát hiện và sửa.
 
 ## Trade-offs
 
-| | Instance-based (k-NN) | Model-based (Linear) |
-|---|---|---|
-| Train | Tức thì | Tốn thời gian |
-| Predict | Chậm, tăng theo số mẫu train | Hằng số |
-| Kích thước artifact | Bằng cả bộ dữ liệu | Vài chục byte |
-| Quyền riêng tư | **Mang dữ liệu gốc ra production** | Không mang |
-| Giải thích được | "Vì nó giống 5 ca này" | "Vì hệ số cột BMI là 0.4" |
-| Dữ liệu nhiều chiều | Sụp đổ — xem [curse of dimensionality](#) | Chịu được tốt hơn |
+| Luật viết tay | Model được train |
+|---|---|
+| Rẻ để viết lần đầu | Đắt để dựng lần đầu |
+| **Đắt để giữ đúng** | **Rẻ để làm mới** |
+| Đọc được, cãi được với nghiệp vụ | Phải tin vào một bảng số |
+| Thay đổi chỉ khi có người sửa | Thay đổi mỗi lần train lại |
+| Đúng cho tới khi thế giới đổi | Theo kịp thế giới, kể cả khi không ai muốn |
 
-| | Batch | Online |
-|---|---|---|
-| Kiểm soát | Có phiên bản đứng yên để so | Model trôi liên tục |
-| Dữ liệu xấu | Bắt được ở lần train sau | **Hỏng ngay, khó truy lại** |
-| Dữ liệu lớn hơn RAM | Không làm được | Làm được |
+**Câu hỏi quyết định không phải "bài toán này có khó không" mà là "đáp án đúng thay đổi
+nhanh đến đâu".** Luật ngắn và ổn định thì viết tay vẫn là kỹ thuật tốt hơn.
 
 ## Common Mistakes
 
 | Lỗi | Hậu quả |
 |---|---|
-| Chọn thuật toán trước khi chốt **P** (thước đo) | Tối ưu nhầm thứ; model "tốt" mà nghiệp vụ không dùng được |
-| Coi self-supervised là unsupervised | Quên mất vẫn cần tách test set như mọi bài supervised |
-| Dùng online learning vì nghe hiện đại | Một ngày dữ liệu xấu phá model, không có bản cũ để quay lại |
-| Chọn k-NN rồi mới phát hiện phải mang dữ liệu gốc ra production | Vi phạm quyền riêng tư, phát hiện lúc sắp deploy |
-| Kết luận hai model tương đương vì cùng điểm | Như ví dụ trên — chúng lệch 88.89 trên từng ca |
+| Bắt đầu dự án khi chưa gọi tên được **P** | Tối ưu nhầm thứ; model "tốt" mà nghiệp vụ không dùng |
+| Chọn P vì nó dễ tính, không vì nó phản ánh chi phí | Hệ thống tự do làm tệ ở đúng chỗ P không nhìn |
+| Coi "chúng ta có dữ liệu" là bằng chứng ML khả thi | Không có T và P thì đó chỉ là dữ liệu, không phải E |
+| Dùng ML cho luật một dòng | Thêm một hệ thống phải nuôi để đổi 0,33 lấy 0,31 |
+| Chọn ML vì "môi trường thay đổi" mà không dựng giám sát | Hệ thống tự đổi, không ai biết nó đổi thành gì |
+| Lên kế hoạch dựa trên việc "sẽ mở model ra đọc được" | Dễ với bộ lọc thư rác, rất khó với nhiều loại model khác |
 
 ## FAQ
 
 <details>
-<summary>Bài toán của tôi có nhãn nhưng nhãn rất ít và rất đắt — làm gì?</summary>
+<summary>P của bộ lọc thư rác — tỷ lệ phân loại đúng — sai ở chỗ nào?</summary>
 
-Đó đúng là semi-supervised. Cách làm thực dụng trong HOML3 chương 9: phân cụm dữ liệu
-không nhãn trước, gán nhãn tay cho **một mẫu đại diện của mỗi cụm**, rồi lan nhãn đó
-ra cả cụm. Với cùng công sức gán tay, cách này thường cho model tốt hơn hẳn so với gán
-ngẫu nhiên cùng số lượng.
+Nó coi hai loại sai như nhau. Để lọt một thư rác làm người dùng khó chịu; chặn nhầm một
+thư thật có thể làm mất một hợp đồng. Thước đo đúng phải tách hai loại đó ra — đó chính
+là precision và recall ở [Metric hiệu năng](performance-metrics.md).
 
-</details>
-
-<details>
-<summary>Khi nào thì ML <strong>không</strong> phải câu trả lời?</summary>
-
-Khi luật viết tay ngắn hơn và ổn định. Nếu quy tắc nghiệp vụ là "đơn trên 10 triệu thì
-cần duyệt", đừng train model — viết một câu `if`. ML trả công khi luật **quá nhiều,
-quá thay đổi, hoặc không ai viết ra được** (nhận diện ảnh là ví dụ kinh điển: không ai
-viết nổi luật mô tả "con mèo").
+Đây là ví dụ cụ thể của luật chung: **bất cứ thứ gì P bỏ qua, hệ thống được phép làm tệ.**
 
 </details>
 
 <details>
-<summary>Instance-based có bao giờ tốt hơn model-based không?</summary>
+<summary>Ranh giới giữa "data mining" và "machine learning" ở đâu?</summary>
 
-Có, khi ranh giới quyết định méo mó không theo công thức nào, và dữ liệu đủ dày. k-NN
-không giả định gì về hình dạng dữ liệu — đó vừa là điểm mạnh vừa là điểm yếu. Nó cũng
-là baseline rất đáng chạy: model phức tạp không thắng nổi k-NN thì vấn đề nằm ở
-feature, không nằm ở thuật toán.
+Theo cách sách dùng: data mining là **mục đích** (đào dữ liệu lớn để tìm quy luật chưa
+ai biết), machine learning là **công cụ** giỏi việc đó. Mở một bộ lọc thư rác đã train
+ra và đọc danh sách từ mà nó coi là dấu hiệu rác — đó là data mining, và đôi khi nó lộ
+ra tương quan không ai ngờ.
+
+Kèm theo cảnh báo của sách: dễ với bộ lọc thư rác, **khó với nhiều loại model khác**.
+Đừng lên kế hoạch dự án dựa trên giả định là sẽ đọc được model.
 
 </details>
 
 <details>
-<summary>Tôi phải nhớ hết bốn trục này không?</summary>
+<summary>Tôi có dữ liệu nhưng chưa có nhãn. Đã đủ để bắt đầu chưa?</summary>
 
-Không. Nhớ **trục 3** (instance vs model-based) vì nó quyết định artifact lúc deploy,
-và nhớ rằng **P phải chốt trước**. Hai trục còn lại tra lại khi cần.
+Chưa, nếu bài toán là supervised. Gọi tên được T và P nhưng E chưa tồn tại thì **kế
+hoạch dự án thực chất là một kế hoạch gắn nhãn** — và đó thường là phần đắt nhất. Xem
+[Học có giám sát và không giám sát](supervised-unsupervised.md), mục nói về giá của
+cột nhãn, cùng hai cách mua nó rẻ hơn.
+
+</details>
+
+<details>
+<summary>Ba trục phân loại hệ thống ML là gì?</summary>
+
+Sách sắp xếp mọi hệ thống ML theo ba trục **độc lập nhau** — một hệ thống luôn có cả ba:
+
+| Trục | Câu hỏi | Chi tiết ở |
+|---|---|---|
+| 1 | Giám sát nhiều hay ít | [Học có giám sát và không giám sát](supervised-unsupervised.md) |
+| 2 | Học một lần hay học tiếp | [Batch và online](batch-vs-online.md) |
+| 3 | So sánh hay khái quát hoá | [Instance-based và model-based](instance-vs-model-based.md) |
 
 </details>
 
 ## Related Topics
 
-- [Overfitting và underfitting](overfitting-underfitting.md) — thử thách lớn nhất sau khi đã chọn đúng loại bài toán
-- [Metric hiệu năng](performance-metrics.md) — chữ **P** trong định nghĩa Mitchell
-- [Thiết kế API của Scikit-Learn](sklearn-api-design.md) — mọi thuật toán ở trên đều dùng chung ba giao diện
-- [Foundations](../index.md) — chủ đề chứa file này
-- [Data Quality](../../../data-quality/index.md) — **E** bẩn thì không có **P** nào cứu được
+- [Học có giám sát và không giám sát](supervised-unsupervised.md) — trục 1, và giá của cột nhãn
+- [Batch và online learning](batch-vs-online.md) — trục 2
+- [Instance-based và model-based](instance-vs-model-based.md) — trục 3, kèm ví dụ Cyprus chạy tay
+- [Dữ liệu xấu: bốn thử thách đầu tiên](bad-data.md) — E hỏng theo bốn kiểu
+- [Metric hiệu năng](performance-metrics.md) — chữ **P**, và vì sao chọn sai thì hỏng hết
+- [Data Quality](../../../data-quality/index.md) — E bẩn thì không P nào cứu được
 
 ## References
 
-- Aurélien Géron — *Hands-On Machine Learning*, 3rd ed., chương 1
+- Aurélien Géron — *Hands-On Machine Learning*, 3rd ed., chương 1, bài b01 và b02
 - Tom Mitchell — *Machine Learning* (1997), định nghĩa T/E/P
+- Arthur Samuel (1959), định nghĩa không chính thức

@@ -313,12 +313,20 @@ init, optimizer và vòng lặp train.
 | [machine-learning/index](machine-learning/index.md) | Lộ trình chung, năm cái bẫy lớn, bảng độ phủ 19 chương | 🗂️ |
 | [foundations/index](machine-learning/foundations/index.md) | Chương 1–9 — metric, linear model, SVM, cây, ensemble, PCA, clustering | 🗂️ |
 | [deep-learning/index](machine-learning/deep-learning/index.md) | Chương 10–19 — MLP, CNN, RNN, transformer, mô hình sinh, RL, deploy | 🗂️ |
-| [ml-landscape](machine-learning/foundations/reference/ml-landscape.md) | Bốn trục phân loại; hai model cùng MAE 42.8 nhưng lệch 88.89 trên từng ca | 🟡 |
-| [overfitting-underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | Bảng chẩn đoán hai chiều; đa thức bậc 25 cho RMSE test gấp 4,4 lần train | 🟡 |
+| [ml-landscape](machine-learning/foundations/reference/ml-landscape.md) | T/E/P của Mitchell; luật `CASE WHEN` lệch 0,33 so với model lệch 0,31 — ML chưa trả công | 🟡 |
+| [supervised-unsupervised](machine-learning/foundations/reference/supervised-unsupervised.md) | Năm kiểu giám sát; k-means cắt 27 nước thành 16/11 mà không đặt tên được nhóm | 🟡 |
+| [batch-vs-online](machine-learning/foundations/reference/batch-vs-online.md) | Full refresh vs incremental load; model rot làm Luxembourg ra 11,22 trên thang 0–10 | 🟡 |
+| [instance-vs-model-based](machine-learning/foundations/reference/instance-vs-model-based.md) | Cyprus: đường thẳng 6,30 vs k-NN 6,33; θ₀ và θ₁ tính tay năm bước | 🟡 |
+| [bad-data](machine-learning/foundations/reference/bad-data.md) | Bốn kiểu dữ liệu hỏng im lặng; Literary Digest 2,4 triệu phiếu vẫn gọi sai | 🟡 |
+| [overfitting-underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | Quy tắc "tên có chữ w" đúng 4/4; Ridge kéo Luxembourg từ 11,22 về 8,64 | 🟡 |
+| [testing-and-validating](machine-learning/foundations/reference/testing-and-validating.md) | Một tập một câu hỏi; train-dev tách overfitting khỏi data mismatch | 🟡 |
 | [performance-metrics](machine-learning/foundations/reference/performance-metrics.md) | Accuracy có `TN` ở tử số nên nói dối khi lệch lớp; precision/recall thì không | 🟡 |
 | [sklearn-api-design](machine-learning/foundations/reference/sklearn-api-design.md) | Estimator/Transformer/Predictor; pipeline là thứ cơ học chặn rò rỉ | 🟡 |
 | [cs: chọn feature trước khi tách](machine-learning/foundations/case-studies/chon-feature-truoc-khi-tach.md) | 86,67% accuracy trên 5.000 cột nhiễu thuần tuý, nhãn tung đồng xu | 🟡 |
 | [cs: accuracy cao mà model vô dụng](machine-learning/foundations/case-studies/accuracy-cao-ma-model-vo-dung.md) | `DummyClassifier` đạt 0.8981 với precision và recall bằng 0 | 🟡 |
+| [cs: Luxembourg 11,22](machine-learning/foundations/case-studies/luxembourg-11-22.md) | Dự đoán vượt trần thang 0–10; ba lỗi chồng lên nhau, ba chỗ sửa khác nhau | 🟡 |
+| [cs: chọn k bằng test set](machine-learning/foundations/case-studies/chon-k-bang-test-set.md) | Đo trên 200 lần chia: con số báo cáo lạc quan 12,1% | 🟡 |
+| [cs: k-means không đặt tên được nhóm](machine-learning/foundations/case-studies/k-means-khong-dat-ten-duoc-nhom.md) | Tìm ra cấu trúc thật, không xuất ra ý nghĩa nào | 🟡 |
 
 ## Nền tảng
 

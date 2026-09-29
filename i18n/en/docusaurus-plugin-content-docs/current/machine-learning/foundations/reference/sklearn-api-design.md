@@ -1,6 +1,6 @@
 ---
 title: Scikit-Learn's API design
-sidebar_position: 4
+sidebar_position: 9
 description: "Three interfaces — Estimator, Transformer, Predictor — and why a pipeline is the only thing that keeps the test set from leaking."
 tags: [scikit-learn, pipeline, estimator, transformer, data-leakage, homl3]
 domain: ai

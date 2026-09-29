@@ -1,6 +1,6 @@
 ---
 title: Performance metrics
-sidebar_position: 3
+sidebar_position: 8
 description: "RMSE, MAE, precision, recall, F1, ROC-AUC — which ones tell the truth and which ones lie when the classes are imbalanced."
 tags: [metrics, precision, recall, roc-auc, confusion-matrix, homl3]
 domain: ai

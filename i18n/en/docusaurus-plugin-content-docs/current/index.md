@@ -312,12 +312,20 @@ training loop yourself.
 | [machine-learning/index](machine-learning/index.md) | Shared learning path, the five big traps, coverage across 19 chapters | 🗂️ |
 | [foundations/index](machine-learning/foundations/index.md) | Chapters 1–9 — metrics, linear models, SVM, trees, ensembles, PCA, clustering | 🗂️ |
 | [deep-learning/index](machine-learning/deep-learning/index.md) | Chapters 10–19 — MLP, CNN, RNN, transformers, generative models, RL, deployment | 🗂️ |
-| [ml-landscape](machine-learning/foundations/reference/ml-landscape.md) | Four classification axes; two models share MAE 42.8 yet disagree by 88.89 per case | 🟡 |
-| [overfitting-underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | A two-way diagnostic table; a degree-25 polynomial gives test RMSE 4.4× its training RMSE | 🟡 |
+| [ml-landscape](machine-learning/foundations/reference/ml-landscape.md) | Mitchell's T/E/P; a `CASE WHEN` misses by 0.33 against the model's 0.31 — ML has not paid off | 🟡 |
+| [supervised-unsupervised](machine-learning/foundations/reference/supervised-unsupervised.md) | Five kinds of supervision; k-means splits 27 countries 16/11 and cannot name the groups | 🟡 |
+| [batch-vs-online](machine-learning/foundations/reference/batch-vs-online.md) | Full refresh vs incremental load; model rot puts Luxembourg at 11.22 on a 0–10 scale | 🟡 |
+| [instance-vs-model-based](machine-learning/foundations/reference/instance-vs-model-based.md) | Cyprus: the line says 6.30, k-NN says 6.33; θ₀ and θ₁ derived by hand in five steps | 🟡 |
+| [bad-data](machine-learning/foundations/reference/bad-data.md) | Four silent data failures; the Literary Digest called it wrong on 2.4 million replies | 🟡 |
+| [overfitting-underfitting](machine-learning/foundations/reference/overfitting-underfitting.md) | The "w in the name" rule is right 4/4; Ridge pulls Luxembourg from 11.22 back to 8.64 | 🟡 |
+| [testing-and-validating](machine-learning/foundations/reference/testing-and-validating.md) | One set one question; the train-dev set separates overfitting from data mismatch | 🟡 |
 | [performance-metrics](machine-learning/foundations/reference/performance-metrics.md) | Accuracy has `TN` in its numerator so it lies under imbalance; precision/recall do not | 🟡 |
 | [sklearn-api-design](machine-learning/foundations/reference/sklearn-api-design.md) | Estimator/Transformer/Predictor; the pipeline is what mechanically blocks leakage | 🟡 |
 | [cs: selecting features before the split](machine-learning/foundations/case-studies/chon-feature-truoc-khi-tach.md) | 86.67% accuracy on 5,000 pure noise columns with coin-flip labels | 🟡 |
 | [cs: high accuracy, useless model](machine-learning/foundations/case-studies/accuracy-cao-ma-model-vo-dung.md) | `DummyClassifier` scores 0.8981 with precision and recall both 0 | 🟡 |
+| [cs: Luxembourg 11.22](machine-learning/foundations/case-studies/luxembourg-11-22.md) | A prediction above the top of the scale; three stacked failures, three different fixes | 🟡 |
+| [cs: choosing k on the test set](machine-learning/foundations/case-studies/chon-k-bang-test-set.md) | Measured over 200 splits: the reported number is 12.1% optimistic | 🟡 |
+| [cs: k-means cannot name the groups](machine-learning/foundations/case-studies/k-means-khong-dat-ten-duoc-nhom.md) | Finds real structure, outputs no meaning | 🟡 |
 
 ## Foundations
 
