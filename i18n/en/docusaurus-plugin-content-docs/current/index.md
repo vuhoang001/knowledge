@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-09-11
+updated: 2026-09-29
 ---
 
 # `docs/` table of contents
@@ -300,6 +300,19 @@ but each entry answers *why* and *where the traps are*. Start at
 | [cs: the glob doesn't match](bash/case-studies/glob-khong-khop.md) | The loop runs once with a literal asterisk | 📝 |
 | [cs: set -e doesn't catch it](bash/case-studies/set-e-khong-bat.md) | `set -e` is on but the script keeps running after an error | 📝 |
 
+## Machine Learning
+
+Follows Géron's *Hands-On Machine Learning*, 3rd edition — 19 chapters, 310 lessons.
+Split in two at the chapter 9/10 boundary: everything before it fits inside
+`scikit-learn`, everything after it means handling initialisation, optimizers and the
+training loop yourself.
+
+| File | One-line takeaway | St |
+|---|---|---|
+| [machine-learning/index](machine-learning/index.md) | Shared learning path, the five big traps, coverage across 19 chapters | 🗂️ |
+| [foundations/index](machine-learning/foundations/index.md) | Chapters 1–9 — metrics, linear models, SVM, trees, ensembles, PCA, clustering | 🗂️ |
+| [deep-learning/index](machine-learning/deep-learning/index.md) | Chapters 10–19 — MLP, CNN, RNN, transformers, generative models, RL, deployment | 🗂️ |
+
 ## Foundations
 
 | File | One-line takeaway | St |
@@ -341,4 +354,6 @@ graph TD
   FLINK --> ICE[Iceberg]
   ICE --> TRINO[Trino]
   DBT --> TRINO
+  PY --> MLF[ML Foundations]
+  MLF --> MLD[Deep Learning]
 ```

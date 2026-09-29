@@ -54,6 +54,8 @@ graph TD
   ICE --> TRINO
   PY[Python] --> AF[Airflow]
   AF --> DBT
+  PY --> MLF[ML Foundations]
+  MLF --> MLD[Deep Learning]
 
   click DM "docs/data-modeling/"
   click DQ "docs/data-quality/"
@@ -74,6 +76,16 @@ graph TD
 | [Orchestration](docs/orchestration/) | [Airflow](docs/orchestration/airflow/) | ⬜ chưa bắt đầu |
 | [Databases](docs/databases/) | [SQL](docs/databases/sql/) | ⬜ chưa bắt đầu |
 | [Languages](docs/languages/) | [Python](docs/languages/python/) | ⬜ chưa bắt đầu |
+
+### Machine Learning
+
+| Nhóm | Nội dung | Trạng thái |
+|---|---|---|
+| [Foundations](docs/machine-learning/foundations/) | Chương 1–9 Géron HOML3 — metric · linear model · SVM · cây · ensemble · PCA · clustering | ⬜ chưa bắt đầu |
+| [Deep Learning](docs/machine-learning/deep-learning/) | Chương 10–19 — MLP · CNN · RNN · transformer · autoencoder/GAN · RL · serving | ⬜ chưa bắt đầu |
+
+Lab chạy ở `~/learn-lab/ml/` (venv riêng). Dataset tải bằng hàm thư viện nên không có
+seed trong `lab-starter/`; đổi lại **mọi con số dán vào note phải kèm seed và phiên bản**.
 
 ### Software Engineering
 

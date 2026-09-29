@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-09-11
+updated: 2026-09-29
 ---
 
 # Mục lục `docs/`
@@ -302,6 +302,18 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [cs: glob không khớp](bash/case-studies/glob-khong-khop.md) | Vòng lặp chạy một lần với dấu sao literal | 📝 |
 | [cs: set -e không bắt](bash/case-studies/set-e-khong-bat.md) | `set -e` bật nhưng script vẫn chạy tiếp sau lỗi | 📝 |
 
+## Machine Learning
+
+Bám theo Géron *Hands-On Machine Learning* ấn bản 3 — 19 chương, 310 bài. Tách đôi ở
+ranh giới chương 9/10: phần trước chạy gọn trong `scikit-learn`, phần sau phải tự lo
+init, optimizer và vòng lặp train.
+
+| File | Chốt một câu | TT |
+|---|---|---|
+| [machine-learning/index](machine-learning/index.md) | Lộ trình chung, năm cái bẫy lớn, bảng độ phủ 19 chương | 🗂️ |
+| [foundations/index](machine-learning/foundations/index.md) | Chương 1–9 — metric, linear model, SVM, cây, ensemble, PCA, clustering | 🗂️ |
+| [deep-learning/index](machine-learning/deep-learning/index.md) | Chương 10–19 — MLP, CNN, RNN, transformer, mô hình sinh, RL, deploy | 🗂️ |
+
 ## Nền tảng
 
 | File | Chốt một câu | TT |
@@ -343,4 +355,6 @@ graph TD
   FLINK --> ICE[Iceberg]
   ICE --> TRINO[Trino]
   DBT --> TRINO
+  PY --> MLF[ML Foundations]
+  MLF --> MLD[Deep Learning]
 ```
