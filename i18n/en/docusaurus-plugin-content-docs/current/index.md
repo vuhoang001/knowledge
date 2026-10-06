@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-09-29
+updated: 2026-10-06
 ---
 
 # `docs/` table of contents
@@ -327,6 +327,42 @@ training loop yourself.
 | [cs: choosing k on the test set](machine-learning/foundations/case-studies/chon-k-bang-test-set.md) | Measured over 200 splits: the reported number is 12.1% optimistic | 🟡 |
 | [cs: k-means cannot name the groups](machine-learning/foundations/case-studies/k-means-khong-dat-ten-duoc-nhom.md) | Finds real structure, outputs no meaning | 🟡 |
 
+## AWS
+
+Two tiers tracking two exams. The `foundations/` tier maps **exactly onto the 19 task
+statements** of the official CLF-C02 exam guide — breadth across the service catalogue,
+not depth of implementation. The `architecting/` tier (SAA-C03) is a skeleton only.
+
+| File | One-line takeaway | St |
+|---|---|---|
+| [aws/index](aws/index.md) | The exam's numbers, the four domain weights, five big traps, coverage of all 19 tasks | 🗂️ |
+| [foundations/index](aws/foundations/index.md) | Reading order for the 19 documents — not domain 1→4 | 🗂️ |
+| [architecting/index](aws/architecting/index.md) | SAA-C03 skeleton, and what it demands on top of CLF | 🗂️ |
+| [cloud-value-proposition](aws/foundations/reference/cloud-value-proposition.md) | Six benefits on two axes; elasticity ≠ HA ≠ agility | 🟡 |
+| [well-architected-framework](aws/foundations/reference/well-architected-framework.md) | Six pillars — Sustainability is the sixth; older material lists only five | 🟡 |
+| [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | CAF's six perspectives (three are about *people*), the seven R strategies, Snow Family | 🟡 |
+| [cloud-economics](aws/foundations/reference/cloud-economics.md) | CapEx→OpEx promises no lower total; TCO, rightsizing, BYOL needs a Dedicated Host | 🟡 |
+| [shared-responsibility](aws/foundations/reference/shared-responsibility.md) | The line moves per service; data and IAM **never** move | 🟡 |
+| [security-governance-compliance](aws/foundations/reference/security-governance-compliance.md) | CloudTrail *who did it* ⇄ Config *what changed* ⇄ CloudWatch *metrics* ⇄ Artifact *reports* | 🟡 |
+| [access-management](aws/foundations/reference/access-management.md) | A user's permissions are not on the user — and the local emulator **does not** evaluate policy, shown by real output | 🟡 |
+| [security-components](aws/foundations/reference/security-components.md) | SG/NACL/WAF/Shield as four layers; Trusted Advisor ⇄ Inspector ⇄ GuardDuty ⇄ Config | 🟡 |
+| [deploy-and-access-methods](aws/foundations/reference/deploy-and-access-methods.md) | One-off → Console, repeatable → IaC; VPN in hours ⇄ Direct Connect in weeks | 🟡 |
+| [global-infrastructure](aws/foundations/reference/global-infrastructure.md) | HA = multiple AZs; DR and data sovereignty = multiple Regions; Outposts sits on customer premises | 🟡 |
+| [compute](aws/foundations/reference/compute.md) | Three tiers of responsibility; ECS alone does **not** mean no servers — only Fargate does | 🟡 |
+| [databases](aws/foundations/reference/databases.md) | Multi-AZ is HA, a read replica is read scaling — two entirely different things | 🟡 |
+| [networking](aws/foundations/reference/networking.md) | A subnet lives in exactly one AZ; public = has a route to an IGW; NAT Gateway is not Free Tier | 🟡 |
+| [storage](aws/foundations/reference/storage.md) | Seven S3 classes by *access frequency × tolerable wait*; lifecycle skips objects under 128 KB | 🟡 |
+| [ai-ml-and-analytics](aws/foundations/reference/ai-ml-and-analytics.md) | Remember AI services as *input → output*; Athena ⇄ Redshift, Glue ⇄ EMR | 🟡 |
+| [other-service-categories](aws/foundations/reference/other-service-categories.md) | SQS one consumer ⇄ SNS many ⇄ EventBridge by content ⇄ Step Functions for workflows | 🟡 |
+| [pricing-models](aws/foundations/reference/pricing-models.md) | Two questions pick the model; data in is cheap, data out costs | 🟡 |
+| [billing-and-cost-management](aws/foundations/reference/billing-and-cost-management.md) | Four tools, four *tenses*; tags must be **activated** and are not retroactive | 🟡 |
+| [support-and-technical-resources](aws/foundations/reference/support-and-technical-resources.md) | Three thresholds: Business gets 24/7, On-Ramp a TAM pool, Enterprise a dedicated TAM | 🟡 |
+| [cs: a security group cannot block an IP](aws/foundations/case-studies/security-group-khong-chan-duoc-ip.md) | The SG API has **no** `Action` parameter — the CLI error proves it | 🟡 |
+| [cs: lifecycle, then needed urgently](aws/foundations/case-studies/s3-lifecycle-roi-can-gap.md) | Glacier is not "cheaper S3", it is "S3 with a wait added" | 🟡 |
+| [cs: root access key leaked](aws/foundations/case-studies/root-access-key-lot-ra-ngoai.md) | `root` is not an IAM user, so **no policy can be attached** to rein it in | 🟡 |
+| [cheat: keyword → service](aws/foundations/cheatsheets/service-picker.md) | One-way lookup table for practice exams, opening with the 10 most-confused pairs | 🟡 |
+| [cheat: how AWS words questions](aws/foundations/cheatsheets/exam-wording.md) | MOST cost-effective ⇄ LEAST operational overhead decides the answer | 🟡 |
+
 ## Foundations
 
 | File | One-line takeaway | St |
@@ -370,4 +406,5 @@ graph TD
   DBT --> TRINO
   PY --> MLF[ML Foundations]
   MLF --> MLD[Deep Learning]
+  AWSF[AWS Foundations<br/>CLF-C02] --> AWSA[Architecting<br/>SAA-C03]
 ```

@@ -56,6 +56,7 @@ graph TD
   AF --> DBT
   PY --> MLF[ML Foundations]
   MLF --> MLD[Deep Learning]
+  AWSF[AWS Foundations<br/>CLF-C02] --> AWSA[AWS Architecting<br/>SAA-C03]
 
   click DM "docs/data-modeling/"
   click DQ "docs/data-quality/"
@@ -86,6 +87,18 @@ graph TD
 
 Lab chạy ở `~/learn-lab/ml/` (venv riêng). Dataset tải bằng hàm thư viện nên không có
 seed trong `lab-starter/`; đổi lại **mọi con số dán vào note phải kèm seed và phiên bản**.
+
+### Cloud
+
+| Nhóm | Nội dung | Trạng thái |
+|---|---|---|
+| [Foundations (CLF-C02)](docs/aws/foundations/) | 19 tài liệu khớp 19 task statement — [shared responsibility](docs/aws/foundations/reference/shared-responsibility.md) · [IAM](docs/aws/foundations/reference/access-management.md) · [compute](docs/aws/foundations/reference/compute.md) · [storage](docs/aws/foundations/reference/storage.md) · [network](docs/aws/foundations/reference/networking.md) · [pricing](docs/aws/foundations/reference/pricing-models.md) · 2 cheatsheet · 3 case study | 🔄 đang học |
+| [Architecting (SAA-C03)](docs/aws/architecting/) | Thiết kế secure · resilient · high-performing · cost-optimized | ⬜ chưa bắt đầu |
+
+Khung lấy từ **exam guide chính thức** chứ không từ một khoá học — exam guide là danh mục
+đóng, có cả danh sách service *trong* và *ngoài* phạm vi, nên đo được còn thiếu bao nhiêu.
+Lab chạy ở `~/aws-lab/` trên một emulator AWS local; nó **chỉ mô phỏng API**, nên hai
+case study đã ghi lại đúng chỗ nó cho kết quả xanh mà AWS thật sẽ đỏ.
 
 ### Software Engineering
 

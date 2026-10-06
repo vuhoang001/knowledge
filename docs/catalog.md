@@ -17,14 +17,33 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**215 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**239 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (48)
+## Tài liệu tham chiếu (67)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Access management](aws/foundations/reference/access-management.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [AI/ML và analytics](aws/foundations/reference/ai-ml-and-analytics.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Billing và cost management](aws/foundations/reference/billing-and-cost-management.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Kinh tế cloud](aws/foundations/reference/cloud-economics.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Giá trị của AWS Cloud](aws/foundations/reference/cloud-value-proposition.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Compute](aws/foundations/reference/compute.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Database](aws/foundations/reference/databases.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Cách triển khai và truy cập](aws/foundations/reference/deploy-and-access-methods.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Global infrastructure](aws/foundations/reference/global-infrastructure.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Migration và AWS CAF](aws/foundations/reference/migration-and-caf.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Network](aws/foundations/reference/networking.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Nhóm service còn lại](aws/foundations/reference/other-service-categories.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Pricing model](aws/foundations/reference/pricing-models.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Thành phần bảo mật](aws/foundations/reference/security-components.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Governance và compliance](aws/foundations/reference/security-governance-compliance.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Shared responsibility model](aws/foundations/reference/shared-responsibility.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Storage](aws/foundations/reference/storage.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Support và tài nguyên kỹ thuật](aws/foundations/reference/support-and-technical-resources.md) | `aws/foundations/reference` | cloud | 🟡 draft |
+| [Well-Architected Framework](aws/foundations/reference/well-architected-framework.md) | `aws/foundations/reference` | cloud | 🟡 draft |
 | [Exit code và control flow](bash/reference/exit-code-va-control-flow.md) | `bash/reference` | devops | 🟡 draft |
 | [File permissions](bash/reference/file-permissions.md) | `bash/reference` | devops | 🟡 draft |
 | [Process và job control](bash/reference/process-va-job-control.md) | `bash/reference` | devops | 🟡 draft |
@@ -184,12 +203,15 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | [Lab Kafka trên Docker](etl/kafka/tutorials/kafka-lab.md) | `etl/kafka/tutorials` | data-engineering | 🟡 draft |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
 
-## Case study (64)
+## Case study (67)
 
 Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| ["Access key của root user lọt ra ngoài"](aws/foundations/case-studies/root-access-key-lot-ra-ngoai.md) | `aws/foundations/case-studies` | cloud | 🟡 draft |
+| ["Lifecycle đẩy xuống Deep Archive rồi cần gấp"](aws/foundations/case-studies/s3-lifecycle-roi-can-gap.md) | `aws/foundations/case-studies` | cloud | 🟡 draft |
+| ["Security group không chặn được một IP"](aws/foundations/case-studies/security-group-khong-chan-duoc-ip.md) | `aws/foundations/case-studies` | cloud | 🟡 draft |
 | [Tên file có dấu cách xoá nhầm cả thư mục](bash/case-studies/bien-khong-nhay-word-splitting.md) | `bash/case-studies` | devops | 🟡 draft |
 | [Vòng lặp chạy một lần với dấu sao literal](bash/case-studies/glob-khong-khop.md) | `bash/case-studies` | devops | 🟡 draft |
 | [Pipeline xanh giả — lỗi giữa pipe bị nuốt](bash/case-studies/pipe-nuot-exit-code.md) | `bash/case-studies` | devops | 🟡 draft |
@@ -255,12 +277,14 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Thêm một toán tử, sáu nơi phải sửa](patterns/case-studies/them-node-moi-sua-moi-visitor.md) | `patterns/case-studies` | backend | 🟡 draft |
 | [Hoàn tác hai lệnh, tồn kho từ 10 thành 24](patterns/case-studies/undo-khong-tra-lai-trang-thai-cu.md) | `patterns/case-studies` | backend | 🟡 draft |
 
-## Cheatsheet (7)
+## Cheatsheet (9)
 
 Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [Văn phong đề AWS](aws/foundations/cheatsheets/exam-wording.md) | `aws/foundations/cheatsheets` | cloud | 🟡 draft |
+| [Từ khoá → service](aws/foundations/cheatsheets/service-picker.md) | `aws/foundations/cheatsheets` | cloud | 🟡 draft |
 | [Cheatsheet lệnh bash](bash/cheatsheets/commands.md) | `bash/cheatsheets` | devops | 🟡 draft |
 | [Cheatsheet toán tử test và expansion](bash/cheatsheets/test-operators-va-expansion.md) | `bash/cheatsheets` | devops | 🟡 draft |
 | [SCD — Cheatsheet](data-modeling/cheatsheets/scd.md) | `data-modeling/cheatsheets` | data-engineering | 📘 ổn định, chưa chạy tay |

@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-09-29
+updated: 2026-10-06
 ---
 
 # Mục lục `docs/`
@@ -328,6 +328,42 @@ init, optimizer và vòng lặp train.
 | [cs: chọn k bằng test set](machine-learning/foundations/case-studies/chon-k-bang-test-set.md) | Đo trên 200 lần chia: con số báo cáo lạc quan 12,1% | 🟡 |
 | [cs: k-means không đặt tên được nhóm](machine-learning/foundations/case-studies/k-means-khong-dat-ten-duoc-nhom.md) | Tìm ra cấu trúc thật, không xuất ra ý nghĩa nào | 🟡 |
 
+## AWS
+
+Hai tầng bám theo hai kỳ thi. Tầng `foundations/` khớp **đúng 19 task statement** của exam
+guide CLF-C02 — bề rộng danh mục service, không phải chiều sâu triển khai. Tầng
+`architecting/` (SAA-C03) mới có khung.
+
+| File | Chốt một câu | TT |
+|---|---|---|
+| [aws/index](aws/index.md) | Con số của kỳ thi, trọng số 4 domain, 5 bẫy lớn, bảng độ phủ 19 task | 🗂️ |
+| [foundations/index](aws/foundations/index.md) | Thứ tự đọc 19 tài liệu — không đọc theo thứ tự domain 1→4 | 🗂️ |
+| [architecting/index](aws/architecting/index.md) | Khung SAA-C03, và thứ nó đòi thêm so với CLF | 🗂️ |
+| [cloud-value-proposition](aws/foundations/reference/cloud-value-proposition.md) | Sáu lợi thế chia hai trục; elasticity ≠ HA ≠ agility | 🟡 |
+| [well-architected-framework](aws/foundations/reference/well-architected-framework.md) | Sáu pillar — Sustainability là cái thứ sáu, tài liệu cũ chỉ có năm | 🟡 |
+| [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | Sáu perspective CAF (ba cái là *người*), bảy chiến lược R, Snow Family | 🟡 |
+| [cloud-economics](aws/foundations/reference/cloud-economics.md) | CapEx→OpEx không hứa rẻ hơn; TCO, rightsizing, BYOL cần Dedicated Host | 🟡 |
+| [shared-responsibility](aws/foundations/reference/shared-responsibility.md) | Ranh giới dịch theo service; dữ liệu và IAM **không bao giờ** dịch | 🟡 |
+| [security-governance-compliance](aws/foundations/reference/security-governance-compliance.md) | CloudTrail *ai làm* ⇄ Config *cấu hình đổi* ⇄ CloudWatch *số liệu* ⇄ Artifact *báo cáo* | 🟡 |
+| [access-management](aws/foundations/reference/access-management.md) | Quyền user không nằm ở user — và emulator **không** đánh giá policy, chạy thật cho thấy | 🟡 |
+| [security-components](aws/foundations/reference/security-components.md) | SG/NACL/WAF/Shield bốn tầng; Trusted Advisor ⇄ Inspector ⇄ GuardDuty ⇄ Config | 🟡 |
+| [deploy-and-access-methods](aws/foundations/reference/deploy-and-access-methods.md) | Một lần → Console, lặp lại → IaC; VPN vài giờ ⇄ Direct Connect nhiều tuần | 🟡 |
+| [global-infrastructure](aws/foundations/reference/global-infrastructure.md) | HA = nhiều AZ; DR và chủ quyền dữ liệu = nhiều Region; Outposts đặt tại chỗ khách | 🟡 |
+| [compute](aws/foundations/reference/compute.md) | Ba bậc trách nhiệm; ECS **không** tự nghĩa là hết quản server — chỉ Fargate | 🟡 |
+| [databases](aws/foundations/reference/databases.md) | Multi-AZ là HA, read replica là scale đọc — hai thứ khác nhau hoàn toàn | 🟡 |
+| [networking](aws/foundations/reference/networking.md) | Subnet thuộc đúng một AZ; public = có route ra IGW; NAT Gateway không Free Tier | 🟡 |
+| [storage](aws/foundations/reference/storage.md) | Bảy lớp S3 theo *tần suất × thời gian chờ*; lifecycle bỏ qua object < 128 KB | 🟡 |
+| [ai-ml-and-analytics](aws/foundations/reference/ai-ml-and-analytics.md) | Nhớ AI theo *đầu vào → đầu ra*; Athena ⇄ Redshift, Glue ⇄ EMR | 🟡 |
+| [other-service-categories](aws/foundations/reference/other-service-categories.md) | SQS một consumer ⇄ SNS nhiều ⇄ EventBridge theo nội dung ⇄ Step Functions workflow | 🟡 |
+| [pricing-models](aws/foundations/reference/pricing-models.md) | Hai câu hỏi chọn model; vào AWS thì rẻ, lấy ra thì tốn | 🟡 |
+| [billing-and-cost-management](aws/foundations/reference/billing-and-cost-management.md) | Bốn công cụ bốn *thời*; tag phải **kích hoạt** và không hồi tố | 🟡 |
+| [support-and-technical-resources](aws/foundations/reference/support-and-technical-resources.md) | Ba mốc: Business có 24/7, On-Ramp có pool TAM, Enterprise có TAM riêng | 🟡 |
+| [cs: SG không chặn được một IP](aws/foundations/case-studies/security-group-khong-chan-duoc-ip.md) | API của SG **không có** tham số `Action` — lỗi CLI chứng minh | 🟡 |
+| [cs: lifecycle rồi cần gấp](aws/foundations/case-studies/s3-lifecycle-roi-can-gap.md) | Glacier không phải "S3 rẻ hơn", nó là "S3 thêm một bước chờ" | 🟡 |
+| [cs: access key root lọt ra ngoài](aws/foundations/case-studies/root-access-key-lot-ra-ngoai.md) | `root` không phải IAM user nên **không gắn được policy** để hãm | 🟡 |
+| [cheat: từ khoá → service](aws/foundations/cheatsheets/service-picker.md) | Bảng tra một chiều cho lúc luyện đề, mở đầu bằng 10 cặp bị trộn nhiều nhất | 🟡 |
+| [cheat: văn phong đề](aws/foundations/cheatsheets/exam-wording.md) | MOST cost-effective ⇄ LEAST operational overhead quyết định đáp án | 🟡 |
+
 ## Nền tảng
 
 | File | Chốt một câu | TT |
@@ -371,4 +407,5 @@ graph TD
   DBT --> TRINO
   PY --> MLF[ML Foundations]
   MLF --> MLD[Deep Learning]
+  AWSF[AWS Foundations<br/>CLF-C02] --> AWSA[Architecting<br/>SAA-C03]
 ```
