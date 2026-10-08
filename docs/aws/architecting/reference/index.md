@@ -2,7 +2,7 @@
 title: Tài liệu — Architecting (SAA-C03)
 sidebar_key: aws-architecting-reference
 sidebar_position: 0
-description: "Tài liệu chiều sâu của tầng SAA-C03. Mới mở Domain 1 — phần IAM mà CLF-C02 không chạm tới."
+description: "Tài liệu chiều sâu của tầng SAA-C03. Mới mở Domain 1 — hai tài liệu IAM: nền tảng, rồi cơ chế đánh giá policy."
 tags: [reference, aws, saa-c03]
 domain: cloud
 category: index
@@ -20,7 +20,8 @@ bằng danh mục.
 
 | # | Tài liệu | Trả lời câu hỏi | TT |
 |---|---|---|---|
-| 1 | [Policy evaluation](iam-policy-evaluation.md) | Cho một request cụ thể, AWS quyết định cho qua hay không bằng cách nào — và ba chỗ quyền bị thu hẹp mà không ai gắn `Deny` nào | 📝 |
+| 1 | [IAM fundamentals](iam-fundamentals.md) | **Đọc trước.** Principal là gì, bốn khối user/group/role/policy, giải phẫu policy JSON và ARN, sáu loại policy, chẩn đoán `AccessDenied` | 📝 |
+| 2 | [Policy evaluation](iam-policy-evaluation.md) | Cho một request cụ thể, AWS quyết định cho qua hay không bằng cách nào — và ba chỗ quyền bị thu hẹp mà không ai gắn `Deny` nào | 📝 |
 
 Phần còn lại của Domain 1 (mã hoá, KMS, bảo mật nhiều tầng) và ba domain còn lại vẫn là
 mục lục dự kiến ở [trang chủ tầng](../index.md).

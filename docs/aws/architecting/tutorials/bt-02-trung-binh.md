@@ -106,7 +106,7 @@ Access Denied
 
 Ô dán output của bạn:
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -143,7 +143,7 @@ aws s3 rm s3://<bucket>/a.txt
 
 Kỳ vọng: `AccessDenied`, dù user là admin đầy đủ.
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -165,7 +165,7 @@ lỗi có phân biệt được không?
 Kỳ vọng: **không**. Cả hai đều ra `AccessDenied`, cùng câu chữ. API không nói cho bạn biết
 đó là *thiếu allow* hay *bị deny*.
 
-```text
+```text i18n-prose
 (chưa chạy — dán cả hai output vào đây để tự thấy chúng giống nhau)
 ```
 
@@ -203,7 +203,7 @@ aws iam put-user-permissions-boundary --user-name lab-bound \
 | `aws s3 ls` | ✅ thành công | admin ∩ boundary(S3) = S3 |
 | `aws ec2 describe-instances` | ❌ `AccessDenied` | boundary không cho EC2 |
 
-```text
+```text i18n-prose
 (chưa chạy — dán cả hai vào đây)
 ```
 
@@ -244,7 +244,7 @@ Dự đoán cả hai lệnh trước khi chạy.
 boundary **không cấp**. Identity policy cho DynamoDB nhưng boundary không cho qua. Giao
 của hai tập rời nhau là tập rỗng.
 
-```text
+```text i18n-prose
 (chưa chạy — dán cả hai vào đây)
 ```
 
@@ -278,7 +278,7 @@ aws iam simulate-custom-policy \
 Kỳ vọng: `s3:GetObject → implicitDeny` (policy chỉ cho `public/*`),
 `s3:PutObject → implicitDeny`.
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -323,7 +323,7 @@ done
 
 Kỳ vọng: `MFA=true → allowed` · `MFA=false → implicitDeny`.
 
-```text
+```text i18n-prose
 (chưa chạy — dán cả hai vào đây)
 ```
 
@@ -353,7 +353,7 @@ Kỳ vọng:
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -442,7 +442,7 @@ thật khi account nằm dưới một SCP siết. Bài I17 chứng minh bằng 
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán output `aws s3 ls s3://bucket-cua-B` từ role của A vào đây)
 ```
 
@@ -496,7 +496,7 @@ aws sts assume-role \
   --role-session-name from-a --external-id <chuoi-bi-mat>
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán Credentials vào đây)
 ```
 
@@ -530,7 +530,7 @@ account ID. Viết điều kiện.
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán kết quả thử từ 1 account trong org và 1 account ngoài org)
 ```
 
@@ -576,7 +576,7 @@ khai". Luôn viết `Condition` **cùng lúc** với `Principal: "*"`, không đ
 Kỳ vọng: admin của member account **không** tạo được EC2 ở `eu-west-1`, nhận `AccessDenied`
 hoặc `UnauthorizedOperation`.
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -618,7 +618,7 @@ Năm cột đáng đọc: `user`, `mfa_active`, `password_last_used`,
 awk -F, 'NR>1 && $4=="false" {print $1}' /tmp/cred.csv
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -645,7 +645,7 @@ aws iam get-service-last-accessed-details --job-id "$JOB" \
   --output text
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -678,7 +678,7 @@ aws iam get-account-authorization-details > /tmp/iam-$(date +%F).json
 jq '.Policies | length, (.[0] | keys)' /tmp/iam-*.json
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -718,7 +718,7 @@ User: arn:aws:iam::...:user/lab-nopass is not authorized to perform: iam:PassRol
 on resource: arn:aws:iam::...:role/lambda-exec
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán vào đây)
 ```
 
@@ -782,7 +782,7 @@ Sửa bằng một dòng:
 | 1 | chỉ `ForAllValues` | `RunInstances` | PASS — ngoài ý muốn |
 | 2 | thêm `Null: false` | `RunInstances` | FAIL — đúng ý muốn |
 
-```text
+```text i18n-prose
 (chưa chạy — dán cả hai lần vào đây)
 ```
 
@@ -807,7 +807,7 @@ toán tử cho kết quả gì?
 | `ForAnyValue:` | **ít nhất một** giá trị khớp | ✅ khớp (`Project` có trong list) |
 | `ForAllValues:` | **mọi** giá trị đều khớp | ❌ không khớp (`Secret` ngoài list) |
 
-```text
+```text i18n-prose
 (chưa chạy — dán hai kết quả simulate vào đây)
 ```
 
@@ -846,7 +846,7 @@ Sửa:
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán trust policy thật của một service role trong account bạn, và nói nó
  có đủ hai key chưa)
 ```

@@ -1,8 +1,7 @@
 ---
-title: Bài tập — Production
-i18n_status: untranslated
+title: Exercises — Production
 sidebar_position: 30
-description: "14 bài có lời giải đầy đủ config: bỏ khoá tĩnh, OIDC cho GitHub Actions, least privilege dựng từ CloudTrail, boundary chặn leo thang, SCP, break-glass có MFA, tag-based access control."
+description: "14 exercises with complete configs: removing static keys, OIDC for GitHub Actions, least privilege derived from CloudTrail, boundaries that stop escalation, SCPs, break-glass with MFA, tag-based access control."
 tags: [tutorial, aws, iam, saa-c03, oidc, least-privilege, scp, organizations, break-glass, access-analyzer, identity-center, domain-1]
 domain: cloud
 category: concept
@@ -13,51 +12,54 @@ verified_at:
 updated: 2026-10-08
 ---
 
-# Bài tập — Production
+# Exercises — Production
 
-> **Chốt:** Hai bậc trước dạy *cơ chế*; bậc này dạy *quy trình*. Và quy trình production
-> gọn lại thành một câu: **không có credential dài hạn ở đâu cả** — người đăng nhập qua
-> Identity Center, máy trong AWS dùng role, máy ngoài AWS dùng OIDC. Mười bốn bài dưới đây
-> là mười bốn cách thực hiện câu đó.
+> **Takeaway:** The two earlier tiers teach *mechanism*; this one teaches *process*. And
+> the production process reduces to one sentence: **there are no long-lived credentials
+> anywhere** — people sign in through Identity Center, machines inside AWS use roles,
+> machines outside AWS use OIDC. The fourteen exercises below are fourteen ways of carrying
+> out that sentence.
 
-Bậc trước: [Trung bình](bt-02-trung-binh.md) ·
-Lý thuyết: [Policy evaluation](../reference/iam-policy-evaluation.md)
+Previous tier: [Intermediate](bt-02-trung-binh.md) ·
+Theory: [IAM fundamentals](../reference/iam-fundamentals.md) ·
+[Policy evaluation](../reference/iam-policy-evaluation.md)
 
-Đây cũng là bậc trả lời hai cụm từ đề SAA-C03 hay dùng — *MOST secure* và
-*LEAST operational overhead* — vì hai cụm đó thường trỏ về cùng một đáp án: bỏ khoá tĩnh.
+This is also the tier that answers two phrases the SAA-C03 exam leans on — *MOST secure*
+and *LEAST operational overhead* — because both usually point at the same answer: get rid
+of static keys.
 
-:::info Lời giải ở đây là **config đầy đủ**, chưa chạy trên account của bạn
+:::info The solutions here are **complete configs**, not yet run against your account
 
-Bậc này ít output để chụp hơn — thứ cần giao là **policy, trust policy, SCP, workflow**
-viết đúng. Lời giải cho nguyên văn những file đó, kèm chỗ dễ sai. Ô dán output vẫn có ở
-những bài đo được.
+This tier has less output to capture — what needs delivering is the **policy, trust policy,
+SCP and workflow** written correctly. The solutions give those files verbatim, along with
+the places they go wrong. Paste boxes remain on the exercises that produce measurements.
 
 :::
 
-## Chi phí — hai dòng cần canh
+## Cost — two lines to watch
 
-| Thứ | Phí |
+| Item | Cost |
 |---|---|
-| IAM, Identity Center, Organizations, SCP, Policy Simulator, credential report | **$0** |
-| IAM Access Analyzer — **external access** | **$0** · đủ cho bài P11 |
-| IAM Access Analyzer — **unused access** | **có phí** theo role/tháng — kiểm giá hiện hành trước khi bật, tắt sau lab |
-| CloudTrail — trail quản lý event **đầu tiên** mỗi account | **$0** · trail thứ hai và **data event** có phí |
-| EventBridge rule + SNS cho alarm (bài P10) | gần $0 ở mức lab |
+| IAM, Identity Center, Organizations, SCPs, Policy Simulator, credential reports | **$0** |
+| IAM Access Analyzer — **external access** | **$0** · enough for exercise P11 |
+| IAM Access Analyzer — **unused access** | **costs money** per role per month — check current pricing before enabling, disable after the lab |
+| CloudTrail — the **first** management-event trail per account | **$0** · a second trail and **data events** cost money |
+| An EventBridge rule + SNS for the alarm (exercise P10) | close to $0 at lab scale |
 
-Hai dòng in đậm bật bằng một cú bấm và tính tiền theo thời gian chạy. Đó là toàn bộ rủi ro
-tiền của trang này.
+The two bold lines are enabled with one click and bill for as long as they run. That is the
+entire financial risk of this page.
 
 ---
 
-## Phần A — Bỏ credential dài hạn (4 bài)
+## Part A — Removing long-lived credentials (4 exercises)
 
-### P1. Kiểm kê khoá tĩnh
+### P1. Inventory your static keys
 
-**Đề:** Đếm mọi access key đang tồn tại trong account. Với từng cái, trả lời *"thay bằng
-role được không"*.
+**Problem:** Count every access key that exists in the account. For each one, answer *"can
+this be replaced by a role?"*
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 for u in $(aws iam list-users --query 'Users[].UserName' --output text); do
@@ -66,43 +68,46 @@ for u in $(aws iam list-users --query 'Users[].UserName' --output text); do
 done
 ```
 
-Ghép thêm *lần dùng cuối* để biết cái nào xoá được ngay:
+Add *last used* to see which ones you can delete right away:
 
 ```bash
 aws iam get-access-key-last-used --access-key-id <AKIA...> \
   --query 'AccessKeyLastUsed.[LastUsedDate,ServiceName]'
 ```
 
-```text
-(chưa chạy — dán bảng khoá của account bạn vào đây)
+```text i18n-prose
+(not run yet — paste your account's key table here)
 ```
 
-Mỗi dòng là một câu hỏi phải trả lời, không phải một dòng để đọc qua:
+Every row is a question to answer, not a line to skim:
 
-| Khoá này của ai | Thay bằng |
+| Whose key is this | Replace with |
 |---|---|
-| Một con người | **IAM Identity Center** + `aws sso login` — xoá khoá |
-| App chạy trên EC2 | **instance profile** — xoá khoá |
-| App chạy trên ECS / EKS | **task role** / **IRSA** — xoá khoá |
-| Lambda | **execution role** — xoá khoá |
-| CI/CD ngoài AWS | **OIDC federation** (bài P2) — xoá khoá |
-| Script trên laptop | Identity Center — xoá khoá |
+| A human | **IAM Identity Center** + `aws sso login` — delete the key |
+| An app on EC2 | an **instance profile** — delete the key |
+| An app on ECS / EKS | a **task role** / **IRSA** — delete the key |
+| Lambda | an **execution role** — delete the key |
+| CI/CD outside AWS | **OIDC federation** (exercise P2) — delete the key |
+| A script on someone's laptop | Identity Center — delete the key |
 
-Cột phải không có ô nào ghi *"giữ nguyên"*. Đó chính là kết luận của bài.
+No cell in the right-hand column says *"leave as is"*. That is the conclusion of the
+exercise.
 
-Trường hợp duy nhất còn lý do giữ khoá tĩnh: một hệ thống ngoài AWS **không** nói được
-OIDC/SAML. Lúc đó khoá phải có lịch rotate tự động và chỉ gắn vào một user quyền cực hẹp.
+The only case with a remaining reason to keep a static key: a system outside AWS that
+**cannot** speak OIDC/SAML. Then the key needs an automatic rotation schedule and must sit
+on a user with extremely narrow permissions.
 
 </details>
 
-### P2. OIDC cho GitHub Actions — bài giá trị nhất cả bậc
+### P2. OIDC for GitHub Actions — the highest-value exercise here
 
-**Đề:** Cho workflow GitHub Actions lấy credential AWS **không** qua secret nào.
+**Problem:** Let a GitHub Actions workflow obtain AWS credentials with **no** stored
+secret.
 
 <details>
-<summary>Lời giải — đầy đủ ba phần</summary>
+<summary>Solution — all three parts</summary>
 
-**1. Đăng ký OIDC provider** (một lần cho mỗi account):
+**1. Register the OIDC provider** (once per account):
 
 ```bash
 aws iam create-open-id-connect-provider \
@@ -110,7 +115,7 @@ aws iam create-open-id-connect-provider \
   --client-id-list sts.amazonaws.com
 ```
 
-**2. Trust policy của role:**
+**2. The role's trust policy:**
 
 ```json
 {
@@ -131,7 +136,7 @@ aws iam create-open-id-connect-provider \
 }
 ```
 
-**3. Workflow:**
+**3. The workflow:**
 
 ```yaml
 permissions:
@@ -149,25 +154,27 @@ jobs:
       - run: aws sts get-caller-identity
 ```
 
-```text
-(chưa chạy — dán output `aws sts get-caller-identity` chạy trong Actions vào đây;
- Arn phải là .../assumed-role/gha-deploy/<session>, KHÔNG phải :user/...)
+```text i18n-prose
+(not run yet — paste the `aws sts get-caller-identity` output from inside Actions here;
+ the Arn must be .../assumed-role/gha-deploy/<session>, NOT :user/...)
 ```
 
-🔴 **Chỗ duy nhất được phép sai là `sub`, và sai nó là mất cả bài:**
+🔴 **The only place you are allowed to get this wrong is `sub`, and getting it wrong loses
+the whole exercise:**
 
-| Viết `sub` thành | Ai assume được role của bạn |
+| Writing `sub` as | Who can assume your role |
 |---|---|
-| `repo:<org>/<repo>:ref:refs/heads/main` | ✅ chỉ branch `main` của đúng repo đó |
-| `repo:<org>/<repo>:*` | mọi branch **và mọi pull request** — người ngoài mở PR là chạy được |
-| `StringLike` với `repo:<org>/*` | mọi repo trong org |
-| bỏ hẳn điều kiện `sub` | **mọi repo GitHub trên thế giới** |
+| `repo:<org>/<repo>:ref:refs/heads/main` | ✅ only the `main` branch of that exact repo |
+| `repo:<org>/<repo>:*` | every branch **and every pull request** — an outsider opening a PR can run it |
+| `StringLike` with `repo:<org>/*` | every repo in the org |
+| omitting the `sub` condition entirely | **every GitHub repository in the world** |
 
-Dòng cuối không nói quá: provider `token.actions.githubusercontent.com` phục vụ toàn bộ
-GitHub. Không khoá `sub` thì bạn vừa mở role cho tất cả. Đây đúng là confused deputy ở bài
-[I20 bậc trung bình](bt-02-trung-binh.md), chỉ khác tên gọi.
+That last row is not an exaggeration: the provider
+`token.actions.githubusercontent.com` serves all of GitHub. Without pinning `sub` you have
+just opened the role to everyone. This is exactly the confused deputy of exercise
+[I20 in the intermediate tier](bt-02-trung-binh.md), under a different name.
 
-Cần nhiều branch thì dùng `StringLike` **có giới hạn**, đừng dùng `*` trần:
+If you need several branches, use `StringLike` **with a bound**, not a bare `*`:
 
 ```json
 "StringLike": {
@@ -175,85 +182,89 @@ Cần nhiều branch thì dùng `StringLike` **có giới hạn**, đừng dùng
 }
 ```
 
-Deploy từ môi trường thì khoá theo environment, chặt hơn branch:
+Deploying from an environment? Pin the environment, which is tighter than a branch:
 `repo:<org>/<repo>:environment:production`.
 
 </details>
 
-### P3. Vòng rotate khoá mà không gây downtime
+### P3. A key-rotation loop with no downtime
 
-**Đề:** Một khoá tĩnh **buộc phải** giữ. Thiết kế quy trình rotate không làm hỏng dịch vụ.
+**Problem:** One static key **must** be kept. Design a rotation procedure that does not
+break the service.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Năm bước, và bước 4 là bước người ta bỏ:
+Five steps, and step 4 is the one people skip:
 
-```text
-1. create-access-key           -> gio user co 2 khoa (tran la 2, bai A6 bac co ban)
-2. cap nhat moi noi dang dung khoa cu sang khoa moi
-3. update-access-key --status Inactive   cho khoa CU
-4. DOI — it nhat mot chu ky day du cua moi job (job theo thang => doi mot thang)
-5. khong co gi hong  -> delete-access-key khoa cu
-   co cai hong       -> update-access-key --status Active   (rollback trong 1 giay)
+```text i18n-prose
+1. create-access-key           -> the user now has 2 keys (the cap is 2, exercise A6 of tier 1)
+2. update everywhere that uses the old key to the new one
+3. update-access-key --status Inactive   on the OLD key
+4. WAIT — at least one full cycle of every job (a monthly job means waiting a month)
+5. nothing broke   -> delete-access-key the old key
+   something broke -> update-access-key --status Active   (rollback in one second)
 ```
 
-Kiểm bước 4 bằng số, đừng đoán:
+Verify step 4 with data, do not guess:
 
 ```bash
 aws iam get-access-key-last-used --access-key-id <khoa-cu> \
   --query 'AccessKeyLastUsed.LastUsedDate'
 ```
 
-```text
-(chưa chạy — dán LastUsedDate của khoá cũ trước và sau khi Inactive)
+```text i18n-prose
+(not run yet — paste the old key's LastUsedDate before and after going Inactive)
 ```
 
-`Inactive` **bật lại được**, `delete` thì không. Đó là toàn bộ lý do có bước 3 riêng thay
-vì xoá luôn — bạn mua một đường rollback bằng một lệnh.
+`Inactive` **can be reversed**, `delete` cannot. That is the entire reason step 3 exists
+separately instead of deleting outright — you buy a rollback path for the price of one
+command.
 
-⚠️ Trần **2 khoá/user** nghĩa là user đang có 2 khoá thì **không rotate được** — phải xoá
-một cái trước, tức là mất đường rollback. Giữ nguyên tắc: bình thường mỗi user **một**
-khoá, khoá thứ hai chỉ tồn tại trong lúc rotate.
+⚠️ The **2 keys per user** cap means a user already holding 2 keys **cannot be rotated** —
+you must delete one first, which means losing the rollback path. Keep the rule: normally
+**one** key per user, with a second existing only during a rotation.
 
 </details>
 
-### P4. Identity Center thay IAM user cho người
+### P4. Identity Center instead of IAM users for people
 
-**Đề:** Nêu đúng thứ phải làm để chuyển một nhóm 10 người từ IAM user sang Identity Center,
-và thứ gì **không** mất khi chuyển.
+**Problem:** State exactly what has to be done to move a team of 10 from IAM users to
+Identity Center, and what is **not** lost in the move.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Việc | Ghi chú |
+| Task | Note |
 |---|---|
-| Bật Identity Center ở management account | $0 |
-| Nối identity source | Identity Center directory, hoặc AD, hoặc IdP ngoài (Okta, Entra ID) |
-| Tạo **permission set** theo chức năng | đây là "policy" của Identity Center, gắn vào *group × account* |
-| Gán group ↔ account ↔ permission set | ba chiều, không gán cho từng người |
-| Người dùng `aws sso login` | nhận credential **tạm**, hết hạn tự động |
-| Xoá IAM user cũ + khoá của họ | bước này hay bị quên ⇒ còn đường vào cũ |
+| Enable Identity Center in the management account | $0 |
+| Connect an identity source | the Identity Center directory, or AD, or an external IdP (Okta, Entra ID) |
+| Create **permission sets** by function | these are Identity Center's "policies", bound to *group × account* |
+| Assign group ↔ account ↔ permission set | three-way, never per person |
+| People run `aws sso login` | they receive **temporary** credentials that expire on their own |
+| Delete the old IAM users and their keys | the step that gets forgotten ⇒ the old way in stays open |
 
-**Thứ không mất:** mọi policy bạn đã viết. Permission set dùng cùng ngôn ngữ policy JSON,
-và vẫn áp SCP, vẫn áp permission boundary. Kiến thức hai bậc trước dùng nguyên.
+**What is not lost:** every policy you have already written. Permission sets use the same
+policy JSON language, they are still subject to SCPs, and still subject to permission
+boundaries. Everything from the two earlier tiers carries over unchanged.
 
-Vì sao đây là đáp án của *LEAST operational overhead*: tắt một người ở IdP là tắt mọi
-account cùng lúc. Với IAM user, bạn phải đi xoá ở từng account — và sẽ có account bị bỏ sót.
+Why this is the *LEAST operational overhead* answer: disabling one person in the IdP
+disables them across every account at once. With IAM users you have to go delete them
+account by account — and one account will be missed.
 
 </details>
 
 ---
 
-## Phần B — Least privilege có bằng chứng (3 bài)
+## Part B — Least privilege with evidence (3 exercises)
 
-### P5. Thu hẹp một role `*:*` bằng số liệu
+### P5. Narrow a `*:*` role using measurements
 
-**Đề:** Lấy một role đang có `Resource: "*"`, `Action: "*"`. Viết lại policy theo đúng thứ
-nó dùng trong 90 ngày.
+**Problem:** Take a role that currently has `Resource: "*"`, `Action: "*"`. Rewrite its
+policy to match only what it used over 90 days.
 
 <details>
-<summary>Lời giải — ba bước, không đảo thứ tự</summary>
+<summary>Solution — three steps, do not reorder them</summary>
 
 ```bash
 # 1. service nao role nay thuc su goi?
@@ -274,34 +285,37 @@ aws iam simulate-custom-policy --policy-input-list "$(cat policy-moi.json)" \
   --resource-arns <arn>
 ```
 
-```text
-(chưa chạy — dán danh sách service ở bước 1 và action ở bước 2 vào đây)
+```text i18n-prose
+(not run yet — paste the service list from step 1 and the action list from step 2 here)
 ```
 
-Bước 3 là bước phân biệt công việc này với việc đoán: bạn có **danh sách action phải cho**
-và **danh sách action phải chặn**, chạy một lệnh, đối chiếu cả hai cột. Policy mới chỉ được
-apply khi cả hai cột đúng.
+Step 3 is what separates this work from guessing: you hold a **list of actions that must be
+allowed** and a **list that must be blocked**, run one command, and compare both columns.
+The new policy only gets applied when both columns are correct.
 
-:::warning Access Advisor chỉ thấy quá khứ
+:::warning Access Advisor only sees the past
 
-Nó báo quyền **đã dùng**, không phải quyền **cần**. Action chạy theo quý, hoặc chỉ chạy khi
-có sự cố, sẽ không xuất hiện và bị cắt oan — rồi hỏng đúng lúc tệ nhất. Vì vậy cửa sổ là
-**90 ngày** trở lên, và trước khi cắt phải hỏi chủ service xem có đường chạy theo lịch thưa.
+It reports permissions that **have been used**, not permissions that are **needed**. An
+action that runs quarterly, or only during an incident, will not appear and gets cut by
+mistake — then breaks at the worst possible time. That is why the window is **90 days** or
+more, and why you must ask the service owner about rarely-scheduled code paths before
+cutting.
 
 :::
 
-Siết từng bước, không một nhát: `*:*` → giới hạn **service** → giới hạn **action** →
-giới hạn **resource** → thêm **condition**. Mỗi bước để chạy vài ngày trước khi siết tiếp.
+Narrow in stages, never in one jump: `*:*` → restrict the **service** → restrict the
+**action** → restrict the **resource** → add **conditions**. Let each stage run for a few
+days before tightening further.
 
 </details>
 
-### P6. Tìm mọi policy quá rộng trong account
+### P6. Find every over-broad policy in the account
 
-**Đề:** Liệt kê mọi customer managed policy có `Action: "*"` hoặc `Resource: "*"`, và mọi
-policy cấp `iam:PassRole` rộng.
+**Problem:** List every customer managed policy containing `Action: "*"` or
+`Resource: "*"`, and every policy granting broad `iam:PassRole`.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam get-account-authorization-details > /tmp/iam.json
@@ -319,29 +333,29 @@ jq -r '.Policies[] | . as $p | .PolicyVersionList[]
        | $p.PolicyName' /tmp/iam.json | sort -u
 ```
 
-```text
-(chưa chạy — dán hai danh sách vào đây)
+```text i18n-prose
+(not run yet — paste both lists here)
 ```
 
-Danh sách thứ hai là danh sách đáng lo hơn, dù thường ngắn hơn: mỗi policy trong đó
-**tương đương quyền admin** nếu `Resource` của `PassRole` là `*` (bài
-[I17 bậc trung bình](bt-02-trung-binh.md)).
+The second list is the more worrying one even though it is usually shorter: every policy on
+it is **equivalent to admin** if the `PassRole` `Resource` is `*` (exercise
+[I17 of the intermediate tier](bt-02-trung-binh.md)).
 
-Chạy lệnh này mỗi tháng, lưu file lại và `diff` — mọi quyền mới phát sinh sẽ hiện ra, kể
-cả quyền không ai báo.
+Run this monthly, keep the file, and `diff` — every newly granted permission shows up,
+including the ones nobody announced.
 
 </details>
 
-### P7. Policy test trong CI
+### P7. Policy tests in CI
 
-**Đề:** Biến việc review policy thành test tự động, chạy ở pull request.
+**Problem:** Turn policy review into an automated test that runs on pull requests.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Mỗi policy trong repo đi kèm một file kỳ vọng:
+Every policy in the repository ships with an expectation file:
 
-```text
+```text i18n-prose
 policies/
   data-reader.json
   data-reader.expect     # action<TAB>resource<TAB>allowed|denied
@@ -354,7 +368,7 @@ s3:DeleteObject	arn:aws:s3:::data-lake/public/a.txt	denied
 iam:CreateUser	*	denied
 ```
 
-Script CI:
+The CI script:
 
 ```bash
 fail=0
@@ -371,31 +385,34 @@ done < policies/data-reader.expect
 exit $fail
 ```
 
-```text
-(chưa chạy — dán kết quả một lần chạy CI vào đây)
+```text i18n-prose
+(not run yet — paste the result of one CI run here)
 ```
 
-Giá trị thật: policy **mở rộng hơn dự định** sẽ làm CI đỏ. Đó là loại lỗi đọc JSON bằng
-mắt không bắt được — người review thấy `Allow s3:GetObject` rồi gật đầu, không nhận ra
-`Resource` đã bị nới thành `data-lake/*`.
+The real value: a policy that is **broader than intended** turns CI red. That is the class
+of bug reading the JSON by eye does not catch — the reviewer sees
+`Allow s3:GetObject` and nods, without noticing `Resource` has been widened to
+`data-lake/*`.
 
-Dòng `iam:CreateUser → denied` trong file kỳ vọng nhìn như dư, nhưng nó là chốt chặn
-chống nới policy về sau: ai thêm `Action: "*"` vào là CI đỏ ngay.
+The `iam:CreateUser → denied` line in the expectation file looks redundant, but it is the
+ratchet that stops the policy widening later: anyone adding `Action: "*"` turns CI red
+immediately.
 
 </details>
 
 ---
 
-## Phần C — Hàng rào (4 bài)
+## Part C — Guard rails (4 exercises)
 
-### P8. Permission boundary chặn leo thang
+### P8. Permission boundaries that stop escalation
 
-**Đề:** Cho developer tự tạo role mà **không** tự cấp thêm quyền cho mình.
+**Problem:** Let developers create their own roles **without** granting themselves more
+permissions.
 
 <details>
-<summary>Lời giải — mẫu hai lớp</summary>
+<summary>Solution — the two-layer pattern</summary>
 
-Lớp 1 — **boundary** định nghĩa trần quyền mà role do dev tạo được phép có:
+Layer 1 — the **boundary** defining the permission ceiling for developer-created roles:
 
 ```json
 {
@@ -408,7 +425,8 @@ Lớp 1 — **boundary** định nghĩa trần quyền mà role do dev tạo đ�
 }
 ```
 
-Lớp 2 — policy của **developer**, bắt buộc họ phải gắn boundary đó khi tạo role:
+Layer 2 — the **developer's** policy, requiring them to attach that boundary when creating
+a role:
 
 ```json
 {
@@ -444,27 +462,31 @@ Lớp 2 — policy của **developer**, bắt buộc họ phải gắn boundary 
 }
 ```
 
-```text
-(chưa chạy — thử tạo role không gắn boundary, và thử sửa chính boundary; dán cả hai lỗi)
+```text i18n-prose
+(not run yet — try creating a role without the boundary, and try editing the boundary
+ itself; paste both errors)
 ```
 
-**Statement thứ hai là statement quyết định**, và là cái hay bị bỏ. Không có nó thì dev
-tạo role đúng boundary — rồi sửa luôn nội dung boundary cho rộng ra, hoặc gỡ boundary khỏi
-role. Cấp quyền tạo role mà không chặn đường sửa hàng rào thì hàng rào chỉ là hình thức.
+**The second statement is the decisive one**, and the one that gets left out. Without it a
+developer creates a role with the correct boundary — then edits the boundary's contents to
+widen it, or detaches the boundary from the role. Granting role-creation without blocking
+the path to editing the fence makes the fence decorative.
 
-Điều kiện `iam:PermissionsBoundary` và tiền tố `role/dev-*` phải đi cùng nhau: thiếu tiền
-tố thì dev tạo được role tên bất kỳ, kể cả trùng tên role hệ thống.
+The `iam:PermissionsBoundary` condition and the `role/dev-*` prefix must come together:
+without the prefix, a developer can create a role with any name, including names colliding
+with system roles.
 
 </details>
 
-### P9. SCP — trần toàn tổ chức
+### P9. SCPs — a ceiling for the whole organisation
 
-**Đề:** Viết ba SCP: khoá region, chặn tắt CloudTrail, chặn gỡ hàng rào bảo mật.
+**Problem:** Write three SCPs: restrict regions, prevent CloudTrail from being disabled,
+prevent the security guard rails from being removed.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**SCP 1 — khoá region:**
+**SCP 1 — restrict regions:**
 
 ```json
 {
@@ -484,7 +506,7 @@ tố thì dev tạo được role tên bất kỳ, kể cả trùng tên role h�
 }
 ```
 
-**SCP 2 — không ai được tắt giám sát:**
+**SCP 2 — nobody may turn off monitoring:**
 
 ```json
 {
@@ -506,7 +528,7 @@ tố thì dev tạo được role tên bất kỳ, kể cả trùng tên role h�
 }
 ```
 
-**SCP 3 — không gỡ được hàng rào của P8:**
+**SCP 3 — the P8 guard rails cannot be removed:**
 
 ```json
 {
@@ -526,31 +548,34 @@ tố thì dev tạo được role tên bất kỳ, kể cả trùng tên role h�
 }
 ```
 
-```text
-(chưa chạy — dùng admin của member account thử phá cả ba SCP; dán ba lỗi vào đây)
+```text i18n-prose
+(not run yet — use a member account's admin to try breaking all three SCPs; paste the
+ three errors here)
 ```
 
-Ba chi tiết quyết định, sai là tự khoá mình:
+Three decisive details; get them wrong and you lock yourself out:
 
-- **`NotAction` phải chứa service global.** IAM, STS, Organizations, CloudFront, Route 53,
-  WAF, Shield là global nhưng endpoint ở `us-east-1`. Chặn hết region mà không loại trừ
-  chúng = **không vào được IAM của account đó nữa**.
-- **SCP không áp lên management account.** Test ở member account, nếu không bạn sẽ kết
-  luận SCP không hoạt động.
-- **Simulator không thấy SCP.** `allowed` ở simulator mà thực tế đỏ ⇒ nghi SCP trước tiên.
+- **`NotAction` must list the global services.** IAM, STS, Organizations, CloudFront,
+  Route 53, WAF and Shield are global but their endpoints live in `us-east-1`. Blocking all
+  regions without excluding them means **you can no longer reach that account's IAM**.
+- **SCPs do not apply to the management account.** Test in a member account, otherwise you
+  will conclude SCPs do not work.
+- **The simulator cannot see SCPs.** `allowed` in the simulator with a real failure ⇒
+  suspect an SCP first.
 
-Luôn gắn SCP mới vào một **OU thử** trước, không gắn thẳng vào root.
+Always attach a new SCP to a **test OU** first, never straight to the root.
 
 </details>
 
-### P10. Break-glass role
+### P10. A break-glass role
 
-**Đề:** Một role quyền cao, thường ngày không ai dùng, bắt buộc MFA, có alert khi bị dùng.
+**Problem:** A high-privilege role that nobody uses day to day, requires MFA, and raises an
+alert when it is used.
 
 <details>
-<summary>Lời giải — ba phần</summary>
+<summary>Solution — three parts</summary>
 
-**1. Trust policy bắt MFA và giới hạn session ngắn:**
+**1. A trust policy requiring MFA and a short session:**
 
 ```json
 {
@@ -574,7 +599,8 @@ Luôn gắn SCP mới vào một **OU thử** trước, không gắn thẳng và
 aws iam update-role --role-name break-glass --max-session-duration 3600
 ```
 
-**2. Alert khi role bị assume** — EventBridge rule bắt `AssumeRole` trong CloudTrail:
+**2. An alert when the role is assumed** — an EventBridge rule matching `AssumeRole` in
+CloudTrail:
 
 ```json
 {
@@ -590,35 +616,36 @@ aws iam update-role --role-name break-glass --max-session-duration 3600
 }
 ```
 
-Target: SNS topic có người thật đăng ký.
+Target: an SNS topic with a real human subscribed.
 
-**3. Kiểm:**
+**3. Verify:**
 
-| Thử | Kỳ vọng |
+| Attempt | Expected |
 |---|---|
-| `assume-role` **không** MFA | `AccessDenied` |
-| `assume-role` có MFA | thành công, và **SNS gửi alert** |
+| `assume-role` **without** MFA | `AccessDenied` |
+| `assume-role` with MFA | succeeds, **and SNS sends the alert** |
 
-```text
-(chưa chạy — dán cả hai, và xác nhận đã nhận được alert)
+```text i18n-prose
+(not run yet — paste both, and confirm you received the alert)
 ```
 
-`aws:MultiFactorAuthAge` là chi tiết hay bị bỏ: không có nó thì một session đã xác thực
-MFA từ 11 giờ trước vẫn tính là "có MFA". `3600` buộc người ta xác thực lại gần thời điểm
-dùng quyền cao.
+`aws:MultiFactorAuthAge` is the detail usually left out: without it, a session that
+authenticated with MFA eleven hours ago still counts as "has MFA". The `3600` forces
+re-authentication close to the moment the high privilege is used.
 
-**Alert mới là phần quan trọng nhất của bài**, không phải policy. Quyền cao không thể cấm
-— có lúc phải dùng thật. Cái bạn cần là **không ai dùng nó mà không có người biết**.
+**The alert, not the policy, is the most important part of this exercise.** High privilege
+cannot be forbidden — sometimes it genuinely has to be used. What you need is for **nobody
+to use it without someone knowing**.
 
 </details>
 
-### P11. Access Analyzer — tài nguyên đang lộ ra ngoài
+### P11. Access Analyzer — resources currently exposed
 
-**Đề:** Tìm mọi tài nguyên trong account đang share ra ngoài account hoặc ngoài
-Organizations.
+**Problem:** Find every resource in the account shared outside the account or outside the
+Organization.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws accessanalyzer create-analyzer --analyzer-name org-external \
@@ -630,33 +657,34 @@ aws accessanalyzer list-findings \
   --query 'findings[].[resourceType,resource,isPublic]' --output table
 ```
 
-```text
-(chưa chạy — dán danh sách finding vào đây; mục tiêu là 0 finding ngoài ý muốn)
+```text i18n-prose
+(not run yet — paste the finding list here; the target is 0 unintended findings)
 ```
 
-Loại `ACCOUNT`/`ORGANIZATION` cho **external access** — **miễn phí**. Nó soi bucket policy,
-KMS key policy, role trust policy, SQS policy, Lambda resource policy… và báo cái nào cho
-principal ngoài vùng tin cậy vào được.
+The `ACCOUNT`/`ORGANIZATION` type covers **external access** and is **free**. It inspects
+bucket policies, KMS key policies, role trust policies, SQS policies, Lambda resource
+policies and more, and reports which ones let a principal outside your trust boundary in.
 
-Với mỗi finding, đúng ba lựa chọn: **sửa** policy, **archive** finding kèm lý do (nếu cố ý
-share), hoặc **xoá** tài nguyên. Để finding ACTIVE mà không quyết là trạng thái tệ nhất —
-lần sau không ai biết nó đã được xem xét chưa.
+For each finding there are exactly three options: **fix** the policy, **archive** the
+finding with a reason (if the sharing is intentional), or **delete** the resource. Leaving
+a finding ACTIVE without deciding is the worst state — next time nobody knows whether it
+was ever reviewed.
 
-⚠️ Loại **unused access** là analyzer **khác** và **có phí** theo role/tháng. Đừng bật
-chung một lượt rồi quên.
+⚠️ The **unused access** type is a **different** analyzer and **costs money** per role per
+month. Do not enable both in one go and then forget.
 
 </details>
 
 ---
 
-## Phần D — Mẫu nâng cao (3 bài)
+## Part D — Advanced patterns (3 exercises)
 
 ### P12. Tag-based access control
 
-**Đề:** Một policy duy nhất cho N team, mỗi team chỉ thấy tài nguyên cùng tag.
+**Problem:** One policy for N teams, each team seeing only resources with a matching tag.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```json
 {
@@ -689,107 +717,116 @@ chung một lượt rồi quên.
 }
 ```
 
-```text
-(chưa chạy — gắn Team=alpha cho user A, Team=beta cho user B, thử chéo; dán 4 kết quả)
+```text i18n-prose
+(not run yet — tag user A with Team=alpha and user B with Team=beta, try crossing over;
+ paste all 4 results)
 ```
 
-`${aws:PrincipalTag/Team}` là **biến policy** — nó được thay bằng giá trị thật lúc đánh
-giá. Nhờ vậy một policy phục vụ mọi team, không phải N bản copy.
+`${aws:PrincipalTag/Team}` is a **policy variable** — it is substituted with the real value
+at evaluation time. That is how one policy serves every team instead of N copies.
 
-Ba điều kiện cần nhớ, thiếu một là hở:
+Three conditions to remember; miss one and there is a hole:
 
-- `aws:ResourceTag` đọc tag **của tài nguyên** — dùng cho hành động trên cái đã có.
-- `aws:RequestTag` đọc tag **trong request tạo mới** — nếu không bắt thì user tạo tài
-  nguyên không tag, rồi chính họ cũng không truy cập được (hoặc tệ hơn: tài nguyên không
-  tag nằm ngoài mọi giới hạn).
-- `Null: false` bắt tag phải có mặt — cùng cái bẫy ở bài
-  [I18 bậc trung bình](bt-02-trung-binh.md).
+- `aws:ResourceTag` reads the tag **on the resource** — used for actions on things that
+  already exist.
+- `aws:RequestTag` reads the tag **in a create request** — without enforcing it, a user
+  creates untagged resources and then cannot access them either (or worse: untagged
+  resources fall outside every restriction).
+- `Null: false` requires the tag to be present — the same trap as exercise
+  [I18 of the intermediate tier](bt-02-trung-binh.md).
 
-🔴 **Đánh đổi thật:** mô hình này phụ thuộc tag đúng, mà **tag thì ai cũng sửa được** nếu
-không chặn. Phải thêm `Deny` cho `s3:PutBucketTagging` / `ec2:CreateTags` trên tag key
-`Team`, nếu không user tự đổi tag của mình là xong.
+🔴 **A real trade-off:** this model depends on correct tags, and **anyone can edit tags**
+unless you stop them. You must also `Deny` `s3:PutBucketTagging` / `ec2:CreateTags` on the
+`Team` tag key, otherwise a user simply retags themselves.
 
 </details>
 
-### P13. ABAC cho Identity Center
+### P13. ABAC with Identity Center
 
-**Đề:** Người đăng nhập qua IdP ngoài. Làm sao tag `Team` của họ vào được policy?
+**Problem:** People sign in through an external IdP. How does their `Team` attribute reach
+the policy?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Trong Identity Center bật **attribute-based access control**, map attribute của IdP sang
-session tag:
+In Identity Center, enable **attribute-based access control** and map IdP attributes to
+session tags:
 
-```text
+```text i18n-prose
 IdP attribute   ->  session tag
   department    ->  Team
   costCenter    ->  CostCenter
 ```
 
-Sau đó permission set dùng `${aws:PrincipalTag/Team}` **y như bài P12** — không cần biết
-người đó là ai, chỉ cần biết thuộc tính của họ.
+The permission set then uses `${aws:PrincipalTag/Team}` **exactly as in exercise P12** —
+without needing to know who the person is, only what attributes they carry.
 
-```text
-(chưa chạy — dán `aws sts get-caller-identity` + một lệnh bị chặn do sai Team)
+```text i18n-prose
+(not run yet — paste `aws sts get-caller-identity` plus one command blocked by a wrong Team)
 ```
 
-Vì sao đây là đích đến của cả bậc: **không có IAM user, không có khoá, không có policy
-riêng cho từng người.** Thêm một người vào team ở IdP là họ có đúng quyền ở mọi account,
-không ai phải sửa policy. Bỏ họ khỏi team là mất quyền ngay.
+Why this is the destination of the whole tier: **no IAM users, no keys, no per-person
+policy.** Adding someone to a team in the IdP gives them the right permissions in every
+account with nobody editing a policy. Removing them from the team removes the access
+immediately.
 
-Giới hạn phải biết: session tag **không** dùng được cho mọi service, và policy phụ thuộc
-tag thì khó đọc hơn policy liệt kê ARN — debug một `AccessDenied` dạng này mất lâu hơn.
+Limits worth knowing: session tags are **not** usable with every service, and
+tag-dependent policies are harder to read than policies listing ARNs — debugging an
+`AccessDenied` of this kind takes longer.
 
 </details>
 
-### P14. Soát định kỳ — biến bài tập thành thói quen
+### P14. Periodic review — turning exercises into a habit
 
-**Đề:** Thiết kế vòng soát hàng tháng cho IAM của một account.
+**Problem:** Design a monthly IAM review cycle for one account.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Chu kỳ | Việc | Lệnh / nơi làm |
+| Cadence | Task | Command / where |
 |---|---|---|
-| **Hàng tháng** | Credential report: khoá cũ, user không MFA | [I14](bt-02-trung-binh.md) |
-| Hàng tháng | Snapshot `get-account-authorization-details`, `diff` với tháng trước | [P6](#p6-tìm-mọi-policy-quá-rộng-trong-account) |
-| Hàng tháng | Access Analyzer: finding external access mới | [P11](#p11-access-analyzer--tài-nguyên-đang-lộ-ra-ngoài) |
-| **Hàng quý** | Access Advisor cho mọi role: service chưa dùng 90 ngày | [P5](#p5-thu-hẹp-một-role--bằng-số-liệu) |
-| Hàng quý | Soát mọi `iam:PassRole` với `Resource: "*"` | [P6](#p6-tìm-mọi-policy-quá-rộng-trong-account) |
-| **Mỗi PR** | Policy test tự động | [P7](#p7-policy-test-trong-ci) |
-| **Mỗi lần dùng** | Alert break-glass | [P10](#p10-break-glass-role) |
+| **Monthly** | Credential report: old keys, users without MFA | [I14](bt-02-trung-binh.md) |
+| Monthly | Snapshot `get-account-authorization-details`, `diff` against last month | [P6](#p6-find-every-over-broad-policy-in-the-account) |
+| Monthly | Access Analyzer: new external-access findings | [P11](#p11-access-analyzer--resources-currently-exposed) |
+| **Quarterly** | Access Advisor across every role: services unused for 90 days | [P5](#p5-narrow-a--role-using-measurements) |
+| Quarterly | Audit every `iam:PassRole` with `Resource: "*"` | [P6](#p6-find-every-over-broad-policy-in-the-account) |
+| **Every PR** | Automated policy tests | [P7](#p7-policy-tests-in-ci) |
+| **Every use** | Break-glass alert | [P10](#p10-a-break-glass-role) |
 
-```text
-(chưa chạy — dán lịch soát bạn đã dựng, và kết quả lần soát đầu tiên)
+```text i18n-prose
+(not run yet — paste the review schedule you set up, and the result of the first review)
 ```
 
-Cột trái quan trọng hơn cột phải: lệnh thì tra lại được, **chu kỳ** thì không ai nhắc. Một
-lần soát rồi bỏ không khác gì không soát — vì quyền chỉ nới ra theo thời gian, không bao
-giờ tự hẹp lại.
+The left column matters more than the right one: commands can always be looked up, but
+**cadence** is what nobody reminds you of. Reviewing once and then stopping is no different
+from never reviewing — because permissions only ever widen over time, never narrow by
+themselves.
 
 </details>
 
 ---
 
-## Sáu nguyên tắc rút ra
+## The six principles that come out of this
 
-Học thuộc sáu dòng này; đề hỏi trực tiếp, và production hỏng đúng ở đây:
+Learn these six lines; the exam asks them directly, and production fails exactly here:
 
-1. Người → **Identity Center**. Máy trong AWS → **role**. Máy ngoài AWS → **OIDC**.
-   Không có ô nào dành cho access key dài hạn.
-2. Cấp quyền theo **role theo chức năng**, không theo từng người.
-3. Siết dần, **mở rộng khi có bằng chứng** (CloudTrail / Access Advisor) — không mở sẵn
-   `*` rồi hẹn dọn sau. Lần dọn đó không bao giờ tới.
-4. `iam:PassRole`, `iam:CreatePolicyVersion`, `iam:UpdateAssumeRolePolicy` là **quyền leo
-   thang** — cấp như cấp admin.
-5. Policy mới: **mô phỏng trước khi apply**. Policy cũ: review có chu kỳ, không vĩnh viễn.
-6. Quyền cao nhất phải **khó dùng**: break-glass có MFA, có alert, không ai dùng thường ngày.
+1. People → **Identity Center**. Machines inside AWS → **roles**. Machines outside AWS →
+   **OIDC**. There is no slot for a long-lived access key.
+2. Grant permissions by **role per function**, never per person.
+3. Narrow by default and **widen only with evidence** (CloudTrail / Access Advisor) — never
+   open `*` and promise to clean up later. That cleanup never happens.
+4. `iam:PassRole`, `iam:CreatePolicyVersion` and `iam:UpdateAssumeRolePolicy` are
+   **escalation permissions** — grant them as you would grant admin.
+5. New policies: **simulate before applying**. Old policies: review on a cadence, not
+   forever.
+6. The highest privilege must be **hard to use**: break-glass with MFA, with an alert, used
+   by nobody day to day.
 
 ## Related Topics
 
-- [Policy evaluation](../reference/iam-policy-evaluation.md) — cơ chế đằng sau các mẫu ở đây
-- [Bài tập — Trung bình](bt-02-trung-binh.md) — bậc trước, phải xong trước P5
-- [Bài tập — Cơ bản](bt-01-co-ban.md) — bậc đầu, chạy miễn phí trên emulator
-- [Access management](../../foundations/reference/access-management.md) — Identity Center, Secrets Manager ở tầng nền
-- [Bài tập IAM](index.md) — ba bậc
+- [IAM fundamentals](../reference/iam-fundamentals.md) — the foundation layer
+- [Policy evaluation](../reference/iam-policy-evaluation.md) — the mechanisms behind these patterns
+- [Exercises — Intermediate](bt-02-trung-binh.md) — previous tier, finish it before P5
+- [Exercises — Basic](bt-01-co-ban.md) — first tier, runs free on the emulator
+- [Access management](../../foundations/reference/access-management.md) — Identity Center and Secrets Manager at the foundations layer
+- [IAM exercises](index.md) — all three tiers

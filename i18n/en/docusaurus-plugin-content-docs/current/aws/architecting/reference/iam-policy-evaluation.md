@@ -1,8 +1,7 @@
 ---
 title: Policy evaluation
-i18n_status: untranslated
-sidebar_position: 1
-description: "Máy đánh giá quyền của IAM — thứ tự xét, vì sao boundary và SCP là phép giao, và ba chỗ quyền bị thu hẹp mà không ai gắn thêm Deny nào."
+sidebar_position: 2
+description: "The IAM evaluation engine — the order of checks, why boundaries and SCPs are an intersection, and the three places permissions narrow without anyone writing a Deny."
 tags: [aws, saa-c03, iam, policy-evaluation, permission-boundary, scp, cross-account, pass-role, domain-1]
 domain: cloud
 category: concept
@@ -15,95 +14,99 @@ updated: 2026-10-08
 
 # Policy evaluation
 
-> **Chốt:** Quyền hiệu lực là **phép giao**, không phải phép cộng. Một request được phép
-> chỉ khi nó vượt qua **cả bốn** cửa — SCP, permission boundary, identity policy, resource
-> policy — và **không** gặp `Deny` tường minh ở bất kỳ cửa nào. Thêm một `Allow` chưa bao
-> giờ mở được thứ đang bị thu hẹp ở cửa khác.
+> **Takeaway:** Effective permissions are an **intersection**, not a sum. A request is
+> allowed only if it clears **all four** gates — SCP, permission boundary, identity
+> policy, resource policy — and meets **no** explicit `Deny` at any of them. Adding an
+> `Allow` has never opened something that is being narrowed at a different gate.
 
-[Access management](../../foundations/reference/access-management.md) ở tầng foundations
-trả lời *IAM có những khối gì*. Tài liệu này trả lời câu khó hơn, và là câu SAA-C03
-Domain 1 hỏi: **cho một request cụ thể, AWS quyết định cho qua hay không bằng cách nào.**
+[IAM fundamentals](iam-fundamentals.md) covers the building blocks. This document answers
+the harder question, the one SAA-C03 Domain 1 asks: **for one specific request, how does
+AWS decide to allow it or not.**
 
-## Mục tiêu
+## Goal
 
-Đọc xong phải trả lời được không cần tra: một user có `AdministratorAccess` mà gọi lệnh
-vẫn `AccessDenied` thì có **bao nhiêu** chỗ có thể là nguyên nhân, và soát theo thứ tự nào.
+After reading this you should be able to answer without looking it up: when a user with
+`AdministratorAccess` still gets `AccessDenied`, **how many** things could be causing it,
+and in what order to check them.
 
-## Tổng quan
+## Overview
 
-### Năm luật quyết định mọi thứ
+### The five rules that decide everything
 
-| # | Luật | Hệ quả thực tế |
+| # | Rule | What it means in practice |
 |---|---|---|
-| 1 | **Mặc định là deny** (implicit deny) | Không `Allow` nào khớp ⇒ từ chối. Không cần ai viết `Deny`. |
-| 2 | **Explicit `Deny` luôn thắng** | Một `Deny` khớp là xong. Không `Allow` nào cứu được, kể cả `AdministratorAccess`. |
-| 3 | **SCP và permission boundary chỉ LỌC, không CẤP** | Boundary cho `s3:*` mà identity policy không nói gì ⇒ vẫn không làm được gì. |
-| 4 | **Cùng account:** identity *hoặc* resource policy allow là đủ.<br/>**Khác account:** cần **cả hai**. | Bucket policy một mình mở được cho principal cùng account; cross-account thì không. |
-| 5 | **Role không có credential thường trú** | `AssumeRole` trả **ba** giá trị: AccessKeyId + SecretAccessKey + **SessionToken**. Thiếu token thứ ba là lỗi hay gặp nhất khi dùng tay. |
+| 1 | **Deny by default** (implicit deny) | No matching `Allow` ⇒ denied. Nobody has to write a `Deny`. |
+| 2 | **An explicit `Deny` always wins** | One matching `Deny` ends it. No `Allow` can rescue it, not even `AdministratorAccess`. |
+| 3 | **SCPs and permission boundaries only FILTER, they never GRANT** | A boundary allowing `s3:*` with an identity policy that says nothing about S3 ⇒ still no permissions. |
+| 4 | **Same account:** either the identity *or* the resource policy allowing is enough.<br/>**Cross-account:** you need **both**. | A bucket policy alone can open access for a principal in the same account; cross-account it cannot. |
+| 5 | **A role has no standing credentials** | `AssumeRole` returns **three** values: AccessKeyId + SecretAccessKey + **SessionToken**. Missing the third is the most common hand-rolled mistake. |
 
-### Thứ tự xét — soát sự cố theo đúng thứ tự này
+### Evaluation order — investigate incidents in exactly this order
 
-```text
+```text i18n-prose
 request
   │
-  ├─ 1. SCP (nếu account thuộc Organizations)      -> không qua thì dừng, log không nói rõ
-  ├─ 2. Permission boundary (nếu principal có)     -> không qua thì dừng
+  ├─ 1. SCP (if the account is in Organizations)   -> fails here and it stops; logs stay vague
+  ├─ 2. Permission boundary (if the principal has one) -> fails here and it stops
   ├─ 3. Identity-based policy (user/group/role)    -+
-  ├─ 4. Resource-based policy (bucket policy, …)   -+-> luật 4 ở trên
-  ├─ 5. Session policy (nếu AssumeRole có truyền)  -> lại là phép giao nữa
-  └─ Explicit Deny ở BẤT KỲ bước nào -> từ chối ngay, bỏ qua phần còn lại
+  ├─ 4. Resource-based policy (bucket policy, …)   -+-> rule 4 above
+  ├─ 5. Session policy (if passed at AssumeRole)   -> another intersection
+  └─ An explicit Deny at ANY step -> denied immediately, the rest is skipped
 ```
 
-Thứ tự này là lý do câu *"tôi là admin mà vẫn `AccessDenied`"* có **năm** nghi phạm, và
-bốn trong năm cái **không nằm ở policy của user**. Đi soát từ policy của user trước là
-cách chậm nhất.
+This order is why *"I am an admin and still get `AccessDenied`"* has **five** suspects, and
+four of the five are **not in the user's policy**. Starting with the user's policy is the
+slowest route.
 
-### Ba chỗ quyền bị thu hẹp mà không ai gắn thêm `Deny`
+### The three places permissions narrow without anyone writing a `Deny`
 
-Đây là phần trực giác sai nhiều nhất — cả ba đều là **phép giao**, không phải `Deny`:
+This is the most counter-intuitive part — all three are an **intersection**, not a `Deny`:
 
-| Cơ chế | Phạm vi | Công thức | Nhớ bằng |
+| Mechanism | Scope | Formula | Remember it as |
 |---|---|---|---|
-| **SCP** | Mọi principal trong account thành viên của Organizations | quyền = SCP ∩ identity policy | *Trần của cả account.* Admin trong member account cũng không vượt. Không áp lên management account. |
-| **Permission boundary** | Một user hoặc role cụ thể | quyền = boundary ∩ identity policy | *Hàng rào quanh một người.* Dùng để dev tự tạo role mà không tự cấp thêm quyền. |
-| **Session policy** | Một session `AssumeRole` | quyền = session policy ∩ quyền của role | *Thu nhỏ tạm thời.* Cấp cho bên thứ ba ít quyền hơn chính role. |
+| **SCP** | every principal in a member account of Organizations | permissions = SCP ∩ identity policy | *A ceiling over the whole account.* Even an admin in a member account cannot exceed it. Does not apply to the management account. |
+| **Permission boundary** | one specific user or role | permissions = boundary ∩ identity policy | *A fence around one person.* Used so developers can create roles without granting themselves more. |
+| **Session policy** | one `AssumeRole` session | permissions = session policy ∩ the role's permissions | *A temporary shrink.* Hand a third party fewer permissions than the role itself. |
 
-Cả ba **không bao giờ cấp** quyền. Boundary allow `s3:*` trong khi identity policy chỉ
-allow `dynamodb:*` ⇒ quyền hiệu lực là **`dynamodb:*`** bị boundary chặn hết, tức là
-**không có quyền nào**. Giao của hai tập rời nhau là tập rỗng.
+None of the three ever **grants** anything. A boundary allowing `s3:*` while the identity
+policy only allows `dynamodb:*` means the effective permission set is **`dynamodb:*`
+blocked entirely by the boundary** — that is, **no permissions at all**. The intersection
+of two disjoint sets is empty.
 
-### `iam:PassRole` — quyền leo thang bị xem nhẹ nhất
+### `iam:PassRole` — the most underestimated escalation permission
 
-Khi bạn bảo một service *"hãy chạy bằng role này"* (gắn role vào EC2, đặt role cho
-Lambda, cho ECS task), AWS kiểm **hai** quyền:
+When you tell a service *"run as this role"* (attaching a role to EC2, setting a role for
+a Lambda, giving an ECS task a role), AWS checks **two** permissions:
 
-1. Quyền gọi chính API đó — `lambda:CreateFunction`.
-2. **`iam:PassRole`** cho đúng role đang trao.
+1. Permission to call the API itself — `lambda:CreateFunction`.
+2. **`iam:PassRole`** for the exact role being handed over.
 
-Thiếu điều 2 thì lệnh thất bại dù điều 1 đã đủ. Và quan trọng hơn: **ai có
-`iam:PassRole` rộng thì có quyền tương đương role rộng nhất họ trao được** — họ tạo một
-Lambda mang role admin rồi chạy code trong đó. Vì vậy `iam:PassRole` với `Resource: "*"`
-phải được cấp như cấp admin, không phải như một quyền phụ.
+Without the second, the call fails even though the first is in place. And more important:
+**anyone with broad `iam:PassRole` effectively holds the broadest role they can hand
+over** — they create a Lambda carrying an admin role and run code inside it. That is why
+`iam:PassRole` with `Resource: "*"` must be granted as if granting admin, not as a minor
+extra.
 
-Cùng loại: `iam:CreatePolicyVersion` (viết lại nội dung policy đang được gắn),
+Same family: `iam:CreatePolicyVersion` (rewriting the contents of an attached policy),
 `iam:AttachUserPolicy`, `iam:UpdateAssumeRolePolicy`.
 
-### Trust policy — policy duy nhất quyết định *ai được vào*
+### Trust policy — the only policy that decides *who gets in*
 
-Trust policy là **resource-based policy của role**. Hai điều kiện phải đủ cùng lúc:
+A trust policy is the **role's resource-based policy**. Two conditions must hold at once:
 
-- Trust policy của role phải `Allow` principal đó `sts:AssumeRole`.
-- Nếu trust policy ghi **account root** (`arn:aws:iam::<account>:root`) thay vì đích danh
-  principal, thì principal còn cần `sts:AssumeRole` trong identity policy của mình.
+- The role's trust policy must `Allow` that principal to `sts:AssumeRole`.
+- If the trust policy names the **account root** (`arn:aws:iam::<account>:root`) rather
+  than the principal itself, the principal also needs `sts:AssumeRole` in its own identity
+  policy.
 
-Ghi đích danh ARN của user/role trong trust policy thì không cần điều kiện thứ hai.
-Cross-account thì luôn cần cả hai phía — đúng luật 4.
+Naming the user's or role's ARN explicitly in the trust policy removes the need for the
+second condition. Cross-account always needs both sides — exactly rule 4.
 
-### Confused deputy, và hai condition key ngăn nó
+### Confused deputy, and the two condition keys that stop it
 
-Khi trust policy mở cho một **service** (`"Service": "glue.amazonaws.com"`), bạn đang nói
-*"service này được assume role của tôi"* — nhưng service đó cũng phục vụ account khác.
-Không có điều kiện gì thì một người lạ có thể nhờ chính service đó dùng role của bạn.
+When a trust policy opens up to a **service** (`"Service": "glue.amazonaws.com"`), you are
+saying *"this service may assume my role"* — but that service also serves other accounts.
+With no conditions, a stranger can ask that same service to use your role.
 
 ```json
 {
@@ -111,26 +114,26 @@ Không có điều kiện gì thì một người lạ có thể nhờ chính se
   "Principal": {"Service": "glue.amazonaws.com"},
   "Action": "sts:AssumeRole",
   "Condition": {
-    "StringEquals": {"aws:SourceAccount": "<account-id-cua-ban>"},
+    "StringEquals": {"aws:SourceAccount": "<your-account-id>"},
     "ArnLike":      {"aws:SourceArn": "arn:aws:glue:<region>:<account-id>:job/*"}
   }
 }
 ```
 
-`aws:SourceAccount` + `aws:SourceArn` khoá lại *"chỉ khi lời gọi phát sinh từ tài nguyên
-của chính tôi"*. Đây là mẫu bắt buộc cho mọi service role, không phải tuỳ chọn.
+`aws:SourceAccount` + `aws:SourceArn` pin it down to *"only when the call originates from
+my own resources"*. This is the mandatory pattern for every service role, not an option.
 
-### Bẫy toán tử: `ForAllValues` trên tập rỗng
+### The operator trap: `ForAllValues` over an empty set
 
-Hai toán tử nhiều giá trị, nghĩa **ngược nhau**, và một cái có cửa hậu:
+Two multi-value operators with **opposite** meanings, and one of them has a back door:
 
-| Toán tử | Đúng khi |
+| Operator | True when |
 |---|---|
-| `ForAnyValue:` | **ít nhất một** giá trị trong request khớp |
-| `ForAllValues:` | **mọi** giá trị trong request đều khớp — **và tập rỗng cũng thoả** |
+| `ForAnyValue:` | **at least one** value in the request matches |
+| `ForAllValues:` | **every** value in the request matches — **and the empty set also satisfies it** |
 
-Dòng in đậm là cái bẫy. Policy dưới đây *trông như* bắt buộc gắn tag, thực tế cho qua
-request **không gửi tag nào**:
+That bold clause is the trap. The policy below *looks like* it requires tags, but in fact
+it allows a request that **sends no tags at all**:
 
 ```json
 {
@@ -143,8 +146,8 @@ request **không gửi tag nào**:
 }
 ```
 
-Vì không có tag nào ⇒ "mọi tag đều nằm trong danh sách" là **đúng**. Sửa bằng cách bắt
-key phải có mặt:
+With no tags present, "every tag is in the list" is **true**. Fix it by requiring the key
+to exist:
 
 ```json
 "Condition": {
@@ -153,84 +156,87 @@ key phải có mặt:
 }
 ```
 
-`Null: "false"` nghĩa *"key này phải tồn tại trong request"*. Thiếu nó là lỗi thật, hay
-gặp trong code review, và không có lệnh nào báo đỏ.
+`Null: "false"` means *"this key must exist in the request"*. Leaving it out is a real bug,
+a common one in code review, and **nothing reports it as an error**.
 
-### Condition key hay hỏng trong đề
+### Condition keys that come up in the exam
 
-| Key | Dùng để |
+| Key | Used to |
 |---|---|
-| `aws:PrincipalOrgID` | Mở cho cả Organizations mà không liệt kê từng account ID |
-| `aws:SourceAccount` · `aws:SourceArn` | Chống confused deputy ở service role |
-| `aws:MultiFactorAuthPresent` | Bắt MFA cho hành động nguy hiểm, break-glass role |
-| `aws:SecureTransport` | Chặn truy cập không TLS (`Deny` khi `false`) |
-| `aws:RequestedRegion` | Khoá region được dùng — thường đặt ở SCP |
-| `aws:PrincipalTag` ⇄ `aws:ResourceTag` | Tag-based access control: một policy cho nhiều team |
+| `aws:PrincipalOrgID` | Open up to a whole Organization without listing account IDs |
+| `aws:SourceAccount` · `aws:SourceArn` | Prevent confused deputy on a service role |
+| `aws:MultiFactorAuthPresent` | Require MFA for dangerous actions, break-glass roles |
+| `aws:SecureTransport` | Block non-TLS access (`Deny` when `false`) |
+| `aws:RequestedRegion` | Restrict which regions may be used — usually set in an SCP |
+| `aws:PrincipalTag` ⇄ `aws:ResourceTag` | Tag-based access control: one policy for many teams |
 
-## Ví dụ
+## Example
 
-Bài tập chạy thật cho toàn bộ tài liệu này nằm ở
-[**thư mục bài tập**](../tutorials/index.md) — ba bậc: cú pháp trên emulator, logic đánh
-giá trên AWS thật, rồi mẫu production.
+Hands-on exercises for everything on this page live in the
+[**exercise directory**](../tutorials/index.md) — three tiers: syntax on the emulator,
+evaluation logic on real AWS, then production patterns.
 
-Một kết quả đã đo tay đáng đưa lên đây vì nó định hình cách học. Trên emulator AWS local,
-**cùng một policy cho hai câu trả lời ngược nhau** tuỳ đường bạn hỏi:
+One hand-measured result belongs here because it shapes how you should study. On the local
+AWS emulator, **the same policy gives two opposite answers** depending on how you ask:
 
-| Đường hỏi | Với một principal chỉ có `Deny s3:*` | Đúng không |
+| How you ask | For a principal whose only policy is `Deny s3:*` | Correct? |
 |---|---|---|
 | `aws iam simulate-principal-policy` | `explicitDeny` | ✅ |
-| Gọi API thật (`aws s3 ls` bằng khoá đó) | **thành công**, `rc=0` | ❌ |
+| A real API call (`aws s3 ls` with that key) | **succeeds**, `rc=0` | ❌ |
 
-⇒ Emulator **có** máy đánh giá policy nhưng **không mắc nó vào đường xử lý request**. Hệ
-quả cho việc học tài liệu này rất cụ thể: `simulate-principal-policy` ở đó đánh giá đúng
-cả `Resource` scoping, policy qua group, `explicitDeny` ⇄ `implicitDeny` **và permission
-boundary** — nên **phần lớn logic trên trang này học được miễn phí**. Thứ duy nhất phải
-mang sang AWS thật là **enforcement**, cùng với bốn lệnh emulator không hỗ trợ
+⇒ The emulator **has** a policy evaluation engine but **does not wire it into the request
+path**. The consequence for studying this page is very concrete: `simulate-principal-policy`
+there correctly evaluates `Resource` scoping, policies inherited through groups,
+`explicitDeny` ⇄ `implicitDeny` **and permission boundaries** — so **most of the logic on
+this page can be learned for free**. The only thing you must take to real AWS is
+**enforcement**, along with the four commands the emulator does not support
 (`simulate-custom-policy`, `generate-credential-report`,
 `get-account-authorization-details`, `generate-service-last-accessed-details`).
 
-Bảng đo đầy đủ và output thật:
-[bài tập cơ bản](../tutorials/bt-01-co-ban.md#e3-tự-đo-xem-emulator-đỡ-được-lệnh-nào).
+The full measurement table with real output:
+[basic exercises](../tutorials/bt-01-co-ban.md#e3-measure-for-yourself-which-commands-the-emulator-supports).
 
-:::warning Một chỗ lệch âm thầm của emulator
+:::warning One silent discrepancy in the emulator
 
-`put-user-permissions-boundary` **có hiệu lực** trong mô phỏng, nhưng
-`get-user --query User.PermissionsBoundary` đọc lại trả về `null`. Tức là kiểm kê boundary
-bằng `get-user` trên emulator sẽ báo *"không có boundary nào"* trong khi có. AWS thật trả
-về `PermissionsBoundaryArn` đầy đủ.
+`put-user-permissions-boundary` **does take effect** in simulation, but reading it back
+with `get-user --query User.PermissionsBoundary` returns `null`. So auditing boundaries
+with `get-user` on the emulator will report *"no boundary"* when there is one. Real AWS
+returns the full `PermissionsBoundaryArn`.
 
 :::
 
-Dù sao thì **IAM trên AWS thật cũng miễn phí** — API, role, policy, Policy Simulator,
-credential report, Access Advisor đều $0 — nên không có lý do tiền nào để tránh bậc hai.
+In any case **IAM on real AWS is free** — the API, roles, policies, Policy Simulator,
+credential reports and Access Advisor all cost $0 — so there is no cost reason to avoid the
+second tier.
 
-## Bẫy trong đề
+## Exam traps
 
-| Bẫy | Vì sao sai |
+| Trap | Why it is wrong |
 |---|---|
-| Thêm `Allow` để mở thứ đang bị `Deny` tường minh | Luật 2 — `Deny` thắng, vĩnh viễn |
-| Nghĩ permission boundary **cấp** quyền | Luật 3 — nó là phép giao, không cấp gì |
-| Nghĩ SCP cấp quyền cho member account | Cũng luật 3 — SCP là trần, không phải nguồn |
-| Cross-account chỉ sửa bucket policy | Luật 4 — khác account cần **cả hai** phía |
-| Cấp `iam:PassRole` `Resource: "*"` như quyền phụ | Tương đương cấp admin |
-| Trust policy mở cho service mà không có `aws:SourceArn` | Confused deputy |
-| `ForAllValues` để "bắt buộc phải có tag" | Tập rỗng thoả; thiếu `Null` check |
-| Dùng credential tạm mà quên `SessionToken` | Luật 5 — ba giá trị, không phải hai |
-| Tin policy đã chặt vì lab emulator không báo lỗi | Emulator không đánh giá policy |
+| Adding an `Allow` to open something under an explicit `Deny` | Rule 2 — `Deny` wins, permanently |
+| Thinking a permission boundary **grants** permissions | Rule 3 — it is an intersection, it grants nothing |
+| Thinking an SCP grants permissions to a member account | Also rule 3 — an SCP is a ceiling, not a source |
+| Fixing cross-account access by editing only the bucket policy | Rule 4 — cross-account needs **both** sides |
+| Granting `iam:PassRole` with `Resource: "*"` as a minor extra | Equivalent to granting admin |
+| A trust policy open to a service with no `aws:SourceArn` | Confused deputy |
+| `ForAllValues` to "require tags" | The empty set satisfies it; the `Null` check is missing |
+| Using temporary credentials but forgetting `SessionToken` | Rule 5 — three values, not two |
+| Believing a policy is tight because the emulator lab did not complain | The emulator does not enforce policies |
 
-## Đánh đổi
+## Trade-offs
 
-| Quyết định | Được | Mất |
+| Decision | You gain | You lose |
 |---|---|---|
-| Permission boundary cho mọi role dev tự tạo | Dev tự phục vụ mà không leo thang được | Thêm một tầng phải giải thích; lỗi `AccessDenied` khó đọc hơn |
-| SCP siết region, siết service | Trần cứng cả tổ chức, admin cũng không vượt | Cần Organizations; chặn sai thì không ai trong account sửa được |
-| Least privilege dựng từ CloudTrail | Có bằng chứng, cắt đúng quyền không dùng | Chỉ thấy quyền **đã** dùng — action theo quý sẽ bị cắt oan |
-| Tag-based access control | Một policy cho N team, không nhân bản policy | Phụ thuộc tag đúng; tag sai là quyền sai, mà tag ai cũng sửa được |
-| Mô phỏng trước khi apply | Bắt lỗi trước khi nó thành sự cố | Simulator **không** biết SCP và boundary — xanh ở đó vẫn có thể đỏ thật |
+| A permission boundary on every role developers can create | Self-service without escalation | One more layer to explain; `AccessDenied` gets harder to read |
+| SCPs restricting regions and services | A hard ceiling for the whole org, even for admins | Needs Organizations; block the wrong thing and nobody in the account can fix it |
+| Least privilege derived from CloudTrail | Evidence-based, cuts genuinely unused permissions | Only shows what **has** been used — a quarterly action gets cut by mistake |
+| Tag-based access control | One policy for N teams instead of N copies | Depends on correct tags; a wrong tag is a wrong permission, and anyone can edit tags |
+| Simulating before applying | Catches bugs before they become incidents | The simulator **cannot see** SCPs or boundaries — green there can still be red in production |
 
 ## Related Topics
 
-- [Access management](../../foundations/reference/access-management.md) — bốn khối IAM, root user, Identity Center. Tầng nền của tài liệu này
-- [Governance và compliance](../../foundations/reference/security-governance-compliance.md) — SCP và Organizations ở mức nhận diện service
-- [Bài tập IAM](../tutorials/index.md) — ba bậc, chạy thật
-- [Architecting (SAA-C03)](../index.md) — tầng chứa tài liệu này
+- [IAM fundamentals](iam-fundamentals.md) — the foundation layer: principals, the four blocks, policy and ARN anatomy
+- [Access management](../../foundations/reference/access-management.md) — the CLF-C02 layer: root user, Identity Center
+- [Governance and compliance](../../foundations/reference/security-governance-compliance.md) — SCPs and Organizations at the service-recognition level
+- [IAM exercises](../tutorials/index.md) — three hands-on tiers
+- [Architecting (SAA-C03)](../index.md) — the layer this document belongs to

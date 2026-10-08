@@ -17,14 +17,15 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**243 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**244 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (68)
+## Tài liệu tham chiếu (69)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
 | Tài liệu | Chủ đề | Lĩnh vực | Trạng thái |
 |---|---|---|---|
+| [IAM fundamentals](aws/architecting/reference/iam-fundamentals.md) | `aws/architecting/reference` | cloud | 🟡 draft |
 | [Policy evaluation](aws/architecting/reference/iam-policy-evaluation.md) | `aws/architecting/reference` | cloud | 🟡 draft |
 | [Access management](aws/foundations/reference/access-management.md) | `aws/foundations/reference` | cloud | 🟡 draft |
 | [AI/ML và analytics](aws/foundations/reference/ai-ml-and-analytics.md) | `aws/foundations/reference` | cloud | 🟡 draft |

@@ -23,7 +23,7 @@ gì. Emulator dạy cú pháp; chỉ AWS thật dạy được logic.
 
 ## Thứ tự làm
 
-```text
+```text i18n-prose
 Ly thuyet (reference)        ~30 phut  tra loi duoc 5 cau tu kiem
 10 Co ban  A1-A6 B1-B6       1 buoi    danh tinh + policy, thuoc tay cu phap
            C1-C5             1 buoi    role, instance profile, STS

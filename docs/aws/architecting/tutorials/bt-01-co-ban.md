@@ -189,7 +189,7 @@ aws iam attach-group-policy --group-name lab-developers \
 aws iam list-attached-user-policies --user-name lab-alice --output text
 ```
 
-```text
+```text i18n-prose
 (khong in ra dong nao)
 ```
 
@@ -1074,7 +1074,7 @@ Endpoint của lab là `http://` ⇒ `aws:SecureTransport` là `false` ⇒ phả
 aws s3 ls s3://lab-bucket
 ```
 
-```text
+```text i18n-prose
 (rc=0, khong loi)
 ```
 

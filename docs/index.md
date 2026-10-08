@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-10-06
+updated: 2026-10-08
 ---
 
 # Mục lục `docs/`
@@ -332,8 +332,9 @@ init, optimizer và vòng lặp train.
 
 Hai tầng bám theo hai kỳ thi. Tầng `foundations/` khớp **đúng 19 task statement** của exam
 guide CLF-C02 — bề rộng danh mục service, không phải chiều sâu triển khai. Tầng
-`architecting/` (SAA-C03) vừa mở Domain 1 bằng phần IAM: một tài liệu cơ chế + ba bậc
-bài tập.
+`architecting/` (SAA-C03) vừa mở Domain 1 bằng phần IAM: **hai** tài liệu (nền tảng + cơ
+chế đánh giá) và **60 bài tập có lời giải** chia ba bậc. Đây cũng là phần đầu tiên của kho
+có **bản tiếng Anh dịch thật**, không còn là stub.
 
 | File | Chốt một câu | TT |
 |---|---|---|
@@ -342,6 +343,7 @@ bài tập.
 | [architecting/index](aws/architecting/index.md) | Khung SAA-C03, và thứ nó đòi thêm so với CLF | 🗂️ |
 | [architecting/reference/index](aws/architecting/reference/index.md) | Mục lục tài liệu tầng SAA — mới mở Domain 1 | 🗂️ |
 | [architecting/tutorials/index](aws/architecting/tutorials/index.md) | Ba bậc bài tập IAM: emulator → AWS thật → production | 🗂️ |
+| [iam-fundamentals](aws/architecting/reference/iam-fundamentals.md) | Nền IAM từ số không: principal, bốn khối, giải phẫu policy JSON và ARN, sáu loại policy | 📝 |
 | [iam-policy-evaluation](aws/architecting/reference/iam-policy-evaluation.md) | Quyền là **phép giao**, không phải phép cộng; boundary và SCP chỉ lọc, không cấp | 📝 |
 | [bt: IAM cơ bản](aws/architecting/tutorials/bt-01-co-ban.md) | 9 bài cú pháp trên emulator — và bảng đo bốn lệnh kiểm chứng quyền mà emulator **không** có | 📝 |
 | [bt: IAM trung bình](aws/architecting/tutorials/bt-02-trung-binh.md) | 11 bài trên AWS thật ($0): simulator, explicit deny, boundary là phép giao, bẫy `ForAllValues` | 📝 |

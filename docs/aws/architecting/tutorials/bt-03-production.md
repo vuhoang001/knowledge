@@ -72,7 +72,7 @@ aws iam get-access-key-last-used --access-key-id <AKIA...> \
   --query 'AccessKeyLastUsed.[LastUsedDate,ServiceName]'
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán bảng khoá của account bạn vào đây)
 ```
 
@@ -148,7 +148,7 @@ jobs:
       - run: aws sts get-caller-identity
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán output `aws sts get-caller-identity` chạy trong Actions vào đây;
  Arn phải là .../assumed-role/gha-deploy/<session>, KHÔNG phải :user/...)
 ```
@@ -188,7 +188,7 @@ Deploy từ môi trường thì khoá theo environment, chặt hơn branch:
 
 Năm bước, và bước 4 là bước người ta bỏ:
 
-```text
+```text i18n-prose
 1. create-access-key           -> gio user co 2 khoa (tran la 2, bai A6 bac co ban)
 2. cap nhat moi noi dang dung khoa cu sang khoa moi
 3. update-access-key --status Inactive   cho khoa CU
@@ -204,7 +204,7 @@ aws iam get-access-key-last-used --access-key-id <khoa-cu> \
   --query 'AccessKeyLastUsed.LastUsedDate'
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán LastUsedDate của khoá cũ trước và sau khi Inactive)
 ```
 
@@ -273,7 +273,7 @@ aws iam simulate-custom-policy --policy-input-list "$(cat policy-moi.json)" \
   --resource-arns <arn>
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán danh sách service ở bước 1 và action ở bước 2 vào đây)
 ```
 
@@ -318,7 +318,7 @@ jq -r '.Policies[] | . as $p | .PolicyVersionList[]
        | $p.PolicyName' /tmp/iam.json | sort -u
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán hai danh sách vào đây)
 ```
 
@@ -340,7 +340,7 @@ cả quyền không ai báo.
 
 Mỗi policy trong repo đi kèm một file kỳ vọng:
 
-```text
+```text i18n-prose
 policies/
   data-reader.json
   data-reader.expect     # action<TAB>resource<TAB>allowed|denied
@@ -370,7 +370,7 @@ done < policies/data-reader.expect
 exit $fail
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán kết quả một lần chạy CI vào đây)
 ```
 
@@ -443,7 +443,7 @@ Lớp 2 — policy của **developer**, bắt buộc họ phải gắn boundary 
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — thử tạo role không gắn boundary, và thử sửa chính boundary; dán cả hai lỗi)
 ```
 
@@ -525,7 +525,7 @@ tố thì dev tạo được role tên bất kỳ, kể cả trùng tên role h�
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dùng admin của member account thử phá cả ba SCP; dán ba lỗi vào đây)
 ```
 
@@ -598,7 +598,7 @@ Target: SNS topic có người thật đăng ký.
 | `assume-role` **không** MFA | `AccessDenied` |
 | `assume-role` có MFA | thành công, và **SNS gửi alert** |
 
-```text
+```text i18n-prose
 (chưa chạy — dán cả hai, và xác nhận đã nhận được alert)
 ```
 
@@ -629,7 +629,7 @@ aws accessanalyzer list-findings \
   --query 'findings[].[resourceType,resource,isPublic]' --output table
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — dán danh sách finding vào đây; mục tiêu là 0 finding ngoài ý muốn)
 ```
 
@@ -688,7 +688,7 @@ chung một lượt rồi quên.
 }
 ```
 
-```text
+```text i18n-prose
 (chưa chạy — gắn Team=alpha cho user A, Team=beta cho user B, thử chéo; dán 4 kết quả)
 ```
 
@@ -720,7 +720,7 @@ không chặn. Phải thêm `Deny` cho `s3:PutBucketTagging` / `ec2:CreateTags` 
 Trong Identity Center bật **attribute-based access control**, map attribute của IdP sang
 session tag:
 
-```text
+```text i18n-prose
 IdP attribute   ->  session tag
   department    ->  Team
   costCenter    ->  CostCenter
@@ -729,7 +729,7 @@ IdP attribute   ->  session tag
 Sau đó permission set dùng `${aws:PrincipalTag/Team}` **y như bài P12** — không cần biết
 người đó là ai, chỉ cần biết thuộc tính của họ.
 
-```text
+```text i18n-prose
 (chưa chạy — dán `aws sts get-caller-identity` + một lệnh bị chặn do sai Team)
 ```
 
@@ -759,7 +759,7 @@ tag thì khó đọc hơn policy liệt kê ARN — debug một `AccessDenied` d
 | **Mỗi PR** | Policy test tự động | [P7](#p7-policy-test-trong-ci) |
 | **Mỗi lần dùng** | Alert break-glass | [P10](#p10-break-glass-role) |
 
-```text
+```text i18n-prose
 (chưa chạy — dán lịch soát bạn đã dựng, và kết quả lần soát đầu tiên)
 ```
 

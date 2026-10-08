@@ -1,9 +1,8 @@
 ---
-title: Tài liệu — Architecting (SAA-C03)
-i18n_status: untranslated
+title: Reference — Architecting (SAA-C03)
 sidebar_key: aws-architecting-reference
 sidebar_position: 0
-description: "Tài liệu chiều sâu của tầng SAA-C03. Mới mở Domain 1 — phần IAM mà CLF-C02 không chạm tới."
+description: "In-depth documents for the SAA-C03 layer. Domain 1 has just opened with two IAM documents: the fundamentals, then the policy evaluation engine."
 tags: [reference, aws, saa-c03]
 domain: cloud
 category: index
@@ -11,23 +10,24 @@ doc_type: index
 updated: 2026-10-08
 ---
 
-# Tài liệu — Architecting (SAA-C03)
+# Reference — Architecting (SAA-C03)
 
-Khác tầng [foundations](../../foundations/index.md) ở một chỗ: foundations hỏi *service
-nào*, tầng này hỏi *service nào **với ràng buộc này***, và trả lời bằng cơ chế chứ không
-bằng danh mục.
+This layer differs from [foundations](../../foundations/index.md) in one way: foundations
+asks *which service*, this layer asks *which service **under this constraint***, and
+answers with mechanisms rather than with a catalogue.
 
 ## Domain 1 — Design Secure Architectures
 
-| # | Tài liệu | Trả lời câu hỏi | TT |
+| # | Document | Answers | Status |
 |---|---|---|---|
-| 1 | [Policy evaluation](iam-policy-evaluation.md) | Cho một request cụ thể, AWS quyết định cho qua hay không bằng cách nào — và ba chỗ quyền bị thu hẹp mà không ai gắn `Deny` nào | 📝 |
+| 1 | [IAM fundamentals](iam-fundamentals.md) | **Read first.** What a principal is, the four blocks user/group/role/policy, the anatomy of a policy document and an ARN, the six policy types, diagnosing `AccessDenied` | 📝 |
+| 2 | [Policy evaluation](iam-policy-evaluation.md) | For one specific request, how AWS decides to allow or deny it — and the three places permissions narrow without anyone writing a `Deny` | 📝 |
 
-Phần còn lại của Domain 1 (mã hoá, KMS, bảo mật nhiều tầng) và ba domain còn lại vẫn là
-mục lục dự kiến ở [trang chủ tầng](../index.md).
+The rest of Domain 1 (encryption, KMS, defence in depth) and the other three domains are
+still a planned outline on the [layer home page](../index.md).
 
 ## Related Topics
 
-- [Bài tập IAM](../tutorials/index.md) — ba bậc thực hành cho tài liệu ở trên
-- [Architecting (SAA-C03)](../index.md) — tầng chứa nhóm này
-- [Tài liệu — Foundations](../../foundations/reference/index.md) — 19 tài liệu tầng nền
+- [IAM exercises](../tutorials/index.md) — three hands-on tiers for the documents above
+- [Architecting (SAA-C03)](../index.md) — the layer this group belongs to
+- [Reference — Foundations](../../foundations/reference/index.md) — the 19 base-layer documents

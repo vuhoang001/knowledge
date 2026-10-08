@@ -1,8 +1,7 @@
 ---
-title: Bài tập — Trung bình (AWS thật)
-i18n_status: untranslated
+title: Exercises — Intermediate (real AWS)
 sidebar_position: 20
-description: "20 bài có lời giải trên AWS thật — phần emulator không làm được: thực thi policy, cross-account, SCP, credential report, Access Advisor, PassRole. IAM miễn phí nên bậc này $0."
+description: "20 exercises with solutions on real AWS — the part the emulator cannot do: policy enforcement, cross-account, SCPs, credential reports, Access Advisor, PassRole. IAM is free, so this tier costs $0."
 tags: [tutorial, aws, iam, saa-c03, policy-simulator, permission-boundary, pass-role, cross-account, scp, domain-1]
 domain: cloud
 category: concept
@@ -13,77 +12,82 @@ verified_at:
 updated: 2026-10-08
 ---
 
-# Bài tập — Trung bình (AWS thật)
+# Exercises — Intermediate (real AWS)
 
-> **Chốt:** Bậc [cơ bản](bt-01-co-ban.md) đã dạy được phần lớn logic — emulator mô phỏng
-> policy đúng. Thứ nó **không** làm được chỉ còn bốn nhóm, và bốn nhóm đó là toàn bộ nội
-> dung trang này: **thực thi** (`AccessDenied` thật), **nhiều account** (cross-account,
-> SCP), **soát account** (credential report, Access Advisor), và **condition key cần ngữ
-> cảnh thật** (MFA, TLS, region, IP).
+> **Takeaway:** The [basic tier](bt-01-co-ban.md) already taught most of the logic — the
+> emulator simulates policies correctly. What it **cannot** do comes down to four groups,
+> and those four groups are the entire content of this page: **enforcement** (a real
+> `AccessDenied`), **multiple accounts** (cross-account, SCPs), **account audits**
+> (credential reports, Access Advisor), and **condition keys that need real context**
+> (MFA, TLS, region, IP).
 
-Bậc trước: [Cơ bản](bt-01-co-ban.md) · Bậc sau: [Production](bt-03-production.md) ·
-Lý thuyết: [Policy evaluation](../reference/iam-policy-evaluation.md)
+Previous tier: [Basic](bt-01-co-ban.md) · Next tier: [Production](bt-03-production.md) ·
+Theory: [IAM fundamentals](../reference/iam-fundamentals.md) ·
+[Policy evaluation](../reference/iam-policy-evaluation.md)
 
-:::info Lời giải ở trang này là **kỳ vọng**, không phải output đã chụp
+:::info The solutions on this page are **expected results**, not captured output
 
-Khác bậc cơ bản — nơi mọi output là thật, chạy trên emulator — bậc này cần một account AWS
-thật nên lời giải ghi **kết quả kỳ vọng kèm lý do**, và mỗi bài có **ô dán output** của
-bạn. Dán output thật vào rồi mới coi là xong bài; ô còn trống nghĩa là chưa học.
+Unlike the basic tier — where every output is real, captured against the emulator — this
+tier needs a real AWS account, so the solutions give the **expected result with the
+reasoning**, and every exercise has a **paste box** for your own output. Paste your real
+output in before calling an exercise done; an empty box means you have not learned it.
 
 :::
 
-## Trước khi bắt đầu — ba việc không bỏ qua
+## Before you start — three things not to skip
 
-IAM miễn phí, nhưng account thật không có nút hoàn tiền.
+IAM is free, but a real account has no refund button.
 
-1. **Billing alert $5** — CloudWatch alarm trên metric `EstimatedCharges`, **bắt buộc**
-   region `us-east-1` (metric billing chỉ phát ở đó).
-2. **MFA cho root** + một IAM user riêng để làm việc. Không dùng root.
-3. Biết **lệnh xoá** của mọi thứ sắp tạo, trước khi tạo.
+1. A **$5 billing alert** — a CloudWatch alarm on the `EstimatedCharges` metric,
+   **required** in region `us-east-1` (billing metrics are only published there).
+2. **MFA on root** plus a separate IAM user for day-to-day work. Do not use root.
+3. Know the **delete command** for everything you are about to create, before creating it.
 
-:::danger Dùng profile tường minh, nếu không bạn đang kiểm chứng trên emulator
+:::danger Use an explicit profile, or you are testing against the emulator
 
-Nếu profile mặc định của máy trỏ vào emulator (một lựa chọn an toàn hợp lý), thì mọi lệnh
-ở đây phải ghi rõ profile:
+If your machine's default profile points at the emulator (a reasonable safety choice), then
+every command here must name a profile:
 
 ```bash
 aws --profile <profile-aws-that> iam list-users
 ```
 
-Gõ `aws` trần ở đây sẽ gọi emulator và **luôn ra kết quả xanh** — tức bạn nghĩ mình đang
-kiểm chứng enforcement trong khi đang kiểm chứng đúng cái thứ không có enforcement. Cùng
-lớp lỗi với bài [E1](bt-01-co-ban.md#e1-bài-bẫy-lớn-mô-phỏng-nói-deny-api-vẫn-cho-qua),
-chỉ khác là lần này do cấu hình máy chứ không do emulator.
+A bare `aws` here calls the emulator and **always comes back green** — meaning you believe
+you are verifying enforcement while you are verifying precisely the thing that has no
+enforcement. Same class of mistake as exercise
+[E1](bt-01-co-ban.md#e1-the-big-trap-the-simulator-says-deny-the-api-lets-it-through),
+except caused by machine configuration rather than by the emulator.
 
 :::
 
-Dưới đây viết `aws` cho gọn; bạn tự thêm `--profile`.
+Below, `aws` is written plainly for brevity; add your own `--profile`.
 
-## Chi phí của cả trang
+## What this whole page costs
 
-| Thứ | Phí |
+| Item | Cost |
 |---|---|
-| IAM API, user, group, role, policy, boundary | **$0** |
+| IAM API, users, groups, roles, policies, boundaries | **$0** |
 | `simulate-principal-policy`, `simulate-custom-policy`, Policy Simulator (console) | **$0** |
 | `generate-credential-report`, Access Advisor, `get-account-authorization-details` | **$0** |
-| AWS Organizations + SCP | **$0** (cần ≥2 account; tạo account thêm cũng $0) |
-| CloudTrail — trail quản lý event **đầu tiên** mỗi account | **$0** · trail thứ hai và **data event** có phí |
-| S3 bucket rỗng dùng làm đích cho policy | ~$0 ở mức lab |
+| AWS Organizations + SCPs | **$0** (needs ≥2 accounts; creating another account is also $0) |
+| CloudTrail — the **first** management-event trail per account | **$0** · a second trail and **data events** cost money |
+| An empty S3 bucket used as a policy target | ~$0 at lab scale |
 
-Chỉ hai dòng cần canh: **data event** của CloudTrail, và bất cứ EC2/Lambda nào bài tập yêu
-cầu tạo (bài I18) — xoá ngay sau khi xong.
+Only two lines need watching: CloudTrail **data events**, and any EC2/Lambda an exercise
+asks you to create (exercise I17) — delete those immediately afterwards.
 
 ---
 
-## Phần A — Thực thi: `AccessDenied` thật (5 bài)
+## Part A — Enforcement: a real `AccessDenied` (5 exercises)
 
-### I1. Làm lại bài bẫy, lần này trên AWS thật
+### I1. Redo the trap exercise, this time on real AWS
 
-**Đề:** Tạo user chỉ có inline `Deny s3:*`, lấy access key, gọi `s3 ls`. So kết quả với
-[E1 bậc cơ bản](bt-01-co-ban.md#e1-bài-bẫy-lớn-mô-phỏng-nói-deny-api-vẫn-cho-qua).
+**Problem:** Create a user whose only policy is an inline `Deny s3:*`, get an access key,
+call `s3 ls`. Compare with
+[E1 in the basic tier](bt-01-co-ban.md#e1-the-big-trap-the-simulator-says-deny-the-api-lets-it-through).
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam create-user --user-name lab-deny
@@ -98,36 +102,36 @@ aws iam create-access-key --user-name lab-deny
 aws s3 ls
 ```
 
-Kỳ vọng:
+Expected:
 
 ```text
 An error occurred (AccessDenied) when calling the ListBuckets operation:
 Access Denied
 ```
 
-Ô dán output của bạn:
+Your paste box:
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-| Đường | Emulator | AWS thật |
+| Route | Emulator | Real AWS |
 |---|---|---|
 | `simulate-principal-policy` | `explicitDeny` ✅ | `explicitDeny` ✅ |
-| Gọi API thật | thành công ❌ | `AccessDenied` ✅ |
+| A real API call | succeeds ❌ | `AccessDenied` ✅ |
 
-Một dòng duy nhất khác nhau trong cả bảng — và đó là lý do trang này tồn tại. Mọi thứ
-khác bạn đã học xong miễn phí ở bậc trước.
+Exactly one line differs across the whole table — and that is why this page exists.
+Everything else you already learned for free in the previous tier.
 
 </details>
 
-### I2. Explicit deny thắng cả `AdministratorAccess`
+### I2. An explicit deny beats even `AdministratorAccess`
 
-**Đề:** User có `AdministratorAccess` **và** một inline `Deny s3:DeleteObject`. Thử xoá
-một object.
+**Problem:** A user holds `AdministratorAccess` **and** an inline `Deny s3:DeleteObject`.
+Try to delete an object.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam attach-user-policy --user-name lab-admin-test \
@@ -142,80 +146,80 @@ aws iam put-user-policy --user-name lab-admin-test \
 aws s3 rm s3://<bucket>/a.txt
 ```
 
-Kỳ vọng: `AccessDenied`, dù user là admin đầy đủ.
+Expected: `AccessDenied`, even though the user is a full admin.
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Mẫu này **được dùng thật** để tạo "admin nhưng không được xoá dữ liệu": cấp
-`AdministratorAccess` rồi `Deny` một nhóm hành động phá hoại (`s3:DeleteBucket`,
-`rds:DeleteDBInstance`, `cloudtrail:StopLogging`). Đơn giản hơn nhiều so với liệt kê mọi
-`Allow` cần thiết, và chặt ở đúng chỗ quan trọng.
+This pattern **is used for real** to build "admin but may not delete data": grant
+`AdministratorAccess`, then `Deny` a set of destructive actions (`s3:DeleteBucket`,
+`rds:DeleteDBInstance`, `cloudtrail:StopLogging`). Far simpler than enumerating every
+`Allow` needed, and tight exactly where it matters.
 
 </details>
 
-### I3. `implicitDeny` ⇄ `explicitDeny` trong thông báo lỗi
+### I3. `implicitDeny` vs `explicitDeny` in the error message
 
-**Đề:** Hai user — một thiếu quyền, một bị `Deny` tường minh — cùng gọi `s3 ls`. Thông báo
-lỗi có phân biệt được không?
+**Problem:** Two users — one missing the permission, one under an explicit `Deny` — both
+call `s3 ls`. Can you tell them apart from the error message?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Kỳ vọng: **không**. Cả hai đều ra `AccessDenied`, cùng câu chữ. API không nói cho bạn biết
-đó là *thiếu allow* hay *bị deny*.
+Expected: **no**. Both return `AccessDenied`, word for word. The API does not tell you
+whether it was *a missing allow* or *a deny*.
 
-```text
-(chưa chạy — dán cả hai output vào đây để tự thấy chúng giống nhau)
+```text i18n-prose
+(not run yet — paste both outputs here to see for yourself that they are identical)
 ```
 
-⇒ Đây là lý do `simulate-principal-policy` không phải tiện nghi mà là **công cụ chẩn đoán
-chính**: nó là nguồn duy nhất phân biệt được hai ca này, và hai ca đó sửa theo hai cách
-ngược nhau (thêm `Allow` ⇄ bỏ `Deny`).
+⇒ This is why `simulate-principal-policy` is not a convenience but the **primary
+diagnostic tool**: it is the only source that distinguishes the two cases, and the two
+cases are fixed in opposite ways (add an `Allow` ⇄ remove a `Deny`).
 
-Trên AWS thật còn một đường nữa: một số service trả về **encoded authorization failure
-message**, giải mã bằng
+Real AWS has one more route: some services return an **encoded authorization failure
+message**, decoded with
 
 ```bash
 aws sts decode-authorization-message --encoded-message <chuoi>
 ```
 
-Lệnh này cho biết **statement nào** đã từ chối. Không phải service nào cũng trả chuỗi đó,
-nhưng khi có thì nó tiết kiệm hàng giờ.
+This names **which statement** denied the call. Not every service returns that string, but
+when one does it saves hours.
 
 </details>
 
-### I4. Permission boundary chặn thật
+### I4. A permission boundary that really blocks
 
-**Đề:** User có `AdministratorAccess`, boundary chỉ `AmazonS3FullAccess`. Thử
-`ec2 describe-instances` và `s3 ls`.
+**Problem:** A user with `AdministratorAccess` and a boundary of only
+`AmazonS3FullAccess`. Try `ec2 describe-instances` and `s3 ls`.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam put-user-permissions-boundary --user-name lab-bound \
   --permissions-boundary arn:aws:iam::aws:policy/AmazonS3FullAccess
 ```
 
-| Lệnh | Kỳ vọng | Vì sao |
+| Command | Expected | Why |
 |---|---|---|
-| `aws s3 ls` | ✅ thành công | admin ∩ boundary(S3) = S3 |
-| `aws ec2 describe-instances` | ❌ `AccessDenied` | boundary không cho EC2 |
+| `aws s3 ls` | ✅ succeeds | admin ∩ boundary(S3) = S3 |
+| `aws ec2 describe-instances` | ❌ `AccessDenied` | the boundary does not allow EC2 |
 
-```text
-(chưa chạy — dán cả hai vào đây)
+```text i18n-prose
+(not run yet — paste both here)
 ```
 
-Và kiểm luôn chỗ emulator sai (bài
-[D5](bt-01-co-ban.md#d5-permission-boundary--phép-giao-chứng-minh-được)):
+And check the place where the emulator is wrong (exercise
+[D5](bt-01-co-ban.md#d5-permission-boundary--an-intersection-you-can-prove)):
 
 ```bash
 aws iam get-user --user-name lab-bound --query 'User.PermissionsBoundary'
 ```
 
-Kỳ vọng trên AWS thật:
+Expected on real AWS:
 
 ```text
 {
@@ -224,49 +228,49 @@ Kỳ vọng trên AWS thật:
 }
 ```
 
-Emulator trả `null` ở đây. Dán output thật vào để có đối chứng.
+The emulator returns `null` here. Paste the real output in so you have the comparison.
 
 </details>
 
-### I5. Giao của hai tập rời nhau
+### I5. The intersection of two disjoint sets
 
-**Đề:** Boundary `AmazonS3FullAccess`, identity policy **chỉ** `AmazonDynamoDBFullAccess`.
-Dự đoán cả hai lệnh trước khi chạy.
+**Problem:** A boundary of `AmazonS3FullAccess`, and an identity policy of **only**
+`AmazonDynamoDBFullAccess`. Predict both commands before running them.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Lệnh | Dự đoán của nhiều người | Đúng |
+| Command | What most people predict | Actual |
 |---|---|---|
-| `aws s3 ls` | ✅ (vì boundary cho S3) | ❌ `AccessDenied` |
-| `aws dynamodb list-tables` | ✅ (vì policy cho DynamoDB) | ❌ `AccessDenied` |
+| `aws s3 ls` | ✅ (the boundary allows S3) | ❌ `AccessDenied` |
+| `aws dynamodb list-tables` | ✅ (the policy allows DynamoDB) | ❌ `AccessDenied` |
 
-**Cả hai đều chặn.** Boundary cho S3 nhưng identity policy chưa bao giờ cấp S3 — và
-boundary **không cấp**. Identity policy cho DynamoDB nhưng boundary không cho qua. Giao
-của hai tập rời nhau là tập rỗng.
+**Both are blocked.** The boundary allows S3 but the identity policy never granted S3 —
+and a boundary **grants** nothing. The identity policy allows DynamoDB but the boundary
+does not let it through. The intersection of two disjoint sets is empty.
 
-```text
-(chưa chạy — dán cả hai vào đây)
+```text i18n-prose
+(not run yet — paste both here)
 ```
 
-Bạn đã chứng minh bài này **miễn phí** ở
-[D5 bậc cơ bản](bt-01-co-ban.md#d5-permission-boundary--phép-giao-chứng-minh-được) bằng
-simulator. Làm lại ở đây chỉ để thấy enforcement khớp với mô phỏng — và để có số liệu
-riêng của account mình.
+You already proved this **for free** in
+[D5 of the basic tier](bt-01-co-ban.md#d5-permission-boundary--an-intersection-you-can-prove)
+with the simulator. Repeating it here only shows that enforcement agrees with the
+simulation — and gives you numbers from your own account.
 
 </details>
 
 ---
 
-## Phần B — Mô phỏng nâng cao (4 bài)
+## Part B — Advanced simulation (4 exercises)
 
-### I6. `simulate-custom-policy` — thứ emulator không có
+### I6. `simulate-custom-policy` — the one the emulator lacks
 
-**Đề:** Mô phỏng một policy **chưa gắn cho ai**. Vì sao lệnh này đáng giá hơn
-`simulate-principal-policy` trong CI?
+**Problem:** Simulate a policy that is **not attached to anyone**. Why is this command more
+valuable than `simulate-principal-policy` in CI?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam simulate-custom-policy \
@@ -276,33 +280,35 @@ aws iam simulate-custom-policy \
   --query 'EvaluationResults[].[EvalActionName,EvalDecision]' --output table
 ```
 
-Kỳ vọng: `s3:GetObject → implicitDeny` (policy chỉ cho `public/*`),
+Expected: `s3:GetObject → implicitDeny` (the policy only allows `public/*`),
 `s3:PutObject → implicitDeny`.
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Khác biệt quyết định:
+The decisive difference:
 
-| Lệnh | Cần policy đã gắn | Dùng ở đâu |
+| Command | Needs the policy attached | Where it is used |
 |---|---|---|
-| `simulate-principal-policy` | ✅ có | chẩn đoán sự cố: *"vì sao user này bị chặn"* |
-| `simulate-custom-policy` | ❌ không | **CI/CD**: kiểm policy trong pull request **trước khi** nó được apply |
+| `simulate-principal-policy` | ✅ yes | incident diagnosis: *"why is this user blocked"* |
+| `simulate-custom-policy` | ❌ no | **CI/CD**: checking a policy in a pull request **before** it is applied |
 
-`simulate-custom-policy` là lệnh biến "review policy bằng mắt" thành một **test tự động**.
-Mẫu dùng: với mỗi policy trong repo, giữ một danh sách action *phải cho* và *phải chặn*,
-chạy lệnh này trong CI, so với kỳ vọng. Policy mở rộng hơn dự định sẽ làm CI đỏ — điều mà
-đọc JSON bằng mắt không bắt được.
+`simulate-custom-policy` is the command that turns "review the policy by eye" into an
+**automated test**. The pattern: for every policy in the repository keep a list of actions
+that *must be allowed* and *must be denied*, run this command in CI, compare against the
+expectation. A policy that is broader than intended turns CI red — something reading the
+JSON by eye does not catch.
 
 </details>
 
-### I7. Condition key cần ngữ cảnh: `--context-entries`
+### I7. Condition keys that need context: `--context-entries`
 
-**Đề:** Policy cho `s3:DeleteObject` chỉ khi có MFA. Mô phỏng hai lần: có MFA và không.
+**Problem:** A policy allowing `s3:DeleteObject` only with MFA. Simulate twice: with MFA
+and without.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 cat > /tmp/p-mfa.json <<'EOF'
@@ -322,30 +328,31 @@ for v in true false; do
 done
 ```
 
-Kỳ vọng: `MFA=true → allowed` · `MFA=false → implicitDeny`.
+Expected: `MFA=true → allowed` · `MFA=false → implicitDeny`.
 
-```text
-(chưa chạy — dán cả hai vào đây)
+```text i18n-prose
+(not run yet — paste both here)
 ```
 
-`--context-entries` là cách **duy nhất** kiểm condition key mà không phải dựng ngữ cảnh
-thật (không cần bật MFA, không cần gọi từ IP đó, không cần VPC endpoint đó). Ba key hay
-cần mô phỏng nhất: `aws:MultiFactorAuthPresent`, `aws:SourceIp`, `aws:SecureTransport`.
+`--context-entries` is the **only** way to test a condition key without building the real
+context (no need to enable MFA, to call from that IP, or to set up that VPC endpoint). The
+three keys most worth simulating: `aws:MultiFactorAuthPresent`, `aws:SourceIp`,
+`aws:SecureTransport`.
 
-Trên emulator lệnh này trả `UnsupportedOperation` — xem
-[bảng đo](bt-01-co-ban.md#e3-tự-đo-xem-emulator-đỡ-được-lệnh-nào).
+On the emulator this command returns `UnsupportedOperation` — see the
+[measurement table](bt-01-co-ban.md#e3-measure-for-yourself-which-commands-the-emulator-supports).
 
 </details>
 
-### I8. `MissingContextValues` — cái bẫy im lặng
+### I8. `MissingContextValues` — the silent trap
 
-**Đề:** Chạy lại I7 nhưng **không** truyền `--context-entries`. Đọc trường
-`MissingContextValues`.
+**Problem:** Run I7 again but **without** `--context-entries`. Read the
+`MissingContextValues` field.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Kỳ vọng:
+Expected:
 
 ```text
 {
@@ -354,42 +361,45 @@ Kỳ vọng:
 }
 ```
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-`MissingContextValues` không rỗng nghĩa là **kết quả mô phỏng không đáng tin** — simulator
-đang thiếu thông tin để đánh giá điều kiện, và nó mặc định coi như không khớp. Nhiều người
-đọc `implicitDeny` rồi đi sửa policy, trong khi policy không sai — chỉ thiếu context.
+A non-empty `MissingContextValues` means **the simulation result is not trustworthy** — the
+simulator is missing information needed to evaluate the condition, and defaults to treating
+it as not matching. Many people read `implicitDeny` and go off to fix the policy, when the
+policy is not wrong — only the context is missing.
 
-Thói quen nên có: luôn `--query` cả `MissingContextValues`, không chỉ `EvalDecision`.
+A habit worth forming: always `--query` for `MissingContextValues` too, not just
+`EvalDecision`.
 
 </details>
 
-### I9. Policy Simulator trên console
+### I9. Policy Simulator in the console
 
-**Đề:** Làm lại I6 bằng giao diện https://policysim.aws.amazon.com/. Giao diện cho thêm gì
-so với CLI?
+**Problem:** Redo I6 through the https://policysim.aws.amazon.com/ interface. What does the
+GUI add over the CLI?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Console cho ba thứ CLI không có:
+The console gives three things the CLI does not:
 
-1. **Chỉ ra statement nào đã khớp**, highlight ngay trên JSON — nhanh hơn đọc
+1. **It points at the matching statement**, highlighted in the JSON — faster than reading
    `MatchedStatements`.
-2. **Sửa policy ngay trong simulator** rồi chạy lại, không cần apply vào account. Vòng lặp
-   thử–sai nhanh hơn CLI.
-3. Gợi ý **condition key còn thiếu** cho action đang chọn.
+2. **Edit the policy inside the simulator** and rerun, without applying it to the account.
+   A faster trial-and-error loop than the CLI.
+3. It suggests **condition keys you are missing** for the selected action.
 
-Nhưng CLI thắng ở một chỗ quyết định: **chạy được trong CI** (bài I6). Dùng console để
-*viết* policy, dùng CLI để *canh* policy.
+But the CLI wins on one decisive point: **it runs in CI** (exercise I6). Use the console to
+*write* policies, the CLI to *guard* them.
 
-:::warning Simulator không thấy SCP
+:::warning The simulator cannot see SCPs
 
-`simulate-*` và Policy Simulator đánh giá identity policy, resource policy, boundary. Chúng
-**không** áp SCP của Organizations. ⇒ `allowed` ở simulator vẫn có thể là `AccessDenied`
-thật khi account nằm dưới một SCP siết. Bài I17 chứng minh bằng tay.
+`simulate-*` and the Policy Simulator evaluate identity policies, resource policies and
+boundaries. They do **not** apply Organizations SCPs. ⇒ `allowed` in the simulator can
+still be a real `AccessDenied` when the account sits under a restrictive SCP. Exercise I13
+proves this by hand.
 
 :::
 
@@ -397,19 +407,19 @@ thật khi account nằm dưới một SCP siết. Bài I17 chứng minh bằng 
 
 ---
 
-## Phần C — Nhiều account (4 bài)
+## Part C — Multiple accounts (4 exercises)
 
-### I10. Cross-account: phải sửa hai chỗ
+### I10. Cross-account: two places to change
 
-**Đề:** Account **B** có bucket. Cho một role ở account **A** đọc được bucket đó. Liệt kê
-đúng những chỗ phải sửa.
+**Problem:** Account **B** owns a bucket. Let a role in account **A** read it. List exactly
+what must change.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**Hai** chỗ, thiếu một là không chạy — đây là luật 4 với khác account.
+**Two** places; miss one and it does not work — this is rule 4 applied cross-account.
 
-Ở **B** (chủ tài nguyên), bucket policy:
+In **B** (the resource owner), the bucket policy:
 
 ```json
 {
@@ -427,7 +437,7 @@ thật khi account nằm dưới một SCP siết. Bài I17 chứng minh bằng 
 }
 ```
 
-Ở **A** (bên gọi), identity policy của role `lab-reader`:
+In **A** (the caller), the identity policy of role `lab-reader`:
 
 ```json
 {
@@ -443,28 +453,28 @@ thật khi account nằm dưới một SCP siết. Bài I17 chứng minh bằng 
 }
 ```
 
-```text
-(chưa chạy — dán output `aws s3 ls s3://bucket-cua-B` từ role của A vào đây)
+```text i18n-prose
+(not run yet — paste the output of `aws s3 ls s3://bucket-cua-B` from A's role here)
 ```
 
-Bài tập chẩn đoán kèm theo: **xoá** identity policy ở A, thử lại → `AccessDenied`. Khôi
-phục, rồi **xoá** bucket policy ở B, thử lại → cũng `AccessDenied`. Hai lần lỗi giống nhau,
-hai nguyên nhân ở hai account khác nhau. Đó là lý do sự cố cross-account tốn thời gian:
-người ở A không đọc được policy của B.
+A diagnostic exercise to go with it: **remove** the identity policy in A and retry →
+`AccessDenied`. Restore it, then **remove** the bucket policy in B and retry → also
+`AccessDenied`. Two identical errors, two causes in two different accounts. That is why
+cross-account incidents take so long: the person in A cannot read B's policies.
 
-⚠️ Với S3 còn một chỗ thứ ba hay bị quên: **Block Public Access** và **bucket owner
-enforced** có thể chặn trước khi policy được xét.
+⚠️ With S3 there is a third place people forget: **Block Public Access** and
+**bucket owner enforced** can block before policies are even evaluated.
 
 </details>
 
-### I11. Role chaining giữa hai account
+### I11. Role chaining between two accounts
 
-**Đề:** User ở A assume role ở B rồi dùng credential đó gọi API của B.
+**Problem:** A user in A assumes a role in B, then uses those credentials to call B's APIs.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Trust policy của role ở **B**:
+The trust policy of the role in **B**:
 
 ```json
 {
@@ -478,7 +488,7 @@ Trust policy của role ở **B**:
 }
 ```
 
-Identity policy ở **A**:
+The identity policy in **A**:
 
 ```json
 {
@@ -497,27 +507,27 @@ aws sts assume-role \
   --role-session-name from-a --external-id <chuoi-bi-mat>
 ```
 
-```text
-(chưa chạy — dán Credentials vào đây)
+```text i18n-prose
+(not run yet — paste the Credentials here)
 ```
 
-**`sts:ExternalId` là gì và khi nào bắt buộc:** khi bạn là bên **thứ ba** (SaaS, công ty
-tư vấn) được nhiều khách hàng trao role. Không có `ExternalId` thì khách hàng X có thể
-khiến bạn dùng role của khách hàng Y. Đây là confused deputy ở dạng cross-account — AWS
-yêu cầu mọi SaaS dùng nó.
+**What `sts:ExternalId` is and when it is mandatory:** when you are a **third party** (a
+SaaS, a consultancy) given a role by many customers. Without `ExternalId`, customer X can
+make you use customer Y's role. This is confused deputy in cross-account form — AWS
+requires every SaaS to use it.
 
-⚠️ **Role chaining** (dùng role tạm để assume role khác) giới hạn **1 giờ**, và
-`--duration-seconds` lớn hơn sẽ bị bỏ qua chứ không báo lỗi.
+⚠️ **Role chaining** (using temporary credentials to assume another role) is capped at
+**1 hour**, and a larger `--duration-seconds` is silently ignored rather than rejected.
 
 </details>
 
-### I12. Mở cho cả tổ chức bằng một dòng
+### I12. Opening up to a whole organisation in one line
 
-**Đề:** Bucket cần cho **mọi** account trong Organizations đọc, không muốn liệt kê từng
-account ID. Viết điều kiện.
+**Problem:** A bucket must be readable by **every** account in the Organization, without
+listing account IDs. Write the condition.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```json
 {
@@ -531,28 +541,29 @@ account ID. Viết điều kiện.
 }
 ```
 
-```text
-(chưa chạy — dán kết quả thử từ 1 account trong org và 1 account ngoài org)
+```text i18n-prose
+(not run yet — paste a test from an account inside the org and one outside it)
 ```
 
-`aws:PrincipalOrgID` thay cả danh sách account ID, và **tự cập nhật** khi tổ chức thêm
-account. Không có nó thì mỗi lần mở account mới phải sửa mọi bucket policy — đúng kiểu
-việc sẽ bị quên.
+`aws:PrincipalOrgID` replaces the whole account-ID list, and **updates itself** when the
+organisation adds an account. Without it, every new account means editing every bucket
+policy — exactly the kind of task that gets forgotten.
 
-🔴 **`Principal: "*"` + điều kiện org là mẫu đúng, nhưng viết thiếu điều kiện là mở
-bucket cho toàn Internet.** Đây là nguyên nhân phổ biến nhất của sự cố "S3 bucket công
-khai". Luôn viết `Condition` **cùng lúc** với `Principal: "*"`, không để lần sau.
+🔴 **`Principal: "*"` plus the org condition is the correct pattern, but writing it without
+the condition opens the bucket to the entire internet.** This is the single most common
+cause of "public S3 bucket" incidents. Always write the `Condition` **at the same time** as
+`Principal: "*"`, never "later".
 
 </details>
 
-### I13. SCP — trần mà admin cũng không vượt
+### I13. SCP — a ceiling even an admin cannot exceed
 
-**Đề:** Trong Organizations, gắn SCP chặn mọi region ngoài `ap-southeast-1` và
-`us-east-1` cho một member account. Rồi dùng **admin** của account đó tạo EC2 ở
-`eu-west-1`.
+**Problem:** In Organizations, attach an SCP to a member account blocking every region
+except `ap-southeast-1` and `us-east-1`. Then use that account's **admin** to create an EC2
+instance in `eu-west-1`.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```json
 {
@@ -574,36 +585,37 @@ khai". Luôn viết `Condition` **cùng lúc** với `Principal: "*"`, không đ
 }
 ```
 
-Kỳ vọng: admin của member account **không** tạo được EC2 ở `eu-west-1`, nhận `AccessDenied`
-hoặc `UnauthorizedOperation`.
+Expected: the member account's admin **cannot** create an EC2 instance in `eu-west-1`, and
+gets `AccessDenied` or `UnauthorizedOperation`.
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Ba chi tiết quyết định:
+Three decisive details:
 
-- **`NotAction` chứa các service global.** IAM, STS, Organizations, CloudFront, Route 53
-  là global nhưng endpoint của chúng nằm ở `us-east-1`; chặn hết region thì **tự khoá mình
-  ra khỏi IAM** của account đó. Danh sách loại trừ này không phải tuỳ chọn.
-- SCP **không áp lên management account** — test phải làm ở member account, nếu không bạn
-  sẽ kết luận SCP không hoạt động.
-- Simulator **không thấy SCP** (bài I9). `allowed` ở simulator mà thực tế đỏ ⇒ nghi SCP
-  trước tiên.
+- **`NotAction` must list the global services.** IAM, STS, Organizations, CloudFront and
+  Route 53 are global but their endpoints live in `us-east-1`; blocking all regions without
+  excluding them **locks you out of that account's IAM**. This exclusion list is not
+  optional.
+- An SCP **does not apply to the management account** — test in a member account, otherwise
+  you will conclude SCPs do not work.
+- The simulator **cannot see SCPs** (exercise I9). `allowed` in the simulator with a real
+  failure ⇒ suspect an SCP first.
 
 </details>
 
 ---
 
-## Phần D — Soát account (3 bài)
+## Part D — Account audits (3 exercises)
 
 ### I14. Credential report
 
-**Đề:** Lấy báo cáo credential của cả account, tìm mọi khoá chưa rotate quá 90 ngày và mọi
-user chưa bật MFA.
+**Problem:** Pull the account-wide credential report, find every key not rotated in more
+than 90 days and every user without MFA.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam generate-credential-report
@@ -611,7 +623,7 @@ aws iam get-credential-report --query Content --output text | base64 -d > /tmp/c
 column -s, -t /tmp/cred.csv | less -S
 ```
 
-Năm cột đáng đọc: `user`, `mfa_active`, `password_last_used`,
+The five columns worth reading: `user`, `mfa_active`, `password_last_used`,
 `access_key_1_last_rotated`, `access_key_1_last_used_date`.
 
 ```bash
@@ -619,23 +631,24 @@ Năm cột đáng đọc: `user`, `mfa_active`, `password_last_used`,
 awk -F, 'NR>1 && $4=="false" {print $1}' /tmp/cred.csv
 ```
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Hai kết luận thường rút ra ngay lần chạy đầu: có khoá **chưa dùng lần nào** (xoá được
-luôn), và có khoá **dùng gần đây nhưng rotate từ rất lâu** (rủi ro cao nhất, xử lý trước).
+Two conclusions usually appear on the very first run: there are keys **never used at all**
+(delete them immediately), and keys **used recently but rotated long ago** (the highest
+risk, deal with them first).
 
-Lệnh này **không có** trên emulator.
+This command does **not** exist on the emulator.
 
 </details>
 
-### I15. Access Advisor — quyền nào chưa dùng bao giờ
+### I15. Access Advisor — which permissions were never used
 
-**Đề:** Với một role, liệt kê service nó **chưa gọi lần nào**.
+**Problem:** For one role, list the services it has **never called**.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 JOB=$(aws iam generate-service-last-accessed-details \
@@ -646,72 +659,74 @@ aws iam get-service-last-accessed-details --job-id "$JOB" \
   --output text
 ```
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Danh sách trả về là **ứng viên để cắt** — chưa phải quyết định cắt.
+The returned list is a set of **candidates to cut** — not yet a decision to cut.
 
-:::warning Access Advisor chỉ thấy quá khứ
+:::warning Access Advisor only sees the past
 
-Nó báo quyền **đã dùng**, không phải quyền **cần**. Action chỉ chạy theo quý, hoặc chỉ chạy
-khi có sự cố, sẽ không xuất hiện và bị cắt oan — rồi hỏng đúng lúc tệ nhất. Cửa sổ quan
-sát nên là **90 ngày** trở lên, và trước khi cắt phải hỏi chủ service xem có đường chạy
-theo lịch thưa.
+It reports permissions that **have been used**, not permissions that are **needed**. An
+action that runs quarterly, or only during an incident, will not appear and gets cut by
+mistake — then breaks at the worst possible time. The observation window should be
+**90 days** or more, and before cutting you must ask the service owner whether there is a
+rarely-scheduled code path.
 
 :::
 
-Đổi `==` thành `>` trong `--query` để xem chiều ngược lại: service nào **đang** dùng, dùng
-lần cuối lúc nào. Đó là input của bài
-[P3 bậc production](bt-03-production.md).
+Change `==` to `>` in the `--query` to see the other direction: which services **are** in
+use, and when they were last called. That is the input to exercise
+[P5 in the production tier](bt-03-production.md).
 
 </details>
 
-### I16. Toàn bộ IAM của account trong một lệnh
+### I16. The account's entire IAM in one command
 
-**Đề:** Xuất mọi user, group, role, policy kèm nội dung — để diff giữa hai thời điểm.
+**Problem:** Export every user, group, role and policy with their contents — so you can
+diff two points in time.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```bash
 aws iam get-account-authorization-details > /tmp/iam-$(date +%F).json
 jq '.Policies | length, (.[0] | keys)' /tmp/iam-*.json
 ```
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Đây là **snapshot toàn bộ IAM** của account trong một file. Hai cách dùng:
+This is a **snapshot of the account's entire IAM** in one file. Two uses:
 
-- **Diff theo thời gian:** lưu hàng tuần, `diff` hai file → thấy mọi thay đổi quyền, kể cả
-  thay đổi không ai báo.
-- **Audit offline:** grep tìm mọi policy có `"Action": "*"` hoặc `"Resource": "*"`, hoặc
-  mọi policy chứa `iam:PassRole`.
+- **Diff over time:** save it weekly, `diff` two files → see every permission change,
+  including the ones nobody announced.
+- **Offline audit:** grep for every policy containing `"Action": "*"` or
+  `"Resource": "*"`, or every policy containing `iam:PassRole`.
 
 ```bash
 jq -r '.Policies[] | select(.PolicyVersionList[]?.Document.Statement[]?
        | select(.Action=="*" or .Resource=="*")) | .PolicyName' /tmp/iam-*.json
 ```
 
-Lệnh này **không có** trên emulator.
+This command does **not** exist on the emulator.
 
 </details>
 
 ---
 
-## Phần E — Bẫy policy (4 bài)
+## Part E — Policy traps (4 exercises)
 
 ### I17. `iam:PassRole`
 
-**Đề:** User có `lambda:CreateFunction` nhưng **không** có `iam:PassRole`. Thử tạo Lambda
-với một role.
+**Problem:** A user holds `lambda:CreateFunction` but **not** `iam:PassRole`. Try creating
+a Lambda with a role.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-Kỳ vọng:
+Expected:
 
 ```text
 An error occurred (AccessDeniedException) when calling the CreateFunction operation:
@@ -719,18 +734,18 @@ User: arn:aws:iam::...:user/lab-nopass is not authorized to perform: iam:PassRol
 on resource: arn:aws:iam::...:role/lambda-exec
 ```
 
-```text
-(chưa chạy — dán vào đây)
+```text i18n-prose
+(not run yet — paste here)
 ```
 
-Hai quyền cho **một** hành động: `lambda:CreateFunction` **và** `iam:PassRole` cho đúng
-role đó.
+Two permissions for **one** action: `lambda:CreateFunction` **and** `iam:PassRole` for that
+exact role.
 
-🔴 **Và đây là phần quan trọng hơn:** thêm `iam:PassRole` với `Resource: "*"` rồi thử lại
-— lần này user tạo được Lambda mang **bất kỳ** role, kể cả role admin, rồi chạy code trong
-đó. Tức là **`iam:PassRole` rộng tương đương quyền admin**.
+🔴 **And here is the more important part:** add `iam:PassRole` with `Resource: "*"` and try
+again — now the user can create a Lambda carrying **any** role, including an admin role,
+and run code inside it. In other words, **broad `iam:PassRole` is equivalent to admin**.
 
-Cách cấp đúng — khoá theo role cụ thể, và khoá luôn service được nhận:
+The correct way to grant it — pinned to specific roles, and to the receiving service:
 
 ```json
 {
@@ -743,17 +758,17 @@ Cách cấp đúng — khoá theo role cụ thể, và khoá luôn service đư�
 }
 ```
 
-`iam:PassedToService` chặn việc dùng cùng role cho service khác.
+`iam:PassedToService` prevents the same role from being handed to a different service.
 
 </details>
 
-### I18. Bẫy `ForAllValues` trên tập rỗng
+### I18. The `ForAllValues` empty-set trap
 
-**Đề:** Policy *trông như* bắt buộc gắn tag khi `RunInstances`. Gọi **không kèm tag**. Dự
-đoán.
+**Problem:** A policy that *looks like* it requires tags on `RunInstances`. Call it
+**without any tags**. Predict.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
 ```json
 {
@@ -766,10 +781,10 @@ Cách cấp đúng — khoá theo role cụ thể, và khoá luôn service đư�
 }
 ```
 
-Kỳ vọng: request **được cho qua** — vì "mọi tag đều nằm trong danh sách" là **đúng** với
-tập rỗng.
+Expected: the request **goes through** — because "every tag is in the list" is **true** for
+the empty set.
 
-Sửa bằng một dòng:
+Fixed with one line:
 
 ```json
 "Condition": {
@@ -778,62 +793,62 @@ Sửa bằng một dòng:
 }
 ```
 
-| Lần | Policy | Request không tag | Kỳ vọng |
+| Run | Policy | Request with no tags | Expected |
 |---|---|---|---|
-| 1 | chỉ `ForAllValues` | `RunInstances` | PASS — ngoài ý muốn |
-| 2 | thêm `Null: false` | `RunInstances` | FAIL — đúng ý muốn |
+| 1 | `ForAllValues` only | `RunInstances` | PASS — not what you wanted |
+| 2 | plus `Null: false` | `RunInstances` | FAIL — what you wanted |
 
-```text
-(chưa chạy — dán cả hai lần vào đây)
+```text i18n-prose
+(not run yet — paste both runs here)
 ```
 
-Dùng `simulate-custom-policy` (bài I6) để chạy bài này thì **không phải tạo instance nào**
-— không tốn tiền, và nhanh hơn.
+Use `simulate-custom-policy` (exercise I6) to run this and you **never create an instance**
+— no cost, and faster.
 
-`Null: {"aws:TagKeys": "false"}` đọc là *"key này phải tồn tại trong request"*. Thiếu nó là
-lỗi thật, hay gặp trong code review, và **không có lệnh nào báo đỏ**.
+`Null: {"aws:TagKeys": "false"}` reads as *"this key must exist in the request"*. Leaving
+it out is a real bug, common in code review, and **nothing reports it as an error**.
 
 </details>
 
-### I19. `ForAnyValue` ⇄ `ForAllValues`
+### I19. `ForAnyValue` vs `ForAllValues`
 
-**Đề:** Cùng danh sách `["Project","Owner"]`, request gửi tag `Project` và `Secret`. Hai
-toán tử cho kết quả gì?
+**Problem:** With the same list `["Project","Owner"]`, a request sends the tags `Project`
+and `Secret`. What do the two operators return?
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-| Toán tử | Đúng khi | Với `{Project, Secret}` |
+| Operator | True when | With `{Project, Secret}` |
 |---|---|---|
-| `ForAnyValue:` | **ít nhất một** giá trị khớp | ✅ khớp (`Project` có trong list) |
-| `ForAllValues:` | **mọi** giá trị đều khớp | ❌ không khớp (`Secret` ngoài list) |
+| `ForAnyValue:` | **at least one** value matches | ✅ matches (`Project` is in the list) |
+| `ForAllValues:` | **every** value matches | ❌ does not match (`Secret` is not) |
 
-```text
-(chưa chạy — dán hai kết quả simulate vào đây)
+```text i18n-prose
+(not run yet — paste both simulate results here)
 ```
 
-⇒ Muốn nói *"chỉ được dùng đúng những tag này"* thì là **`ForAllValues`** (+ `Null`).
-Dùng `ForAnyValue` ở đó là cho phép kèm thêm tag tuỳ ý miễn có một tag hợp lệ — tức là
-gần như không giới hạn gì.
+⇒ To express *"only these tags may be used"* you want **`ForAllValues`** (plus `Null`).
+Using `ForAnyValue` there permits arbitrary extra tags as long as one valid tag is present
+— which is almost no restriction at all.
 
-Nhớ bằng câu: `ForAnyValue` **nới**, `ForAllValues` **siết**.
+Remember it as: `ForAnyValue` **loosens**, `ForAllValues` **tightens**.
 
 </details>
 
-### I20. Confused deputy ở service role
+### I20. Confused deputy on a service role
 
-**Đề:** Trust policy mở cho `glue.amazonaws.com` không điều kiện. Diễn đạt tấn công, rồi
-sửa.
+**Problem:** A trust policy open to `glue.amazonaws.com` with no conditions. Describe the
+attack, then fix it.
 
 <details>
-<summary>Lời giải</summary>
+<summary>Solution</summary>
 
-**Tấn công:** `glue.amazonaws.com` phục vụ **mọi** account AWS. Trust policy không điều
-kiện nói *"bất cứ khi nào Glue gọi tới, cho vào role của tôi"* — nên kẻ tấn công tạo một
-Glue job **trong account của họ**, cấu hình nó trỏ vào role của bạn, và Glue (bên được tin
-tưởng — *deputy*) sẽ dùng role của bạn thay họ.
+**The attack:** `glue.amazonaws.com` serves **every** AWS account. An unconditional trust
+policy says *"whenever Glue calls, let it into my role"* — so an attacker creates a Glue
+job **in their own account**, points it at your role, and Glue (the trusted intermediary —
+the *deputy*) uses your role on their behalf.
 
-Sửa:
+Fix:
 
 ```json
 {
@@ -847,25 +862,26 @@ Sửa:
 }
 ```
 
-```text
-(chưa chạy — dán trust policy thật của một service role trong account bạn, và nói nó
- có đủ hai key chưa)
+```text i18n-prose
+(not run yet — paste a real service-role trust policy from your account, and say whether
+ it has both keys)
 ```
 
-Hai key này khoá lại *"chỉ khi lời gọi phát sinh từ tài nguyên của chính tôi"*. Đây là
-**mẫu bắt buộc** cho mọi service role, không phải tuỳ chọn — và cùng một ý tưởng với
-`sts:ExternalId` (bài I11) ở dạng cross-account, với `sub` của OIDC (bài
-[P2](bt-03-production.md)) ở dạng federation.
+These two keys pin it down to *"only when the call originates from my own resources"*. This
+is the **mandatory pattern** for every service role, not an option — and it is the same
+idea as `sts:ExternalId` (exercise I11) in cross-account form, and as the OIDC `sub`
+(exercise [P2](bt-03-production.md)) in federation form.
 
-Ba tên gọi, một lỗ hổng: **tin một trung gian mà không khoá nguồn gốc lời gọi.**
+Three names, one vulnerability: **trusting an intermediary without pinning down where the
+call came from.**
 
 </details>
 
 ---
 
-## Dọn dẹp
+## Cleanup
 
-IAM không phát sinh phí, nhưng user và khoá còn sống **là rủi ro**, không phải chi phí:
+IAM incurs no charges, but live users and keys are a **risk**, not a cost:
 
 ```bash
 for U in lab-deny lab-admin-test lab-bound lab-nopass; do
@@ -883,13 +899,15 @@ for U in lab-deny lab-admin-test lab-bound lab-nopass; do
 done
 ```
 
-Nếu bài nào đã tạo EC2, Lambda hay NAT Gateway thì theo checklist riêng — **những cái đó
-có tiền thật**, khác IAM. Và nhớ gỡ SCP của bài I13 nếu không còn dùng: SCP sai để lại là
-cách tự chặn chính mình về sau.
+If any exercise created EC2 instances, Lambdas or a NAT Gateway, follow the separate
+checklist — **those cost real money**, unlike IAM. And remember to remove the SCP from
+exercise I13 if you no longer need it: a wrong SCP left in place is how you lock yourself
+out later.
 
 ## Related Topics
 
-- [Policy evaluation](../reference/iam-policy-evaluation.md) — mỗi bài ở trên chứng minh một luật trong đó
-- [Bài tập — Cơ bản](bt-01-co-ban.md) — bậc trước; phần lớn logic đã học xong miễn phí ở đó
-- [Bài tập — Production](bt-03-production.md) — bậc sau: quy trình, không còn cơ chế
-- [Bài tập IAM](index.md) — ba bậc
+- [IAM fundamentals](../reference/iam-fundamentals.md) — the foundation layer
+- [Policy evaluation](../reference/iam-policy-evaluation.md) — every exercise above proves one of its rules
+- [Exercises — Basic](bt-01-co-ban.md) — previous tier; most of the logic is already learned there, for free
+- [Exercises — Production](bt-03-production.md) — next tier: process, not mechanism
+- [IAM exercises](index.md) — all three tiers

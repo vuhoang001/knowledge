@@ -6,7 +6,7 @@ tags: [index, manifest]
 category: concept
 doc_type: index
 status: stable
-updated: 2026-10-06
+updated: 2026-10-08
 ---
 
 # `docs/` table of contents
@@ -331,13 +331,21 @@ training loop yourself.
 
 Two tiers tracking two exams. The `foundations/` tier maps **exactly onto the 19 task
 statements** of the official CLF-C02 exam guide — breadth across the service catalogue,
-not depth of implementation. The `architecting/` tier (SAA-C03) is a skeleton only.
+not depth of implementation. The `architecting/` tier (SAA-C03) has just opened Domain 1
+with the IAM material: **two** reference documents and **60 exercises with solutions**.
 
 | File | One-line takeaway | St |
 |---|---|---|
 | [aws/index](aws/index.md) | The exam's numbers, the four domain weights, five big traps, coverage of all 19 tasks | 🗂️ |
 | [foundations/index](aws/foundations/index.md) | Reading order for the 19 documents — not domain 1→4 | 🗂️ |
-| [architecting/index](aws/architecting/index.md) | SAA-C03 skeleton, and what it demands on top of CLF | 🗂️ |
+| [architecting/index](aws/architecting/index.md) | SAA-C03 layer, and what it demands on top of CLF | 🗂️ |
+| [architecting/reference/index](aws/architecting/reference/index.md) | Reference index for the SAA tier — Domain 1 just opened | 🗂️ |
+| [architecting/tutorials/index](aws/architecting/tutorials/index.md) | Three tiers of IAM exercises: emulator → real AWS → production | 🗂️ |
+| [iam-fundamentals](aws/architecting/reference/iam-fundamentals.md) | IAM from zero: principals, the four blocks, policy and ARN anatomy, the six policy types | 📝 |
+| [iam-policy-evaluation](aws/architecting/reference/iam-policy-evaluation.md) | Permissions are an **intersection**, not a sum; boundaries and SCPs only filter, never grant | 📝 |
+| [ex: IAM basic](aws/architecting/tutorials/bt-01-co-ban.md) | 26 syntax exercises on the emulator — plus the measured table of the four audit commands it lacks | 📝 |
+| [ex: IAM intermediate](aws/architecting/tutorials/bt-02-trung-binh.md) | 20 exercises on real AWS ($0): simulator, explicit deny, boundaries as intersections, the `ForAllValues` trap | 📝 |
+| [ex: IAM production](aws/architecting/tutorials/bt-03-production.md) | 14 exercises: removing static keys, OIDC for CI, least privilege from CloudTrail, SCPs, break-glass | 📝 |
 | [cloud-value-proposition](aws/foundations/reference/cloud-value-proposition.md) | Six benefits on two axes; elasticity ≠ HA ≠ agility | 🟡 |
 | [well-architected-framework](aws/foundations/reference/well-architected-framework.md) | Six pillars — Sustainability is the sixth; older material lists only five | 🟡 |
 | [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | CAF's six perspectives (three are about *people*), the seven R strategies, Snow Family | 🟡 |

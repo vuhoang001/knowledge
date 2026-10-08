@@ -1,6 +1,6 @@
 ---
 title: Policy evaluation
-sidebar_position: 1
+sidebar_position: 2
 description: "Máy đánh giá quyền của IAM — thứ tự xét, vì sao boundary và SCP là phép giao, và ba chỗ quyền bị thu hẹp mà không ai gắn thêm Deny nào."
 tags: [aws, saa-c03, iam, policy-evaluation, permission-boundary, scp, cross-account, pass-role, domain-1]
 domain: cloud
@@ -42,7 +42,7 @@ vẫn `AccessDenied` thì có **bao nhiêu** chỗ có thể là nguyên nhân, 
 
 ### Thứ tự xét — soát sự cố theo đúng thứ tự này
 
-```text
+```text i18n-prose
 request
   │
   ├─ 1. SCP (nếu account thuộc Organizations)      -> không qua thì dừng, log không nói rõ
@@ -110,7 +110,7 @@ Không có điều kiện gì thì một người lạ có thể nhờ chính se
   "Principal": {"Service": "glue.amazonaws.com"},
   "Action": "sts:AssumeRole",
   "Condition": {
-    "StringEquals": {"aws:SourceAccount": "<account-id-cua-ban>"},
+    "StringEquals": {"aws:SourceAccount": "<your-account-id>"},
     "ArnLike":      {"aws:SourceArn": "arn:aws:glue:<region>:<account-id>:job/*"}
   }
 }
