@@ -3,7 +3,7 @@ title: Bài tập — IAM
 i18n_status: untranslated
 sidebar_key: aws-architecting-tutorials
 sidebar_position: 0
-description: "Ba bậc IAM: cú pháp trên emulator, logic đánh giá trên AWS thật, rồi mẫu production. IAM trên AWS thật miễn phí nên hai bậc sau không tốn tiền."
+description: "60 bài IAM có lời giải, ba bậc: emulator (26 bài, output thật), AWS thật (20 bài), production (14 bài). IAM trên AWS thật miễn phí nên cả ba bậc gần như $0."
 tags: [tutorial, aws, iam, saa-c03]
 domain: cloud
 category: index
@@ -25,19 +25,27 @@ gì. Emulator dạy cú pháp; chỉ AWS thật dạy được logic.
 ## Thứ tự làm
 
 ```text
-Lý thuyết (doc reference)            ~30 phut, tra loi duoc 5 cau tu kiem
-10 Co ban      I1 -> I8              1 buoi   — thuoc tay cu phap
-   I9 bai bay                        10 phut  — thay gioi han emulator
+Ly thuyet (reference)        ~30 phut  tra loi duoc 5 cau tu kiem
+10 Co ban  A1-A6 B1-B6       1 buoi    danh tinh + policy, thuoc tay cu phap
+           C1-C5             1 buoi    role, instance profile, STS
+           D1-D6             1 buoi    MO PHONG — phan quan trong nhat
+           E1-E3             30 phut   bay: mo phong dung ma API cho qua
 --- xong 3 viec an toan tien roi moi qua AWS that ---
-20 Trung binh  I10 -> I20            2 buoi
-30 Production  P1 -> P8              3-4 buoi (P5 can account thu hai)
+20 Trung binh  I1-I20        2-3 buoi
+30 Production  P1-P14        3-4 buoi  (P9, P13 can account thu hai)
 ```
 
-🔴 **Vì sao bậc 10 không đủ.** Đã đo tay: emulator nhận `put-user-permissions-boundary`
-rồi bỏ qua khi xét request, và **không hỗ trợ** `simulate-custom-policy`,
-`simulate-principal-policy`, `generate-credential-report` — đúng ba lệnh dùng để kiểm
-chứng quyền. Bảng đo đầy đủ ở
-[Cơ bản](bt-01-co-ban.md#lệnh-iam-nào-emulator-đỡ-được).
+🔴 **Vì sao bậc 10 làm được nhiều hơn tưởng.** Đã đo tay 08/10/2026:
+`simulate-principal-policy` **chạy được** trên emulator và **đánh giá đúng** — kể cả
+`Resource` scoping, policy qua group, `explicitDeny` ⇄ `implicitDeny`, và permission
+boundary. Nên phần lớn logic học xong **miễn phí** ở bậc 10.
+
+**Thứ duy nhất emulator không làm được là thực thi:** cùng một principal có `Deny s3:*`,
+`simulate-principal-policy` trả `explicitDeny` (đúng) nhưng gọi `aws s3 ls` thật thì
+**thành công** (sai). Đó là nội dung bài
+[E1](bt-01-co-ban.md#e1-bài-bẫy-lớn-mô-phỏng-nói-deny-api-vẫn-cho-qua), và là lý do bậc 20
+tồn tại. Bảng đo đầy đủ:
+[E3](bt-01-co-ban.md#e3-tự-đo-xem-emulator-đỡ-được-lệnh-nào).
 
 Bài nào **dự đoán sai** thì ghi lại riêng. Bài làm trúng không dạy gì thêm.
 

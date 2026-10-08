@@ -173,16 +173,36 @@ Bài tập chạy thật cho toàn bộ tài liệu này nằm ở
 [**thư mục bài tập**](../tutorials/index.md) — ba bậc: cú pháp trên emulator, logic đánh
 giá trên AWS thật, rồi mẫu production.
 
-Một kết quả đã đo tay đáng đưa lên đây vì nó định hình cách học: **emulator AWS local
-nhận policy nhưng không đánh giá policy.** Nó lưu `put-user-permissions-boundary` thành
-công rồi bỏ qua hoàn toàn khi xét request, và **không hỗ trợ** đúng ba lệnh dùng để
-kiểm chứng quyền (`simulate-custom-policy`, `simulate-principal-policy`,
-`generate-credential-report`). Output thật ở
-[bài tập cơ bản](../tutorials/bt-01-co-ban.md#lệnh-iam-nào-emulator-đỡ-được).
+Một kết quả đã đo tay đáng đưa lên đây vì nó định hình cách học. Trên emulator AWS local,
+**cùng một policy cho hai câu trả lời ngược nhau** tuỳ đường bạn hỏi:
 
-⇒ Tài liệu này **không học được bằng emulator**. Phần duy nhất emulator giúp là cú pháp
-JSON. May là **IAM trên AWS thật miễn phí** — API, role, policy, Policy Simulator,
-Access Advisor đều $0 — nên không có lý do gì mô phỏng phần logic.
+| Đường hỏi | Với một principal chỉ có `Deny s3:*` | Đúng không |
+|---|---|---|
+| `aws iam simulate-principal-policy` | `explicitDeny` | ✅ |
+| Gọi API thật (`aws s3 ls` bằng khoá đó) | **thành công**, `rc=0` | ❌ |
+
+⇒ Emulator **có** máy đánh giá policy nhưng **không mắc nó vào đường xử lý request**. Hệ
+quả cho việc học tài liệu này rất cụ thể: `simulate-principal-policy` ở đó đánh giá đúng
+cả `Resource` scoping, policy qua group, `explicitDeny` ⇄ `implicitDeny` **và permission
+boundary** — nên **phần lớn logic trên trang này học được miễn phí**. Thứ duy nhất phải
+mang sang AWS thật là **enforcement**, cùng với bốn lệnh emulator không hỗ trợ
+(`simulate-custom-policy`, `generate-credential-report`,
+`get-account-authorization-details`, `generate-service-last-accessed-details`).
+
+Bảng đo đầy đủ và output thật:
+[bài tập cơ bản](../tutorials/bt-01-co-ban.md#e3-tự-đo-xem-emulator-đỡ-được-lệnh-nào).
+
+:::warning Một chỗ lệch âm thầm của emulator
+
+`put-user-permissions-boundary` **có hiệu lực** trong mô phỏng, nhưng
+`get-user --query User.PermissionsBoundary` đọc lại trả về `null`. Tức là kiểm kê boundary
+bằng `get-user` trên emulator sẽ báo *"không có boundary nào"* trong khi có. AWS thật trả
+về `PermissionsBoundaryArn` đầy đủ.
+
+:::
+
+Dù sao thì **IAM trên AWS thật cũng miễn phí** — API, role, policy, Policy Simulator,
+credential report, Access Advisor đều $0 — nên không có lý do tiền nào để tránh bậc hai.
 
 ## Bẫy trong đề
 

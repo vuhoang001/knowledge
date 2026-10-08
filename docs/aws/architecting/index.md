@@ -57,7 +57,7 @@ chính thức. Việc đầu tiên khi mở tầng này là tải exam guide SAA
 Cột phải là chỗ **lab thật trở thành bắt buộc** — không emulator nào mô phỏng được
 failover hay policy evaluation, nên tầng này không học được bằng lab local. Điều đó đã
 được **đo tay** cho phần IAM, không phải phỏng đoán: xem
-[bảng lệnh emulator đỡ được](tutorials/bt-01-co-ban.md#lệnh-iam-nào-emulator-đỡ-được).
+[bảng lệnh emulator đỡ được](tutorials/bt-01-co-ban.md#e3-tự-đo-xem-emulator-đỡ-được-lệnh-nào).
 
 ## Related Topics
 
