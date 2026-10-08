@@ -332,13 +332,20 @@ init, optimizer và vòng lặp train.
 
 Hai tầng bám theo hai kỳ thi. Tầng `foundations/` khớp **đúng 19 task statement** của exam
 guide CLF-C02 — bề rộng danh mục service, không phải chiều sâu triển khai. Tầng
-`architecting/` (SAA-C03) mới có khung.
+`architecting/` (SAA-C03) vừa mở Domain 1 bằng phần IAM: một tài liệu cơ chế + ba bậc
+bài tập.
 
 | File | Chốt một câu | TT |
 |---|---|---|
 | [aws/index](aws/index.md) | Con số của kỳ thi, trọng số 4 domain, 5 bẫy lớn, bảng độ phủ 19 task | 🗂️ |
 | [foundations/index](aws/foundations/index.md) | Thứ tự đọc 19 tài liệu — không đọc theo thứ tự domain 1→4 | 🗂️ |
 | [architecting/index](aws/architecting/index.md) | Khung SAA-C03, và thứ nó đòi thêm so với CLF | 🗂️ |
+| [architecting/reference/index](aws/architecting/reference/index.md) | Mục lục tài liệu tầng SAA — mới mở Domain 1 | 🗂️ |
+| [architecting/tutorials/index](aws/architecting/tutorials/index.md) | Ba bậc bài tập IAM: emulator → AWS thật → production | 🗂️ |
+| [iam-policy-evaluation](aws/architecting/reference/iam-policy-evaluation.md) | Quyền là **phép giao**, không phải phép cộng; boundary và SCP chỉ lọc, không cấp | 📝 |
+| [bt: IAM cơ bản](aws/architecting/tutorials/bt-01-co-ban.md) | 9 bài cú pháp trên emulator — và bảng đo bốn lệnh kiểm chứng quyền mà emulator **không** có | 📝 |
+| [bt: IAM trung bình](aws/architecting/tutorials/bt-02-trung-binh.md) | 11 bài trên AWS thật ($0): simulator, explicit deny, boundary là phép giao, bẫy `ForAllValues` | 📝 |
+| [bt: IAM production](aws/architecting/tutorials/bt-03-production.md) | 8 bài: bỏ khoá tĩnh, OIDC cho CI, least privilege từ CloudTrail, SCP, break-glass | 📝 |
 | [cloud-value-proposition](aws/foundations/reference/cloud-value-proposition.md) | Sáu lợi thế chia hai trục; elasticity ≠ HA ≠ agility | 🟡 |
 | [well-architected-framework](aws/foundations/reference/well-architected-framework.md) | Sáu pillar — Sustainability là cái thứ sáu, tài liệu cũ chỉ có năm | 🟡 |
 | [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | Sáu perspective CAF (ba cái là *người*), bảy chiến lược R, Snow Family | 🟡 |

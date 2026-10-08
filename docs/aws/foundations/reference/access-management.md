@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-08
 ---
 
 # Access management
@@ -209,4 +209,6 @@ Cả hai lệnh **thành công**. Trên AWS thật, cả hai phải trả về
 - [Governance và compliance](security-governance-compliance.md) — SCP đặt trần trên IAM; KMS, Secrets Manager
 - [Thành phần bảo mật](security-components.md) — Trusted Advisor báo root chưa bật MFA
 - [Case study: access key của root lọt ra ngoài](../case-studies/root-access-key-lot-ra-ngoai.md)
+- [Policy evaluation](../../architecting/reference/iam-policy-evaluation.md) — tầng sâu hơn: thứ tự xét, permission boundary, SCP, `PassRole`
+- [Bài tập IAM](../../architecting/tutorials/index.md) — ba bậc thực hành, bậc đầu chạy được trên emulator
 - [AWS · Foundations](../index.md)
