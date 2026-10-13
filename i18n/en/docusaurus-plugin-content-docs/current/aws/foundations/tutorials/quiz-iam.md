@@ -31,7 +31,15 @@ IAM là loại dịch vụ nào về phạm vi?
 <details>
 <summary>Đáp án</summary>
 
-**C.** IAM là global service — user, group, role, policy dùng được ở mọi region, không phải tạo lại cho từng region. IAM cũng miễn phí.
+**C.** IAM là **global service** — mọi user, group, role và policy bạn tạo đều có hiệu lực ở tất cả region, bạn không tạo lại chúng cho từng region.
+
+AWS chia dịch vụ thành loại gắn region (như EC2, RDS — tài nguyên sống trong một region) và loại global (như IAM, Route 53, CloudFront). IAM thuộc nhóm global vì danh tính và quyền phải nhất quán trên toàn account; ngoài ra IAM còn miễn phí.
+
+- A sai: IAM không phải region-scoped; nếu nó gắn region thì user bạn tạo ở `us-east-1` sẽ không dùng được ở region khác — không phải vậy.
+- B sai: Availability Zone là tầng hạ tầng bên trong region, không có dịch vụ nào "gắn với một AZ" theo kiểu này; danh tính càng không nằm ở tầng AZ.
+- D sai: VPC là mạng riêng ảo trong một region, chỉ liên quan tới tài nguyên mạng; IAM không nằm trong VPC.
+
+📌 Nhớ cho đề: IAM = global + miễn phí. Thấy "IAM" và "region" trong một câu thì gần như chắc đáp án là "không gắn region".
 
 </details>
 
@@ -47,7 +55,15 @@ Một ứng dụng chạy trên EC2 instance cần đọc file từ một S3 buc
 <details>
 <summary>Đáp án</summary>
 
-**C.** Gắn **IAM role** vào EC2 instance; ứng dụng nhận credential tạm thời tự xoay vòng, không phải nhúng access key. A, B làm lộ credential tĩnh; D là cực kỳ sai (không bao giờ dùng root). Hễ thấy "service/EC2/Lambda cần truy cập dịch vụ khác" → nghĩ **role**.
+**C.** Gắn một **IAM role** (có quyền đọc S3) vào EC2 instance; ứng dụng trên instance tự nhận credential tạm thời, tự xoay vòng, không ai phải nhúng hay quản lý access key tĩnh.
+
+IAM role là danh tính không có credential cố định: một dịch vụ (EC2, Lambda...) hay một user "assume" role đó và nhận về credential tạm thời có thời hạn. Đây là pattern chuẩn cho "một dịch vụ cần truy cập dịch vụ khác" — key tĩnh rò rỉ thì vĩnh viễn nguy hiểm, còn credential tạm thời thì hết hạn và tự làm mới.
+
+- A sai: access key tĩnh nhúng trong source code là lỗi bảo mật kinh điển — code lên Git/chia sẻ là lộ key, và key không tự xoay vòng.
+- B sai: lưu key vào file cấu hình trên instance vẫn là credential tĩnh, vẫn lộ nếu ai đó truy cập được instance, và bạn phải tự xoay vòng thủ công.
+- D sai: dùng root access key là sai nghiêm trọng nhất — root có toàn quyền account, không nên tạo access key cho root, càng không đưa vào ứng dụng.
+
+📌 Nhớ cho đề: thấy "EC2 / Lambda / service cần truy cập dịch vụ AWS khác" → chọn **IAM role**. Thấy "lưu/nhúng access key" → sai.
 
 </details>
 
@@ -63,7 +79,15 @@ Bạn cần cấp cùng một bộ quyền cho 20 developer. Cách quản lý g�
 <details>
 <summary>Đáp án</summary>
 
-**B.** Tạo **group**, gắn **policy** vào group, bỏ các user vào group — sửa quyền một chỗ là áp cho tất cả. A rườm rà, dễ lệch. C, D vi phạm nguyên tắc mỗi người một danh tính và bảo vệ root.
+**B.** Tạo một **group**, gắn **policy** vào group, rồi bỏ 20 user vào group — về sau sửa quyền ở một chỗ (policy của group) là áp cho tất cả thành viên.
+
+IAM group là cách gom user có cùng vai trò để quản lý quyền theo lô. Thay vì lặp lại quyền trên từng user, bạn gắn policy một lần vào group; thêm/bớt người chỉ là thêm/bớt thành viên. Đây chính là mô hình quản lý quyền theo nhóm mà least privilege khuyến khích.
+
+- A sai: gắn policy riêng cho 20 user là 20 lần thao tác, dễ lệch nhau và cập nhật rất mệt — không "gọn nhất".
+- C sai: dùng chung một IAM user phá vỡ nguyên tắc mỗi người một danh tính — không audit được ai làm gì, không thu hồi riêng lẻ được.
+- D sai: cho mọi người dùng root vừa vi phạm "không dùng root hằng ngày" vừa cấp toàn quyền account cho 20 người — cực kỳ nguy hiểm.
+
+📌 Nhớ cho đề: nhiều user cùng quyền → **group + policy**. Thấy "dùng chung user" hay "dùng root cho nhiều người" → luôn sai.
 
 </details>
 
@@ -79,7 +103,15 @@ Việc nào sau đây **bắt buộc** phải dùng root user?
 <details>
 <summary>Đáp án</summary>
 
-**C.** Một số tác vụ chỉ root làm được: đóng account, đổi account settings, đổi support plan, một số tác vụ billing. Các việc còn lại (A, B, D) nên làm bằng IAM user/role có quyền phù hợp.
+**C.** Đóng (close) AWS account là một trong số ít tác vụ **chỉ root user mới làm được**.
+
+Root user là danh tính được tạo khi lập account, có toàn quyền tuyệt đối và không thể bị giới hạn bằng policy. AWS khuyến nghị khóa root lại, bật MFA, và không dùng hằng ngày — nhưng có một nhóm nhỏ tác vụ "cấp account" chỉ root mới làm được: đóng account, đổi một số account settings, đổi support plan, một số thao tác billing/thuế.
+
+- A sai: tạo EC2 instance là tác vụ vận hành bình thường, nên làm bằng IAM user/role có quyền phù hợp.
+- B sai: đọc dữ liệu từ S3 là tác vụ ứng dụng/người dùng thường ngày, cấp quyền qua policy là đủ.
+- D sai: tạo IAM user mới là việc của admin có quyền IAM — không cần và không nên dùng root.
+
+📌 Nhớ cho đề: nhóm việc "chỉ root làm được" = đóng account, đổi support plan, vài tác vụ billing/account settings. Việc vận hành thường ngày thì không bao giờ cần root.
 
 </details>
 
@@ -95,7 +127,15 @@ Biện pháp quan trọng nhất để bảo vệ root user là gì?
 <details>
 <summary>Đáp án</summary>
 
-**B.** Bật **MFA** cho root, không dùng root cho việc hằng ngày, không tạo access key cho root. C làm tăng rủi ro; D không làm được (không thể xóa root của account).
+**B.** Bật **MFA** cho root và không dùng root cho việc hằng ngày — đây là khuyến nghị bảo mật số một của AWS cho root.
+
+MFA (Multi-Factor Authentication) thêm một yếu tố thứ hai ngoài password (mã OTP, khóa cứng...), nên kẻ xấu biết password vẫn không đăng nhập được. Vì root có toàn quyền và không giới hạn được bằng policy, nó là mục tiêu nguy hiểm nhất; cách bảo vệ là bật MFA, cất kỹ, và chỉ dùng cho nhóm tác vụ chỉ root mới làm được.
+
+- A sai: đổi password mỗi ngày không phải khuyến nghị thực tế, và một password bị lộ dù mới đổi vẫn nguy hiểm nếu không có MFA — xoay password không thay thế được MFA.
+- C sai: tạo access key cho root làm tăng rủi ro — AWS khuyên **không** tạo access key cho root; có key tĩnh của root là thảm họa nếu lộ.
+- D sai: không thể xóa root user — nó gắn liền với account suốt vòng đời account.
+
+📌 Nhớ cho đề: bảo vệ root = bật MFA + không dùng hằng ngày + không tạo access key cho root. Không thể xóa root.
 
 </details>
 
@@ -111,7 +151,15 @@ Policy trong IAM được viết ở định dạng nào?
 <details>
 <summary>Đáp án</summary>
 
-**C.** IAM policy là tài liệu **JSON**, cốt lõi gồm `Effect` (Allow/Deny), `Action`, `Resource`.
+**C.** IAM policy là tài liệu **JSON**.
+
+Một policy mô tả quyền dưới dạng danh sách statement, mỗi statement gồm các trường cốt lõi: `Effect` (Allow hoặc Deny), `Action` (hành động được/không được làm, ví dụ `s3:GetObject`), và `Resource` (tài nguyên áp dụng). JSON cho phép cấu trúc lồng và máy đọc được, nên AWS chọn nó làm định dạng chuẩn cho mọi loại policy.
+
+- A sai: YAML được dùng cho CloudFormation template, không phải cho IAM policy.
+- B sai: XML là định dạng cũ, IAM policy không dùng XML.
+- D sai: CSV là định dạng bảng phẳng — Credential Report xuất CSV, nhưng policy thì không phải CSV.
+
+📌 Nhớ cho đề: IAM policy = JSON, trục chính là `Effect` / `Action` / `Resource`. Đừng nhầm với YAML của CloudFormation.
 
 </details>
 
@@ -127,7 +175,15 @@ Trong một statement của policy, trường `Effect` nhận giá trị nào?
 <details>
 <summary>Đáp án</summary>
 
-**B.** `Effect` chỉ có hai giá trị: `Allow` hoặc `Deny`.
+**B.** `Effect` chỉ nhận hai giá trị: `Allow` hoặc `Deny`.
+
+`Effect` là trường quyết định statement đó cho phép hay từ chối hành động mô tả trong `Action`/`Resource`. Vì IAM mặc định đã là từ chối (implicit deny), hầu hết statement dùng `Allow` để mở quyền; `Deny` dùng khi cần chặn tường minh một hành động kể cả khi có Allow khác.
+
+- A sai: `Enable`/`Disable` không phải từ khóa của IAM policy.
+- C sai: `Grant`/`Revoke` là khái niệm cấp/thu quyền trong một số hệ CSDL (SQL), không phải giá trị của `Effect`.
+- D sai: `Public`/`Private` liên quan tới mức hiển thị tài nguyên (ví dụ S3 bucket), không phải giá trị của `Effect`.
+
+📌 Nhớ cho đề: `Effect` chỉ có `Allow` hoặc `Deny`. Mọi lựa chọn khác là bẫy chữ.
 
 </details>
 
@@ -143,7 +199,15 @@ Một user có một policy `Allow s3:*` và một policy khác `Deny s3:DeleteO
 <details>
 <summary>Đáp án</summary>
 
-**B.** **Explicit Deny luôn thắng** mọi Allow. Thứ tự thắng thua: explicit Deny > explicit Allow > implicit (mặc định) Deny.
+**B.** Không xóa được — **explicit Deny luôn thắng** mọi Allow, dù Allow có rộng tới đâu.
+
+IAM đánh giá quyền theo quy tắc thứ tự thắng thua cố định: explicit **Deny** > explicit **Allow** > implicit (mặc định) **Deny**. Khi gom tất cả policy áp cho một request, chỉ cần có một statement Deny khớp là request bị từ chối ngay, bất kể bao nhiêu Allow khác. Ở đây `Deny s3:DeleteObject` chặn đúng hành động xóa, nên `Allow s3:*` không cứu được.
+
+- A sai: Allow rộng không thắng được một Deny tường minh — đúng là ngược lại.
+- C sai: thứ tự gắn policy không quan trọng; IAM gom toàn bộ policy rồi mới đánh giá, kết quả không phụ thuộc thứ tự.
+- D sai: câu hỏi nói về một user có policy, không liên quan root; và root cũng không phải là cách để "lách" một Deny trong tình huống này.
+
+📌 Nhớ cho đề: thứ tự ưu tiên = explicit Deny > explicit Allow > implicit Deny. Có một Deny khớp = chặn, bất kể Allow.
 
 </details>
 
@@ -159,7 +223,15 @@ Một user mới tạo, chưa gắn policy nào, cố gọi một API. Kết qu�
 <details>
 <summary>Đáp án</summary>
 
-**B.** Mặc định IAM là **implicit deny** — không có Allow nào khớp thì bị từ chối.
+**B.** Bị từ chối — IAM mặc định là **implicit deny**: không có statement Allow nào khớp thì request bị từ chối.
+
+Mọi request trong IAM bắt đầu từ trạng thái bị từ chối. Quyền chỉ có khi có một policy Allow khớp hành động và tài nguyên (và không có Deny nào chặn). User mới chưa gắn policy nào thì chẳng có Allow nào cả, nên mọi API đều bị chặn.
+
+- A sai: IAM không "mở trước, chặn sau" — nó đóng mặc định, phải cấp Allow mới mở.
+- C sai: không có quyền đọc mặc định; đọc cũng cần một Allow tương ứng (ví dụ `s3:GetObject`).
+- D sai: IAM đánh giá quyền tự động theo policy, không có cơ chế "chờ admin duyệt từng request".
+
+📌 Nhớ cho đề: mặc định = implicit deny. Không Allow khớp → từ chối. Đây là nền tảng để hiểu least privilege.
 
 </details>
 
@@ -175,7 +247,15 @@ Phân biệt nào đúng giữa password và access key?
 <details>
 <summary>Đáp án</summary>
 
-**B.** **Password** đăng nhập AWS Management Console (web); **access key** (Access Key ID + Secret) dùng cho API/CLI/SDK (lập trình).
+**B.** **Password** dùng để đăng nhập AWS Management Console (giao diện web); **access key** (gồm Access Key ID + Secret Access Key) dùng để gọi API/CLI/SDK (truy cập lập trình).
+
+IAM phân biệt hai loại credential cho hai cách truy cập: con người đăng nhập web bằng username + password (kèm MFA nếu bật), còn chương trình/CLI/SDK ký request bằng access key. Hai loại này độc lập — một user có thể có cái này mà không có cái kia.
+
+- A sai: đảo ngược vai trò — password không dùng để gọi API, access key không dùng để đăng nhập Console.
+- C sai: access key không dùng cho Console; Console dùng password.
+- D sai: password không dùng cho CLI; CLI dùng access key.
+
+📌 Nhớ cho đề: password = Console (người, web), access key = API/CLI/SDK (chương trình). Đừng để bị đảo vai.
 
 </details>
 
@@ -191,7 +271,15 @@ Nguyên tắc "least privilege" nghĩa là gì?
 <details>
 <summary>Đáp án</summary>
 
-**B.** Least privilege = cấp **quyền tối thiểu đủ dùng**, thêm dần khi thực sự cần, thay vì cấp rộng rồi gỡ.
+**B.** Least privilege = chỉ cấp **quyền tối thiểu đủ** để hoàn thành công việc, rồi thêm dần khi thực sự cần.
+
+Đây là nguyên tắc bảo mật nền tảng: mỗi danh tính chỉ nên có đúng quyền cần dùng, không hơn. Khi credential bị lộ hoặc bị lạm dụng, quyền càng hẹp thì thiệt hại càng nhỏ. Cách làm đúng là bắt đầu hẹp và mở thêm khi phát sinh nhu cầu, thay vì cấp rộng rồi đi gỡ bớt.
+
+- A sai: cấp càng nhiều càng tốt là ngược hẳn least privilege — nó phóng to bề mặt tấn công và thiệt hại khi lộ.
+- C sai: least privilege áp cho mọi danh tính, không riêng admin; và "chỉ cấp cho admin" không mô tả đúng nguyên tắc này.
+- D sai: không cấp quyền cho ai thì không ai làm được việc — least privilege là cấp vừa đủ, không phải cấm tiệt.
+
+📌 Nhớ cho đề: least privilege = tối thiểu đủ dùng, mở dần. "Càng nhiều càng tốt" luôn là đáp án sai.
 
 </details>
 
@@ -207,7 +295,15 @@ Bạn muốn một báo cáo liệt kê tất cả IAM user cùng trạng thái 
 <details>
 <summary>Đáp án</summary>
 
-**B.** **Credential Report** là file CSV liệt kê mọi user cùng trạng thái credential (password, access key, MFA, lần dùng cuối) — dùng để audit.
+**B.** **Credential Report** — file CSV liệt kê mọi IAM user trong account cùng trạng thái credential: có password không, access key nào, bật MFA chưa, lần dùng cuối là khi nào.
+
+Credential Report là công cụ audit danh tính: bạn tải về một lần, có cái nhìn toàn cảnh để tìm user chưa bật MFA, access key cũ chưa xoay vòng, hay tài khoản không dùng. Đúng với mô tả "báo cáo liệt kê tất cả user cùng trạng thái".
+
+- A sai: Policy simulator dùng để thử xem một policy sẽ cho phép/từ chối một hành động cụ thể, không liệt kê trạng thái credential của user.
+- C sai: IAM Access Analyzer tìm tài nguyên bị chia sẻ ra ngoài account (truy cập ngoài ý muốn), không phải báo cáo trạng thái credential từng user.
+- D sai: CloudFront là dịch vụ CDN phân phối nội dung, hoàn toàn không liên quan tới IAM.
+
+📌 Nhớ cho đề: audit trạng thái credential của mọi user → **Credential Report** (CSV). Phân biệt với Access Analyzer (truy cập ngoài account).
 
 </details>
 
@@ -223,7 +319,15 @@ Bạn muốn quản lý đăng nhập tập trung cho nhiều AWS account và t�
 <details>
 <summary>Đáp án</summary>
 
-**A.** **IAM Identity Center** (trước gọi AWS SSO) cho đăng nhập tập trung nhiều account và tích hợp identity provider ngoài.
+**A.** **IAM Identity Center** (trước gọi là AWS SSO) — cho phép đăng nhập tập trung một lần, truy cập nhiều AWS account, và tích hợp với identity provider doanh nghiệp (Active Directory, Okta...).
+
+Khi tổ chức có nhiều account (thường quản lý qua AWS Organizations), tạo IAM user riêng ở từng account là ác mộng. IAM Identity Center giải quyết bằng một điểm đăng nhập chung và một bộ danh tính duy nhất (có thể lấy từ IdP sẵn có của công ty), rồi gán quyền truy cập vào từng account — đúng với cụm "tập trung nhiều account + tích hợp IdP".
+
+- B sai: Credential Report chỉ là báo cáo audit trạng thái credential, không làm đăng nhập tập trung.
+- C sai: Policy simulator chỉ thử nghiệm kết quả đánh giá policy, không liên quan quản lý đăng nhập.
+- D sai: Permission boundaries là cơ chế đặt trần quyền tối đa cho một danh tính, không phải giải pháp SSO/đa account.
+
+📌 Nhớ cho đề: "đăng nhập tập trung + nhiều account + identity provider" → **IAM Identity Center** (AWS SSO).
 
 </details>
 
@@ -239,7 +343,15 @@ Phát biểu nào đúng về authentication và authorization?
 <details>
 <summary>Đáp án</summary>
 
-**B.** Authentication = xác minh danh tính (*bạn là ai*, ví dụ password + MFA); authorization = cấp quyền (*được làm gì*, do policy quyết định).
+**B.** Authentication = xác minh *bạn là ai*; authorization = quyết định *bạn được làm gì*.
+
+Hai bước này luôn đi liền nhưng khác nhau. Authentication là bước đăng nhập chứng minh danh tính — trong IAM là password + MFA (cho người) hoặc access key / assume role (cho chương trình). Sau khi biết chắc bạn là ai, authorization mới xét policy để quyết định hành động nào được phép. Có danh tính hợp lệ không có nghĩa là có quyền.
+
+- A sai: đảo ngược hai khái niệm — authentication không phải "được làm gì".
+- C sai: hai khái niệm khác hẳn nhau; gộp làm một là sai bản chất.
+- D sai: authentication áp cho mọi danh tính (user, role...), không riêng root.
+
+📌 Nhớ cho đề: authentication = *bạn là ai* (password/MFA/key); authorization = *được làm gì* (policy). Đừng để bị đảo.
 
 </details>
 
@@ -255,7 +367,14 @@ Chọn TẤT CẢ các phát biểu đúng về IAM group. (Chọn 2)
 <details>
 <summary>Đáp án</summary>
 
-**A và C.** Group gom nhiều user (A) và bạn gắn policy vào group để các user thừa hưởng (C). B sai — group **không có credential**, không đăng nhập được. D sai — **không lồng group trong group**.
+**A và C.** Group gom được nhiều user (A), và bạn gắn policy vào group thì mọi user thành viên thừa hưởng quyền đó (C).
+
+IAM group chỉ là một cách gom user để quản lý quyền theo lô — bản thân group không phải là một danh tính có thể đăng nhập. Nó không có credential, không được dùng trong policy như một principal, và không lồng được. Một user có thể thuộc nhiều group và cộng dồn quyền từ tất cả.
+
+- B sai: group **không có credential** riêng — không ai "đăng nhập bằng group"; chỉ user (hoặc role được assume) mới có credential.
+- D sai: IAM **không cho lồng group trong group** — cấu trúc group là phẳng, không phân cấp.
+
+📌 Nhớ cho đề: group = gom user + gắn policy để thừa hưởng. Group không có credential, không lồng nhau, không đăng nhập được.
 
 </details>
 
@@ -271,7 +390,13 @@ Những cách nào giúp giảm rủi ro lộ hoặc lạm dụng credential? (C
 <details>
 <summary>Đáp án</summary>
 
-**A, B, D.** Role cho credential tạm thời tự xoay vòng (A), MFA thêm một lớp bảo vệ (B), least privilege giới hạn thiệt hại khi lộ (D). C là anti-pattern — không bao giờ nhúng access key vào code.
+**A, B, D.** Ba cách này đều giảm rủi ro credential theo các hướng bổ sung nhau.
+
+Giảm rủi ro credential đi theo ba trục: giảm credential tĩnh (dùng role lấy credential tạm thời tự xoay vòng — A), tăng lớp bảo vệ khi đăng nhập (MFA thêm yếu tố thứ hai — B), và thu hẹp thiệt hại nếu chẳng may lộ (least privilege khiến credential bị lộ chỉ làm được ít — D). Đây là các best practice cốt lõi của IAM.
+
+- C sai: nhúng access key vào source code là anti-pattern kinh điển — code bị chia sẻ/đẩy lên Git là lộ key ngay, lại là key của admin (quyền rộng) nên thiệt hại tối đa. Đây là cách **làm tăng** rủi ro, không giảm.
+
+📌 Nhớ cho đề: giảm rủi ro credential = role (credential tạm thời) + MFA + least privilege. "Nhúng access key vào code" luôn là đáp án sai.
 
 </details>
 

@@ -598,71 +598,71 @@ và hỗ trợ ứng phó chuyên trách. Dịch vụ nào?
 <details>
 <summary>Mở đáp án 65 câu</summary>
 
-1. B — Trả theo mức dùng thay vì đầu tư phần cứng trước chính là "trade capital expense for variable expense".
-2. B — EC2 là IaaS; khách hàng chịu trách nhiệm OS patching, AWS lo hạ tầng vật lý bên dưới.
-3. B — Route 53 là DNS được quản lý, hỗ trợ latency-based routing; CloudFront là CDN.
-4. B, C — Lambda và Fargate là serverless; EC2/Lightsail cần quản lý instance.
-5. B — Cost Explorer phân tích chi tiêu lịch sử và dự báo; Pricing Calculator chỉ ước tính trước, Budgets đặt ngưỡng.
-6. B — Standard-IA cho dữ liệu ít truy cập nhưng truy xuất nhanh; Glacier Deep Archive là archive dài hạn.
-7. B — WAF lọc tấn công tầng 7 (SQLi, XSS); Shield lo DDoS, GuardDuty phát hiện threat.
-8. B — Reliability lo phục hồi và hoạt động đúng khi có sự cố.
-9. B — SQS là message queue bền vững để decouple; SNS là pub/sub fan-out.
-10. B — Gắn IAM role cho EC2 cấp credential tạm, không hard-code key.
-11. B — Macie dùng ML phân loại dữ liệu nhạy cảm (PII) trong S3.
-12. B — Elasticity là khả năng co giãn tài nguyên tự động theo nhu cầu.
-13. D — TAM chỉ có ở gói Enterprise (Enterprise On-Ramp/Enterprise); Business không có TAM riêng.
-14. B — Aurora tương thích MySQL/PostgreSQL, hiệu năng cao, nhân bản nhiều AZ.
-15. A, B — Pricing Calculator ước tính trước, Budgets theo dõi ngưỡng; Trusted Advisor và CloudWatch/CloudTrail khác mục đích.
-16. B — Security Group stateful ở instance level; NACL stateless ở subnet level.
-17. B — Fargate chạy container không cần quản lý cụm EC2 bên dưới.
-18. C — Bảo mật vật lý data center là trách nhiệm của AWS ("security OF the cloud").
-19. B — CloudFront là CDN phân phối qua edge locations với độ trễ thấp.
-20. C — Spot cho chiết khấu cao nhất nhưng có thể bị thu hồi.
-21. B — SCP đặt giới hạn quyền tối đa (guardrail) trên các account trong Organizations.
-22. B — CloudTrail ghi lại API call cho audit; CloudWatch lo metric/log, Config lo cấu hình.
-23. B — ALB định tuyến tầng 7 theo path/host của HTTP/HTTPS.
-24. B — Cost Optimization khuyến nghị right-sizing và chọn mô hình giá phù hợp.
-25. B — Secrets Manager lưu và tự động rotate secret; Parameter Store standard không tự rotate.
-26. B — DynamoDB là key-value/document NoSQL, độ trễ thấp ở quy mô lớn.
-27. A, B, E — CAF perspectives gồm Business, People, Governance, Platform, Security, Operations; Marketing không thuộc.
-28. B — ElastiCache cache in-memory giảm độ trễ đọc; Read Replica giúp nhưng không in-memory.
-29. B — Shield Standard tự động và miễn phí cho mọi khách hàng AWS.
-30. B — EFS là shared file system cho nhiều EC2 Linux đồng thời; EBS gắn một instance.
-31. B — Bật MFA cho root, hạn chế dùng root, tạo IAM user cho công việc hàng ngày.
-32. B — Kinesis Data Streams nhập và xử lý streaming thời gian thực quy mô lớn.
-33. B — Consolidated billing gộp hóa đơn và hưởng volume discount trên tổng usage.
-34. B — Inspector đánh giá workload tìm lỗ hổng và phơi nhiễm mạng.
-35. C — Hybrid cloud kết hợp on-premises với AWS cloud.
-36. A — CloudFormation là IaC bằng template tái sử dụng được.
-37. B — Lambda chạy theo sự kiện (S3 upload) không quản lý server.
-38. A — GuardDuty phát hiện threat từ log; Inspector quét lỗ hổng trên workload.
-39. A — Triển khai qua nhiều AZ là cách chính tăng high availability.
-40. B — Redshift là data warehouse tối ưu OLAP trên dữ liệu lớn.
-41. B — Trusted Advisor khuyến nghị Cost, Performance, Security, Fault Tolerance, Service Limits.
-42. B — Trong IAM, explicit Deny luôn override mọi Allow.
-43. B — Direct Connect cho kết nối riêng, băng thông ổn định, ít phụ thuộc internet.
-44. B — SNS fan-out thông báo tới nhiều subscriber (email, SQS, Lambda).
-45. A, C — Glacier Deep Archive chi phí lưu thấp nhất, dùng archive dài hạn, truy xuất chậm hơn.
-46. B — Elastic Beanstalk là PaaS deploy app mà AWS tự lo EC2/ELB/Auto Scaling.
-47. B — CloudWatch thu metric, đặt alarm, gom log; CloudTrail lo API audit.
-48. B — KMS tạo và quản lý encryption keys.
-49. B — Dedicated Hosts cho phép BYOL ràng buộc với phần cứng vật lý theo socket.
-50. B — Region là khu vực địa lý chứa nhiều AZ; AZ gồm một hay nhiều data center tách biệt.
-51. B — EC2 Auto Scaling tự thêm/bớt instance theo tải.
-52. B — Security pillar khuyến nghị least privilege và defense in depth.
-53. B — DynamoDB NoSQL mili-giây ở quy mô bất kỳ, hợp ứng dụng mobile lưu lượng biến động.
-54. B — Config theo dõi, đánh giá cấu hình tài nguyên theo thời gian và so quy tắc tuân thủ.
-55. B — io1/io2 (Provisioned IOPS) cho IOPS cao ổn định cho database quan trọng.
-56. B — SCP trong Organizations giới hạn Region được phép trên các account con.
-57. B — Agility là triển khai/thử nghiệm nhanh, rút ngắn time-to-market.
-58. B — Với S3, khách hàng lo bucket policy/quyền truy cập và mã hóa phía client.
-59. B — Pricing Calculator ước tính tổng chi phí kiến trúc trước khi xây.
-60. A, B — Nhiều Region giúp giảm độ trễ (gần người dùng) và đáp ứng data residency.
-61. D — Enterprise Support cho phản hồi nhanh nhất và dịch vụ chủ động chuyên sâu (gồm TAM).
-62. B — EBS là block storage gắn một instance, bền vững độc lập vòng đời instance.
-63. B — Savings Plans cam kết mức nền linh hoạt giữa instance family, phần đỉnh trả On-Demand.
-64. B — IAM policy xác định quyền; role cấp quyền tạm thời không dùng long-term key.
-65. B — Shield Advanced cho bảo vệ DDoS nâng cao và hỗ trợ ứng phó chuyên trách.
+1. B — Chuyển từ mua phần cứng trả trước (capital expense) sang chỉ trả theo mức dùng (variable expense) đúng là lợi ích "trade capital expense for variable expense". Economies of scale là hạ giá nhờ quy mô tổng của AWS, còn global reach và availability là lợi ích khác, không nói về mô hình chi phí trả-theo-dùng.
+2. B — EC2 thuộc nhóm IaaS: AWS lo hạ tầng vật lý, hypervisor và mạng ("security OF the cloud"), còn khách hàng lo mọi thứ bên trong instance, trong đó có OS patching ("security IN the cloud"). Ranh giới không phụ thuộc instance type cũ hay mới, và AWS không chỉ định bên thứ ba vá OS giúp bạn.
+3. B — Route 53 là DNS được quản lý, có tính sẵn sàng cao và hỗ trợ latency-based routing để hướng người dùng tới endpoint có độ trễ thấp nhất. CloudFront là CDN, API Gateway quản lý API, còn Global Accelerator tối ưu đường mạng nhưng không phải dịch vụ DNS.
+4. B, C — Lambda chạy code theo sự kiện và Fargate chạy container, cả hai đều serverless — không phải cấp phát hay quản lý server. EC2 và Lightsail đều cần quản lý instance; EC2 Auto Scaling chỉ co giãn số EC2 nên vẫn không serverless.
+5. B — Cost Explorer trực quan hóa chi tiêu lịch sử theo service và còn dự báo chi phí tương lai, đúng nhu cầu phân tích + forecast. Pricing Calculator chỉ ước tính trước khi triển khai, Budgets đặt ngưỡng cảnh báo, còn CUR thô là dữ liệu chi tiết chưa trực quan hóa.
+6. B — S3 Standard-IA hạ phí lưu trữ cho dữ liệu ít truy cập nhưng vẫn truy xuất nhanh (có phí retrieval). Standard đắt hơn cho dữ liệu nóng, Glacier Deep Archive là archive dài hạn truy xuất chậm, còn One Zone-IA lưu một AZ nên không hợp "dữ liệu quan trọng duy nhất" vì rủi ro mất AZ.
+7. B — AWS WAF lọc request tầng 7 theo rule, chặn được SQL injection và XSS. Shield Standard chỉ lo DDoS tầng mạng/vận chuyển, GuardDuty phát hiện threat từ log, còn Network Firewall thiên về tầng 3/4 chứ không phải tấn công tầng ứng dụng.
+8. B — Reliability lo khả năng workload phục hồi sau sự cố và tiếp tục hoạt động đúng. Operational Excellence lo vận hành/tự động hóa, Performance Efficiency lo dùng tài nguyên hiệu quả, còn Cost Optimization lo chi phí — không trùng mục tiêu phục hồi.
+9. B — SQS là hàng đợi bền vững: message được giữ lại cho tới khi consumer xử lý xong, nên decouple producer/consumer mà không mất message khi consumer bận. SNS là pub/sub fan-out (push, không giữ hàng đợi bền kiểu poll), Kinesis cho streaming, còn MQ hỗ trợ cả giao thức chuẩn chứ không chỉ độc quyền.
+10. B — Gắn IAM role cho EC2 để instance nhận credential tạm thời tự động luân phiên, không cần lưu long-term key. Hard-code key, lưu secret trong biến môi trường hay dùng root đều là anti-pattern vì để lộ credential dài hạn.
+11. B — Macie dùng machine learning để phát hiện và phân loại dữ liệu nhạy cảm như PII trong S3. Inspector quét lỗ hổng workload, GuardDuty phát hiện threat từ log, còn Config theo dõi cấu hình — không cái nào chuyên phân loại PII.
+12. B — Elasticity là khả năng tự động co giãn (thêm/bớt) tài nguyên theo nhu cầu thực. Sao lưu tự động, zero-downtime và giá cố định là khái niệm khác, không phải định nghĩa của elasticity.
+13. D — Technical Account Manager (TAM) chỉ đi kèm gói Enterprise (và Enterprise On-Ramp ở mức giới hạn). Basic và Developer không có TAM, còn Business có hỗ trợ 24/7 nhưng vẫn chưa có TAM riêng.
+14. B — Aurora là database quan hệ tương thích MySQL/PostgreSQL, hiệu năng cao và tự nhân bản dữ liệu qua nhiều AZ. DynamoDB là NoSQL, Redshift là data warehouse OLAP, còn ElastiCache là cache in-memory — đều không phải RDBMS tương thích MySQL/PostgreSQL.
+15. A, B — Pricing Calculator ước tính chi phí TRƯỚC khi triển khai, còn Budgets theo dõi và cảnh báo khi sắp vượt ngân sách — đúng cặp "ước tính trước + theo dõi". Trusted Advisor đưa khuyến nghị tối ưu, CloudWatch Logs và CloudTrail phục vụ giám sát/audit chứ không phải lập ngân sách.
+16. B — Security Group hoạt động ở instance level và là stateful (traffic đi ra được tự động cho về); NACL ở subnet level và stateless (phải mở cả chiều ra lẫn vào). Các phương án đảo ngược hoặc gộp sai tính chất stateful/stateless.
+17. B — Fargate chạy container mà AWS tự quản lý cụm compute bên dưới, bạn không phải provision hay vá EC2. ECS trên EC2 launch type và EC2 thuần vẫn bắt bạn quản lý instance; Batch dùng cho batch job chứ không chỉ job theo lịch và vẫn cần compute environment.
+18. C — Bảo mật vật lý của data center thuộc "security OF the cloud" nên là trách nhiệm AWS. Security Group, mã hóa phía client và quản lý IAM user/policy đều là "security IN the cloud" — phần của khách hàng.
+19. B — CloudFront là CDN cache cả nội dung tĩnh lẫn động tại edge locations để giảm độ trễ toàn cầu. S3 Transfer Acceleration chỉ tăng tốc upload lên S3, Direct Connect là kết nối riêng, còn ELB chỉ cân bằng tải trong một Region.
+20. C — Spot Instances cho mức chiết khấu cao nhất vì dùng capacity dư, đổi lại AWS có thể thu hồi khi cần. On-Demand và Reserved không bị thu hồi kiểu đó, còn Dedicated Hosts đắt hơn do dành riêng phần cứng vật lý.
+21. B — Service Control Policies (SCP) trong AWS Organizations đặt trần quyền tối đa (guardrail) cho các account, không trực tiếp cấp quyền. IAM policy gắn user, resource-based policy và bucket policy chỉ tác động phạm vi hẹp, không áp trần cho cả tổ chức.
+22. B — CloudTrail ghi lại mọi API call (ai, làm gì, khi nào) phục vụ audit. CloudWatch lo metric/log hiệu năng, Config theo dõi thay đổi cấu hình tài nguyên, còn VPC Flow Logs chỉ ghi lưu lượng mạng — không ghi API call toàn account.
+23. B — Application Load Balancer làm việc ở tầng 7 nên định tuyến được theo path/host của HTTP/HTTPS, hợp với web three-tier. NLB ở tầng 4 không nhìn URL, Gateway LB dành cho thiết bị mạng, còn Classic LB là thế hệ cũ không "bắt buộc".
+24. B — Cost Optimization khuyến nghị right-sizing tài nguyên và chọn mô hình giá phù hợp (Reserved/Savings Plans/Spot). Luôn chọn instance lớn nhất, không bao giờ xóa dữ liệu hay chỉ dùng On-Demand đều đi ngược nguyên tắc tiết kiệm.
+25. B — Secrets Manager lưu secret và tự động rotate (ví dụ mật khẩu database), tích hợp sẵn với RDS. KMS quản lý khóa mã hóa chứ không lưu secret ứng dụng, Parameter Store standard không tự rotate, còn S3 encryption không phải nơi quản lý secret.
+26. B — DynamoDB là NoSQL key-value/document, cho độ trễ thấp ổn định ở quy mô lớn. Phân tích phức tạp petabyte hợp Redshift, join quan hệ hợp RDBMS, còn caching in-memory thuần là việc của ElastiCache.
+27. A, B, E — AWS CAF có sáu perspectives: Business, People, Governance, Platform, Security, Operations — nên Business, People và Operations đều đúng. Marketing không nằm trong CAF; Governance cũng là một perspective nhưng đề chỉ yêu cầu chọn ba.
+28. B — ElastiCache lưu kết quả truy vấn trong bộ nhớ (in-memory) nên giảm mạnh độ trễ đọc cho app read-heavy. RDS Read Replica chia tải đọc nhưng vẫn truy vấn xuống database, còn EBS gp3 và EFS là lưu trữ, không phải cache.
+29. B — Shield Standard được bật tự động và miễn phí cho mọi khách hàng AWS, bảo vệ DDoS cơ bản. Không phải mua riêng, không giới hạn ở gói Enterprise, và không chỉ bảo vệ EC2.
+30. B — EFS là shared file system cho phép nhiều EC2 Linux mount đồng thời. EBS thường gắn vào một instance, S3 không mount như block device chuẩn, còn instance store là lưu trữ tạm mất khi instance dừng.
+31. B — Thực hành tốt nhất là bật MFA cho root, hạn chế dùng root và tạo IAM user cho công việc hàng ngày. Dùng root cho mọi tác vụ, chia sẻ credential hay tắt billing alert đều làm tăng rủi ro bảo mật.
+32. B — Kinesis Data Streams nhập và xử lý dữ liệu streaming thời gian thực quy mô lớn như clickstream. SQS là hàng đợi (không phải stream xử lý realtime nhiều consumer theo thứ tự), SNS là pub/sub, còn Batch dùng cho job xử lý theo lô.
+33. B — Consolidated billing gộp hóa đơn của các account và tính volume discount trên tổng usage, nên thường rẻ hơn trả riêng lẻ. Nó không xóa tài nguyên dư và không cấp TAM miễn phí.
+34. B — Inspector tự động đánh giá EC2/workload để tìm lỗ hổng phần mềm và phơi nhiễm mạng. GuardDuty phát hiện threat từ log, Macie phân loại dữ liệu nhạy cảm, còn Trusted Advisor đưa khuyến nghị tổng quát — không quét lỗ hổng workload.
+35. C — Hybrid cloud kết hợp hạ tầng on-premises với AWS cloud. Public cloud là toàn bộ trên cloud, private cloud là riêng tại chỗ, còn multi-cloud là dùng nhiều nhà cung cấp cloud chứ không nhất thiết có on-premises.
+36. A — CloudFormation là Infrastructure as Code: mô tả hạ tầng bằng template tái sử dụng và triển khai nhất quán. Config theo dõi cấu hình, CodeDeploy lo deploy ứng dụng, còn OpsWorks là dịch vụ cấu hình Chef/Puppet, không "bắt buộc cho mọi template".
+37. B — Lambda chạy code theo sự kiện (như S3 upload) mà không quản lý server, trả tiền theo lần chạy. EC2 phải tự quản lý, Fargate chạy container liên tục không hợp xử lý theo sự kiện ngắn, còn EMR dành cho big data.
+38. A — GuardDuty phát hiện mối đe dọa/hoạt động bất thường bằng cách phân tích log (CloudTrail, VPC Flow Logs, DNS); Inspector quét lỗ hổng trên workload. Phương án B đảo ngược vai trò, hai dịch vụ không giống nhau và GuardDuty không chỉ chạy on-premises.
+39. A — High availability trong AWS chủ yếu đến từ triển khai qua nhiều Availability Zones để một AZ hỏng vẫn còn AZ khác. Một instance lớn duy nhất, tắt auto scaling hay chỉ dùng một AZ đều là điểm lỗi đơn (single point of failure).
+40. B — Redshift là data warehouse được quản lý, tối ưu cho phân tích OLAP trên tập dữ liệu rất lớn nhờ lưu trữ cột. RDS và Aurora là OLTP quan hệ, còn DynamoDB là NoSQL — đều không tối ưu truy vấn phân tích quy mô warehouse.
+41. B — Trusted Advisor đưa khuyến nghị theo năm hạng mục: Cost Optimization, Performance, Security, Fault Tolerance và Service Limits. Các phương án giới hạn chỉ chi phí, chỉ IAM hay chỉ mạng đều hẹp hơn thực tế.
+42. B — Trong IAM, explicit Deny luôn override mọi Allow; mặc định là deny ngầm nếu không có Allow. Allow không "luôn thắng", và kết quả không phụ thuộc thứ tự khai báo policy.
+43. B — Direct Connect lập kết nối mạng riêng vật lý từ data center tới AWS, băng thông ổn định và ít phụ thuộc internet công cộng. Site-to-Site VPN vẫn đi qua internet, CloudFront là CDN, còn Internet Gateway chỉ cho VPC ra internet.
+44. B — SNS là pub/sub fan-out: một message đẩy tới nhiều subscriber cùng lúc (email, SQS, Lambda). SQS là hàng đợi một consumer poll, Kinesis cho streaming, còn Step Functions là điều phối workflow.
+45. A, C — Glacier Deep Archive có chi phí lưu trữ thuộc nhóm thấp nhất của S3 và hợp archive dài hạn với thời gian truy xuất dài hơn (hàng giờ). Nó không dùng cho dữ liệu truy cập hàng ngày, không truy xuất tức thời như Standard, và vẫn hỗ trợ mã hóa.
+46. B — Elastic Beanstalk là PaaS: bạn đẩy code lên, AWS tự lo EC2, ELB và Auto Scaling bên dưới. CloudFormation là IaC chung, EC2 thuần phải tự cấu hình mọi thứ, còn Lambda là serverless function chứ không phải nền tảng deploy app web đầy đủ.
+47. B — CloudWatch thu metric (gồm CPU, và memory qua agent), đặt alarm và gom log của tài nguyên AWS. CloudTrail lo audit API call, Config theo dõi cấu hình, còn X-Ray chuyên trace ứng dụng chứ không "bắt buộc" cho giám sát metric.
+48. B — KMS tạo và quản lý khóa mã hóa (encryption keys), tích hợp với nhiều dịch vụ để mã hóa dữ liệu. Giám sát API là CloudTrail, phân phối edge là CloudFront, còn cân bằng tải là ELB.
+49. B — Dedicated Hosts cung cấp máy chủ vật lý riêng nên nhìn thấy số socket/core, hợp giấy phép BYOL ràng buộc theo phần cứng vật lý. Spot, Reserved và Savings Plans chỉ là mô hình giá, không đảm bảo quyền kiểm soát phần cứng vật lý cho licensing.
+50. B — Region là khu vực địa lý chứa nhiều Availability Zone; mỗi AZ gồm một hoặc nhiều data center tách biệt trong Region đó. Các phương án còn lại đảo ngược quan hệ hoặc coi hai khái niệm là một.
+51. B — EC2 Auto Scaling tự thêm/bớt instance theo tải để giữ hiệu năng và tránh trả tiền cho capacity dư. ELB phân phối traffic nhưng không tự đổi số instance, CloudFormation là IaC, còn CloudFront là CDN.
+52. B — Security pillar khuyến nghị least privilege (cấp quyền tối thiểu cần thiết) và defense in depth (bảo vệ nhiều lớp). Cấp quyền rộng, tắt logging hay dùng chung một credential đều làm giảm an toàn.
+53. B — DynamoDB là NoSQL cho độ trễ mili-giây ở quy mô bất kỳ, hợp ứng dụng mobile có lưu lượng biến động. RDS/Aurora là quan hệ và cần scale khác, còn Redshift là warehouse phân tích — không hợp truy cập mobile tần suất cao.
+54. B — AWS Config theo dõi và đánh giá cấu hình tài nguyên theo thời gian, so với quy tắc tuân thủ (compliance rules). Ghi API call là CloudTrail, phân phối nội dung là CloudFront, còn quản lý khóa là KMS.
+55. B — io1/io2 (Provisioned IOPS SSD) cho IOPS cao và ổn định, hợp database quan trọng. gp2/gp3 hợp workload chung, còn st1 và sc1 là HDD tối ưu throughput/giá rẻ, không đáp ứng IOPS cao cho database.
+56. B — Service Control Policy trong AWS Organizations có thể giới hạn các Region được phép dùng trên tất cả account con. IAM group chỉ gom user, Security Group lọc traffic instance, còn Route 53 là DNS — không cái nào áp guardrail cấp tổ chức.
+57. B — Agility nói về khả năng thử nghiệm và triển khai nhanh, rút ngắn time-to-market nhờ cấp tài nguyên tức thời. Giảm giá điện, tăng nhân sự vận hành hay cố định cấu hình không phải trọng tâm của agility.
+58. B — Với S3, khách hàng chịu trách nhiệm cấu hình bucket policy/quyền truy cập và mã hóa phía client ("security IN the cloud"). Bảo trì ổ đĩa, vá firmware và vận hành backbone đều thuộc AWS.
+59. B — Pricing Calculator ước tính tổng chi phí của một kiến trúc nhiều dịch vụ TRƯỚC khi xây. Cost Explorer và CUR phân tích chi phí đã phát sinh, còn Budgets đặt ngưỡng cảnh báo — không dùng để dựng ước tính kiến trúc mới.
+60. A, B — Nhiều Region giúp đặt tài nguyên gần người dùng để giảm độ trễ, và đáp ứng yêu cầu data residency/tuân thủ theo quốc gia. Region không tự loại bỏ phí truyền dữ liệu, không buộc dữ liệu vào một AZ, và không thay thế nhu cầu backup.
+61. D — Enterprise Support cho thời gian phản hồi nhanh nhất và các dịch vụ chủ động chuyên sâu (gồm TAM). Basic không có hỗ trợ kỹ thuật, Developer hợp môi trường thử nghiệm, còn Business tuy 24/7 nhưng chưa đạt mức chủ động của Enterprise.
+62. B — EBS là block storage gắn vào một EC2 instance và bền vững độc lập với vòng đời instance (còn dữ liệu sau khi stop/terminate tùy cấu hình). Instance store mất khi instance dừng, EFS là file system dùng chung, còn S3 là object storage.
+63. B — Savings Plans cam kết một mức chi tiêu nền để được chiết khấu, linh hoạt giữa các instance family, phần đỉnh vượt cam kết trả On-Demand. Chỉ On-Demand thì đắt, chỉ Spot thì bị thu hồi, còn Dedicated Hosts không giải quyết bài toán cam kết nền linh hoạt.
+64. B — IAM policy xác định quyền, còn role cho phép cấp quyền tạm thời (credential ngắn hạn) mà không cần lưu long-term key. IAM user không mặc định có mọi quyền, IAM không chỉ dùng cho EC2, và root account vẫn phải được bảo vệ.
+65. B — Shield Advanced cung cấp bảo vệ DDoS nâng cao cùng đội ứng phó chuyên trách (DRT) và bảo vệ chi phí khi bị tấn công. Shield Standard chỉ ở mức cơ bản, WAF đơn độc không chống DDoS quy mô lớn, còn Security Group chỉ lọc traffic cơ bản.
 
 </details>
 

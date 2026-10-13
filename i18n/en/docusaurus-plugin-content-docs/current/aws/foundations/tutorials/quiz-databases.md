@@ -29,7 +29,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. Multi-AZ deployment.** Multi-AZ tạo một standby ở AZ khác, replication synchronous, và **tự động failover** khi primary/AZ hỏng. Read Replica (A) là để scale đọc, không tự failover. DAX và ElastiCache là cache.
+**B. Multi-AZ deployment** — đây là tính năng high availability của RDS, dựng sẵn cho đúng kịch bản "primary hoặc AZ hỏng → tự failover".
+
+Multi-AZ tạo một bản **standby** ở một Availability Zone khác, replication **synchronous** (mọi ghi vào primary được sao chép đồng bộ sang standby). Khi primary hoặc cả AZ của nó hỏng, RDS **tự chuyển endpoint** sang standby mà không cần đổi connection string — downtime chỉ cỡ thời gian failover, không mất dữ liệu đã commit. Từ khóa nhận diện: "failover", "high availability", "AZ hỏng".
+
+- A — Read Replica là bản read-only để **scale đọc**, không được thiết kế để tự failover; nó chủ yếu phục vụ workload read-heavy, không phải HA.
+- C — DAX là in-memory cache **chỉ dành cho DynamoDB**, không liên quan tới RDS hay failover.
+- D — ElastiCache là lớp cache in-memory đặt trước database, cũng không cung cấp cơ chế failover cho RDS primary.
+
+📌 Nhớ cho đề: "failover / high availability" trong RDS = **Multi-AZ**; "scale đọc" = **Read Replica**. Đừng lẫn hai cái.
 
 </details>
 
@@ -45,7 +53,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**C. Read Replica.** Read Replica là bản read-only phục vụ query đọc, chia tải khỏi primary — đúng cho workload read-heavy. Multi-AZ (A) không phục vụ traffic nên không giúp scale đọc.
+**C. Read Replica** — tạo bản sao read-only để gánh bớt query đọc, đúng bài toán read-heavy.
+
+Read Replica là một hoặc nhiều bản **read-only** của database, replication **asynchronous** từ primary. Ứng dụng gửi các query đọc sang replica để chia tải khỏi primary, giúp scale throughput đọc theo chiều ngang. Từ khóa nhận diện: "read-heavy", "giảm tải đọc", "scale đọc".
+
+- A — Multi-AZ chỉ để high availability/failover; standby **không phục vụ traffic** nên không giúp scale đọc chút nào.
+- B — Scale up (tăng instance) có giới hạn và tốn kém, không bền vững khi tải đọc tăng mãi; đề muốn hướng scale-out hợp lý hơn.
+- D — Chuyển sang DynamoDB là đổi toàn bộ mô hình dữ liệu sang NoSQL, quá mức và không cần thiết chỉ để giảm tải đọc trên một DB relational đang chạy.
+
+📌 Nhớ cho đề: "read-heavy / scale đọc" = **Read Replica**; đừng chọn Multi-AZ vì standby không nhận traffic.
 
 </details>
 
@@ -61,7 +77,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**C. DynamoDB.** NoSQL key-value, serverless, fully managed, millisecond latency, scale lớn. RDS/Aurora là relational; Redshift là data warehouse.
+**C. DynamoDB** — NoSQL key-value serverless của AWS, khớp đủ mọi từ khóa trong đề.
+
+DynamoDB là database **NoSQL** (key-value và document), **serverless** (không quản instance, tự scale), fully managed, cho độ trễ **single-digit millisecond** ở quy mô rất lớn. Nó hợp với backend mobile/web cần throughput cao và lược đồ linh hoạt. Từ khóa nhận diện: "NoSQL", "serverless", "single-digit millisecond", "scale cực lớn".
+
+- A — RDS là database **relational**, chạy trên instance (không serverless theo nghĩa này), không phải NoSQL.
+- B — Aurora cũng **relational** (tương thích MySQL/PostgreSQL); không phải NoSQL.
+- D — Redshift là **data warehouse** cho OLAP/analytics, không phải DB giao dịch độ trễ thấp cho app.
+
+📌 Nhớ cho đề: "NoSQL + serverless + millisecond" = **DynamoDB**. Relational thì nghĩ RDS/Aurora, analytics thì nghĩ Redshift.
 
 </details>
 
@@ -77,7 +101,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. Redshift.** Redshift là data warehouse cho OLAP/analytics, column-oriented, tối ưu cho query phân tích trên dữ liệu lớn.
+**B. Redshift** — dịch vụ data warehouse của AWS, dành riêng cho query phân tích quy mô lớn.
+
+Redshift là **data warehouse** cho workload **OLAP/analytics**: lưu trữ **column-oriented** và xử lý song song (MPP), tối ưu để quét và tổng hợp trên hàng tỷ dòng phục vụ BI/báo cáo. Từ khóa nhận diện: "data warehouse", "analytics", "BI", "query phức tạp trên dữ liệu lớn".
+
+- A — DynamoDB là NoSQL cho truy cập theo key độ trễ thấp (OLTP), không hợp để quét-tổng hợp phân tích diện rộng.
+- C — RDS là relational cho workload giao dịch (OLTP), không phải warehouse OLAP cho hàng tỷ dòng.
+- D — ElastiCache là in-memory cache, không phải nơi lưu và phân tích dữ liệu lớn.
+
+📌 Nhớ cho đề: "data warehouse / OLAP / analytics / BI" = **Redshift**. Giao dịch hằng ngày (OLTP) mới là RDS/Aurora/DynamoDB.
 
 </details>
 
@@ -93,7 +125,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**A. ElastiCache.** ElastiCache (Redis/Memcached) là in-memory cache đa dụng đặt trước database relational để giảm tải đọc. DAX (B) chỉ dành cho DynamoDB.
+**A. ElastiCache** — lớp cache in-memory đa dụng đặt trước database relational.
+
+ElastiCache (engine **Redis** hoặc **Memcached**) giữ dữ liệu nóng trong bộ nhớ để ứng dụng đọc từ cache thay vì đi tới DB, cắt phần lớn truy vấn lặp lại khỏi RDS và giảm độ trễ. Từ khóa nhận diện: "in-memory cache", "đọc lặp lại", "giảm tải đọc đặt trước DB".
+
+- B — DAX là in-memory cache **chỉ cho DynamoDB**, không dùng trước RDS.
+- C — Read Replica cũng giảm tải đọc nhưng nó là một bản DB relational (vẫn là query DB), không phải "in-memory cache" như đề yêu cầu.
+- D — S3 là object storage, không phải cache in-memory đặt trước database.
+
+📌 Nhớ cho đề: cache in-memory trước DB **relational** = **ElastiCache**; cache cho **DynamoDB** = **DAX**.
 
 </details>
 
@@ -109,7 +149,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. DAX (DynamoDB Accelerator).** Đây là in-memory cache chuyên cho DynamoDB, đưa độ trễ đọc xuống microsecond. ElastiCache không gắn trực tiếp với DynamoDB như DAX.
+**B. DAX (DynamoDB Accelerator)** — cache in-memory tích hợp sẵn, chuyên cho DynamoDB.
+
+DAX là lớp cache in-memory **fully managed dành riêng cho DynamoDB**, hạ độ trễ đọc từ mức millisecond xuống **microsecond** mà hầu như không phải sửa code (API tương thích DynamoDB). Từ khóa nhận diện: "DynamoDB" + "microsecond" + "cache".
+
+- A — ElastiCache for Redis là cache đa dụng, không gắn trực tiếp vào DynamoDB; muốn dùng phải tự viết logic cache-aside, không "chuyên dụng" như DAX.
+- C — Read Replica là khái niệm của RDS (DB relational), không áp dụng cho DynamoDB.
+- D — CloudFront là CDN để cache nội dung web ở biên, không phải cache cho truy vấn database.
+
+📌 Nhớ cho đề: thấy "DynamoDB + microsecond" là chọn **DAX** ngay.
 
 </details>
 
@@ -125,7 +173,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. Aurora.** Aurora tương thích MySQL và PostgreSQL, hiệu năng cao, cloud-native. RDS for MySQL (A) là MySQL chuẩn do AWS quản, không phải engine Aurora.
+**B. Aurora** — engine relational cloud-native của AWS, tương thích cả MySQL và PostgreSQL.
+
+Aurora là database relational do AWS tự phát triển, **tương thích MySQL và PostgreSQL** (dùng được driver/công cụ sẵn có), với lớp storage phân tán cho hiệu năng và độ bền cao hơn so với engine chuẩn. Từ khóa nhận diện: "cloud-native", "AWS phát triển", "tương thích MySQL/PostgreSQL", "hiệu năng cao".
+
+- A — RDS for MySQL chạy engine **MySQL chuẩn** do AWS quản lý, không phải engine Aurora của AWS.
+- C — DocumentDB là **document database** tương thích MongoDB (NoSQL), không phải relational tương thích MySQL/PostgreSQL.
+- D — Neptune là **graph database**, không phải relational.
+
+📌 Nhớ cho đề: "AWS tự làm, tương thích MySQL/PostgreSQL, hiệu năng cao" = **Aurora**.
 
 </details>
 
@@ -141,7 +197,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**A. Aurora Serverless.** Tự scale compute theo tải và trả theo lượng dùng — hợp với workload biến động/không đoán trước.
+**A. Aurora Serverless** — Aurora ở chế độ serverless, tự co giãn compute theo tải.
+
+Aurora Serverless **tự động scale compute lên/xuống** theo lưu lượng và cho phép **trả tiền theo lượng dùng**, nên hợp với workload biến động hoặc khó dự đoán mà vẫn giữ mô hình relational. Từ khóa nhận diện: "relational" + "biến động/khó đoán" + "tự scale" + "trả theo lượng dùng".
+
+- B — RDS Multi-AZ là cấu hình **high availability**, không tự scale capacity theo tải.
+- C — DynamoDB **provisioned** là NoSQL và ở chế độ provisioned bạn phải cấp capacity cố định (đề muốn relational + tự scale, nên cái này sai cả hai điểm).
+- D — Redshift là data warehouse cho analytics, không phải DB relational giao dịch tự co giãn theo app traffic.
+
+📌 Nhớ cho đề: "relational + serverless/tự scale + pay-per-use" = **Aurora Serverless**.
 
 </details>
 
@@ -157,7 +221,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**C.** Multi-AZ = standby ở AZ khác, replication synchronous, tự động failover. Standby **không** phục vụ traffic (loại A); replication là synchronous chứ không async (loại B).
+**C. Standby ở AZ khác, synchronous, tự failover khi primary hỏng** — đúng bản chất Multi-AZ.
+
+Multi-AZ là cơ chế **high availability** của RDS: một standby đặt ở **Availability Zone khác**, replication **synchronous**, và khi primary hoặc AZ của nó hỏng thì RDS **tự failover** sang standby. Điểm mấu chốt dễ bị gài: standby **không phục vụ traffic đọc**.
+
+- A — Sai, đây là đặc điểm của **Read Replica** (scale đọc), không phải Multi-AZ; standby Multi-AZ không nhận query.
+- B — Sai, Multi-AZ dùng replication **synchronous** (để không mất dữ liệu khi failover), còn asynchronous là của Read Replica.
+- D — Sai, Multi-AZ là để **tăng độ sẵn sàng**, thực tế còn tốn thêm chi phí cho standby, không phải để giảm chi phí.
+
+📌 Nhớ cho đề: Multi-AZ = standby AZ khác + **synchronous** + tự failover + **không phục vụ đọc**.
 
 </details>
 
@@ -173,7 +245,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**A. DMS.** Database Migration Service chuyển database vào AWS với downtime tối thiểu, source tiếp tục hoạt động trong khi migrate. (Di chuyển schema khác engine dùng kèm SCT.)
+**A. DMS (Database Migration Service)** — dịch vụ chuyên di chuyển database vào AWS.
+
+DMS di chuyển dữ liệu database vào AWS với **downtime tối thiểu**: nó sao chép dữ liệu ban đầu rồi **replicate liên tục các thay đổi**, nên **source vẫn chạy** trong khi migrate. Khi chuyển giữa hai engine khác nhau (ví dụ Oracle → PostgreSQL), DMS thường dùng kèm **SCT** (Schema Conversion Tool) để chuyển schema. Từ khóa nhận diện: "migrate database", "downtime tối thiểu", "source vẫn chạy".
+
+- B — Snowball là thiết bị vật lý để chuyển **khối lượng dữ liệu lớn** offline, không phải công cụ migrate database đang chạy với downtime tối thiểu.
+- C — DataSync dùng để **chuyển file/object** (file shares, S3, EFS...), không phải để migrate database relational.
+- D — DynamoDB là một database NoSQL, không phải dịch vụ migration.
+
+📌 Nhớ cho đề: "migrate database vào AWS, downtime tối thiểu" = **DMS** (đổi engine thì kèm **SCT**).
 
 </details>
 
@@ -189,7 +269,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. Neptune.** Neptune là graph database, tối ưu cho dữ liệu quan hệ dạng đồ thị.
+**B. Neptune** — graph database của AWS, dành cho dữ liệu dạng đồ thị.
+
+Neptune là **graph database** tối ưu cho quan hệ nhiều-nhiều phức tạp giữa các thực thể — nên hợp với mạng xã hội, recommendation engine, fraud detection. Từ khóa nhận diện: "graph", "quan hệ giữa các thực thể", "social network / recommendation / fraud".
+
+- A — DynamoDB là NoSQL key-value/document, không tối ưu để duyệt quan hệ dạng đồ thị.
+- C — Timestream là **time-series database** (dữ liệu theo thời gian, IoT/metrics), không phải graph.
+- D — QLDB là **ledger database** (sổ cái bất biến, có thể kiểm chứng), không phải graph.
+
+📌 Nhớ cho đề: "graph / mạng quan hệ" = **Neptune**; time-series = Timestream; ledger = QLDB.
 
 </details>
 
@@ -205,7 +293,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. DocumentDB.** DocumentDB là document database tương thích MongoDB. Keyspaces (A) tương thích Cassandra; MemoryDB (D) tương thích Redis.
+**B. DocumentDB** — document database của AWS, tương thích MongoDB.
+
+DocumentDB là **document database** (lưu trữ kiểu JSON) **tương thích MongoDB**, nên ứng dụng dùng driver/API MongoDB có thể chạy với ít thay đổi. Mẹo: mỗi dịch vụ "tương thích" một hệ nguồn khác nhau, cần nhớ đúng cặp.
+
+- A — Keyspaces tương thích **Apache Cassandra**, không phải MongoDB.
+- C — DynamoDB là NoSQL của AWS với API riêng, không tương thích MongoDB.
+- D — MemoryDB tương thích **Redis**, không phải MongoDB.
+
+📌 Nhớ cho đề: DocumentDB↔MongoDB, Keyspaces↔Cassandra, MemoryDB/ElastiCache for Redis↔Redis.
 
 </details>
 
@@ -221,7 +317,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B.** Tự cài trên EC2 chỉ hợp lý khi cần toàn quyền OS hoặc cấu hình/engine RDS không hỗ trợ. Mọi lý do còn lại (A, C, D) đều nghiêng về RDS vì giảm operational overhead.
+**B. Khi cần quyền truy cập OS hoặc một cấu hình/engine mà RDS không hỗ trợ** — đó là lý do chính đáng duy nhất để tự quản.
+
+RDS là **managed service**: AWS lo patching, backup, Multi-AZ, high availability — đổi lại bạn **không có quyền OS** và bị giới hạn ở các engine/cấu hình RDS hỗ trợ. Tự cài DB trên **EC2** chỉ đáng khi bạn cần toàn quyền hệ điều hành hoặc một engine/tinh chỉnh mà RDS không cho. Đây là câu về mô hình **shared responsibility** và đánh đổi managed vs self-managed.
+
+- A — "Giảm công vận hành" chính là lý do chọn **RDS**, không phải EC2 (tự cài thì bạn gánh patching/backup).
+- C — "Multi-AZ failover tự động" là tính năng sẵn của **RDS**; tự dựng trên EC2 bạn phải tự làm, nên không phải lý do chọn EC2.
+- D — "AWS lo mọi thứ" cũng là ưu điểm của **RDS**, ngược hẳn với tự quản trên EC2.
+
+📌 Nhớ cho đề: chọn EC2 cho DB chỉ khi cần **OS access** hoặc engine/cấu hình RDS không hỗ trợ; mọi lý do "đỡ việc vận hành" đều nghiêng về RDS.
 
 </details>
 
@@ -237,7 +341,14 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**A và B.** RDS là relational managed, lo patching/backup (A), hỗ trợ 5 engine kể trên (B). RDS không phải NoSQL (C sai — đó là DynamoDB) và không phải data warehouse OLAP (D sai — đó là Redshift).
+**A và B** — RDS là dịch vụ relational managed, và nó hỗ trợ đúng bộ engine nêu ở B.
+
+RDS là dịch vụ **relational database managed**: AWS lo patching, backup tự động, Multi-AZ, Read Replica (A đúng). Nó hỗ trợ các engine **MySQL, PostgreSQL, MariaDB, Oracle, SQL Server** (và Aurora) — nên B đúng. RDS phục vụ workload giao dịch (**OLTP**).
+
+- C — Sai. RDS là **relational**, không phải NoSQL; database NoSQL serverless của AWS là **DynamoDB**.
+- D — Sai. RDS cho **OLTP**, không phải data warehouse OLAP; dịch vụ OLAP/warehouse là **Redshift**.
+
+📌 Nhớ cho đề: RDS = relational, managed, 5 engine + Aurora, dùng cho OLTP. NoSQL→DynamoDB, OLAP→Redshift.
 
 </details>
 
@@ -253,7 +364,14 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**A và B.** ElastiCache (Redis/Memcached) là in-memory cache đa dụng; DAX là in-memory cache chuyên cho DynamoDB. Redshift là data warehouse, Neptune là graph database.
+**A và B** — ElastiCache và DAX đều là cache in-memory.
+
+**ElastiCache** (Redis/Memcached) là in-memory cache **đa dụng** đặt trước bất kỳ database nào để giảm tải đọc; **DAX** là in-memory cache **chuyên cho DynamoDB**, hạ độ trễ đọc xuống microsecond. Cả hai giữ dữ liệu trong RAM để trả lời nhanh.
+
+- C — Redshift là **data warehouse** (OLAP), không phải cache.
+- D — Neptune là **graph database**, không phải cache.
+
+📌 Nhớ cho đề: hai cache in-memory cần nhớ = **ElastiCache** (đa dụng) và **DAX** (cho DynamoDB).
 
 </details>
 
@@ -269,7 +387,15 @@ Tự chấm: đọc câu hỏi, chọn đáp án, rồi mở phần giải thíc
 <details>
 <summary>Đáp án</summary>
 
-**B. MemoryDB.** MemoryDB tương thích Redis nhưng **durable**, dùng làm database chính. ElastiCache for Redis (A) thiên về cache (dữ liệu có thể mất), không phải nguồn lưu trữ chính bền vững.
+**B. MemoryDB** — database in-memory **durable**, tương thích Redis, dùng làm database chính.
+
+MemoryDB là database **in-memory tương thích Redis** nhưng được thiết kế **durable** (bền): dữ liệu không mất khi restart nhờ lưu bền vững, nên có thể dùng làm **primary database** tốc độ cao chứ không chỉ là cache. Từ khóa nhận diện: "in-memory" + "durable/bền" + "database chính" + "Redis".
+
+- A — ElastiCache for Redis thiên về **cache** (dữ liệu có thể mất), không được xem là nguồn lưu trữ chính bền vững như MemoryDB.
+- C — DAX là cache chuyên cho DynamoDB, không phải database chính tương thích Redis.
+- D — DynamoDB là NoSQL trên disk của AWS (durable), nhưng không phải in-memory tương thích Redis như đề yêu cầu.
+
+📌 Nhớ cho đề: "in-memory + durable + database chính + Redis" = **MemoryDB**; còn ElastiCache for Redis chỉ là cache.
 
 </details>
 
