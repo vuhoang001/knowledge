@@ -10,7 +10,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-13
 ---
 
 # Access management
@@ -103,6 +103,118 @@ Cấp **vừa đủ quyền để làm xong việc**, không hơn. Hai thói que
 - Gắn policy vào **group**, không gắn lẻ vào từng user — sửa một chỗ, áp cho cả nhóm.
 - Dùng **IAM Access Analyzer** và *last accessed information* để cắt quyền không dùng.
 
+## Giải thích cặn kẽ
+
+### User / group / role / policy — ví dụ công ty
+
+Bốn khối trên khô khan. Đây là cách nhớ bằng một hình ảnh của một công ty:
+
+| Khối IAM | Ví như | Giải thích |
+|---|---|---|
+| **User** | Một **nhân viên** cụ thể | Có tên riêng, có thẻ ra vào riêng (credential). Một người, một danh tính lâu dài. |
+| **Group** | Một **phòng ban** | "Phòng Kế toán" không tự nó làm gì cả — nó chỉ là cái nhãn để nói *"ai ở trong đây thì có những quyền này"*. Thêm người vào phòng là họ tự có quyền của phòng; bỏ ra là mất. |
+| **Role** | Một **chiếc áo bảo hộ treo ở cửa xưởng** | Không thuộc về ai. Ai cần vào xưởng thì **mặc tạm** chiếc áo đó vào — lúc mặc thì có đúng quyền gắn với chiếc áo, cởi ra thì hết. Không có thẻ cá nhân nào bị phát ra. Một EC2 instance, một Lambda, hay một người từ account khác đều có thể "mặc" cùng một role. |
+| **Policy** | **Bảng nội quy** dán trên tường | Tự nó không trao quyền cho ai. Nó chỉ là tờ giấy ghi "được làm X, cấm làm Y". Phải **dán** (attach) nó lên một nhân viên, một phòng ban, hay một chiếc áo thì nó mới có hiệu lực. |
+
+Điểm mấu chốt từ hình ảnh này: **quyền của một nhân viên hiếm khi ghi trên người anh ta**.
+Nó ghi trên bảng nội quy dán ở phòng ban anh ta thuộc về. Đó chính xác là lý do mục
+[Ví dụ](#ví-dụ) bên dưới, khi hỏi "user này có policy gì" trực tiếp trên user, lại trả về
+rỗng — vì bảng nội quy dán ở group, không dán ở user.
+
+Và vì **role không phát credential thường trực** (không có "thẻ cá nhân"), nó là lựa chọn
+an toàn nhất mỗi khi một máy hay một service cần quyền: không có gì để đánh rơi, không có
+gì để kẻ xấu nhặt được dùng mãi về sau.
+
+### Giải phẫu một policy JSON
+
+Một policy là văn bản JSON. Không cần thuộc cú pháp cho CLF-C02, nhưng phải đọc hiểu được
+**bốn phần** của một câu lệnh (statement) trong đó. Nghĩ về nó như một câu tiếng Việt đủ
+bốn thành phần:
+
+> **[Cho phép / Cấm]** ai đó **[làm hành động gì]** lên **[tài nguyên nào]**, **[với điều
+> kiện gì]**.
+
+| Phần | Câu hỏi nó trả lời | Ví dụ dễ hiểu |
+|---|---|---|
+| **Effect** | Cho phép hay cấm? | `Allow` (cho phép) hoặc `Deny` (cấm). Chỉ có hai giá trị này. |
+| **Action** | Được làm **hành động** gì? | `s3:GetObject` = đọc file trong S3. `s3:PutObject` = ghi file. `iam:CreateUser` = tạo user. Dấu `*` nghĩa là "mọi hành động". |
+| **Resource** | Trên **tài nguyên** nào? | Chỉ bucket `report-2026` chứ không phải mọi bucket; chỉ một bảng DynamoDB cụ thể. Dấu `*` nghĩa là "mọi tài nguyên". |
+| **Condition** | **Khi nào** mới áp dụng? (tùy chọn) | "Chỉ khi request đến từ dải IP của văn phòng", "chỉ khi đã đăng nhập bằng MFA", "chỉ trong giờ hành chính". Có thể bỏ trống. |
+
+Ghép lại, một policy đọc thành câu: *"**Cho phép** (Effect) đọc file (Action `s3:GetObject`)
+trong bucket báo cáo (Resource), nhưng **chỉ khi** người gọi đã bật MFA (Condition)."*
+
+Vì sao đáng hiểu bốn phần này cho một kỳ thi mức foundation: nhiều câu hỏi mô tả một nhu
+cầu bằng tiếng Anh ("cho phép đọc nhưng không cho xóa", "chỉ từ một IP nhất định") rồi hỏi
+IAM có làm được không — đáp án gần như luôn là **có**, và chỗ thực hiện chính là
+**Action** (đọc ≠ xóa) và **Condition** (ràng IP).
+
+### Luồng IAM Role cho EC2 → S3, từng bước
+
+Đây là tình huống kinh điển nhất của IAM trong đề: *"Một ứng dụng chạy trên EC2 cần đọc
+dữ liệu từ S3. Làm sao an toàn nhất?"* Đáp án sai mà ai cũng dễ chọn là "tạo access key,
+để vào file cấu hình trên instance". Đáp án đúng là **IAM role**. Đây là vì sao, và cơ chế
+chạy từng bước:
+
+1. **Tạo một role** (chiếc áo bảo hộ) và dán lên nó một policy cho phép đọc S3
+   (`s3:GetObject` trên bucket cần đọc).
+2. **Gắn role vào EC2 instance** (qua một thứ gọi là *instance profile* — bạn không cần
+   nhớ tên này cho CLF-C02, chỉ cần biết "role được gắn lên instance").
+3. Khi ứng dụng trên instance cần gọi S3, nó **không** cần access key sẵn trong máy. Thay
+   vào đó, một dịch vụ chạy ngầm trên instance (instance metadata) **tự động lấy về một bộ
+   credential tạm thời** từ AWS STS, gắn với role đó.
+4. Bộ credential tạm này **có hạn sử dụng ngắn** (vài giờ) và **tự xoay vòng** (rotate):
+   trước khi hết hạn, instance tự xin bộ mới. Ứng dụng không hề biết chuyện này xảy ra —
+   SDK của AWS lo hết.
+5. Nếu credential tạm có bị lộ, nó **hết hạn gần như ngay**, nên thiệt hại tối thiểu.
+
+So sánh thẳng vì sao role thắng access key nhúng cứng:
+
+| | Access key nhúng vào instance | IAM role gắn vào instance |
+|---|---|---|
+| Credential nằm ở đâu | Nằm cứng trong file trên máy | Không có gì nằm cứng; cấp phát tạm theo yêu cầu |
+| Thời hạn | **Vĩnh viễn** cho tới khi bạn nhớ ra để xoá | Vài giờ, **tự xoay vòng** |
+| Lộ ra ngoài thì sao | Kẻ xấu dùng mãi tới khi bị phát hiện | Hết hạn gần như ngay |
+| Đổi key định kỳ | Phải tự làm tay, dễ quên | AWS lo, không cần làm gì |
+
+Câu thần chú cho phòng thi: **máy cần nói chuyện với service AWS → dùng role, không bao giờ
+nhúng key.**
+
+### Authentication vs authorization
+
+Hai từ này nghe giống nhau nhưng là hai bước khác hẳn, và IAM làm **cả hai**:
+
+| | Authentication (xác thực) | Authorization (phân quyền) |
+|---|---|---|
+| Trả lời câu hỏi | **Bạn là ai?** | **Bạn được làm gì?** |
+| Xảy ra khi | Lúc đăng nhập / lúc gọi API | Sau khi đã biết bạn là ai, mỗi lần bạn xin làm một việc |
+| Cơ chế | Password, MFA, access key, token tạm | Đánh giá các policy gắn với danh tính đó |
+| Ví như | **Bảo vệ kiểm thẻ ra vào** ở cổng | **Bảng nội quy** quyết định bạn vào được phòng nào |
+
+Thứ tự luôn là: xác thực trước (chứng minh bạn là ai), rồi mới phân quyền (xét bạn được làm
+gì). Một danh tính xác thực thành công vẫn có thể bị **từ chối** mọi hành động nếu không
+policy nào cho phép — đúng với luật "deny mặc định".
+
+### Khi nào dùng IAM Identity Center (SSO)
+
+IAM user là đủ khi bạn có **một** account và **ít** người. Nhưng thực tế công ty thường
+có **nhiều account AWS** (một cho dev, một cho prod, một cho mỗi nhóm...) và nhân viên vào
+ra liên tục. Quản lý IAM user riêng trong từng account là ác mộng: một nhân viên nghỉ việc,
+bạn phải vào **từng** account để xoá.
+
+**IAM Identity Center** giải quyết bằng một chỗ đăng nhập duy nhất cho tất cả:
+
+- Nhân viên đăng nhập **một lần**, truy cập được mọi account và app được cấp — đây chính là
+  *single sign-on*.
+- Thêm/bớt quyền, hay cho một người nghỉ việc, làm ở **một chỗ** → áp cho mọi account.
+- Nối được với thư mục nhân sự sẵn có (Active Directory, hay IdP ngoài qua SAML) → không
+  phải tạo lại danh tính.
+
+Nhận diện trong đề: thấy *"multiple AWS accounts"*, *"single sign-on"*, *"centrally manage
+access for employees"*, *"existing corporate directory"* → nghĩ ngay **IAM Identity
+Center**. Nhớ phân biệt với **Cognito** (dành cho người dùng của ứng dụng bạn, không phải
+nhân viên).
+
 ## Ví dụ
 
 Chạy thật 06/10/2026 trên **emulator AWS local** ở `~/aws-lab` (cổng 4566),
@@ -183,6 +295,72 @@ Cả hai lệnh **thành công**. Trên AWS thật, cả hai phải trả về
 Đây đúng là loại ảo giác đáng sợ nhất của lab mô phỏng: **xanh ở đây không chứng minh
 được gì về least privilege.**
 
+### Logic đánh giá quyền: allow và deny gặp nhau
+
+Hai luật ở phần tổng quan ("deny mặc định", "explicit deny thắng") nghe gọn, nhưng dễ nhầm
+khi một danh tính có **nhiều** policy mâu thuẫn. Đây là trình tự AWS luôn chạy, và một ví
+dụ đi xuyên nó.
+
+Trình tự đánh giá (đơn giản hóa cho mức foundation):
+
+1. **Bắt đầu từ deny mặc định** — không có gì được phép cho tới khi chứng minh ngược lại.
+2. **Có explicit deny nào không?** Nếu có **bất kỳ** câu `Deny` nào khớp hành động này ở
+   **bất kỳ** policy — kết quả là **DENY**, dừng lại, không xét tiếp. Deny luôn thắng.
+3. **Có explicit allow nào không?** Nếu không có deny và có ít nhất một câu `Allow` khớp —
+   kết quả là **ALLOW**.
+4. **Không allow, không deny?** Rơi về deny mặc định ở bước 1 — **DENY**.
+
+Ví dụ cụ thể. User `analyst-01` được gắn hai policy:
+
+- Policy A (qua group): **Allow** `s3:*` trên mọi bucket — "được làm mọi thứ với S3".
+- Policy B (gắn trực tiếp): **Deny** `s3:DeleteObject` trên bucket `report-2026` — "cấm
+  xóa file trong bucket báo cáo".
+
+Giờ xét ba yêu cầu:
+
+| User muốn làm | Có allow? | Có deny? | Kết quả | Vì sao |
+|---|---|---|---|---|
+| Đọc file trong `report-2026` (`s3:GetObject`) | Có (Policy A) | Không | **ALLOW** | Allow khớp, không deny nào chặn |
+| **Xóa** file trong `report-2026` (`s3:DeleteObject`) | Có (Policy A nói `s3:*`) | **Có** (Policy B) | **DENY** | Explicit deny ở Policy B phủ quyết allow rộng ở Policy A |
+| Gọi DynamoDB (`dynamodb:GetItem`) | Không | Không | **DENY** | Không allow nào khớp → rơi về deny mặc định |
+
+Dòng giữa là cái bẫy kinh điển: user **có** một allow rộng (`s3:*`, nghe như "làm được tất")
+nhưng vẫn **không** xóa được, vì **một** câu deny tường minh thắng. Hệ quả cho đề: nếu đề
+hỏi "thêm allow nào để user xóa được file?" thì **không có allow nào cứu được** — phải gỡ
+câu **deny** đi.
+
+## Ví dụ cụ thể: tình huống đề thi mẫu
+
+**Tình huống 1.** *Một ứng dụng chạy trên EC2 cần đọc object từ một S3 bucket. Giải pháp
+nào theo đúng best practice bảo mật của AWS?*
+
+> **Đáp án:** Tạo một **IAM role** với quyền đọc S3 và gắn role đó vào EC2 instance. Lời
+> giải: role cấp credential tạm, tự xoay vòng, không có gì để lộ lâu dài. Mọi phương án
+> "tạo access key và lưu vào instance / file cấu hình / biến môi trường" đều **sai** — đó
+> là credential dài hạn nhúng cứng. Xem [luồng EC2 → S3](#luồng-iam-role-cho-ec2--s3-từng-bước).
+
+**Tình huống 2.** *Một công ty có 12 tài khoản AWS và muốn nhân viên đăng nhập một lần để
+truy cập tất cả, quản lý quyền tập trung, nối với Active Directory sẵn có. Dùng gì?*
+
+> **Đáp án:** **IAM Identity Center** (trước là AWS SSO). Lời giải: dấu hiệu *nhiều account*
+> + *single sign-on* + *quản lý tập trung* + *corporate directory* luôn trỏ về Identity
+> Center. Chọn **Cognito** là bẫy — Cognito cho người dùng ứng dụng, không cho nhân viên.
+> Chọn "tạo IAM user trong từng account" là đúng kỹ thuật nhưng ngược với "quản lý tập trung".
+
+**Tình huống 3.** *Một IAM user được gán policy cho phép `s3:*`. Một policy khác gán vào
+cùng user có câu `Deny` cho `s3:DeleteObject`. User có xóa được object không?*
+
+> **Đáp án:** **Không**. Lời giải: **explicit deny luôn thắng mọi allow**, bất kể allow có
+> rộng tới đâu. Thêm allow nữa cũng vô ích; phải gỡ câu deny. Xem
+> [logic đánh giá quyền](#logic-đánh-giá-quyền-allow-và-deny-gặp-nhau).
+
+**Tình huống 4.** *Phải làm gì đầu tiên để bảo vệ tài khoản AWS mới tạo?*
+
+> **Đáp án:** **Bật MFA cho root user** và **không tạo access key cho root**. Lời giải:
+> root có toàn quyền tuyệt đối, lộ là mất tài khoản. Tạo một IAM user (hoặc danh tính qua
+> Identity Center) có quyền admin để dùng hằng ngày, cất root đi cho các
+> [việc chỉ root làm được](#root-user-danh-sách-việc-chỉ-nó-làm-được).
+
 ## Bẫy trong đề
 
 | Bẫy | Vì sao sai |
@@ -210,4 +388,6 @@ Cả hai lệnh **thành công**. Trên AWS thật, cả hai phải trả về
 - [Governance và compliance](security-governance-compliance.md) — SCP đặt trần trên IAM; KMS, Secrets Manager
 - [Thành phần bảo mật](security-components.md) — Trusted Advisor báo root chưa bật MFA
 - [Case study: access key của root lọt ra ngoài](../case-studies/root-access-key-lot-ra-ngoai.md)
+- [Policy evaluation](../../architecting/reference/iam-policy-evaluation.md) — tầng sâu hơn: thứ tự xét, permission boundary, SCP, `PassRole`
+- [Bài tập IAM](../../architecting/tutorials/index.md) — ba bậc thực hành, bậc đầu chạy được trên emulator
 - [AWS · Foundations](../index.md)

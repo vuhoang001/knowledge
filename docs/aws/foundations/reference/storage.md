@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-13
 ---
 
 # Storage
@@ -102,6 +102,117 @@ data stored in AWS"* hoặc *"extend on-premises storage to the cloud"*.
 | **Block Public Access** | Hàng rào chặn mở công khai ở cấp bucket/account |
 | **Static website hosting** | Phục vụ web tĩnh ngay từ bucket |
 
+## Giải thích cặn kẽ
+
+### Analogy: block vs file vs object
+
+Ba loại storage dễ lẫn nếu chỉ đọc bảng. Hình dung ba kiểu cất đồ khác nhau:
+
+- **Block storage (EBS)** như một **ổ cứng rời cắm vào đúng một máy tính**. Máy coi nó như
+  đĩa của chính mình: định dạng được, chia partition được, cài hệ điều hành lên được, sửa
+  từng block nhỏ mà không cần đụng cả file. Nhưng mỗi lúc chỉ **một máy** cắm được — rút ra
+  cắm sang máy khác thì được, dùng chung một lúc thì không.
+- **File storage (EFS/FSx)** như một **ổ mạng chia sẻ trong văn phòng**. Nhiều máy cùng
+  mount một đường dẫn, cùng thấy cây thư mục, cùng đọc ghi. Bạn thao tác theo đơn vị
+  **file và folder**, không quan tâm block nằm đâu. Đổi lại độ trễ cao hơn ổ cắm trực tiếp.
+- **Object storage (S3)** như một **kho gửi đồ có quầy**. Bạn không có đĩa, không có cây
+  thư mục thật — bạn đưa cả **món đồ (object)** kèm **một mã (key)**, muốn lấy thì đọc cả
+  món theo mã đó qua API. Không sửa được "một góc" của object; muốn đổi thì ghi đè cả món.
+  Bù lại: dung lượng gần như vô hạn, bền trên nhiều AZ, truy cập từ bất kỳ đâu qua HTTP.
+
+Một câu để chốt ba analogy: **ổ cắm riêng một máy (block) · ổ mạng chia nhiều máy (file) ·
+kho gửi đồ mỗi món một mã (object)**.
+
+### Khi nào dùng cái nào: EBS vs EFS vs S3 vs Instance Store
+
+Chọn storage là chọn theo **câu hỏi "ai dùng, có cần còn lại, thao tác theo đơn vị nào"**,
+không phải theo "cái nào rẻ".
+
+| Tình huống trong đề | Chọn | Vì sao |
+|---|---|---|
+| **Một EC2 cần một ổ đĩa** để cài OS hoặc chạy database tự dựng | **EBS** | Block, gắn một instance, dữ liệu còn khi stop, snapshot được |
+| **Nhiều EC2 Linux cùng đọc ghi một thư mục** (ví dụ cụm web cùng dùng chung thư mục upload) | **EFS** | File share, nhiều máy mount một lúc, tự co giãn dung lượng |
+| **Lưu file tĩnh, ảnh web, log, backup, data lake** — đọc qua URL/API | **S3** | Object, dung lượng vô hạn, bền 11 số 9, phục vụ web tĩnh được |
+| **Cache tạm, dữ liệu buffer mất đi dựng lại được**, cần IOPS cao nhất | **Instance store** | Ổ cục bộ nhanh nhất, nhưng **mất sạch** khi stop/terminate |
+
+Đi qua từng tình huống:
+
+- *"Một EC2 chạy PostgreSQL tự cài, cần ổ lưu dữ liệu."* → **EBS**. Database ghi theo block,
+  cần một ổ gắn riêng cho một máy, và dữ liệu phải còn sau reboot/stop. Dùng S3 không được
+  vì S3 không cho sửa từng block; dùng EFS được về kỹ thuật nhưng chậm hơn và không phải cách
+  thường làm cho một DB đơn.
+- *"Ba EC2 web server cùng cần đọc và ghi vào một thư mục `/shared/uploads`."* → **EFS**.
+  EBS gắn được một máy nên không chia ba máy cùng ghi; EFS là NFS, ba máy mount cùng đường dẫn.
+- *"Lưu 50 TB ảnh sản phẩm để website hiển thị, thỉnh thoảng thêm bớt."* → **S3**. Phục vụ
+  qua URL, co giãn không cần quản ổ, lại bật được static website hosting và CloudFront phía trước.
+- *"Node xử lý video cần thư mục scratch tốc độ cực cao, xử xong xoá."* → **Instance store**.
+  Dữ liệu là tạm, mất được, và IOPS cục bộ cao nhất. Đừng để gì cần-giữ ở đây.
+
+### Bảy lớp S3 theo ba trục
+
+Đừng học thuộc bảy cái tên rời. Đặt chúng lên ba trục: **tần suất truy cập × thời gian chờ
+lấy ra × chi phí lưu**. Chi phí lưu đi xuống khi truy cập thưa dần và thời gian chờ dài dần —
+đó là toàn bộ logic.
+
+| Lớp | Tần suất truy cập | Thời gian chờ lấy ra | Chi phí lưu | Tình huống điển hình |
+|---|---|---|---|---|
+| **Standard** | Thường xuyên | Ngay | Cao nhất | Dữ liệu đang hoạt động, asset website |
+| **Intelligent-Tiering** | Không đoán được | Ngay (tầng nóng) | Theo tầng + phí giám sát | Pattern thay đổi/không rõ |
+| **Standard-IA** | Thưa | Ngay | Thấp hơn Standard | Backup cần khôi phục nhanh khi cần |
+| **One Zone-IA** | Thưa, tái tạo được | Ngay | Thấp hơn Standard-IA | Bản sao thứ cấp, dữ liệu dựng lại được |
+| **Glacier Instant Retrieval** | Rất thưa | Mili giây | Thấp | Archive y tế/ảnh cần truy cập tức thì hiếm khi |
+| **Glacier Flexible Retrieval** | Archive | Phút → giờ | Rất thấp | Backup dài hạn, khôi phục không gấp |
+| **Glacier Deep Archive** | Archive dài hạn | Nhiều giờ (tới ~12h) | **Thấp nhất** | Giữ 7–10 năm cho tuân thủ |
+
+Đọc theo trục cho dễ chọn:
+
+- **Truy cập thường xuyên → Standard.** Trả nhiều tiền lưu để đổi lấy không phí lấy ra, không chờ.
+- **Ít truy cập nhưng khi cần phải có ngay → Standard-IA.** Rẻ hơn Standard cho phần lưu,
+  nhưng mỗi lần đọc có phí lấy ra. Hợp với backup "mong là không phải dùng, nhưng dùng thì gấp".
+- **Archive giữ 7 năm, rẻ nhất, chờ được → Glacier Deep Archive.** Rẻ nhất cho lưu, bù lại
+  lấy ra tính bằng giờ và có thời gian lưu tối thiểu 180 ngày.
+- **Không đoán được pattern → Intelligent-Tiering.** AWS tự chuyển object giữa tầng nóng và
+  lạnh theo thực tế truy cập; bạn trả thêm một khoản phí giám sát mỗi object thay vì phải đoán.
+
+Trục này cũng giải thích luôn các bẫy: Deep Archive **không** trả lời được "cần trong vài
+phút" (sai trục thời gian chờ), còn Standard-IA **không** trả lời được "không biết pattern"
+(sai trục tần suất — thứ đó là Intelligent-Tiering).
+
+### Lifecycle vs Versioning — hai thứ khác hẳn nhau
+
+Hai tính năng này hay bị gộp vì cùng đứng trên bucket, nhưng giải quyết hai bài toán khác nhau:
+
+| | Lifecycle policy | Versioning |
+|---|---|---|
+| Trả lời câu hỏi | "Dữ liệu cũ dần thì **rẻ dần / biến mất** thế nào?" | "Làm sao **không mất** bản cũ khi ghi đè/xoá?" |
+| Làm gì | Tự **chuyển lớp** theo tuổi, hoặc **xoá** object hết hạn | Giữ **mọi phiên bản** của một key, kể cả bản đã xoá (delete marker) |
+| Hướng vận động | Dữ liệu đi **xuống** (rẻ hơn) rồi **mất đi** theo thời gian | Dữ liệu **tích lại** — mỗi lần ghi là thêm một version |
+| Tác động chi phí | **Giảm** chi phí | **Tăng** chi phí (trả cho mọi version) |
+
+Chúng **bổ sung** nhau, không thay nhau: thực tế thường bật Versioning để chống xoá nhầm,
+rồi đặt Lifecycle để dọn các version cũ (ví dụ "noncurrent version quá 90 ngày thì xoá"),
+nếu không thì tiền version cũ phình mãi. Trong đề: *"keep every version to recover from
+accidental deletes"* → **Versioning**; *"automatically move old objects to cheaper tier /
+delete after N days"* → **Lifecycle**.
+
+### Snow Family vs Storage Gateway — một ví dụ mỗi cái
+
+Hai thứ này đều liên quan tới "đưa dữ liệu vào AWS", nhưng khác nhau ở **một lần hay liên tục**.
+
+- **Snow Family (AWS Snowball / Snowcone)** — khi **mạng quá chậm hoặc dữ liệu quá lớn** để
+  upload qua Internet. AWS gửi một thiết bị vật lý tới chỗ bạn, bạn copy dữ liệu vào rồi gửi
+  trả, AWS nạp lên S3. Đây là **di cư một lần**, offline.
+  *Ví dụ:* một hãng phim có **80 TB** footage cần đưa lên S3, đường truyền 100 Mbps upload
+  sẽ mất hàng tháng → đặt một **Snowball**, chép rồi gửi về, xong trong vài ngày.
+- **Storage Gateway** — khi cần nối **liên tục, hybrid**: ứng dụng tại chỗ vẫn chạy và cần
+  truy cập dữ liệu như thể nó nằm ở local, nhưng dữ liệu thật nằm trên S3, có **cache cục bộ**
+  cho phần nóng.
+  *Ví dụ:* một hệ thống backup on-premises ghi vào một file share như bình thường, nhưng phía
+  sau file share đó là một **Storage Gateway** đẩy dữ liệu lên S3 — không ai phải viết lại ứng dụng.
+
+Phân biệt trong đề: *"one-time transfer of petabytes, network too slow"* → **Snow Family**;
+*"ongoing low-latency access from on-premises app, data in AWS"* → **Storage Gateway**.
+
 ## Ví dụ
 
 Chạy thật 06/10/2026 trên **emulator AWS local** ở `~/aws-lab` (cổng 4566),
@@ -165,6 +276,38 @@ tạm.
 chờ**. Bước chờ đó là nội dung của
 [case study lifecycle](../case-studies/s3-lifecycle-roi-can-gap.md).
 
+## Ví dụ cụ thể — tình huống đề thi mẫu
+
+Ba câu dạng hay gặp, kèm cách suy ra đáp án theo đúng các trục ở trên.
+
+**Tình huống 1 — chọn lớp S3 cho dữ liệu không đoán được pattern.**
+> *"Một công ty lưu dữ liệu analytics vào S3. Pattern truy cập thay đổi liên tục và không
+> dự đoán được. Họ muốn tối ưu chi phí mà không phải quản lý tay. Chọn lớp nào?"*
+
+Đáp án: **S3 Intelligent-Tiering.** Từ khoá chốt là *"không dự đoán được pattern"* +
+*"không phải quản lý tay"*. Standard-IA và Glacier buộc bạn phải **đoán trước** dữ liệu
+nóng hay lạnh; đoán sai thì phí lấy ra ăn hết tiền tiết kiệm. Intelligent-Tiering để AWS tự
+chuyển tầng theo thực tế. Bẫy ở đây là chọn Standard-IA vì nghe "rẻ hơn Standard".
+
+**Tình huống 2 — nhiều EC2 cùng ghi một thư mục.**
+> *"Một cụm web gồm nhiều EC2 Linux cần truy cập **đồng thời** vào cùng một bộ file dùng
+> chung, đọc và ghi. Dịch vụ storage nào phù hợp?"*
+
+Đáp án: **Amazon EFS.** Từ khoá chốt là *"nhiều EC2"* + *"đồng thời"* + *"đọc và ghi"*.
+EBS gắn một instance (trừ Multi-Attach trong phạm vi hẹp, không phải lựa chọn cho nhiều máy
+Linux dùng chung file), nên loại. S3 không phải file system để mount và thao tác theo
+file/folder như NFS. EFS là NFS co giãn, đúng bài.
+
+**Tình huống 3 — archive tuân thủ 7 năm, chi phí thấp nhất, chấp nhận chờ.**
+> *"Hồ sơ tài chính phải giữ **7 năm** cho mục đích tuân thủ, gần như không bao giờ truy
+> cập lại; khi cần lấy có thể **chờ vài giờ**. Yêu cầu chi phí lưu trữ thấp nhất. Chọn gì?"*
+
+Đáp án: **S3 Glacier Deep Archive.** Từ khoá chốt là *"7 năm"* + *"chi phí thấp nhất"* +
+*"chờ vài giờ được"*. Đủ cả ba trục: truy cập cực thưa, thời gian chờ dài chấp nhận được,
+đổi lấy giá lưu rẻ nhất. Nếu câu đổi thành *"cần lấy trong vài phút"* thì đáp án nhảy sang
+**Glacier Instant Retrieval** (hoặc Flexible nếu "phút tới giờ") — đừng chọn Deep Archive
+cho thứ cần nhanh.
+
 ## Bẫy trong đề
 
 | Bẫy | Vì sao sai |
@@ -176,6 +319,8 @@ chờ**. Bước chờ đó là nội dung của
 | Chọn **Standard-IA** khi không biết pattern truy cập | Không đoán được ⇒ **Intelligent-Tiering** |
 | Quên **phí lấy ra** và **thời gian lưu tối thiểu** | Lớp lạnh rẻ khi lưu, tốn khi lấy và khi xoá sớm |
 | Chọn **S3** cho ổ hệ thống của EC2 | Đó là block storage ⇒ EBS |
+| Chọn **Storage Gateway** cho di cư một lần dữ liệu lớn | Đó là hybrid liên tục ⇒ **Snow Family** cho transfer một lần |
+| Nhầm **Versioning** với **Lifecycle** | Versioning giữ bản cũ (tăng phí); Lifecycle chuyển lớp/xoá (giảm phí) |
 
 ## Đánh đổi
 
@@ -187,6 +332,7 @@ chờ**. Bước chờ đó là nội dung của
 | Bật Versioning | Chống xoá/ghi nhầm | Trả tiền cho **mọi** phiên bản — cần lifecycle cho bản cũ |
 | EFS thay EBS | Nhiều máy dùng chung, tự lớn | Đơn giá/GB cao hơn; độ trễ cao hơn EBS |
 | Storage Gateway | Giữ ứng dụng tại chỗ mà dữ liệu lên cloud | Thêm thiết bị/VM phải vận hành; phụ thuộc đường truyền |
+| Snow Family thay upload mạng | Đưa dữ liệu lớn vào khi mạng chậm | Chỉ hợp **một lần**; có độ trễ giao nhận thiết bị vật lý |
 
 ## Related Topics
 
