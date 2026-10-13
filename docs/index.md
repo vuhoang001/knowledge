@@ -372,6 +372,20 @@ có **bản tiếng Anh dịch thật**, không còn là stub.
 | [cs: access key root lọt ra ngoài](aws/foundations/case-studies/root-access-key-lot-ra-ngoai.md) | `root` không phải IAM user nên **không gắn được policy** để hãm | 🟡 |
 | [cheat: từ khoá → service](aws/foundations/cheatsheets/service-picker.md) | Bảng tra một chiều cho lúc luyện đề, mở đầu bằng 10 cặp bị trộn nhiều nhất | 🟡 |
 | [cheat: văn phong đề](aws/foundations/cheatsheets/exam-wording.md) | MOST cost-effective ⇄ LEAST operational overhead quyết định đáp án | 🟡 |
+| [bài tập: mục lục câu hỏi](aws/foundations/tutorials/index.md) | 12 bộ câu hỏi theo chủ đề + đề 65 câu, map sang 19 tài liệu | 🗂️ |
+| [quiz: khái niệm cloud](aws/foundations/tutorials/quiz-cloud-concepts.md) | 6 lợi thế, IaaS/PaaS/SaaS, deployment model, Region/AZ/Edge | 📝 |
+| [quiz: Well-Architected & CAF](aws/foundations/tutorials/quiz-well-architected.md) | 6 pillar, 6 perspective CAF | 📝 |
+| [quiz: IAM](aws/foundations/tutorials/quiz-iam.md) | User/group/role/policy, MFA, least privilege | 📝 |
+| [quiz: EC2 & pricing](aws/foundations/tutorials/quiz-ec2-and-pricing.md) | Instance family, 5 mô hình mua, Security Group | 📝 |
+| [quiz: storage](aws/foundations/tutorials/quiz-storage.md) | EBS vs EFS vs S3, bảy lớp S3, Snow | 📝 |
+| [quiz: databases](aws/foundations/tutorials/quiz-databases.md) | RDS/Aurora/DynamoDB/Redshift, Multi-AZ vs read replica | 📝 |
+| [quiz: serverless & containers](aws/foundations/tutorials/quiz-compute-and-containers.md) | Lambda/ECS/EKS/Fargate, Beanstalk, CloudFormation | 📝 |
+| [quiz: networking](aws/foundations/tutorials/quiz-networking.md) | VPC, SG vs NACL, Route 53, CloudFront, ELB/ASG | 📝 |
+| [quiz: integration & monitoring](aws/foundations/tutorials/quiz-integration-and-monitoring.md) | SQS/SNS/Kinesis, CloudWatch/CloudTrail/X-Ray | 📝 |
+| [quiz: dịch vụ bảo mật](aws/foundations/tutorials/quiz-security-services.md) | Shared Responsibility, Shield/WAF/GuardDuty/KMS | 📝 |
+| [quiz: billing & support](aws/foundations/tutorials/quiz-billing-and-support.md) | Organizations, Cost tools, 4 gói Support, Trusted Advisor | 📝 |
+| [quiz: ML, Analytics & khác](aws/foundations/tutorials/quiz-ml-analytics-and-other-services.md) | Rekognition/Transcribe/Athena/Glue/QuickSight | 📝 |
+| [quiz: đề tổng hợp 65 câu](aws/foundations/tutorials/quiz-mock-exam.md) | Mô phỏng đề thật, trộn 4 domain theo tỷ trọng | 📝 |
 
 ## Nền tảng
 

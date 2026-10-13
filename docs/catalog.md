@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**244 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**257 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (69)
 
@@ -173,7 +173,7 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (28)
+## Bài tập (41)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -182,6 +182,19 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | [Bài tập — Cơ bản (emulator)](aws/architecting/tutorials/bt-01-co-ban.md) | `aws/architecting/tutorials` | cloud | 🟡 draft |
 | [Bài tập — Trung bình (AWS thật)](aws/architecting/tutorials/bt-02-trung-binh.md) | `aws/architecting/tutorials` | cloud | 🟡 draft |
 | [Bài tập — Production](aws/architecting/tutorials/bt-03-production.md) | `aws/architecting/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Billing & support"](aws/foundations/tutorials/quiz-billing-and-support.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Khái niệm cloud & global infrastructure"](aws/foundations/tutorials/quiz-cloud-concepts.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Serverless & containers"](aws/foundations/tutorials/quiz-compute-and-containers.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Databases"](aws/foundations/tutorials/quiz-databases.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: EC2 & pricing"](aws/foundations/tutorials/quiz-ec2-and-pricing.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: IAM"](aws/foundations/tutorials/quiz-iam.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Integration & monitoring"](aws/foundations/tutorials/quiz-integration-and-monitoring.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: ML, Analytics & dịch vụ khác"](aws/foundations/tutorials/quiz-ml-analytics-and-other-services.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Đề tổng hợp 65 câu — mô phỏng CLF-C02"](aws/foundations/tutorials/quiz-mock-exam.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Networking"](aws/foundations/tutorials/quiz-networking.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Dịch vụ bảo mật"](aws/foundations/tutorials/quiz-security-services.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Storage"](aws/foundations/tutorials/quiz-storage.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
+| ["Câu hỏi: Well-Architected & CAF"](aws/foundations/tutorials/quiz-well-architected.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
 | ['Lab: viết script bash đầu tiên'](bash/tutorials/bash-lab-first-script.md) | `bash/tutorials` | devops | 🟡 draft |
 | ['Lab: xử lý văn bản bằng pipeline'](bash/tutorials/bash-lab-text-processing.md) | `bash/tutorials` | devops | 🟡 draft |
 | ["26 bài tập có đáp số — tự viết, tự chấm"](data-modeling/tutorials/bai-tap-co-dap-so.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |

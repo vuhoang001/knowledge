@@ -29,11 +29,12 @@ biết EC2 và S3 là gì.
 | 4 | 4.1 → 4.2 → 4.3 | Pricing chỉ hiểu được sau khi biết instance và storage class |
 | 5 | 2.2 → 2.4 → 3.1 → 3.7 → 3.8 → 1.3 → 1.4 | Phần bề rộng còn lại — học bằng cheatsheet |
 
-## Ba nhóm tài liệu
+## Bốn nhóm tài liệu
 
 | Nhóm | Dùng khi | Số file |
 |---|---|---|
 | [**Tài liệu**](reference/index.md) | Học lần đầu — 19 file, một file một task statement | 19 |
+| [**Bài tập — câu hỏi ôn**](tutorials/index.md) | Sau khi đọc tài liệu — tự chấm, luyện phản xạ "mô tả → service" | 13 |
 | [**Cheatsheet**](cheatsheets/index.md) | Ôn sát ngày thi, và lúc luyện đề | 2 |
 | [**Case study**](case-studies/index.md) | Một ca chọn sai cụ thể, có số | 3 |
 
@@ -45,4 +46,4 @@ vi**. Nhóm đó sẽ xuất hiện ở tầng [Architecting](../architecting/in
 
 - [AWS](../index.md) — chủ đề chứa tầng này, có bảng độ phủ 19 task
 - [Architecting (SAA-C03)](../architecting/index.md) — tầng tiếp theo
-- [Tài liệu](reference/index.md) · [Cheatsheet](cheatsheets/index.md) · [Case study](case-studies/index.md)
+- [Tài liệu](reference/index.md) · [Bài tập — câu hỏi ôn](tutorials/index.md) · [Cheatsheet](cheatsheets/index.md) · [Case study](case-studies/index.md)
