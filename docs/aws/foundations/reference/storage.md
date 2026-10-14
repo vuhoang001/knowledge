@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Storage
@@ -49,7 +49,11 @@ nói *"data must persist after the instance is stopped"* thì đáp án không b
 store.
 
 **EFS ⇄ FSx**: EFS là NFS cho Linux; **FSx** cho hệ thống file khác — FSx for Windows File
-Server (SMB, Active Directory), FSx for Lustre (HPC, tính toán hiệu năng cao).
+Server (SMB, Active Directory), FSx for Lustre† (HPC, tính toán hiệu năng cao).
+
+`†` **FSx for Lustre nằm trong danh sách out-of-scope** của exam guide bản 2026, dù bản thân
+**Amazon FSx** thì in-scope. Trong đề, cụm *"Windows file share"* / *"SMB"* / *"Active
+Directory"* mới là dấu hiệu dùng được.
 
 ### Bảy lớp S3, chọn theo hai câu hỏi
 

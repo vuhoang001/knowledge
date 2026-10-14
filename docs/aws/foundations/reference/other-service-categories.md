@@ -2,14 +2,14 @@
 title: Nhóm service còn lại
 sidebar_position: 16
 description: "Bảy nhóm service mà task 3.8 gom lại: tích hợp ứng dụng, ứng dụng nghiệp vụ, hỗ trợ khách hàng, developer tools, end-user computing, frontend/mobile, IoT."
-tags: [aws, clf-c02, sqs, sns, eventbridge, step-functions, workspaces, iot, domain-3]
+tags: [aws, clf-c02, sqs, sns, eventbridge, step-functions, workspaces, amplify, iot, domain-3]
 domain: cloud
 category: concept
 doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Nhóm service còn lại
@@ -51,18 +51,25 @@ ra là mất* ⇄ *stream, giữ lại và đọc lại được*.
 
 ### Developer tools
 
+Exam guide bản 2026 chỉ để **bốn** service trong nhóm này. Học thuộc đúng bốn dòng đầu:
+
 | Service | Một dòng |
 |---|---|
-| **AWS CodeCommit** | Git repository được quản |
+| **AWS CLI** | Gọi mọi API AWS từ terminal — xem [cách triển khai và truy cập](deploy-and-access-methods.md) |
 | **AWS CodeBuild** | Build và chạy test |
-| **AWS CodeDeploy** | Đưa bản build lên EC2/Lambda/ECS |
-| **AWS CodePipeline** | **Nối** các bước trên thành CI/CD |
-| **AWS CodeArtifact** | Lưu package/dependency (npm, Maven, pip) |
-| **AWS CodeStar** | Mẫu dựng nhanh một project có sẵn pipeline |
-| **AWS Cloud9** | IDE trên trình duyệt |
-| **AWS CloudShell** | Shell có sẵn CLI trong Console |
+| **AWS CodePipeline** | **Nối** các bước build/test/deploy thành CI/CD |
 | **AWS X-Ray** | **Truy vết request** qua nhiều service — tìm chỗ chậm, tìm lỗi |
-| **AWS AppConfig** | Đổi cấu hình ứng dụng **đang chạy**, không deploy lại |
+| **AWS CodeCommit†** | Git repository được quản |
+| **AWS CodeDeploy†** | Đưa bản build lên EC2/Lambda/ECS |
+| **AWS CodeArtifact†** | Lưu package/dependency (npm, Maven, pip) |
+| **AWS CodeStar†** | Mẫu dựng nhanh một project có sẵn pipeline |
+| **AWS Cloud9†** | IDE trên trình duyệt |
+| **AWS CloudShell†** | Shell có sẵn CLI trong Console |
+| **AWS AppConfig†** | Đổi cấu hình ứng dụng **đang chạy**, không deploy lại |
+
+`†` **không có trong danh sách in-scope** của exam guide CLF-C02 bản 2026 — phần lớn còn nằm
+thẳng trong danh sách out-of-scope. Biết để **không chọn nhầm**, không phải nội dung thi.
+Dấu này dùng chung cho cả trang.
 
 Một dòng đáng nhớ riêng: **X-Ray là "tại sao request này chậm"**, khác CloudWatch ("số liệu
 tổng thể") và CloudTrail ("ai gọi API nào").
@@ -74,9 +81,9 @@ tổng thể") và CloudTrail ("ai gọi API nào").
 | **Amazon Connect** | **Contact center** trên cloud — tổng đài, IVR |
 | **Amazon SES** | Gửi email số lượng lớn (giao dịch, marketing) |
 | **AWS Support** | Các gói hỗ trợ — xem [support](support-and-technical-resources.md) |
-| **AWS Managed Services (AMS)** | AWS **vận hành** hạ tầng thay bạn |
-| **AWS IQ** | Thuê chuyên gia AWS độc lập cho việc ngắn |
-| **AWS Activate for Startups** | Credit và tài nguyên cho startup |
+| **AWS Managed Services (AMS)†** | AWS **vận hành** hạ tầng thay bạn |
+| **AWS IQ†** | Thuê chuyên gia AWS độc lập cho việc ngắn |
+| **AWS Activate for Startups†** | Credit và tài nguyên cho startup |
 
 **Connect ⇄ SES**: *cuộc gọi khách hàng* ⇄ *email*.
 
@@ -85,25 +92,30 @@ tổng thể") và CloudTrail ("ai gọi API nào").
 | Service | Một dòng |
 |---|---|
 | **Amazon WorkSpaces** | **Desktop ảo** (DaaS) cho nhân viên |
-| **Amazon WorkSpaces Web** | Truy cập web nội bộ an toàn từ trình duyệt |
+| **Amazon WorkSpaces Secure Browser** | Truy cập web nội bộ an toàn từ trình duyệt — *trước gọi Amazon WorkSpaces Web* |
 | **Amazon AppStream 2.0** | **Stream một ứng dụng** cụ thể, không phải cả desktop |
 
-**WorkSpaces ⇄ AppStream**: *cả desktop* ⇄ *một app*.
+**WorkSpaces ⇄ AppStream**: *cả desktop* ⇄ *một app*. Thêm **Secure Browser**: *chỉ một
+trình duyệt có kiểm soát*, không phát desktop lẫn ứng dụng. Cả ba đều in-scope.
 
 ### Frontend web và mobile
 
 | Service | Một dòng |
 |---|---|
 | **AWS Amplify** | Dựng và host web/mobile app full-stack |
-| **AWS AppSync** | API **GraphQL** được quản, có đồng bộ dữ liệu real-time |
-| **AWS Device Farm** | Test app trên **thiết bị thật** trên cloud |
+| **AWS AppSync†** | API **GraphQL** được quản, có đồng bộ dữ liệu real-time |
+| **AWS Device Farm†** | Test app trên **thiết bị thật** trên cloud |
+
+Nhóm Frontend Web and Mobile của exam guide bản 2026 chỉ có **đúng một** service: **AWS Amplify**.
 
 ### IoT
 
 | Service | Một dòng |
 |---|---|
 | **AWS IoT Core** | Kết nối và quản thiết bị, nhận telemetry |
-| **AWS IoT Greengrass** | Chạy logic **ngay trên thiết bị** khi mạng kém hoặc cần phản ứng tại chỗ |
+| **AWS IoT Greengrass†** | Chạy logic **ngay trên thiết bị** khi mạng kém hoặc cần phản ứng tại chỗ |
+
+Nhóm IoT cũng chỉ có **đúng một** service in-scope: **AWS IoT Core**.
 
 ## Bẫy trong đề
 
@@ -113,9 +125,10 @@ tổng thể") và CloudTrail ("ai gọi API nào").
 | Chọn **SNS** cho "đệm tải để không mất request khi hạ nguồn chậm" | Đệm là việc của **SQS** |
 | Chọn **Lambda** cho "điều phối 8 bước có nhánh và thử lại" | Đó là **Step Functions** |
 | Chọn **CloudWatch** cho "request này chậm ở service nào" | Đó là **X-Ray** |
-| Chọn **CodeDeploy** cho "nối build, test, deploy thành một luồng" | Đó là **CodePipeline** |
+| Chọn **CodeBuild** cho "nối build, test, deploy thành một luồng" | CodeBuild chỉ **build và test**; nối các bước là **CodePipeline** |
 | Chọn **WorkSpaces** cho "chỉ cần stream một ứng dụng CAD" | Đó là **AppStream 2.0** |
-| Chọn **IoT Core** cho "xử lý tại chỗ khi mất mạng" | Đó là **IoT Greengrass** |
+| Chọn **Amazon SES** cho "tổng đài chăm sóc khách hàng, có IVR" | Đó là **Amazon Connect** |
+| Chọn **Amazon WorkSpaces** cho "chỉ cần mở web nội bộ an toàn trên trình duyệt" | Đó là **WorkSpaces Secure Browser** |
 
 ## Đánh đổi
 
@@ -124,12 +137,12 @@ tổng thể") và CloudTrail ("ai gọi API nào").
 | Tách bằng SQS | Hạ nguồn sập thì thông điệp vẫn nằm trong hàng đợi | Thêm độ trễ; phải xử lý thông điệp trùng và thứ tự |
 | EventBridge thay gọi trực tiếp | Thêm consumer mà không sửa producer | Luồng trở nên khó lần theo; cần đặt tên và quy ước sự kiện |
 | Step Functions | Thấy được đang ở bước nào, thử lại có kiểm soát | Có phí theo bước; luồng rất đơn giản thì là thừa |
-| AMS | Không cần đội vận hành | Phí cao, và mất một phần quyền tự quyết về vận hành |
+| AMS† | Không cần đội vận hành | Phí cao, và mất một phần quyền tự quyết về vận hành |
 
 ## Related Topics
 
 - [AI/ML và analytics](ai-ml-and-analytics.md) — Kinesis ⇄ SQS, và phần analytics
 - [Compute](compute.md) — Lambda là thứ hầu hết các service ở đây gọi tới
-- [Cách triển khai và truy cập](deploy-and-access-methods.md) — CloudShell, Cloud9, IaC
-- [Support và tài nguyên kỹ thuật](support-and-technical-resources.md) — AWS Support, AMS, IQ, Activate
+- [Cách triển khai và truy cập](deploy-and-access-methods.md) — AWS CLI, SDK, Console, IaC
+- [Support và tài nguyên kỹ thuật](support-and-technical-resources.md) — các gói AWS Support
 - [AWS · Foundations](../index.md)

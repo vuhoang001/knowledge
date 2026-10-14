@@ -348,7 +348,7 @@ with the IAM material: **two** reference documents and **60 exercises with solut
 | [ex: IAM production](aws/architecting/tutorials/bt-03-production.md) | 14 exercises: removing static keys, OIDC for CI, least privilege from CloudTrail, SCPs, break-glass | 📝 |
 | [cloud-value-proposition](aws/foundations/reference/cloud-value-proposition.md) | Six benefits on two axes; elasticity ≠ HA ≠ agility | 🟡 |
 | [well-architected-framework](aws/foundations/reference/well-architected-framework.md) | Six pillars — Sustainability is the sixth; older material lists only five | 🟡 |
-| [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | CAF's six perspectives (three are about *people*), the seven R strategies, Snow Family | 🟡 |
+| [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | CAF's six perspectives (three are about *people*), the seven R strategies, the six in-scope migration services | 🟡 |
 | [cloud-economics](aws/foundations/reference/cloud-economics.md) | CapEx→OpEx promises no lower total; TCO, rightsizing, BYOL needs a Dedicated Host | 🟡 |
 | [shared-responsibility](aws/foundations/reference/shared-responsibility.md) | The line moves per service; data and IAM **never** move | 🟡 |
 | [security-governance-compliance](aws/foundations/reference/security-governance-compliance.md) | CloudTrail *who did it* ⇄ Config *what changed* ⇄ CloudWatch *metrics* ⇄ Artifact *reports* | 🟡 |
@@ -364,7 +364,7 @@ with the IAM material: **two** reference documents and **60 exercises with solut
 | [other-service-categories](aws/foundations/reference/other-service-categories.md) | SQS one consumer ⇄ SNS many ⇄ EventBridge by content ⇄ Step Functions for workflows | 🟡 |
 | [pricing-models](aws/foundations/reference/pricing-models.md) | Two questions pick the model; data in is cheap, data out costs | 🟡 |
 | [billing-and-cost-management](aws/foundations/reference/billing-and-cost-management.md) | Four tools, four *tenses*; tags must be **activated** and are not retroactive | 🟡 |
-| [support-and-technical-resources](aws/foundations/reference/support-and-technical-resources.md) | Three thresholds: Business gets 24/7, On-Ramp a TAM pool, Enterprise a dedicated TAM | 🟡 |
+| [support-and-technical-resources](aws/foundations/reference/support-and-technical-resources.md) | Three thresholds in the 2026 guide: Business Support+ gets 24/7, Enterprise a dedicated TAM, Unified Operations the top tier | 🟡 |
 | [cs: a security group cannot block an IP](aws/foundations/case-studies/security-group-khong-chan-duoc-ip.md) | The SG API has **no** `Action` parameter — the CLI error proves it | 🟡 |
 | [cs: lifecycle, then needed urgently](aws/foundations/case-studies/s3-lifecycle-roi-can-gap.md) | Glacier is not "cheaper S3", it is "S3 with a wait added" | 🟡 |
 | [cs: root access key leaked](aws/foundations/case-studies/root-access-key-lot-ra-ngoai.md) | `root` is not an IAM user, so **no policy can be attached** to rein it in | 🟡 |

@@ -1,7 +1,7 @@
 ---
 title: Pricing model
 sidebar_position: 17
-description: "Năm cách trả tiền cho compute, và câu hỏi duy nhất để chọn: tải này có đoán trước được không, và có chịu được bị thu hồi không. Kèm luật data transfer."
+description: "Bảy cách trả tiền cho compute, và câu hỏi duy nhất để chọn: tải này có đoán trước được không, và có chịu được bị thu hồi không. Kèm luật data transfer."
 tags: [aws, clf-c02, pricing, reserved-instance, spot, savings-plans, data-transfer, domain-4]
 domain: cloud
 category: concept
@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Pricing model
@@ -27,7 +27,10 @@ Reserved Instance** và hành vi RI trong **AWS Organizations**, hiểu **phí d
 
 ## Tổng quan
 
-### Năm cách trả tiền cho compute
+### Bảy cách trả tiền cho compute
+
+Exam guide bản 2026 liệt kê đúng bảy mục dưới đây. Năm mục đầu là *giá*; hai mục cuối là
+*cách ly phần cứng* và *giữ chỗ* — chúng không làm rẻ đi.
 
 | Model | Cam kết | Giảm giá | Chọn khi |
 |---|---|---|---|
@@ -35,13 +38,23 @@ Reserved Instance** và hành vi RI trong **AWS Organizations**, hiểu **phí d
 | **Reserved Instance** | **1 hoặc 3 năm**, theo cấu hình instance | tới ~72% | Tải đều, biết rõ instance type |
 | **Savings Plans** | **1 hoặc 3 năm**, theo **mức chi tiêu $/giờ** | tới ~72% | Tải đều nhưng **instance có thể đổi** |
 | **Spot Instance** | Không | tới ~90% | Chịu được bị **thu hồi với thông báo 2 phút** |
-| **Dedicated Host / Dedicated Instance** | Tuỳ | — (đắt hơn) | Yêu cầu tuân thủ hoặc **BYOL** cần phần cứng riêng |
+| **Dedicated Hosts** | Tuỳ | — (đắt hơn) | **BYOL tính theo socket/core**, hoặc quy định đòi biết rõ máy vật lý |
+| **Dedicated Instances** | Tuỳ | — (đắt hơn) | Chỉ cần **không dùng chung phần cứng với khách khác** |
+| **Capacity Reservations** | Không (huỷ được) | **Không giảm giá** | Phải **chắc chắn có máy** trong một AZ vào một thời điểm |
 
 Các con số giảm giá là mức AWS công bố; **kiểm lại trên trang pricing trước khi dùng để
 tính toán thật** — chúng đổi theo thời gian và theo Region.
 
-Thêm một mục trong exam guide: **Capacity Reservation** — giữ chỗ công suất trong một AZ,
-trả tiền dù có dùng hay không. Nó bảo đảm *có máy*, **không** phải để giảm giá.
+**Dedicated Hosts ⇄ Dedicated Instances** là cặp mới hay bị gộp làm một. Cả hai đều cho
+phần cứng không dùng chung, nhưng chỉ **Hosts** cho bạn **thấy và chỉ định đúng máy vật
+lý** — số socket, số core, và chạy lại trên đúng host đó. Đó là thứ licence BYOL tính theo
+core cần. Dấu hiệu trong đề: có chữ **licence / per-socket / per-core / bring your own
+license** → **Dedicated Hosts**; chỉ nói *"không chia sẻ phần cứng vì lý do tuân thủ"* →
+**Dedicated Instances** là đủ.
+
+**Capacity Reservations** giữ chỗ công suất trong **một AZ**, và bạn **trả tiền dù có chạy
+máy hay không**. Nó bảo đảm *có máy*, **không** phải để giảm giá — ghép được với Savings
+Plans hoặc RI để vừa có chỗ vừa có giá.
 
 ### Reserved Instance: ba trục cần nhớ
 
@@ -79,7 +92,7 @@ Spot dùng **công suất dư** nên rẻ nhất, và AWS **thu hồi** khi cầ
 Hợp với: xử lý theo lô, render, CI, phân tích dữ liệu, bất cứ gì **chia nhỏ và làm lại
 được**. Không hợp với: database, web server phục vụ người dùng, job không có checkpoint.
 
-### Ba luật về data transfer
+### Năm luật về data transfer
 
 | Hướng | Có phí? |
 |---|---|
@@ -126,7 +139,8 @@ không gắn vào gì**, snapshot để lâu, và **data transfer out** vượt 
 | Chọn **Reserved Instance** cho Lambda | RI không áp cho Lambda ⇒ **Compute Savings Plans** |
 | Cho rằng **data transfer vào** AWS có phí | Vào thì gần như luôn miễn phí |
 | Cho rằng giữa hai AZ thì miễn phí | Có phí ở phần lớn trường hợp |
-| Chọn **Dedicated Host** để tiết kiệm | Nó đắt hơn; lý do dùng là tuân thủ hoặc **BYOL** |
+| Chọn **Dedicated Hosts** để tiết kiệm | Nó đắt hơn; lý do dùng là tuân thủ hoặc **BYOL** |
+| Dùng **Dedicated Instances** cho licence tính theo core | Chỉ **Dedicated Hosts** mới lộ số socket/core và cho ghim đúng máy vật lý |
 | Cho rằng Glacier luôn rẻ hơn | Phí lấy ra + thời gian lưu tối thiểu có thể lật ngược |
 | Cho rằng **Capacity Reservation** là để giảm giá | Nó bảo đảm **có công suất**, không giảm giá |
 
@@ -138,7 +152,8 @@ không gắn vào gì**, snapshot để lâu, và **data transfer out** vượt 
 | RI 3 năm All Upfront | Rẻ nhất trong các mức cam kết | Khoá 3 năm; đổi hướng kiến trúc là mất tiền |
 | Savings Plans | Rẻ gần như RI mà linh hoạt instance | Vẫn là cam kết $/giờ — dùng dưới mức thì vẫn trả |
 | Spot | Rẻ nhất tuyệt đối | Phải thiết kế chịu được gián đoạn; không đoán được thời điểm |
-| Dedicated Host | Thoả yêu cầu tuân thủ, dùng được licence cũ | Đắt, kém linh hoạt về cỡ |
+| Dedicated Hosts | Thoả yêu cầu tuân thủ, dùng được licence cũ | Đắt, kém linh hoạt về cỡ |
+| Capacity Reservations | Chắc chắn có công suất khi cần | Trả tiền cả khi không chạy máy nào |
 
 ## Related Topics
 

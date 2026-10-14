@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Shared responsibility model
@@ -118,8 +118,8 @@ mã nguồn**. Nhớ hai nhóm từ khoá đó là đoán được 90% câu hỏ
 | **S3** (managed) | Hạ tầng lưu trữ, độ bền | **Ai được truy cập**, bucket policy, bật mã hoá, versioning |
 
 Đọc bảng theo chiều từ trên xuống: **càng managed, phần của khách càng hẹp — nhưng không
-bao giờ bằng không.** Mô hình này đôi khi gọi là *inherited controls*: khách thừa hưởng
-các kiểm soát vật lý và môi trường từ AWS.
+bao giờ bằng không.** Thứ khách luôn giữ, ở mọi service: **dữ liệu của mình, ai được truy
+cập nó, và phân loại nó.**
 
 ### Ranh giới dịch theo từng bậc — ví dụ cụ thể
 

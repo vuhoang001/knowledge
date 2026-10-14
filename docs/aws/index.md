@@ -4,7 +4,7 @@ description: "Hai tầng bám theo hai kỳ thi — CLF-C02 trước (bề rộn
 category: technology
 doc_type: index
 status: draft
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # AWS
@@ -107,6 +107,8 @@ Cả năm đều **không phải thiếu kiến thức**. Biết cả hai servic
 19 task statement của exam guide → **19 tài liệu**, một-đối-một. Cột *TT* chuyển 🟡 khi
 file đã viết, ✅ khi chủ repo đã tự chạy lab/kiểm chứng và điền `verified_at`.
 
+Đối chiếu gần nhất với [exam guide](#nguồn) **bản © 2026**: ngày **14/10/2026**.
+
 | Task | Nội dung | Domain | Tài liệu | TT |
 |---|---|---|---|---|
 | 1.1 | Define the benefits of the AWS Cloud | 1 | [cloud-value-proposition](foundations/reference/cloud-value-proposition.md) | 🟡 |
@@ -157,12 +159,32 @@ dùng.
 
 ## Nguồn
 
-[AWS Certified Cloud Practitioner (CLF-C02) Exam Guide](https://d1.awsstatic.com/training-and-certification/docs-cloud-practitioner/AWS-Certified-Cloud-Practitioner_Exam-Guide_C02.pdf)
-— bản chính thức, Version 1.0, hiệu lực từ 19/09/2023 (thay CLF-C01).
+[AWS Certified Cloud Practitioner: Exam Guide (CLF-C02)](https://docs.aws.amazon.com/pdfs/aws-certification/latest/cloud-practitioner-02/cloud-practitioner-02.pdf)
+— bản chính thức trên `docs.aws.amazon.com`, **Copyright © 2026**. Đối chiếu ngày
+**14/10/2026**.
 
 Chọn exam guide làm xương sống thay vì một khoá học là cố ý: nó là **danh mục đóng** —
 có cả danh sách service *trong* phạm vi và *ngoài* phạm vi. Mọi khoá học đều dạy thừa
 hoặc thiếu so với nó, và chỉ khi so với nó thì mới đo được *còn thiếu bao nhiêu*.
+
+### Bản 2026 khác bản 2023 ở chỗ nào
+
+Module này ban đầu viết theo bản PDF cũ (*Version 1.0, hiệu lực 19/09/2023*). **Khung không
+đổi** — vẫn 4 domain, vẫn 19 task statement, vẫn đúng các trọng số ở bảng trên. Thứ đổi là
+**phụ lục danh sách service** và vài gạch đầu dòng, và đó là chỗ tài liệu ôn thi trên mạng
+đang lỗi thời:
+
+| Đổi gì | Chi tiết |
+|---|---|
+| **Gói support** | Ba gói cũ (*Developer*, *Business*, *Enterprise On-Ramp*) [ngừng 01/01/2027](https://docs.aws.amazon.com/awssupport/latest/user/support-plans-eos.html). Guide bản 2026 nêu tên **Basic Support · AWS Business Support+ · AWS Enterprise Support · AWS Unified Operations** |
+| **Snow Family bị gỡ** | Không còn trong nhóm Migration and Transfer; dịch vụ cũng [hết hỗ trợ 31/12/2026](https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html). **AWS Transfer Family** chuyển sang out-of-scope |
+| **Đổi tên** | *Amazon SageMaker* → **Amazon SageMaker AI** · *QuickSight* → **Amazon Quick Sight** · *WorkSpaces Web* → **Amazon WorkSpaces Secure Browser** |
+| **Thêm vào in-scope** | **Amazon Q**, **Amazon DocumentDB**, **Service Quotas**, **Migration Evaluator**, **AWS PrivateLink** — và **Capacity Reservations** trong Task 4.1 |
+| **Ra khỏi in-scope** | Amazon MSK, Amazon MemoryDB, AWS Billing Conductor, CodeDeploy, CodeArtifact, CloudShell, AppConfig, Device Farm, AWS Wavelength, AWS Network Firewall, FSx for Lustre, AMS, AWS IQ, IoT Greengrass… |
+
+Trong các trang `foundations/`, service mang dấu **`†`** là service **không nằm trong danh
+sách in-scope**. Chúng được giữ lại — không xoá — vì ngân hàng câu hỏi cũ vẫn đầy tên đó, và
+nhận ra tên để **loại ra** vẫn là một kỹ năng. Nhưng đừng dành chỗ trí nhớ cho chúng.
 
 ## Related Topics
 

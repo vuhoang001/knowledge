@@ -1,23 +1,23 @@
 ---
 title: Database
 sidebar_position: 12
-description: "RDS, Aurora, DynamoDB, MemoryDB, Neptune, Redshift — chọn theo hình dạng dữ liệu và kiểu truy vấn. Kèm cặp DMS/SCT và ranh giới Multi-AZ với read replica."
-tags: [aws, clf-c02, rds, aurora, dynamodb, elasticache, dms, redshift, domain-3]
+description: "RDS, Aurora, DynamoDB, DocumentDB, ElastiCache, Neptune — chọn theo hình dạng dữ liệu và kiểu truy vấn. Kèm cặp DMS/SCT và ranh giới Multi-AZ với read replica."
+tags: [aws, clf-c02, rds, aurora, dynamodb, documentdb, elasticache, dms, domain-3]
 domain: cloud
 category: concept
 doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Database
 
 > **Chốt:** Chọn database theo **hình dạng dữ liệu và kiểu truy vấn**, không theo "cái nào
 > mạnh hơn". Quan hệ + SQL → **RDS/Aurora**. Khoá–giá trị, độ trễ một chữ số ms, quy mô
-> lớn → **DynamoDB**. Phân tích trên hàng tỉ dòng → **Redshift**. Đồ thị → **Neptune**.
-> Trong bộ nhớ → **ElastiCache / MemoryDB**.
+> lớn → **DynamoDB**. Document kiểu MongoDB → **DocumentDB**. Phân tích trên hàng tỉ dòng →
+> **Redshift**. Đồ thị → **Neptune**. Trong bộ nhớ → **ElastiCache**.
 
 ## Mục tiêu
 
@@ -32,19 +32,26 @@ Task 3.4 đòi: quyết định **EC2 tự dựng ⇄ managed**, nhận ra datab
 |---|---|---|
 | **Quan hệ (OLTP)** | **Amazon RDS** — MySQL, PostgreSQL, MariaDB, Oracle, SQL Server, Db2 | *relational*, *SQL*, *existing MySQL app* |
 | Quan hệ, hiệu năng cao | **Amazon Aurora** — tương thích MySQL/PostgreSQL | *MySQL-compatible but faster*, *cloud-native relational* |
-| **Khoá–giá trị / document** | **Amazon DynamoDB** | *NoSQL*, *single-digit millisecond*, *serverless*, *massive scale* |
-| **Trong bộ nhớ** | **Amazon ElastiCache** (Redis/Memcached) · **Amazon MemoryDB for Redis** | *cache*, *session store*, *microsecond read* |
+| **Khoá–giá trị** | **Amazon DynamoDB** | *NoSQL*, *single-digit millisecond*, *serverless*, *massive scale* |
+| **Document** | **Amazon DocumentDB** — tương thích MongoDB | *MongoDB-compatible*, *JSON document*, *chuyển app MongoDB sẵn có* |
+| **Trong bộ nhớ** | **Amazon ElastiCache** (Valkey/Redis/Memcached) · **Amazon MemoryDB†** | *cache*, *session store*, *microsecond read* |
 | **Đồ thị** | **Amazon Neptune** | *relationships*, *social network*, *fraud ring*, *knowledge graph* |
 | **Kho phân tích (OLAP)** | **Amazon Redshift** | *data warehouse*, *complex queries over petabytes*, *BI* |
 
-Hai cặp hay lẫn:
+Ba cặp hay lẫn:
 
-- **ElastiCache ⇄ MemoryDB.** Cache (dữ liệu có thể mất, nguồn thật nằm chỗ khác) ⇄
-  **database trong bộ nhớ có độ bền** (dùng làm nguồn chính). Câu hỏi nói *durable
-  in-memory* thì là MemoryDB.
+- **DynamoDB ⇄ DocumentDB.** Cả hai đều bị gọi là "NoSQL document", nhưng đề phân biệt bằng
+  **nguồn gốc app**: viết mới, cần scale cực lớn và độ trễ ổn định → **DynamoDB**; đã có app
+  **MongoDB** và muốn chuyển gần như nguyên trạng → **DocumentDB**.
+- **ElastiCache ⇄ MemoryDB†.** Cache (dữ liệu có thể mất, nguồn thật nằm chỗ khác) ⇄
+  **database trong bộ nhớ có độ bền** (dùng làm nguồn chính). MemoryDB **không còn trong
+  danh sách in-scope** bản 2026 — cặp này giờ chỉ để không nhầm, không phải nội dung thi.
 - **RDS ⇄ Redshift.** OLTP (nhiều giao dịch nhỏ) ⇄ OLAP (ít truy vấn, quét rất nhiều).
   Redshift thuộc nhóm [analytics](ai-ml-and-analytics.md) trong exam guide, không thuộc
   nhóm Database — nhưng đề vẫn đặt chúng cạnh nhau để thử.
+
+`†` ngoài phạm vi exam guide CLF-C02 bản 2026 — biết để **không chọn nhầm**, không phải nội
+dung thi. Sáu service Database in-scope: RDS, Aurora, DynamoDB, DocumentDB, ElastiCache, Neptune.
 
 ### Managed ⇄ tự dựng trên EC2
 
@@ -258,7 +265,7 @@ liệu khi nguồn vẫn chạy). Khác engine nên cần cả hai.
 | Chọn **read replica** để đạt HA | Nhân bản **không đồng bộ**, có thể mất dữ liệu ⇒ dùng Multi-AZ |
 | Chọn **RDS** cho "khoá–giá trị, hàng triệu request/giây" | Đó là **DynamoDB** |
 | Chọn **DynamoDB** cho "join nhiều bảng, báo cáo SQL phức tạp" | Đó là quan hệ hoặc Redshift |
-| Chọn **ElastiCache** làm nguồn dữ liệu chính cần bền | Đó là **MemoryDB** |
+| Chọn **DynamoDB** cho "có sẵn app MongoDB, muốn chuyển lên AWS ít sửa nhất" | Đó là **DocumentDB** |
 | Chọn **Redshift** cho ứng dụng web ghi liên tục | Redshift là OLAP, không phải OLTP |
 | Dùng **DMS** một mình cho Oracle → PostgreSQL | Thiếu **SCT** |
 | Chọn **ElastiCache** làm cache cho DynamoDB | Cache riêng của DynamoDB là **DAX** |

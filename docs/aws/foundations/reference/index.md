@@ -7,7 +7,7 @@ tags: [reference, aws, clf-c02]
 domain: cloud
 category: index
 doc_type: index
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Tài liệu — Foundations (CLF-C02)
@@ -15,13 +15,17 @@ updated: 2026-10-06
 Giải thích *nó là gì, vì sao, và vì sao service kia sai*. Mỗi file khớp **đúng một task
 statement** của exam guide, nên cột *Task* cũng là cột kiểm kê độ phủ.
 
+Bám theo **exam guide bản © 2026**, đối chiếu ngày **14/10/2026**. Service mang dấu `†`
+trong các trang dưới đây là service **không nằm trong danh sách in-scope** — giữ lại để
+nhận ra tên và loại ra, không phải để chọn.
+
 ## Domain 1 — Cloud Concepts (24%)
 
 | # | Tài liệu | Trả lời câu hỏi | Task | TT |
 |---|---|---|---|---|
 | 1 | [Giá trị của AWS Cloud](cloud-value-proposition.md) | Sáu lợi thế, và cái nào là *kinh tế* còn cái nào là *kỹ thuật* | 1.1 | 🟡 |
 | 2 | [Well-Architected Framework](well-architected-framework.md) | Sáu pillar; pillar nào trả lời câu hỏi nào | 1.2 | 🟡 |
-| 3 | [Migration và AWS CAF](migration-and-caf.md) | Sáu perspective của CAF, 7 chiến lược R, Snow Family | 1.3 | 🟡 |
+| 3 | [Migration và AWS CAF](migration-and-caf.md) | Sáu perspective của CAF, 7 chiến lược R, sáu service migration | 1.3 | 🟡 |
 | 4 | [Kinh tế cloud](cloud-economics.md) | Fixed vs variable cost, TCO, rightsizing, BYOL | 1.4 | 🟡 |
 
 ## Domain 2 — Security and Compliance (30%)
@@ -38,21 +42,21 @@ statement** của exam guide, nên cột *Task* cũng là cột kiểm kê độ
 | # | Tài liệu | Trả lời câu hỏi | Task | TT |
 |---|---|---|---|---|
 | 9 | [Cách triển khai và truy cập](deploy-and-access-methods.md) | Console vs CLI vs SDK vs IaC; cloud/hybrid/on-premises; VPN vs Direct Connect | 3.1 | 🟡 |
-| 10 | [Global infrastructure](global-infrastructure.md) | Region, AZ, edge location, Local Zone, Wavelength, Outposts | 3.2 | 🟡 |
+| 10 | [Global infrastructure](global-infrastructure.md) | Region, AZ, edge location, Local Zone, Outposts | 3.2 | 🟡 |
 | 11 | [Compute](compute.md) | Họ instance EC2, container, serverless, Auto Scaling, load balancer | 3.3 | 🟡 |
-| 12 | [Database](databases.md) | RDS, Aurora, DynamoDB, MemoryDB, Neptune; DMS và SCT | 3.4 | 🟡 |
+| 12 | [Database](databases.md) | RDS, Aurora, DynamoDB, DocumentDB, ElastiCache, Neptune; DMS và SCT | 3.4 | 🟡 |
 | 13 | [Network](networking.md) | VPC, subnet, gateway, SG vs NACL, Route 53, edge service | 3.5 | 🟡 |
 | 14 | [Storage](storage.md) | Object/block/file, bảy lớp S3, lifecycle, Storage Gateway, Backup | 3.6 | 🟡 |
-| 15 | [AI/ML và analytics](ai-ml-and-analytics.md) | Chín service AI theo *đầu vào → đầu ra*; Athena, Glue, Kinesis, QuickSight | 3.7 | 🟡 |
-| 16 | [Nhóm service còn lại](other-service-categories.md) | SQS/SNS/EventBridge/Step Functions, Code*, WorkSpaces, IoT | 3.8 | 🟡 |
+| 15 | [AI/ML và analytics](ai-ml-and-analytics.md) | Chín service AI theo *đầu vào → đầu ra*; Athena, Glue, Kinesis, Quick Sight | 3.7 | 🟡 |
+| 16 | [Nhóm service còn lại](other-service-categories.md) | SQS/SNS/EventBridge/Step Functions, CodeBuild/CodePipeline/X-Ray, WorkSpaces, IoT Core | 3.8 | 🟡 |
 
 ## Domain 4 — Billing, Pricing, and Support (12%)
 
 | # | Tài liệu | Trả lời câu hỏi | Task | TT |
 |---|---|---|---|---|
-| 17 | [Pricing model](pricing-models.md) | On-Demand, RI, Spot, Savings Plans, Dedicated; phí data transfer | 4.1 | 🟡 |
+| 17 | [Pricing model](pricing-models.md) | On-Demand, RI, Spot, Savings Plans, Dedicated, Capacity Reservations; phí data transfer | 4.1 | 🟡 |
 | 18 | [Billing và cost management](billing-and-cost-management.md) | Organizations, Budgets, Cost Explorer, CUR, cost allocation tag | 4.2 | 🟡 |
-| 19 | [Support và tài nguyên kỹ thuật](support-and-technical-resources.md) | Năm mức support, Trusted Advisor, Health Dashboard, re:Post, Partner | 4.3 | 🟡 |
+| 19 | [Support và tài nguyên kỹ thuật](support-and-technical-resources.md) | Bốn mức support bản 2026, Trusted Advisor, Health Dashboard, re:Post, Partner | 4.3 | 🟡 |
 
 Ký hiệu: ✅ chủ repo đã kiểm chứng và điền `verified_at` · 🟡 đã viết, `verified_at` còn
 trống · ⬜ chưa viết

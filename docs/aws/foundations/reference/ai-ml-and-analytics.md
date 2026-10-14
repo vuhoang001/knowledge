@@ -1,15 +1,15 @@
 ---
 title: AI/ML và analytics
 sidebar_position: 15
-description: "Chín service AI nhớ theo đầu vào → đầu ra, không nhớ theo tên. Và sáu service analytics chia theo vai trong một pipeline dữ liệu."
-tags: [aws, clf-c02, sagemaker, rekognition, athena, glue, kinesis, quicksight, domain-3]
+description: "Chín service AI nhớ theo đầu vào → đầu ra, không nhớ theo tên. Và bảy service analytics chia theo vai trong một pipeline dữ liệu."
+tags: [aws, clf-c02, sagemaker, amazon-q, rekognition, athena, glue, kinesis, quick-sight, domain-3]
 domain: cloud
 category: concept
 doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # AI/ML và analytics
@@ -17,7 +17,7 @@ updated: 2026-10-06
 > **Chốt:** Nhóm AI nhớ theo **đầu vào → đầu ra**, không nhớ theo tên: ảnh→nhãn là
 > Rekognition, chữ→giọng là Polly, giọng→chữ là Transcribe, PDF→dữ liệu là Textract. Nhóm
 > analytics nhớ theo **vai trong pipeline**: Kinesis nhận, Glue biến đổi, S3 chứa, Athena
-> truy vấn, QuickSight vẽ.
+> truy vấn, Quick Sight vẽ.
 
 ## Mục tiêu
 
@@ -37,8 +37,13 @@ cho data analytics**. Không đòi biết cách train model.
 | **Amazon Translate** | Chữ ngôn ngữ A | Chữ ngôn ngữ B |
 | **Amazon Comprehend** | Chữ | **Ý nghĩa**: thực thể, cảm xúc, chủ đề, ngôn ngữ |
 | **Amazon Lex** | Hội thoại (chữ/giọng) | **Chatbot** — hiểu ý định và trả lời |
-| **Amazon Kendra** | Câu hỏi + kho tài liệu | **Tìm kiếm thông minh** trong tài liệu nội bộ |
-| **Amazon SageMaker** | Dữ liệu của bạn | **Model do bạn train** — dựng, train, deploy |
+| **Amazon Q** | Câu hỏi bằng ngôn ngữ tự nhiên | **Trợ lý AI tạo sinh** — trả lời dựa trên dữ liệu doanh nghiệp và tài nguyên AWS của bạn |
+| **Amazon SageMaker AI** | Dữ liệu của bạn | **Model do bạn train** — dựng, train, deploy |
+
+Hai tên đáng chú ý: **Amazon SageMaker AI** là tên chính thức hiện nay (tài liệu cũ gọi
+"Amazon SageMaker"), và **Amazon Q** mới được đưa vào danh sách in-scope. **Amazon Kendra†**
+(tìm kiếm thông minh trong kho tài liệu nội bộ) **không** còn trong danh sách — biết để không
+nhầm, đừng dành chỗ trí nhớ cho nó.
 
 Hai cặp đề thích thử:
 
@@ -47,23 +52,26 @@ Hai cặp đề thích thử:
 - **Textract ⇄ Rekognition** — cùng nhận ảnh. *Rút dữ liệu từ hoá đơn/form* → Textract.
   *Nhận diện vật thể hay mặt người* → Rekognition.
 
-Và một ranh giới lớn: **SageMaker là nơi tự train**; tám service kia là **model đã train
+Và một ranh giới lớn: **SageMaker AI là nơi tự train**; tám service kia là **model đã train
 sẵn, gọi qua API**. Câu hỏi nói *"without machine learning expertise"* thì đáp án **không
-phải** SageMaker.
+phải** SageMaker AI.
 
 ### Analytics, theo vai trong pipeline
 
 | Vai | Service | Một dòng |
 |---|---|---|
 | **Nhận dữ liệu thời gian thực** | **Amazon Kinesis** | Stream dữ liệu — log, clickstream, telemetry |
-| Nhận dữ liệu bằng Kafka | **Amazon MSK** | Apache Kafka được quản |
+| Nhận dữ liệu bằng Kafka | **Amazon MSK†** | Apache Kafka được quản |
 | **Biến đổi + catalog** | **AWS Glue** | ETL serverless và **Data Catalog** cho schema |
 | **Truy vấn tại chỗ** | **Amazon Athena** | SQL **thẳng trên S3**, serverless, trả theo lượng dữ liệu quét |
 | **Kho phân tích** | **Amazon Redshift** | Data warehouse cho truy vấn phức tạp, quy mô lớn |
 | **Xử lý dữ liệu lớn** | **Amazon EMR** | Hadoop/Spark được quản |
 | **Tìm kiếm và log analytics** | **Amazon OpenSearch Service** | Tìm kiếm, phân tích log, dashboard |
-| **Trực quan hoá** | **Amazon QuickSight** | BI dashboard |
-| **Dữ liệu của bên thứ ba** | **AWS Data Exchange** | Mua/đăng ký tập dữ liệu ngoài |
+| **Trực quan hoá** | **Amazon Quick Sight** | BI dashboard |
+| **Dữ liệu của bên thứ ba** | **AWS Data Exchange†** | Mua/đăng ký tập dữ liệu ngoài |
+
+`†` **ngoài phạm vi** exam guide CLF-C02 bản 2026 — biết để **không chọn nhầm**, không phải
+nội dung thi. Bảy service analytics in-scope là bảy dòng còn lại.
 
 Ba ranh giới hay ra đề:
 
@@ -83,7 +91,7 @@ nguon  ->  Kinesis   ->  S3 (data lake)  ->  Glue (ETL + catalog)
                                               +-> Athena   (SQL tai cho)
                                               +-> Redshift (kho phan tich)
                                                       |
-                                                      +-> QuickSight (dashboard)
+                                                      +-> Quick Sight (dashboard)
 ```
 
 Đọc một lượt là trả lời được phần lớn câu hỏi dạng *"service nào nằm ở bước này"*.
@@ -92,12 +100,12 @@ nguon  ->  Kinesis   ->  S3 (data lake)  ->  Glue (ETL + catalog)
 
 | Bẫy | Vì sao sai |
 |---|---|
-| Chọn **SageMaker** cho "không có chuyên môn ML" | Đó là các service AI gọi API sẵn |
+| Chọn **SageMaker AI** cho "không có chuyên môn ML" | Đó là các service AI gọi API sẵn |
 | Chọn **Rekognition** cho "rút dữ liệu từ hoá đơn" | Đó là **Textract** |
 | Chọn **Comprehend** cho "dịch sang tiếng Nhật" | Đó là **Translate** |
-| Chọn **Kendra** cho "chatbot đặt phòng" | Đó là **Lex** |
+| Chọn **Amazon Q** cho "chatbot đặt phòng cho khách hàng của app" | Đó là **Lex**; Q trả lời câu hỏi nội bộ về dữ liệu và tài nguyên AWS |
 | Chọn **Redshift** cho "truy vấn SQL vài lần một tuần trên dữ liệu đã ở S3" | Đó là **Athena** — không phải dựng cluster |
-| Chọn **Athena** cho dashboard BI đông người dùng, truy vấn liên tục | Đó là **Redshift** (+ QuickSight) |
+| Chọn **Athena** cho dashboard BI đông người dùng, truy vấn liên tục | Đó là **Redshift** (+ Quick Sight) |
 | Chọn **Glue** khi câu hỏi nói rõ cần **Spark có kiểm soát** | Đó là **EMR** |
 
 ## Đánh đổi
@@ -105,7 +113,7 @@ nguon  ->  Kinesis   ->  S3 (data lake)  ->  Glue (ETL + catalog)
 | Quyết định | Được | Mất |
 |---|---|---|
 | Service AI sẵn thay tự train | Dùng ngay, không cần dữ liệu huấn luyện | Không tuỳ biến được cho miền đặc thù |
-| SageMaker | Model đúng bài toán của mình | Cần dữ liệu, kỹ năng, và thời gian |
+| SageMaker AI | Model đúng bài toán của mình | Cần dữ liệu, kỹ năng, và thời gian |
 | Athena thay Redshift | Không hạ tầng, trả theo lượng quét | Truy vấn nặng lặp lại thì tốn hơn; hiệu năng kém ổn định hơn |
 | Glue thay EMR | Serverless, bớt vận hành | Ít quyền tinh chỉnh engine; khó với job rất đặc thù |
 | Kinesis thay batch | Dữ liệu tươi theo giây | Phức tạp hơn; phải xử lý thứ tự và trùng lặp |
@@ -116,5 +124,5 @@ nguon  ->  Kinesis   ->  S3 (data lake)  ->  Glue (ETL + catalog)
 - [Storage](storage.md) — S3 là nền của mọi pipeline analytics ở đây
 - [Nhóm service còn lại](other-service-categories.md) — SQS, SNS, EventBridge, Step Functions
 - [ETL](../../../etl/index.md) — phiên bản tự dựng của Glue/Kinesis trong kho này
-- [Machine Learning](../../../machine-learning/index.md) — phần lý thuyết đằng sau SageMaker
+- [Machine Learning](../../../machine-learning/index.md) — phần lý thuyết đằng sau SageMaker AI
 - [AWS · Foundations](../index.md)

@@ -2,14 +2,14 @@
 title: Access management
 sidebar_position: 7
 description: "User, group, role, policy — và vì sao quyền của một user thường không nằm ở user. Kèm output thật cho thấy emulator local KHÔNG đánh giá policy."
-tags: [aws, clf-c02, iam, mfa, root-user, least-privilege, identity-center, domain-2]
+tags: [aws, clf-c02, iam, mfa, root-user, least-privilege, identity-center, password-policy, domain-2]
 domain: cloud
 category: concept
 doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Access management
@@ -85,6 +85,41 @@ Cách bảo vệ, theo đúng thứ tự đề hay hỏi:
 **Cognito là cho người dùng của ứng dụng bạn**, không phải cho nhân viên. Đây là ranh giới
 đề hay hỏi: nhân viên công ty → Identity Center; hàng triệu người dùng app → Cognito.
 
+### MFA: không chỉ cho root
+
+MFA bật được cho **root user và cho từng IAM user**, không riêng root. Nó là lớp thứ hai sau
+mật khẩu, nên câu hỏi nào nói *"additional layer of protection beyond user name and
+password"* thì đáp án là MFA — không phải password policy, không phải mã hoá.
+
+| Loại thiết bị | Là gì |
+|---|---|
+| **Virtual MFA** | App sinh mã trên điện thoại (Authenticator) — rẻ nhất, phổ biến nhất |
+| **Hardware TOTP token** | Thiết bị phần cứng sinh mã — dùng khi quy định cấm dùng điện thoại |
+| **FIDO security key / passkey** | Khoá vật lý cắm USB hoặc passkey — chống phishing tốt nhất |
+
+Thứ tự ưu tiên trong đề không phải loại thiết bị, mà là **ai được bật trước**: root trước,
+rồi tới mọi user có quyền thay đổi hạ tầng.
+
+### Cross-account role: cách cho account khác vào mà không chia credential
+
+Đây là cơ chế đứng sau mọi câu hỏi dạng *"cho một account khác / một nhà cung cấp bên thứ
+ba truy cập tài nguyên của tôi"*. Ba bước, luôn theo thứ tự này:
+
+1. Account **A** (nơi có tài nguyên) tạo một **IAM role** và gắn permission policy nói role
+   đó được làm gì.
+2. Role đó mang thêm một **trust policy** — ghi rõ **ai được phép assume**: account B, một
+   IAM user cụ thể, hoặc một IdP.
+3. Danh tính ở account **B** gọi **`sts:AssumeRole`**, nhận về **credential tạm thời** và
+   dùng nó để thao tác trong account A.
+
+**Điểm có điểm trong đề:** không ai phải tạo IAM user mới ở account A, và **không có access
+key dài hạn nào bị chia sẻ**. Nên đáp án "tạo một IAM user và gửi access key cho bên kia"
+luôn sai.
+
+Một role vì thế có **hai** policy trả lời hai câu khác nhau: trust policy = *ai được vào*;
+permission policy = *vào rồi làm được gì*. Chi tiết hơn, kể cả `PassRole` và confused
+deputy, ở [policy evaluation](../../architecting/reference/iam-policy-evaluation.md).
+
 ### Nơi lưu credential
 
 | Service | Dùng cho | Khác biệt quyết định |
@@ -94,6 +129,27 @@ Cách bảo vệ, theo đúng thứ tự đề hay hỏi:
 
 Trong đề: có chữ **rotate** thì là Secrets Manager; chỉ cần "lưu cấu hình, chi phí thấp
 nhất" thì là Parameter Store.
+
+### Password policy và access key
+
+**Password policy đặt ở cấp account** và áp cho **mọi IAM user** trong account đó — **không**
+áp cho root user. Nó điều chỉnh được:
+
+| Thiết lập | Ý nghĩa |
+|---|---|
+| Độ dài tối thiểu | Số ký tự ít nhất |
+| Yêu cầu loại ký tự | Chữ hoa, chữ thường, số, ký tự đặc biệt |
+| **Hết hạn** sau N ngày | Buộc đổi định kỳ |
+| **Chặn dùng lại** N mật khẩu gần nhất | Không quay vòng mật khẩu cũ |
+| Cho user tự đổi mật khẩu | Bớt việc cho admin |
+
+**Access key là chuyện khác hẳn mật khẩu:** mật khẩu dùng để đăng nhập **Console**, access
+key dùng để gọi **CLI/SDK/API**. Một user có tối đa **hai** access key cùng lúc — đó là cơ
+chế để **xoay key không gián đoạn**: tạo key mới, chuyển ứng dụng sang, rồi vô hiệu và xoá
+key cũ.
+
+Ranh giới hay ra đề: *"buộc mọi người dùng đặt mật khẩu mạnh"* → **password policy**; *"thêm
+một lớp xác thực"* → **MFA**; *"ứng dụng trên EC2 cần gọi S3"* → **role**, không phải key.
 
 ### Least privilege, cụ thể
 
@@ -368,6 +424,9 @@ cùng user có câu `Deny` cho `s3:DeleteObject`. User có xóa được object 
 | Dùng root user cho việc thường ngày | Chỉ dùng root cho danh sách việc riêng của nó |
 | Nghĩ thêm một allow sẽ mở được thứ đang bị deny | **Explicit deny luôn thắng** |
 | Lồng group trong group | IAM group **không lồng được** |
+| Tạo IAM user + gửi access key cho đối tác ở account khác | Đó là **cross-account role** — assume role, không chia credential |
+| Nghĩ password policy áp cho **root user** | Nó chỉ áp cho **IAM user**; root bảo vệ bằng MFA và mật khẩu mạnh |
+| Cho rằng MFA chỉ bật được cho root | Bật được cho **từng IAM user** |
 | Chọn **Cognito** cho đăng nhập của nhân viên nhiều account | Đó là **IAM Identity Center** |
 | Chọn **Parameter Store** cho "cần rotate mật khẩu DB tự động" | Đó là Secrets Manager |
 | Tin rằng policy đã đúng vì lab local không báo lỗi | Xem mục [Ví dụ](#và-đây-là-chỗ-lab-local-nói-dối) |

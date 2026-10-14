@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Billing và cost management
@@ -21,9 +21,9 @@ updated: 2026-10-06
 
 ## Mục tiêu
 
-Task 4.2 đòi: dùng đúng **AWS Budgets**, **Cost Explorer**, **Billing Conductor**; dùng
-**Pricing Calculator**; hiểu **consolidated billing của AWS Organizations**; và hiểu
-**cost allocation tag** trong quan hệ với **Cost and Usage Report**.
+Task 4.2 đòi: dùng đúng **AWS Budgets** và **Cost Explorer**; dùng **Pricing Calculator**;
+hiểu **consolidated billing của AWS Organizations** và cách phân bổ chi phí; và hiểu các
+loại **cost allocation tag** trong quan hệ với **Cost and Usage Report**.
 
 ## Tổng quan
 
@@ -42,9 +42,13 @@ Hai cặp đề thích thử:
 - **Budgets ⇄ Cost Explorer**: *chặn/cảnh báo trước* ⇄ *mổ xẻ sau*. Câu hỏi có chữ **alert**,
   **notify**, **threshold** → **Budgets**.
 
-**AWS Billing Conductor** là công cụ dựng hoá đơn **nội bộ** (chargeback/showback): định
+**AWS Billing Conductor†** là công cụ dựng hoá đơn **nội bộ** (chargeback/showback): định
 nghĩa nhóm thanh toán và giá riêng cho từng đơn vị trong doanh nghiệp. Dấu hiệu:
 *"bill internal business units differently"*.
+
+`†` Billing Conductor **nằm trong danh sách out-of-scope** của exam guide bản 2026 — bốn
+service Cloud Financial Management in-scope chỉ gồm **Budgets, Cost and Usage Reports,
+Cost Explorer, Marketplace**. Giữ một đoạn để nhận ra tên, không phải để chọn.
 
 ### AWS Organizations và consolidated billing
 
@@ -74,6 +78,10 @@ Tag là cặp khoá–giá trị gắn vào tài nguyên. Để tag **hiện tro
 |---|---|
 | **AWS-generated** | AWS tạo, tiền tố `aws:` (ví dụ `aws:createdBy`) |
 | **User-defined** | Bạn tạo (ví dụ `Project`, `Environment`, `CostCenter`) |
+
+Trong **Cost and Usage Report**, hai loại này thành hai nhóm cột khác nhau:
+`resourceTags/aws:…` cho tag AWS sinh, `resourceTags/user:…` cho tag bạn đặt. Đây chính là
+chỗ exam guide nối *"các loại cost allocation tag"* với *"báo cáo thanh toán"*.
 
 Hệ quả thực tế: **tag chỉ có tác dụng từ lúc kích hoạt trở đi** — nó **không** hồi tố cho
 chi phí đã phát sinh. Đây là lý do đặt quy ước tag ngay từ ngày đầu.
@@ -108,7 +116,7 @@ Thứ tự này là cái nên làm trước khi dựng bất cứ gì, và cũng
 | Cho rằng gắn tag là tự nhiên thấy trong báo cáo | Phải **kích hoạt** làm cost allocation tag |
 | Cho rằng tag kích hoạt sẽ áp hồi tố | Chỉ áp từ lúc kích hoạt |
 | Cho rằng **SCP cấp quyền** cho account con | SCP đặt **trần**; IAM mới cấp |
-| Chọn **Organizations** cho "chia hoá đơn nội bộ theo giá riêng" | Đó là **Billing Conductor** |
+| Chọn **Budgets** cho "xem chi tiêu 6 tháng qua chia theo tag" | Đó là **Cost Explorer**; Budgets là cảnh báo ngưỡng |
 | Chọn **CUR** khi câu hỏi muốn xem nhanh trên giao diện | CUR là dữ liệu thô vào S3 ⇒ Cost Explorer |
 
 ## Đánh đổi

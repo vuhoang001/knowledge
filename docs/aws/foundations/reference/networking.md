@@ -2,14 +2,14 @@
 title: Network
 sidebar_position: 13
 description: "VPC, subnet, bốn loại gateway, SG so với NACL, Route 53 và hai service edge. Subnet nằm trong đúng một AZ — đó là gốc của mọi thiết kế HA."
-tags: [aws, clf-c02, vpc, subnet, nat-gateway, route-53, cloudfront, security-group, domain-3]
+tags: [aws, clf-c02, vpc, subnet, nat-gateway, route-53, cloudfront, privatelink, security-group, domain-3]
 domain: cloud
 category: concept
 doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Network
@@ -36,6 +36,7 @@ Task 3.5 đòi: thành phần của VPC (subnet, gateway), bảo mật trong VPC
 | **NAT Gateway** | Một AZ | Cho tài nguyên trong **private** subnet **đi ra** internet, không cho vào |
 | **Virtual Private Gateway** | VPC | Đầu AWS của **Site-to-Site VPN** |
 | **VPC Endpoint** | VPC | Gọi service AWS (ví dụ S3) **không qua internet** |
+| **AWS PrivateLink** | VPC | Công nghệ đứng sau **interface endpoint** — đưa một service vào VPC như một ENI có IP private |
 | **VPC Peering / Transit Gateway** | Giữa các VPC | Nối VPC với nhau (Transit Gateway cho nhiều VPC/account) |
 
 **Subnet nằm trong một AZ** là câu có hệ quả lớn nhất ở đây: muốn Multi-AZ thì phải có
@@ -43,6 +44,17 @@ Task 3.5 đòi: thành phần của VPC (subnet, gateway), bảo mật trong VPC
 
 **NAT Gateway tính tiền theo giờ và theo GB xử lý**, và **không thuộc Free Tier** — đây là
 nguồn hoá đơn bất ngờ phổ biến nhất của người mới.
+
+**VPC Endpoint có hai kiểu, và exam guide gọi tên kiểu thứ hai riêng:**
+
+| Kiểu | Cơ chế | Dùng cho |
+|---|---|---|
+| **Gateway endpoint** | Thêm một route vào route table | Chỉ **S3** và **DynamoDB**; **miễn phí** |
+| **Interface endpoint** = **AWS PrivateLink** | Một **ENI có IP private** trong subnet của bạn | Hầu hết service AWS khác, service của bên thứ ba trên Marketplace, và **service do chính bạn phát hành** cho VPC khác; có phí theo giờ và theo GB |
+
+Trong đề, chữ **"private connectivity without exposing traffic to the internet"** trỏ tới
+PrivateLink; nó khác **VPC Peering** ở chỗ peering nối **cả hai mạng**, còn PrivateLink chỉ
+phơi ra **đúng một service**.
 
 ### Security group ⇄ Network ACL
 
@@ -94,8 +106,8 @@ API — xác thực, throttling, phiên bản — thường đứng trước Lam
 | **AWS Direct Connect** | Đường vật lý riêng, băng thông và độ trễ **ổn định**, lắp đặt **nhiều tuần** |
 | **AWS Client VPN** | Cho từng người dùng kết nối vào VPC |
 
-Xem thêm [cách triển khai và truy cập](deploy-and-access-methods.md) — ba dấu hiệu quyết
-định giữa VPN, Direct Connect và Snow Family.
+Xem thêm [cách triển khai và truy cập](deploy-and-access-methods.md) — dấu hiệu quyết định
+giữa internet công cộng, VPN và Direct Connect trong mô hình hybrid.
 
 ## Giải thích cặn kẽ
 
@@ -284,6 +296,7 @@ phòng để Direct Connect khỏi thành điểm lỗi đơn.)
 | Cho rằng NAT Gateway miễn phí | Tính theo giờ + theo GB, **không thuộc Free Tier** |
 | Chọn **CloudFront** cho giao thức TCP/UDP không phải web | Đó là **Global Accelerator** |
 | Chọn **Direct Connect** để "nối hai VPC" | Đó là **VPC Peering** hoặc **Transit Gateway** |
+| Chọn **VPC Peering** cho "cho account khác dùng *một* service của tôi, không mở cả mạng" | Đó là **AWS PrivateLink** |
 | Truy cập S3 từ private subnet bằng cách mở NAT | Rẻ và kín hơn: **VPC Endpoint** |
 
 ## Đánh đổi

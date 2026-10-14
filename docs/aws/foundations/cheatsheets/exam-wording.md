@@ -9,7 +9,7 @@ doc_type: cheatsheet
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Văn phong đề AWS
@@ -17,6 +17,10 @@ updated: 2026-10-06
 > **Chốt:** Đề AWS gần như không hỏi "cái nào đúng" — nó hỏi **"cái nào đúng *nhất* theo
 > một tiêu chí đã nêu trong câu"**. Tiêu chí đó thường là **một từ viết hoa**. Bỏ qua từ đó
 > là chọn một đáp án đúng-nhưng-không-được-điểm.
+
+Trang này bám theo **exam guide CLF-C02 bản © 2026** trên `docs.aws.amazon.com`, đối chiếu
+ngày **14/10/2026**. Danh mục service in-scope có đổi so với bản 1.0 (19/09/2023) mà phần
+lớn tài liệu ôn thi trên mạng dựa vào — xem [AWS](../../index.md).
 
 ## Các từ quyết định, viết hoa trong đề
 
@@ -68,7 +72,7 @@ có chữ **role** thắng đáp án có chữ **access key** gần như không 
 | *decouple the components* | **SQS** (hoặc SNS nếu nhiều người nhận) |
 | *existing corporate directory* | **IAM Identity Center** / Directory Service |
 | *millions of app users sign in* | **Cognito** |
-| *limited bandwidth, 500 TB, deadline* | **Snow Family** |
+| *limited bandwidth, 500 TB, deadline* | ~~Snow Family~~ — **không còn đáp án in-scope**, đọc kỹ lựa chọn |
 | *stop managing the database* | **RDS** / Aurora / DynamoDB |
 
 ## Chiến thuật làm bài

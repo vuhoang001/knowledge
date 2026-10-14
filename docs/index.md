@@ -350,7 +350,7 @@ có **bản tiếng Anh dịch thật**, không còn là stub.
 | [bt: IAM production](aws/architecting/tutorials/bt-03-production.md) | 8 bài: bỏ khoá tĩnh, OIDC cho CI, least privilege từ CloudTrail, SCP, break-glass | 📝 |
 | [cloud-value-proposition](aws/foundations/reference/cloud-value-proposition.md) | Sáu lợi thế chia hai trục; elasticity ≠ HA ≠ agility | 🟡 |
 | [well-architected-framework](aws/foundations/reference/well-architected-framework.md) | Sáu pillar — Sustainability là cái thứ sáu, tài liệu cũ chỉ có năm | 🟡 |
-| [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | Sáu perspective CAF (ba cái là *người*), bảy chiến lược R, Snow Family | 🟡 |
+| [migration-and-caf](aws/foundations/reference/migration-and-caf.md) | Sáu perspective CAF (ba cái là *người*), bảy chiến lược R, sáu service migration in-scope | 🟡 |
 | [cloud-economics](aws/foundations/reference/cloud-economics.md) | CapEx→OpEx không hứa rẻ hơn; TCO, rightsizing, BYOL cần Dedicated Host | 🟡 |
 | [shared-responsibility](aws/foundations/reference/shared-responsibility.md) | Ranh giới dịch theo service; dữ liệu và IAM **không bao giờ** dịch | 🟡 |
 | [security-governance-compliance](aws/foundations/reference/security-governance-compliance.md) | CloudTrail *ai làm* ⇄ Config *cấu hình đổi* ⇄ CloudWatch *số liệu* ⇄ Artifact *báo cáo* | 🟡 |
@@ -366,7 +366,7 @@ có **bản tiếng Anh dịch thật**, không còn là stub.
 | [other-service-categories](aws/foundations/reference/other-service-categories.md) | SQS một consumer ⇄ SNS nhiều ⇄ EventBridge theo nội dung ⇄ Step Functions workflow | 🟡 |
 | [pricing-models](aws/foundations/reference/pricing-models.md) | Hai câu hỏi chọn model; vào AWS thì rẻ, lấy ra thì tốn | 🟡 |
 | [billing-and-cost-management](aws/foundations/reference/billing-and-cost-management.md) | Bốn công cụ bốn *thời*; tag phải **kích hoạt** và không hồi tố | 🟡 |
-| [support-and-technical-resources](aws/foundations/reference/support-and-technical-resources.md) | Ba mốc: Business có 24/7, On-Ramp có pool TAM, Enterprise có TAM riêng | 🟡 |
+| [support-and-technical-resources](aws/foundations/reference/support-and-technical-resources.md) | Ba mốc bản 2026: Business Support+ có 24/7, Enterprise có TAM riêng, Unified Operations cao nhất | 🟡 |
 | [cs: SG không chặn được một IP](aws/foundations/case-studies/security-group-khong-chan-duoc-ip.md) | API của SG **không có** tham số `Action` — lỗi CLI chứng minh | 🟡 |
 | [cs: lifecycle rồi cần gấp](aws/foundations/case-studies/s3-lifecycle-roi-can-gap.md) | Glacier không phải "S3 rẻ hơn", nó là "S3 thêm một bước chờ" | 🟡 |
 | [cs: access key root lọt ra ngoài](aws/foundations/case-studies/root-access-key-lot-ra-ngoai.md) | `root` không phải IAM user nên **không gắn được policy** để hãm | 🟡 |

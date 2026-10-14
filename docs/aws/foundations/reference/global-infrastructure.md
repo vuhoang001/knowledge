@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Global infrastructure
@@ -67,11 +67,15 @@ Multi-Region đắt và phức tạp hơn hẳn: phải nhân bản dữ liệu 
 |---|---|---|
 | **Edge location** (CloudFront) | Hàng trăm PoP toàn cầu | Cache nội dung tĩnh/động gần người dùng |
 | **AWS Local Zones** | Phần mở rộng của Region, đặt **gần một thành phố lớn** | Cần **vài ms** cho người dùng ở đô thị đó |
-| **AWS Wavelength** | Trong hạ tầng của **nhà mạng 5G** | Ứng dụng di động cần độ trễ cực thấp qua 5G |
+| **AWS Wavelength†** | Trong hạ tầng của **nhà mạng 5G** | Ứng dụng di động cần độ trễ cực thấp qua 5G |
 | **AWS Outposts** | **Tủ rack AWS đặt trong data center của khách** | Phải chạy tại chỗ: độ trễ nội bộ, dữ liệu không được ra ngoài |
 
 Phân biệt bằng *ai sở hữu chỗ đặt*: AWS (edge, Local Zone) · nhà mạng (Wavelength) ·
 **khách** (Outposts).
+
+`†` **AWS Wavelength nằm trong danh sách out-of-scope** của exam guide bản 2026 — giữ lại
+một dòng để nhận ra tên và loại nó ra, đừng dành chỗ trí nhớ cho nó. Ba dòng kia đều
+in-scope.
 
 ### Hai service edge dễ lẫn
 

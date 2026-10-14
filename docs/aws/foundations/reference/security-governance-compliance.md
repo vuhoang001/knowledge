@@ -2,14 +2,14 @@
 title: Governance và compliance
 sidebar_position: 6
 description: "Artifact lấy báo cáo tuân thủ, CloudTrail ghi ai làm gì, Config ghi cấu hình đổi thế nào, CloudWatch đo số liệu. Bốn service bốn câu hỏi khác nhau."
-tags: [aws, clf-c02, cloudtrail, config, artifact, kms, encryption, domain-2]
+tags: [aws, clf-c02, cloudtrail, config, artifact, kms, encryption, compliance, domain-2]
 domain: cloud
 category: concept
 doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Governance và compliance
@@ -51,15 +51,50 @@ ai `TerminateInstances` là CloudTrail.
 | **Amazon Inspector** | **Lỗ hổng** trong EC2, container image, Lambda | Quét phần mềm và cấu hình mạng |
 | **Amazon Macie** | **Dữ liệu nhạy cảm** trong S3 (PII) | Nội dung object |
 | **Amazon Detective** | **Điều tra nguyên nhân** sau khi có phát hiện | Gom và dựng đồ thị từ log |
+| **AWS Shield** | **Chặn tấn công DDoS** ở tầng mạng và vận chuyển — Standard bật sẵn, miễn phí | Lưu lượng vào CloudFront, Route 53, ELB |
 | **AWS Security Hub** | **Gom mọi phát hiện** về một chỗ, chấm theo tiêu chuẩn | Kết quả của các service trên |
 | **AWS Audit Manager** | Tự động thu thập **bằng chứng** cho một bộ kiểm soát | Tài nguyên + log của bạn |
 
 Bốn dòng đầu rất hay bị trộn. Một câu nhớ: **GuardDuty tìm *kẻ đang làm*, Inspector tìm
 *chỗ có thể bị làm*, Macie tìm *thứ đáng bị lấy*, Detective trả lời *vì sao*.**
 
+Exam guide gom **Inspector, Security Hub, GuardDuty và Shield** vào *một* gạch đầu dòng —
+"khách hàng bảo vệ tài nguyên của mình bằng gì". Ba cái đầu **phát hiện**, Shield **chặn**;
+chi tiết Shield và các tầng chặn khác nằm ở [thành phần bảo mật](security-components.md).
+
 **Artifact ⇄ Audit Manager** cũng là một cặp: Artifact cho bằng chứng **của AWS** (phần
 hạ tầng); Audit Manager thu bằng chứng **của bạn** (phần cấu hình và tài nguyên). Đúng
 theo hai nửa của [shared responsibility](shared-responsibility.md).
+
+### Tuân thủ khác nhau theo nơi, theo ngành, và theo service
+
+Exam guide tách riêng hai ý mà người học hay gộp làm một: yêu cầu tuân thủ **khác nhau giữa
+các vùng địa lý và các ngành**, và **khác nhau giữa các AWS service**.
+
+**Theo nơi và theo ngành** — mỗi khung là một bộ yêu cầu riêng, không thay thế nhau:
+
+| Khung | Trục | Áp cho ai |
+|---|---|---|
+| **GDPR** | Địa lý | Dữ liệu cá nhân của người ở EU, bất kể công ty đặt ở đâu |
+| **HIPAA** | Ngành | Dữ liệu sức khoẻ ở Mỹ |
+| **PCI DSS** | Ngành | Bất kỳ ai xử lý dữ liệu thẻ thanh toán |
+| **FedRAMP** | Địa lý + ngành | Cơ quan chính phủ liên bang Mỹ |
+| **SOC 1 / 2 / 3 · ISO 27001** | Không theo ngành | Chứng nhận chung, dùng để chứng minh với đối tác và kiểm toán |
+
+Hệ quả thực tế: *"dữ liệu phải ở trong nước"* là ràng buộc **chọn Region**, không phải ràng
+buộc chọn service — xem [global infrastructure](global-infrastructure.md). Còn *"chúng tôi
+cần bằng chứng tuân thủ cho kiểm toán viên"* thì luôn là **AWS Artifact**.
+
+**Theo service** — đây là chỗ hay bị hiểu sai nhất:
+
+- AWS đạt một chứng nhận **không có nghĩa mọi service đều nằm trong phạm vi chứng nhận đó**.
+  Mỗi chương trình tuân thủ có **danh sách service in-scope riêng**, và danh sách đó đổi theo
+  thời gian.
+- Chứng nhận của AWS chỉ phủ **nửa của AWS** trong [shared
+  responsibility](shared-responsibility.md). Dùng một service "HIPAA eligible" **không** tự
+  làm hệ thống của bạn đạt HIPAA — phần cấu hình, mã hoá, kiểm soát truy cập vẫn là của bạn.
+- Dấu hiệu trong đề: câu hỏi nói *"is this service covered by…"* thì nơi tra là **AWS Artifact**
+  và trang AWS Compliance, không phải Config hay Security Hub.
 
 ### Mã hoá: hai trạng thái, một service quản khoá
 
@@ -88,6 +123,19 @@ và tốn phí ⇄ lưu tham số, mức cơ bản miễn phí) — xem [access-
 | **AWS Service Catalog** | Danh mục sản phẩm đã được duyệt để người trong tổ chức tự triển khai |
 | **AWS Firewall Manager** | Áp quy tắc WAF/Shield/Network Firewall trên nhiều account cùng lúc |
 | **AWS RAM** | Chia sẻ tài nguyên giữa các account |
+| **Service Quotas** | Xem và **xin nâng giới hạn** (quota) của từng service, trên từng Region |
+
+**Service Quotas ⇄ Trusted Advisor** là một cặp mới hay ra đề: Trusted Advisor **cảnh báo**
+khi bạn sắp chạm giới hạn; Service Quotas là nơi **xem và gửi yêu cầu nâng** giới hạn đó.
+
+Bốn service governance nữa, mỗi cái một dòng — đủ để nhận ra tên trong đề:
+
+| Service | Một dòng | Chi tiết |
+|---|---|---|
+| **AWS Systems Manager** | Vận hành đội máy: patch, chạy lệnh từ xa, Parameter Store | [deploy](deploy-and-access-methods.md) |
+| **AWS Compute Optimizer** | Đề xuất **rightsizing** dựa trên số liệu dùng thật | [kinh tế cloud](cloud-economics.md) |
+| **AWS License Manager** | Theo dõi và áp hạn mức **licence** phần mềm (BYOL) | [kinh tế cloud](cloud-economics.md) |
+| **AWS Well-Architected Tool** | Bộ **câu hỏi** tự đánh giá workload theo sáu pillar | [Well-Architected](well-architected-framework.md) |
 
 **SCP không cấp quyền** — nó chỉ **giới hạn** quyền tối đa mà IAM trong account con có thể
 có. Đây là điểm đề hỏi: SCP + IAM policy là *giao* của hai tập, không phải *hợp*.
@@ -295,6 +343,8 @@ xoay vòng" → Secrets Manager.
 | Nghĩ dữ liệu mã hoá **at-rest** thì an toàn cả khi truyền | At-rest và in-transit là hai lớp độc lập; phải bật cả hai |
 | Chọn **KMS** cho "lưu mật khẩu DB và tự rotate" | KMS lưu *khoá*; mật khẩu ứng dụng có rotate là **Secrets Manager** |
 | Chọn **CloudWatch Logs** để tra "ai gọi `DeleteBucket`" | Đó là CloudTrail; CloudWatch Logs chứa log do app in ra |
+| Cho rằng "AWS đạt HIPAA" ⇒ hệ thống của mình đạt HIPAA | Chứng nhận phủ **nửa của AWS**; cấu hình và kiểm soát truy cập vẫn là phần của bạn |
+| Chọn **Trusted Advisor** cho "xin nâng giới hạn số VPC" | Trusted Advisor chỉ **cảnh báo**; nâng quota là **Service Quotas** |
 
 ## Đánh đổi
 

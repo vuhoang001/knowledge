@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Cách triển khai và truy cập
@@ -33,22 +33,32 @@ chọn **kết nối** (internet công cộng, VPN, Direct Connect).
 | **AWS Management Console** | Giao diện web | Khám phá, làm **một lần**, xem trạng thái |
 | **AWS CLI** | Lệnh dòng, chạy được trong script | Tự động hoá việc vận hành, làm hàng loạt |
 | **SDK** | Thư viện cho Python/Java/JS/… | Gọi AWS **từ trong ứng dụng** |
-| **IaC** — CloudFormation, CDK | Mô tả hạ tầng thành template | Cần **lặp lại giống nhau**, cần review và version |
+| **IaC** — CloudFormation | Mô tả hạ tầng thành template | Cần **lặp lại giống nhau**, cần review và version |
 
-Hai công cụ chạy lệnh ngay trong trình duyệt, không cài gì: **AWS CloudShell** (shell có
-sẵn CLI) và **AWS Cloud9** (IDE trên cloud).
+**Cả bốn cách đều gọi xuống cùng một thứ: AWS API.** Console, CLI và SDK chỉ là ba lớp vỏ
+khác nhau bọc quanh nó, còn IaC thì sinh ra các lời gọi đó thay bạn. Đó là lý do mọi thao
+tác đều để lại dấu trong [CloudTrail](security-governance-compliance.md) bất kể bạn bấm
+chuột hay gõ lệnh — và là lý do câu hỏi nói *"programmatic access"* gom chung **API, SDK
+và CLI**, đối lại với **Console**.
+
+Hai công cụ chạy lệnh ngay trong trình duyệt, không cài gì: **AWS CloudShell†** (shell có
+sẵn CLI) và **AWS Cloud9†** (IDE trên cloud).
 
 ### IaC: CloudFormation và họ hàng
 
 | Service | Việc |
 |---|---|
 | **AWS CloudFormation** | Template YAML/JSON → **stack** tài nguyên; xoá stack là xoá sạch |
-| **AWS CDK** | Viết hạ tầng bằng ngôn ngữ lập trình, sinh ra CloudFormation |
+| **AWS CDK†** | Viết hạ tầng bằng ngôn ngữ lập trình, sinh ra CloudFormation |
 | **AWS Elastic Beanstalk** | Đưa **code ứng dụng** lên, AWS tự dựng EC2/ELB/Auto Scaling bên dưới |
-| **AWS Launch Wizard** | Hướng dẫn dựng một workload cụ thể (ví dụ SAP, SQL Server) đúng cỡ |
+| **AWS Launch Wizard†** | Hướng dẫn dựng một workload cụ thể (ví dụ SAP, SQL Server) đúng cỡ |
 | **AWS Service Catalog** | Danh mục template **đã được duyệt** để người trong tổ chức tự dùng |
 | **AWS Systems Manager** | Vận hành đội máy đang chạy: patch, chạy lệnh, lưu tham số |
-| **AWS AppConfig** | Đổi **cấu hình ứng dụng** đang chạy mà không deploy lại |
+| **AWS AppConfig†** | Đổi **cấu hình ứng dụng** đang chạy mà không deploy lại |
+
+`†` không nằm trong danh sách in-scope của exam guide CLF-C02 bản 2026 (CloudShell,
+Launch Wizard và AppConfig còn nằm thẳng trong danh sách out-of-scope) — biết để **không
+chọn nhầm**. Dấu này dùng chung cho cả trang.
 
 Ranh giới hay hỏi: **CloudFormation ⇄ Elastic Beanstalk** — bạn mô tả *hạ tầng* ⇄ bạn chỉ
 đưa *code* và nhận hạ tầng mặc định. Và cả hai đều **miễn phí**; chỉ trả tiền cho tài
@@ -77,8 +87,9 @@ Ba dấu hiệu quyết định trong đề:
 
 - *"encrypted connection quickly / low cost"* → **VPN**.
 - *"consistent latency, dedicated bandwidth"* → **Direct Connect**.
-- *"one-time transfer of 500 TB"* → **không phải cả hai** — đó là
-  [Snow Family](migration-and-caf.md).
+- *"one-time transfer of 500 TB"* → **không phải cả hai**. Đáp án cũ là Snow Family, nhưng
+  nó [đã rời danh sách in-scope](migration-and-caf.md) ở guide bản 2026 — gặp tình huống
+  này thì đọc kỹ các lựa chọn thay vì tìm chữ "Snow".
 
 Direct Connect mất **nhiều tuần để lắp đặt** và tốn phí cố định; đó là lý do nó không bao
 giờ là đáp án cho yêu cầu "ngay lập tức". Mẫu thường gặp trong thực tế: VPN làm đường dự
@@ -109,6 +120,6 @@ phòng cho Direct Connect.
 - [Global infrastructure](global-infrastructure.md) — Region/AZ, nơi mọi thứ ở đây được triển khai vào
 - [Compute](compute.md) — Beanstalk và Auto Scaling dựng ra EC2 gì
 - [Network](networking.md) — VPN và Direct Connect gắn vào VPC thế nào
-- [Migration và AWS CAF](migration-and-caf.md) — Snow Family cho lần chuyển một lần
+- [Migration và AWS CAF](migration-and-caf.md) — sáu service migration in-scope, và vì sao Snow Family không còn
 - [Kinh tế cloud](cloud-economics.md) — automation là một nguồn tiết kiệm được exam guide nêu tên
 - [AWS · Foundations](../index.md)

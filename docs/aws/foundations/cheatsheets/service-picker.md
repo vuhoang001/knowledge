@@ -9,13 +9,16 @@ doc_type: cheatsheet
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Từ khoá → service
 
 > **Cách dùng:** đọc câu hỏi, **tìm cụm từ**, tra bảng. Bảng này chỉ ghi kết luận — vì sao
 > thì ở [Tài liệu](../reference/index.md). Không học bảng này trước khi hiểu nhóm service.
+
+`†` = **không nằm trong danh sách in-scope** của exam guide CLF-C02 bản 2026. Giữ lại trong
+bảng để nhận ra tên và **loại ra**, không phải để chọn.
 
 ## Những cặp bị trộn nhiều nhất
 
@@ -51,7 +54,7 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | *ML training*, GPU | họ **P/G** (accelerated) |
 | chạy **tại chỗ khách**, API giống AWS | **Outposts** |
 | độ trễ vài ms cho **một thành phố** | **Local Zones** |
-| độ trễ cực thấp qua **5G** | **Wavelength** |
+| độ trễ cực thấp qua **5G** | **Wavelength†** |
 
 ## Storage
 
@@ -61,7 +64,7 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | ổ đĩa cho **một** EC2, cần còn sau khi stop | **EBS** |
 | ổ tạm, cực nhanh, **mất khi stop** | **instance store** |
 | **nhiều** máy Linux mount cùng lúc | **EFS** |
-| file share **Windows/SMB**, hoặc **Lustre/HPC** | **FSx** |
+| file share **Windows/SMB** | **FSx** (biến thể Lustre/HPC là **Lustre†**) |
 | *unknown or changing access pattern* | **S3 Intelligent-Tiering** |
 | thưa truy cập, cần **ngay** | **S3 Standard-IA** |
 | thưa truy cập, **tái tạo được**, rẻ hơn | **S3 One Zone-IA** |
@@ -79,12 +82,16 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | quan hệ, SQL, app MySQL/PostgreSQL có sẵn | **RDS** |
 | quan hệ, thông lượng cao, cloud-native | **Aurora** |
 | NoSQL, *single-digit millisecond*, quy mô rất lớn | **DynamoDB** |
+| app **MongoDB** sẵn có, chuyển gần như nguyên trạng | **DocumentDB** |
 | **cache** session, giảm tải DB | **ElastiCache** |
-| in-memory nhưng **bền**, làm nguồn chính | **MemoryDB** |
+| in-memory nhưng **bền**, làm nguồn chính | **MemoryDB†** |
 | **đồ thị**, quan hệ giữa các thực thể | **Neptune** |
 | data warehouse, truy vấn phức tạp quy mô petabyte | **Redshift** |
 | chuyển DB, nguồn **vẫn chạy** | **DMS** |
 | chuyển **khác engine** (Oracle → PostgreSQL) | **SCT** + DMS |
+| **kiểm kê** server on-premises và phụ thuộc | **Application Discovery Service** |
+| **ước tính chi phí** chạy trên AWS trước khi quyết | **Migration Evaluator** |
+| theo dõi **tiến độ** nhiều luồng migration | **Migration Hub** |
 
 ## Network và edge
 
@@ -92,7 +99,8 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 |---|---|
 | private subnet cần **ra** internet | **NAT Gateway** |
 | tài nguyên public cần ra/vào internet | **Internet Gateway** |
-| gọi S3/DynamoDB **không qua internet** | **VPC Endpoint** |
+| gọi S3/DynamoDB **không qua internet** | **VPC Endpoint** (gateway) |
+| phơi **một** service ra cho VPC/account khác, không mở cả mạng | **PrivateLink** (interface endpoint) |
 | DNS, *route users to nearest Region*, failover | **Route 53** |
 | **cache** nội dung gần người dùng | **CloudFront** |
 | **IP tĩnh toàn cầu**, TCP/UDP, failover nhanh | **Global Accelerator** |
@@ -123,6 +131,7 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | đăng nhập cho **người dùng của app** | **Cognito** |
 | Active Directory được quản | **Directory Service** |
 | đặt **trần quyền** cho account con | **SCP** (Organizations) |
+| **xin nâng giới hạn** của một service | **Service Quotas** |
 
 ## Tích hợp, dev tools, khác
 
@@ -134,16 +143,17 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | **workflow** nhiều bước, có nhánh và retry | **Step Functions** |
 | request này **chậm ở đâu** | **X-Ray** |
 | nối build–test–deploy thành luồng | **CodePipeline** |
-| đổi **cấu hình** app đang chạy | **AppConfig** |
+| đổi **cấu hình** app đang chạy | **AppConfig†** |
 | **desktop ảo** cho nhân viên | **WorkSpaces** |
+| chỉ mở **web nội bộ** an toàn trên trình duyệt | **WorkSpaces Secure Browser** |
 | stream **một ứng dụng** | **AppStream 2.0** |
 | contact center, tổng đài | **Connect** |
 | gửi **email** số lượng lớn | **SES** |
-| API **GraphQL** | **AppSync** |
+| API **GraphQL** | **AppSync†** |
 | host web/mobile full-stack | **Amplify** |
-| test trên **thiết bị thật** | **Device Farm** |
+| test trên **thiết bị thật** | **Device Farm†** |
 | quản thiết bị IoT | **IoT Core** |
-| xử lý **ngay trên thiết bị**, mạng kém | **IoT Greengrass** |
+| xử lý **ngay trên thiết bị**, mạng kém | **IoT Greengrass†** |
 
 ## AI/ML và analytics
 
@@ -156,16 +166,17 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | dịch | **Translate** |
 | chữ → cảm xúc, thực thể, chủ đề | **Comprehend** |
 | **chatbot** | **Lex** |
-| **tìm kiếm** trong tài liệu nội bộ | **Kendra** |
-| tự **train model** | **SageMaker** |
+| **tìm kiếm** trong tài liệu nội bộ | **Kendra†** |
+| **trợ lý AI** hỏi đáp trên dữ liệu và tài nguyên AWS của mình | **Amazon Q** |
+| tự **train model** | **SageMaker AI** |
 | stream dữ liệu thời gian thực | **Kinesis** |
-| Kafka được quản | **MSK** |
+| Kafka được quản | **MSK†** |
 | ETL serverless + **catalog** | **Glue** |
 | SQL **thẳng trên S3**, không hạ tầng | **Athena** |
 | Spark/Hadoop có kiểm soát | **EMR** |
 | tìm kiếm + phân tích log | **OpenSearch** |
-| **dashboard** BI | **QuickSight** |
-| mua tập dữ liệu ngoài | **Data Exchange** |
+| **dashboard** BI | **Quick Sight** |
+| mua tập dữ liệu ngoài | **Data Exchange†** |
 
 ## Chi phí và support
 
@@ -175,12 +186,14 @@ Học mười dòng này trước mọi dòng khác — chúng chiếm phần l�
 | tiền **đã** đi đâu, theo tag/service | **Cost Explorer** |
 | **cảnh báo** khi vượt ngưỡng | **Budgets** |
 | dữ liệu chi phí **thô nhất** vào S3 | **Cost and Usage Report** |
-| chia hoá đơn **nội bộ** theo giá riêng | **Billing Conductor** |
+| chia hoá đơn **nội bộ** theo giá riêng | **Billing Conductor†** |
 | một hoá đơn, gộp bậc giá, dùng chung RI | **Organizations** |
 | đề xuất **đổi cỡ** từ số liệu thật | **Compute Optimizer** |
 | chi phí tăng **bất thường** | **Cost Anomaly Detection** |
-| 24/7 + full Trusted Advisor, rẻ nhất | **Business Support** |
+| 24/7 + full Trusted Advisor, rẻ nhất | **Business Support+** |
 | **TAM riêng** | **Enterprise Support** |
+| workload sống còn, đội chuyên trách, phản hồi nhanh nhất | **Unified Operations** |
+| mở và theo dõi **case** | **AWS Support Center** |
 | hỏi–đáp cộng đồng | **re:Post** |
 | **báo cáo lạm dụng** tài nguyên AWS | **Trust & Safety** |
 

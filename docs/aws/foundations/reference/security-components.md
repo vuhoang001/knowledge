@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Thành phần bảo mật
@@ -62,8 +62,8 @@ Mẹo phân biệt nhanh bằng chủ ngữ của câu hỏi: *tài khoản* →
 → Inspector · *kẻ xâm nhập* → GuardDuty · *cấu hình* → Config.
 
 **Trusted Advisor còn liên quan tới Domain 4**: nó cảnh báo cả instance dùng dưới mức và
-**service limit** sắp đạt. Mức Basic/Developer chỉ xem được một phần kiểm tra; đầy đủ cần
-**Business** trở lên — xem [support](support-and-technical-resources.md).
+**service limit** sắp đạt. Mức **Basic** chỉ xem được một phần kiểm tra; đầy đủ cần
+**Business Support+** trở lên — xem [support](support-and-technical-resources.md).
 
 ### Tìm thông tin bảo mật ở đâu
 
@@ -84,7 +84,7 @@ quét cổng máy tôi" → báo cho **Trust & Safety**. "Chúng tôi cần đú
 
 | Service | Một dòng |
 |---|---|
-| **AWS Network Firewall** | Firewall có trạng thái ở biên **VPC**, lọc được cả theo domain |
+| **AWS Network Firewall†** | Firewall có trạng thái ở biên **VPC**, lọc được cả theo domain |
 | **AWS Firewall Manager** | Áp quy tắc WAF/Shield/Network Firewall trên **nhiều account** |
 | **Amazon Macie** | Tìm **dữ liệu nhạy cảm** (PII) trong S3 |
 | **Amazon Detective** | **Điều tra** nguyên nhân sau một finding |
@@ -92,6 +92,17 @@ quét cổng máy tôi" → báo cho **Trust & Safety**. "Chúng tôi cần đú
 | **AWS Directory Service** | Active Directory được quản trên AWS |
 | **AWS RAM** | Chia sẻ tài nguyên giữa các account |
 | **AWS KMS** / **CloudHSM** | Quản khoá mã hoá — xem [governance](security-governance-compliance.md) |
+| **AWS Certificate Manager (ACM)** | Phát và **tự gia hạn** chứng chỉ TLS cho ELB, CloudFront, API Gateway |
+| **AWS Secrets Manager** | Lưu mật khẩu/khoá API, có **tự động rotate** — xem [access management](access-management.md) |
+| **Amazon Cognito** | Đăng nhập cho **người dùng ứng dụng của bạn** |
+| **AWS IAM Identity Center** | Một chỗ đăng nhập cho **nhiều account** |
+
+`†` **AWS Network Firewall nằm trong danh sách out-of-scope** của exam guide bản 2026 —
+giữ một dòng vì Firewall Manager nhắc tới nó, nhưng đừng chọn nó làm đáp án.
+
+Mười bảy service của nhóm Security, Identity, and Compliance đều đã xuất hiện ở đâu đó
+trong bộ ba tài liệu Domain 2: trang này, [governance](security-governance-compliance.md)
+và [access management](access-management.md).
 
 ## Giải thích cặn kẽ
 

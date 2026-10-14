@@ -9,7 +9,7 @@ doc_type: reference
 status: draft
 difficulty: beginner
 verified_at:
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Compute
@@ -74,7 +74,7 @@ lâu, đã đóng container* → Fargate · *hàng nghìn job tính toán theo l
 |---|---|
 | **Amazon Lightsail** | Muốn **giá cố định hằng tháng**, dựng nhanh một web/WordPress — đơn giản hơn EC2 |
 | **AWS Elastic Beanstalk** | Có code, muốn AWS tự dựng EC2 + ELB + Auto Scaling |
-| **AWS Outposts / Local Zones / Wavelength** | Cần compute ở chỗ đặc biệt — xem [global infrastructure](global-infrastructure.md) |
+| **AWS Outposts / Local Zones / Wavelength†** | Cần compute ở chỗ đặc biệt — xem [global infrastructure](global-infrastructure.md) (`†` Wavelength ngoài phạm vi bản 2026) |
 
 Lightsail ⇄ EC2: *predictable monthly price, simple* → Lightsail.
 
