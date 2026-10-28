@@ -36,25 +36,30 @@ Năm nhóm chuẩn, giống mọi chủ đề khác trong kho — xem [`ROUTING.
 | 2 | [Providers và Resources](reference/providers-and-resources.md) | Ai thật sự tạo ra tài nguyên; vì sao `init` đôi khi tải gì đó, đôi khi không | beginner | 📝 output chạy thật |
 | 3 | [Quy trình Plan / Apply](reference/plan-apply-workflow.md) | Ba ký hiệu `+ ~ -` là toàn bộ ngữ pháp của diff; vì sao apply hai lần liên tiếp không làm gì | beginner | 📝 output chạy thật |
 
-### Kỹ năng — kỹ thuật áp dụng lên phần trên (dự kiến, chưa viết)
+### Kỹ năng — kỹ thuật áp dụng lên phần trên (dự kiến, chưa viết thành bài riêng)
 
-| # | Kỹ thuật | Trả lời câu hỏi |
-|---|---|---|
-| 1 | Import | Đưa resource đã tạo sẵn ngoài Terraform vào state mà không recreate |
-| 2 | State surgery (`mv`/`rm`) | Đổi tên resource, tách module mà không destroy/recreate tài nguyên thật |
-| 3 | `count` vs `for_each` | Khi nào resource đánh số theo chỉ số, khi nào theo khoá — và vì sao đổi key của `for_each` gây destroy/recreate |
-| 4 | Lifecycle meta-argument | `create_before_destroy`, `prevent_destroy`, `ignore_changes` — mỗi cái vá một lớp lỗi khác nhau |
-| 5 | Remote state làm data source | Đọc output của một state khác, ghép hai layer hạ tầng không cùng thư mục |
-| 6 | Secrets trong state | State lưu plaintext mọi attribute — `sensitive = true` chỉ ẩn ở output CLI, không mã hoá state |
-| 7 | Backend và state locking | Ai được ghi state lúc nào — S3+DynamoDB, Terraform Cloud, và vì sao local backend không an toàn khi có người thứ hai |
-| 8 | Provisioners | `local-exec`/`remote-exec` là đường cùng khi provider không có resource tương ứng, không phải lựa chọn đầu tiên |
+Bốn kỹ thuật đầu đã có **lab chạy thật** minh hoạ (xem [Bài tập](tutorials/index.md)) —
+còn thiếu bài lý thuyết đứng riêng trong `skills/` để đào sâu các trường hợp ngoài phạm
+vi của lab. Bốn kỹ thuật cuối chưa có cả lab lẫn lý thuyết.
+
+| # | Kỹ thuật | Trả lời câu hỏi | Lab minh hoạ |
+|---|---|---|---|
+| 1 | Import | Đưa resource đã tạo sẵn ngoài Terraform vào state mà không recreate | [Lab 4](tutorials/lab-04-import.md) |
+| 2 | State surgery (`mv`/`rm`) | Đổi tên resource, tách module mà không destroy/recreate tài nguyên thật | [Lab 3](tutorials/lab-03-state-surgery.md) |
+| 3 | Backend và state locking | Ai được ghi state lúc nào, và vì sao local backend không an toàn khi có người thứ hai | [Lab 2](tutorials/lab-02-state-locking.md) (local lock) — remote backend thật (S3+DynamoDB, Terraform Cloud) chưa viết |
+| 4 | Modules nâng cao | Module trong module, `for_each` trên module, version pinning khi nguồn là Git/Registry | [Lab 1](tutorials/lab-01-modules.md) (cơ bản) |
+| 5 | `count` vs `for_each` | Khi nào resource đánh số theo chỉ số, khi nào theo khoá — và vì sao đổi key của `for_each` gây destroy/recreate | ⬜ |
+| 6 | Lifecycle meta-argument | `create_before_destroy`, `prevent_destroy`, `ignore_changes` — mỗi cái vá một lớp lỗi khác nhau (Lab 4 đã dùng `ignore_changes`, chưa tách thành bài riêng) | ⬜ |
+| 7 | Remote state làm data source | Đọc output của một state khác, ghép hai layer hạ tầng không cùng thư mục | ⬜ |
+| 8 | Secrets trong state | State lưu plaintext mọi attribute — `sensitive = true` chỉ ẩn ở output CLI, không mã hoá state | ⬜ |
+| 9 | Provisioners | `local-exec`/`remote-exec` là đường cùng khi provider không có resource tương ứng, không phải lựa chọn đầu tiên (Lab 2 đã dùng để mô phỏng apply chậm) | ⬜ |
 
 ### Ba nhóm còn lại
 
 | Nhóm | Nội dung |
 |---|---|
-| [Bài tập](tutorials/index.md) | **Lab 0 đã viết** — vòng đời đầy đủ + tự tay gây drift. Lab 1–4 (modules, remote state, import, state surgery) đang ở dạng mục lục dự kiến |
-| Cheatsheet | Chưa có — mở khi có bài lab CLI đủ dùng để tra nhanh |
+| [Bài tập](tutorials/index.md) | **5 lab đã viết**, từ dễ đến khó: vòng đời đầu tiên + drift, modules, state locking, state surgery (mv/rm), import (Docker) |
+| Cheatsheet | Chưa có — mở khi có đủ lệnh CLI (`state`, `import`, `plan -out`...) để đáng tra nhanh |
 | Case study | Chưa có — mỗi kỹ thuật ở Kỹ năng cần ít nhất một ca hỏng cụ thể, viết sau khi phần Kỹ năng có nội dung |
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 output chạy thật khi viết, `verified_at` chờ
@@ -86,14 +91,22 @@ State                        ← trọng tâm: Terraform chỉ biết cái nó n
       ↓
 Quy trình Plan / Apply        ← ba ký hiệu +/~/-, và vì sao phải review trước khi apply
       ↓
-Lab 0: vòng đời đầy đủ + tự tay gây drift   ← chạy thật ở đây
+Lab 0: vòng đời đầy đủ + tự tay gây drift
       ↓
-Import · State surgery · count vs for_each   (kỹ thuật theo tình huống, chưa viết)
+Lab 1: Modules                ← tách cấu hình lặp lại, for_each
       ↓
-Backend và locking · Modules                 (vận hành nhiều người, chưa viết)
+Lab 2: State locking           ← race condition tự tạo, local lock
+      ↓
+Lab 3: State surgery (mv/rm)   ← refactor an toàn, hậu quả thật của rm
+      ↓
+Lab 4: Import                  ← khó nhất, cần Docker + hiểu rõ bốn lab trước
+      ↓
+count vs for_each · lifecycle · remote state data source · secrets · provisioners
+(kỹ thuật theo tình huống, chưa viết thành bài riêng)
 ```
 
-**Đường ngắn nhất tới chỗ dùng được:** Providers/Resources → State → Plan/Apply → Lab 0.
+**Đường ngắn nhất tới chỗ dùng được:** Providers/Resources → State → Plan/Apply → năm
+bài lab theo đúng thứ tự 0 → 1 → 2 → 3 → 4.
 
 ## Related Topics
 

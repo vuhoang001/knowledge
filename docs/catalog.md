@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**264 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**268 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (73)
 
@@ -177,7 +177,7 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (44)
+## Bài tập (48)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -227,6 +227,10 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | [Lab Kafka trên Docker](etl/kafka/tutorials/kafka-lab.md) | `etl/kafka/tutorials` | data-engineering | 🟡 draft |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
 | ["Lab 0 — vòng đời đầu tiên và phát hiện drift"](terraform/tutorials/lab-00-first-apply.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 1 — Modules"](terraform/tutorials/lab-01-modules.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 2 — State locking"](terraform/tutorials/lab-02-state-locking.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 3 — State surgery (mv/rm)"](terraform/tutorials/lab-03-state-surgery.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 4 — Import"](terraform/tutorials/lab-04-import.md) | `terraform/tutorials` | devops | 🟡 draft |
 
 ## Case study (67)
 

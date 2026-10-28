@@ -317,6 +317,10 @@ là trí nhớ chứ không phải thực tại thì mọi `plan`/`apply` sau đ
 | [providers-and-resources](terraform/reference/providers-and-resources.md) | Ai thật sự tạo ra tài nguyên; builtin vs provider cần `init` tải | 📝 |
 | [plan-apply-workflow](terraform/reference/plan-apply-workflow.md) | Ba ký hiệu `+ ~ -`; vì sao apply hai lần liên tiếp không làm gì | 📝 |
 | [lab-00-first-apply](terraform/tutorials/lab-00-first-apply.md) | Lab: vòng đời đầy đủ trên resource built-in, rồi tự tay gây drift trên provider thật | 📝 |
+| [lab-01-modules](terraform/tutorials/lab-01-modules.md) | Lab: tách cấu hình lặp lại thành module tái sử dụng, `for_each` sinh nhiều instance | 📝 |
+| [lab-02-state-locking](terraform/tutorials/lab-02-state-locking.md) | Lab: tự tạo race condition, thấy lock chặn lệnh thứ hai thay vì ghi đè state | 📝 |
+| [lab-03-state-surgery](terraform/tutorials/lab-03-state-surgery.md) | Lab: `state mv` khi refactor vào module mà không destroy/recreate; hậu quả thật của `state rm` | 📝 |
+| [lab-04-import](terraform/tutorials/lab-04-import.md) | Lab: import container Docker tạo bằng tay; vì sao plan sau import vẫn đòi destroy/recreate | 📝 |
 
 ## Machine Learning
 
