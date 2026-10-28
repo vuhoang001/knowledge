@@ -36,6 +36,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 | 4 | [Exit code và control flow](reference/exit-code-va-control-flow.md) | `if` chạy trên thành/bại, không phải true/false | beginner |
 | 5 | [File permissions](reference/file-permissions.md) | Đọc `-rwxr-xr-x`, đổi bằng octal | beginner |
 | 6 | [Process và job control](reference/process-va-job-control.md) | `&`, `nohup`, signal, `kill` | intermediate |
+| 7 | [Regex cơ bản](reference/regex-co-ban.md) | BRE vs ERE, bẫy `.` khớp nhầm, `-F` vs `-E` vs `-P` | intermediate |
 
 ### [Kỹ năng](skills/index.md) — gặp tình huống X thì làm sao
 
@@ -52,7 +53,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 
 | Nhóm | Nội dung |
 |---|---|
-| [Bài tập](tutorials/index.md) | **2 lab chạy thật** — pipeline trên `access.log`, và viết script từ `hello` tới có `trap` |
+| [Bài tập](tutorials/index.md) | **4 lab chạy thật** — pipeline trên `access.log`, viết script từ `hello` tới có `trap`, regex/sed, và một chuỗi forensics 8 bước tổng hợp |
 | [Cheatsheet](cheatsheets/index.md) | [Lệnh theo nhóm](cheatsheets/commands.md) · [Toán tử test và expansion](cheatsheets/test-operators-va-expansion.md) |
 | [Case study](case-studies/index.md) | **4 ca** — word splitting, pipe nuốt exit code, glob không khớp, `set -e` không bắt |
 
@@ -69,18 +70,27 @@ Streams và redirection   ·   File permissions
       ↓
 Quoting và expansion     ← chỗ hầu hết bug đến từ đây
       ↓
-Exit code và control flow
+Exit code và control flow   ·   Process và job control
+      ↓
+Regex cơ bản            ← nền cho grep/sed/awk ngay sau đây
+      ↓
+Xử lý văn bản bằng pipeline (text-processing)
       ↓
 Điều kiện, vòng lặp · Biến, mảng · Hàm
       ↓
-Lab: xử lý văn bản   ·   Lab: script đầu tiên   ← chạy thật ở đây
+Lab: xử lý văn bản   ·   Lab: regex và sed   ·   Lab: script đầu tiên   ← chạy thật ở đây
       ↓
 Viết script an toàn (set -euo pipefail, trap)
+      ↓
+Lab: mock kiểm tra CLI tổng hợp   ← bài cuối, ghép hết các nhóm trên vào một chuỗi
       ↓
 Đọc bốn case study — để nhận ra cạm bẫy TRƯỚC khi nó cắn
 ```
 
 **Đường ngắn nhất tới chỗ dùng được:** Shell → Streams → Quoting → Exit code → Lab script.
+Muốn luyện trước một bài kiểm tra CLI thực hành thì đi full lộ trình tới hết **Lab: mock
+kiểm tra CLI tổng hợp** — đó là bài duy nhất bắt dùng chung cả `ps`/`chmod`, regex, `sed`
+và `awk` trong một chuỗi phụ thuộc nhiều bước.
 
 ## Vì sao quoting và exit code là trọng tâm
 

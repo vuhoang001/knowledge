@@ -20,7 +20,7 @@ updated: 2026-08-05
 
 Gặp một file log, một CSV, một dump text — trả lời được các câu kiểu "dòng nào khớp?", "cột thứ mấy?", "cái gì xuất hiện nhiều nhất?" bằng một pipeline dựng tại chỗ, không mở editor, không viết script.
 
-Tài liệu này giả định bạn đã nắm [streams và redirection](../reference/streams-va-redirection.md) (stdin/stdout/stderr, `|`, `>`) và [quoting](../reference/quoting-va-expansion.md) (khi nào cần nháy đơn cho pattern). Ở đây chỉ bàn "gặp tình huống X thì ghép lệnh nào".
+Tài liệu này giả định bạn đã nắm [streams và redirection](../reference/streams-va-redirection.md) (stdin/stdout/stderr, `|`, `>`), [quoting](../reference/quoting-va-expansion.md) (khi nào cần nháy đơn cho pattern), và [regex cơ bản](../reference/regex-co-ban.md) (BRE vs ERE, vì sao `grep` cần `-E`). Ở đây chỉ bàn "gặp tình huống X thì ghép lệnh nào".
 
 ## Tổng quan
 
@@ -267,10 +267,12 @@ Vì bạn chưa `sort`. `uniq` gộp các dòng **giống nhau và nằm kề nh
 
 ## Related Topics
 
+- [Regex cơ bản](../reference/regex-co-ban.md) — BRE vs ERE, bẫy `.` khớp nhầm — nền cho cột `grep`/`sed` ở bảng trên
 - [Streams và redirection](../reference/streams-va-redirection.md) — stdin/stdout/stderr và `|` nối chúng thế nào
 - [Quoting và expansion](../reference/quoting-va-expansion.md) — khi nào cần nháy đơn cho pattern grep/sed
 - [Tìm file với find và xargs](find-va-xargs.md) — cấp file vào pipeline, không chỉ nội dung
 - [Lab: xử lý văn bản](../tutorials/bash-lab-text-processing.md) — bài thực hành có đáp số
+- [Lab: regex và sed](../tutorials/bash-lab-regex-va-sed.md) — bài thực hành riêng cho regex/sed
 - [Cheatsheet lệnh bash](../cheatsheets/commands.md) — tra cờ nhanh
 
 ## References

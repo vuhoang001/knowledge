@@ -17,9 +17,9 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**261 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**264 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (72)
+## Tài liệu tham chiếu (73)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
@@ -50,6 +50,7 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [File permissions](bash/reference/file-permissions.md) | `bash/reference` | devops | 🟡 draft |
 | [Process và job control](bash/reference/process-va-job-control.md) | `bash/reference` | devops | 🟡 draft |
 | [Quoting và expansion](bash/reference/quoting-va-expansion.md) | `bash/reference` | devops | 🟡 draft |
+| [Regex cơ bản](bash/reference/regex-co-ban.md) | `bash/reference` | devops | 🟡 draft |
 | [Shell là gì](bash/reference/shell-la-gi.md) | `bash/reference` | devops | 🟡 draft |
 | [Streams và redirection](bash/reference/streams-va-redirection.md) | `bash/reference` | devops | 🟡 draft |
 | [Bus architecture, bus matrix và value chain](data-modeling/reference/bus-architecture.md) | `data-modeling/reference` | data-engineering | 🟡 draft |
@@ -176,7 +177,7 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (42)
+## Bài tập (44)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -199,6 +200,8 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | ["Câu hỏi: Storage"](aws/foundations/tutorials/quiz-storage.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
 | ["Câu hỏi: Well-Architected & CAF"](aws/foundations/tutorials/quiz-well-architected.md) | `aws/foundations/tutorials` | cloud | 🟡 draft |
 | ['Lab: viết script bash đầu tiên'](bash/tutorials/bash-lab-first-script.md) | `bash/tutorials` | devops | 🟡 draft |
+| ['Lab: mock kiểm tra CLI tổng hợp'](bash/tutorials/bash-lab-forensics-mock.md) | `bash/tutorials` | devops | 🟡 draft |
+| ['Lab: regex và sed'](bash/tutorials/bash-lab-regex-va-sed.md) | `bash/tutorials` | devops | 🟡 draft |
 | ['Lab: xử lý văn bản bằng pipeline'](bash/tutorials/bash-lab-text-processing.md) | `bash/tutorials` | devops | 🟡 draft |
 | ["26 bài tập có đáp số — tự viết, tự chấm"](data-modeling/tutorials/bai-tap-co-dap-so.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Phụ lục seed — mười bảng cho bộ bài tập"](data-modeling/tutorials/bt-00-seed.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |

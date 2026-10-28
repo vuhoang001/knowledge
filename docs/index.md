@@ -287,6 +287,7 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [exit-code-va-control-flow](bash/reference/exit-code-va-control-flow.md) | `if cmd` chạy trên thành/bại, không phải true/false; `pipefail` | 📝 |
 | [file-permissions](bash/reference/file-permissions.md) | Đọc `-rwxr-xr-x` và đổi bằng octal | 📝 |
 | [process-va-job-control](bash/reference/process-va-job-control.md) | `&`, `nohup`, signal, `kill` — job nền sống chết thế nào | 📝 |
+| [regex-co-ban](bash/reference/regex-co-ban.md) | BRE vs ERE, bẫy `.` khớp nhầm, `-F` vs `-E` vs `-P` | 📝 |
 | [text-processing](bash/skills/text-processing.md) | `grep`/`awk`/`sed`/`sort`/`uniq` ghép pipeline | 📝 |
 | [find-va-xargs](bash/skills/find-va-xargs.md) | Duyệt cây thư mục, chạy hàng loạt, an toàn với tên có dấu cách | 📝 |
 | [variables-arrays-expansion](bash/skills/variables-arrays-expansion.md) | Biến, mảng, default và cắt chuỗi bằng parameter expansion | 📝 |
@@ -295,6 +296,8 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [viet-script-an-toan](bash/skills/viet-script-an-toan.md) | `set -euo pipefail`, quoting, `trap` — khung mọi script | 📝 |
 | [bash-lab-text-processing](bash/tutorials/bash-lab-text-processing.md) | Lab: pipeline trả lời câu hỏi từ `access.log`, output chạy thật | 📝 |
 | [bash-lab-first-script](bash/tutorials/bash-lab-first-script.md) | Lab: từ `hello.sh` tới script có `trap`, debug `bash -x` | 📝 |
+| [bash-lab-regex-va-sed](bash/tutorials/bash-lab-regex-va-sed.md) | Lab: `grep -E`/`-F` lọc dòng, `sed` chuẩn hoá CSV, bẫy thay ký tự lan ra cả dòng | 📝 |
+| [bash-lab-forensics-mock](bash/tutorials/bash-lab-forensics-mock.md) | Lab: chuỗi 8 bước phụ thuộc nhau — `ps`/`chmod` → `grep` → `sed` → `awk` → seal SHA-256 | 📝 |
 | [cheatsheets/commands](bash/cheatsheets/commands.md) | Bảng tra lệnh theo nhóm | 🗂️ |
 | [cheatsheets/test-operators](bash/cheatsheets/test-operators-va-expansion.md) | Toán tử test, parameter expansion, biến đặc biệt | 🗂️ |
 | [cs: word-splitting](bash/case-studies/bien-khong-nhay-word-splitting.md) | Tên file có dấu cách xoá nhầm cả thư mục | 📝 |
