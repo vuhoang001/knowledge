@@ -17,7 +17,7 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**268 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**275 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
 ## Tài liệu tham chiếu (73)
 
@@ -177,7 +177,7 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (48)
+## Bài tập (55)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -203,6 +203,13 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | ['Lab: mock kiểm tra CLI tổng hợp'](bash/tutorials/bash-lab-forensics-mock.md) | `bash/tutorials` | devops | 🟡 draft |
 | ['Lab: regex và sed'](bash/tutorials/bash-lab-regex-va-sed.md) | `bash/tutorials` | devops | 🟡 draft |
 | ['Lab: xử lý văn bản bằng pipeline'](bash/tutorials/bash-lab-text-processing.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 1 — Nền tảng: exit code, streams, short-circuit"](bash/tutorials/bt-01-nen-tang.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 2 — Quoting và expansion"](bash/tutorials/bt-02-quoting-expansion.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 3 — File permissions và process control"](bash/tutorials/bt-03-permissions-process.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 4 — Text processing: grep, awk, sed, cut, sort"](bash/tutorials/bt-04-text-processing.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 5 — Regex: BRE vs ERE"](bash/tutorials/bt-05-regex.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 6 — Variables, arrays và functions"](bash/tutorials/bt-06-variables-arrays-functions.md) | `bash/tutorials` | devops | 🟡 draft |
+| ["Bộ 7 — Control flow và script an toàn"](bash/tutorials/bt-07-control-flow-an-toan.md) | `bash/tutorials` | devops | 🟡 draft |
 | ["26 bài tập có đáp số — tự viết, tự chấm"](data-modeling/tutorials/bai-tap-co-dap-so.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Phụ lục seed — mười bảng cho bộ bài tập"](data-modeling/tutorials/bt-00-seed.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |
 | ["Bài tập bộ 1 — Nền tảng: grain, fact/dim, surrogate key, star/OBT"](data-modeling/tutorials/bt-01-nen-tang.md) | `data-modeling/tutorials` | data-engineering | 🟡 draft |

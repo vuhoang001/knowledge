@@ -298,13 +298,13 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [bash-lab-first-script](bash/tutorials/bash-lab-first-script.md) | Lab: từ `hello.sh` tới script có `trap`, debug `bash -x` | 📝 |
 | [bash-lab-regex-va-sed](bash/tutorials/bash-lab-regex-va-sed.md) | Lab: `grep -E`/`-F` lọc dòng, `sed` chuẩn hoá CSV, bẫy thay ký tự lan ra cả dòng | 📝 |
 | [bash-lab-forensics-mock](bash/tutorials/bash-lab-forensics-mock.md) | Lab: chuỗi 8 bước phụ thuộc nhau — `ps`/`chmod` → `grep` → `sed` → `awk` → seal SHA-256 | 📝 |
-| [bt-01-nen-tang](bash/tutorials/bt-01-nen-tang.md) | 10 bài: exit code, `&&`/`\|\|`, redirect stdout/stderr riêng, `pipefail` | 📝 |
-| [bt-02-quoting-expansion](bash/tutorials/bt-02-quoting-expansion.md) | 10 bài: word splitting, `nullglob`, parameter expansion, `[` vs `[[` | 📝 |
-| [bt-03-permissions-process](bash/tutorials/bt-03-permissions-process.md) | 10 bài: `chmod` octal, `umask`, `wait`, `kill`, `trap`, PPID | 📝 |
-| [bt-04-text-processing](bash/tutorials/bt-04-text-processing.md) | 12 bài: `grep`/`awk`/`sed`/`cut`/`sort`, bẫy chọn nhầm cột theo regex | 📝 |
-| [bt-05-regex](bash/tutorials/bt-05-regex.md) | 11 bài: BRE vs ERE, bẫy `.` không escape, `{3}` không kiểm tra giá trị | 📝 |
-| [bt-06-variables-arrays-functions](bash/tutorials/bt-06-variables-arrays-functions.md) | 10 bài: `local`, `return` vs `echo`, associative array, `export` | 📝 |
-| [bt-07-control-flow-an-toan](bash/tutorials/bt-07-control-flow-an-toan.md) | 10 bài: `set -e` không bắt lỗi trong `if`, `set -u` exit 127, `while read` mất dòng cuối | 📝 |
+| [bt-01-nen-tang](bash/tutorials/bt-01-nen-tang.md) | 15 bài: exit code, `&&`/`\|\|`, redirect stdout/stderr riêng, `pipefail`, `PIPESTATUS` | 📝 |
+| [bt-02-quoting-expansion](bash/tutorials/bt-02-quoting-expansion.md) | 15 bài: word splitting, `nullglob`, parameter expansion, brace expansion, `%q` | 📝 |
+| [bt-03-permissions-process](bash/tutorials/bt-03-permissions-process.md) | 15 bài: `chmod` octal, `umask`, `wait`, `kill`, `trap`, PPID, bẫy `chmod -R` | 📝 |
+| [bt-04-text-processing](bash/tutorials/bt-04-text-processing.md) | 17 bài: `grep`/`awk`/`sed`/`cut`/`sort`/`comm`, bẫy chọn nhầm cột theo regex | 📝 |
+| [bt-05-regex](bash/tutorials/bt-05-regex.md) | 16 bài: BRE vs ERE, bẫy `.` không escape, lookahead PCRE, `\b` là GNU extension | 📝 |
+| [bt-06-variables-arrays-functions](bash/tutorials/bt-06-variables-arrays-functions.md) | 15 bài: `local`, `return` vs `echo`, associative array, đệ quy, nameref | 📝 |
+| [bt-07-control-flow-an-toan](bash/tutorials/bt-07-control-flow-an-toan.md) | 15 bài: `set -e` không bắt lỗi trong `if`, `set -u` exit 127, `getopts`, `set -x` | 📝 |
 | [cheatsheets/commands](bash/cheatsheets/commands.md) | Bảng tra lệnh theo nhóm | 🗂️ |
 | [cheatsheets/test-operators](bash/cheatsheets/test-operators-va-expansion.md) | Toán tử test, parameter expansion, biến đặc biệt | 🗂️ |
 | [cs: word-splitting](bash/case-studies/bien-khong-nhay-word-splitting.md) | Tên file có dấu cách xoá nhầm cả thư mục | 📝 |
