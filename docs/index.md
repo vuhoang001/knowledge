@@ -302,6 +302,19 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [cs: glob không khớp](bash/case-studies/glob-khong-khop.md) | Vòng lặp chạy một lần với dấu sao literal | 📝 |
 | [cs: set -e không bắt](bash/case-studies/set-e-khong-bat.md) | `set -e` bật nhưng script vẫn chạy tiếp sau lỗi | 📝 |
 
+## Terraform
+
+Declarative IaC. Bắt đầu ở [`state`](terraform/reference/state.md) — không hiểu state
+là trí nhớ chứ không phải thực tại thì mọi `plan`/`apply` sau đó đều khó đoán.
+
+| File | Trả lời câu hỏi | TT |
+|---|---|---|
+| [terraform/index](terraform/index.md) | Bản đồ khái niệm + lộ trình học | 🗂️ |
+| [state](terraform/reference/state.md) | Terraform so sánh config với CÁI GÌ; drift detection khi tài nguyên bị xoá ngoài Terraform | 📝 |
+| [providers-and-resources](terraform/reference/providers-and-resources.md) | Ai thật sự tạo ra tài nguyên; builtin vs provider cần `init` tải | 📝 |
+| [plan-apply-workflow](terraform/reference/plan-apply-workflow.md) | Ba ký hiệu `+ ~ -`; vì sao apply hai lần liên tiếp không làm gì | 📝 |
+| [lab-00-first-apply](terraform/tutorials/lab-00-first-apply.md) | Lab: vòng đời đầy đủ trên resource built-in, rồi tự tay gây drift trên provider thật | 📝 |
+
 ## Machine Learning
 
 Bám theo Géron *Hands-On Machine Learning* ấn bản 3 — 19 chương, 310 bài. Tách đôi ở

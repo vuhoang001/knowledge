@@ -17,9 +17,9 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**257 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**261 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (69)
+## Tài liệu tham chiếu (72)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
@@ -94,6 +94,9 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Coupling và cohesion — thước đo pattern thật sự phục vụ](patterns/reference/coupling-cohesion.md) | `patterns/reference` | backend | 🟡 draft |
 | [SOLID — năm nguyên lý, năm ca hỏng chạy được](patterns/reference/solid.md) | `patterns/reference` | backend | 🟡 draft |
 | [Design pattern là gì — và khi nào đừng dùng](patterns/reference/what-is-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
+| ["Quy trình Plan / Apply"](terraform/reference/plan-apply-workflow.md) | `terraform/reference` | devops | 📝 lý thuyết |
+| [Providers và Resources](terraform/reference/providers-and-resources.md) | `terraform/reference` | devops | 📝 lý thuyết |
+| [State](terraform/reference/state.md) | `terraform/reference` | devops | 📝 lý thuyết |
 
 ## Kỹ năng (71)
 
@@ -173,7 +176,7 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
 
-## Bài tập (41)
+## Bài tập (42)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -220,6 +223,7 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | [Lab Flink SQL trên Docker](etl/flink/tutorials/flink-lab.md) | `etl/flink/tutorials` | data-engineering | 🟡 draft |
 | [Lab Kafka trên Docker](etl/kafka/tutorials/kafka-lab.md) | `etl/kafka/tutorials` | data-engineering | 🟡 draft |
 | ["Lab: leo thang từ switch tới Strategy + Decorator"](patterns/tutorials/refactor-switch-sang-pattern.md) | `patterns/tutorials` | backend | 🟡 draft |
+| ["Lab 0 — vòng đời đầu tiên và phát hiện drift"](terraform/tutorials/lab-00-first-apply.md) | `terraform/tutorials` | devops | 🟡 draft |
 
 ## Case study (67)
 
