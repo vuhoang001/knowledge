@@ -2,7 +2,7 @@
 title: "Bộ 5 — Regex: BRE vs ERE"
 i18n_status: untranslated
 sidebar_position: 9
-description: "11 bài tự chấm: + là literal trong BRE nhưng là quantifier trong ERE, bẫy của dấu . khớp bất kỳ ký tự, [0-9]{3} không kiểm tra giá trị ≤255 — mỗi bài có đáp số thật."
+description: "16 bài tự chấm: + là literal trong BRE nhưng là quantifier trong ERE, bẫy của dấu . khớp bất kỳ ký tự, [0-9]{3} không kiểm tra giá trị ≤255 — mỗi bài có đáp số thật."
 tags: [tutorial, bash, regex]
 domain: devops
 category: concept
@@ -276,6 +276,124 @@ mục đích gom nhóm). `[0-9]{2,3}` khớp 2 **hoặc** 3 chữ số — khớ
 
 </details>
 
+## Câu 12 — `grep -P` (PCRE) hỗ trợ lookahead, `-E` thuần thì không
+
+```bash
+echo "foo123bar" | grep -oP '\d+(?=bar)'
+echo "---thu voi -E, khong co lookahead---"
+echo "foo123bar" | grep -oE '[0-9]+(?=bar)'
+```
+
+**Đáp số:**
+
+```text
+123
+---thu voi -E, khong co lookahead---
+grep: warning: ? at start of expression
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`(?=bar)` là **lookahead** — "khớp vị trí mà *ngay sau* nó là `bar`, nhưng không ăn
+vào kết quả khớp". Đây là tính năng của **PCRE** (Perl-Compatible Regular Expression,
+cần cờ `-P`), **không tồn tại** trong BRE hay ERE. Dùng `(?=...)` mà quên `-P` không
+báo lỗi "cú pháp lạ" rõ ràng — `grep -E` cố hiểu nó theo luật ERE thông thường
+(`?` ngay sau `(` không có ký tự đứng trước để lặp) và chỉ cảnh báo mập mờ.
+
+</details>
+
+## Câu 13 — `grep -o`: chỉ in phần khớp, không in cả dòng
+
+```bash
+echo "user@example.com" | grep -oE '[a-z]+@[a-z.]+'
+```
+
+**Đáp số:**
+
+```text
+user@example.com
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Mặc định `grep` in **toàn bộ dòng** chứa phần khớp. `-o` chỉ in **chính phần khớp**
+— quan trọng khi dòng có nhiều nội dung khác và chỉ cần trích ra đúng mẩu tìm được
+(ví dụ trích email từ một dòng log dài).
+
+</details>
+
+## Câu 14 — bẫy đã sửa: `\b` (word boundary) hoạt động cả khi KHÔNG có `-P`
+
+```bash
+echo "cat catalog category" | grep -oP '\bcat\b'
+echo "---thu lai voi -E, khong co -P---"
+echo "cat catalog category" | grep -oE '\bcat\b'
+```
+
+**Đáp số:**
+
+```text
+cat
+---thu lai voi -E, khong co -P---
+cat
+```
+
+<details>
+<summary>Lời giải</summary>
+
+**Ngược với suy nghĩ phổ biến:** nhiều người tưởng `\b` chỉ chạy được với `-P`. Thật
+ra GNU `grep` hỗ trợ `\b`, `\w`, `\<`, `\>` như **phần mở rộng riêng của GNU**, hoạt
+động cả trong BRE và ERE, không cần `-P`. Chỉ những tính năng PCRE *thật sự đặc thù*
+— lookahead/lookbehind (câu 12), named group, backreference phức tạp — mới bắt buộc
+`-P`. Đừng thêm `-P` "cho chắc" khi không cần; nó chậm hơn và không hỗ trợ trên mọi
+bản `grep` (BSD/macOS `grep` không có `-P`).
+
+</details>
+
+## Câu 15 — `grep -i`: không phân biệt hoa thường
+
+```bash
+printf 'Error\nerror\nERROR\nInfo\n' | grep -ci 'error'
+```
+
+**Đáp số:**
+
+```text
+3
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`-i` khớp bất kể hoa/thường — `Error`, `error`, `ERROR` đều tính, chỉ `Info` không
+khớp. Hữu ích khi lọc log mà quy ước viết hoa không nhất quán giữa các hệ thống.
+
+</details>
+
+## Câu 16 — `?` trong ERE: 0 hoặc 1 lần
+
+```bash
+printf 'color\ncolour\ncolouur\n' | grep -nE 'colou?r'
+```
+
+**Đáp số:**
+
+```text
+1:color
+2:colour
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`u?` nghĩa "có `u` hoặc không, tối đa một lần" — khớp `color` (0 lần `u`) và `colour`
+(1 lần `u`), nhưng **không** khớp `colouur` (2 lần `u` — vượt quá "tối đa một"). Muốn
+khớp cả `colouur` cần `u*` (0 hoặc nhiều) hoặc `u+` (1 hoặc nhiều), không phải `u?`.
+
+</details>
+
 ## Đáp số đối chiếu nhanh
 
 | Câu | Bài học chính |
@@ -286,6 +404,11 @@ mục đích gom nhóm). `[0-9]{2,3}` khớp 2 **hoặc** 3 chữ số — khớ
 | 6-7 | `.` không escape là bẫy khớp nhầm phổ biến nhất |
 | 9-10 | alternation cũng ngược quy tắc escape như quantifier |
 | 11 | `{m,n}` cho khoảng số lần lặp, không chỉ số cố định |
+| 12 | Lookahead `(?=...)` chỉ có ở PCRE (`-P`), không có ở BRE/ERE |
+| 13 | `-o` trích đúng phần khớp, không in cả dòng |
+| 14 | `\b`/`\w` là GNU extension, chạy được cả khi KHÔNG có `-P` |
+| 15 | `-i` bỏ phân biệt hoa/thường |
+| 16 | `?` là 0-hoặc-1 lần, khác `*` (0-hoặc-nhiều) và `+` (1-hoặc-nhiều) |
 
 ## Related Topics
 

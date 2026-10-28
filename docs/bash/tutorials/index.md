@@ -2,7 +2,7 @@
 title: Bài tập — Bash
 sidebar_key: bash-tutorials
 sidebar_position: 0
-description: "Lab chạy thật + 73 bài tự chấm từ dễ đến nâng cao, phủ toàn bộ reference/skills của chủ đề Bash — mỗi câu có đáp số thật, lời giải giấu trong <details>."
+description: "Lab chạy thật + 108 bài tự chấm từ dễ đến nâng cao, phủ toàn bộ reference/skills của chủ đề Bash — mỗi câu có đáp số thật, lời giải giấu trong <details>."
 tags: [tutorials, bash]
 domain: devops
 category: index
@@ -16,7 +16,7 @@ Lab chạy thật: mỗi lệnh đã chạy trên máy khi viết, output dán l
 ra đúng như vậy (sai lệch nhỏ nếu máy bạn dùng GNU coreutils thay vì uutils).
 
 > **Hai tầng.** Bài 1-4 là **lab chẩn đoán** — bày sẵn bẫy rồi giải thích, mỗi lab một
-> chuỗi liên tục. Bộ 1-7 (bài 5-11) là **73 bài tự chấm** ngắn — mỗi câu độc lập: đề
+> chuỗi liên tục. Bộ 1-7 (bài 5-11) là **108 bài tự chấm** ngắn — mỗi câu độc lập: đề
 > → đáp số thật → lời giải giấu trong `<details>`, từ dễ (exit code) đến khó (`set -e`
 > không bắt lỗi trong `if`, bẫy `while read` mất dòng cuối).
 
@@ -29,19 +29,19 @@ ra đúng như vậy (sai lệch nhỏ nếu máy bạn dùng GNU coreutils thay
 | 3 | [Lab: regex và sed](bash-lab-regex-va-sed.md) | `grep -E`/`-F` lọc dòng, `sed` chuẩn hoá CSV, và bẫy thay ký tự lan ra cả dòng | intermediate | 📝 output chạy thật |
 | 4 | [Lab: mock kiểm tra CLI tổng hợp](bash-lab-forensics-mock.md) | Chuỗi 8 bước phụ thuộc nhau: `ps`/`chmod` → `grep` → `sed` → `awk` → seal SHA-256 | advanced | 📝 output chạy thật |
 
-## Bộ bài tập tự chấm — 73 câu, 7 bộ
+## Bộ bài tập tự chấm — 108 câu, 7 bộ
 
 | # | Bộ | Phủ kỹ thuật | Số câu | Mức |
 |---|---|---|---|---|
-| 5 | [Bộ 1 — Nền tảng](bt-01-nen-tang.md) | exit code, `&&`/`\|\|` short-circuit, redirect, `pipefail`, command substitution | 10 | beginner |
-| 6 | [Bộ 2 — Quoting và expansion](bt-02-quoting-expansion.md) | word splitting, glob, `nullglob`, parameter expansion, `[` vs `[[` | 10 | beginner |
-| 7 | [Bộ 3 — Permissions và process](bt-03-permissions-process.md) | `chmod` octal, `umask`, background job, `wait`, `kill`, `trap`, PPID | 10 | intermediate |
-| 8 | [Bộ 4 — Text processing](bt-04-text-processing.md) | `grep`/`awk`/`sed`/`cut`/`sort`/`uniq`/`tr`/`paste`, bẫy chọn nhầm cột | 12 | intermediate |
-| 9 | [Bộ 5 — Regex](bt-05-regex.md) | BRE vs ERE, anchor, character class, bẫy `.` không escape | 11 | intermediate |
-| 10 | [Bộ 6 — Variables, arrays, functions](bt-06-variables-arrays-functions.md) | `local`, `return` vs `echo`, associative array, `unset` phần tử, `export` | 10 | intermediate |
-| 11 | [Bộ 7 — Control flow và script an toàn](bt-07-control-flow-an-toan.md) | `set -euo pipefail` (và giới hạn của nó), `case`, `while read`, `trap EXIT` | 10 | advanced |
+| 5 | [Bộ 1 — Nền tảng](bt-01-nen-tang.md) | exit code, `&&`/`\|\|` short-circuit, redirect, `pipefail`, `PIPESTATUS`, subshell vs group | 15 | beginner |
+| 6 | [Bộ 2 — Quoting và expansion](bt-02-quoting-expansion.md) | word splitting, glob, `nullglob`, parameter expansion, brace expansion, `%q` | 15 | beginner |
+| 7 | [Bộ 3 — Permissions và process](bt-03-permissions-process.md) | `chmod` octal, `umask`, background job, `wait`, `kill`, `trap`, PPID, bẫy `chmod -R` | 15 | intermediate |
+| 8 | [Bộ 4 — Text processing](bt-04-text-processing.md) | `grep`/`awk`/`sed`/`cut`/`sort`/`uniq`/`tr`/`paste`/`comm`, bẫy chọn nhầm cột | 17 | intermediate |
+| 9 | [Bộ 5 — Regex](bt-05-regex.md) | BRE vs ERE, anchor, character class, lookahead PCRE, `\b` là GNU extension | 16 | intermediate |
+| 10 | [Bộ 6 — Variables, arrays, functions](bt-06-variables-arrays-functions.md) | `local`, `return` vs `echo`, associative array, đệ quy, nameref, `getopts`-adjacent `shift` | 15 | intermediate |
+| 11 | [Bộ 7 — Control flow và script an toàn](bt-07-control-flow-an-toan.md) | `set -euo pipefail` (và giới hạn), `case`, `while read`, `trap EXIT`, `getopts`, `set -x` | 15 | advanced |
 
-**73 bài, phủ hết 7 reference + 6 skills của chủ đề Bash.** Làm theo đúng thứ tự 1 → 7
+**108 bài, phủ hết 7 reference + 6 skills của chủ đề Bash.** Làm theo đúng thứ tự 1 → 7
 — bộ 6-7 giả định đã quen cú pháp cơ bản ở bộ 1-2.
 
 Ký hiệu: ✅ đã chạy tay và xác nhận (`verified_at` có ngày) · 📝 output chạy thật khi

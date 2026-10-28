@@ -2,7 +2,7 @@
 title: "Bộ 7 — Control flow và script an toàn"
 i18n_status: untranslated
 sidebar_position: 11
-description: "10 bài tự chấm: set -e không bắt lỗi trong if, set -u exit code thật là 127 không phải 1, while read mất dòng cuối, trap EXIT, for loop không quote mất an toàn với khoảng trắng."
+description: "15 bài tự chấm: set -e không bắt lỗi trong if, set -u exit code thật là 127 không phải 1, while read mất dòng cuối, trap EXIT, for loop không quote mất an toàn với khoảng trắng."
 tags: [tutorial, bash, set-e, trap, safety]
 domain: devops
 category: concept
@@ -293,6 +293,141 @@ xu ly: [file two.txt]
 file thật ra xử lý 4 "từ" vô nghĩa. Dùng glob trực tiếp (`for f in *`) để bash tự liệt
 kê **tên file thật** làm từng phần tử, giữ nguyên khoảng trắng bên trong mỗi tên — quy
 tắc chung: **không bao giờ** `for x in $(ls ...)`.
+
+</details>
+
+## Câu 11 — `until`: ngược với `while`
+
+```bash
+i=1
+until [ "$i" -gt 3 ]; do echo "i=$i"; i=$((i+1)); done
+```
+
+**Đáp số:**
+
+```text
+i=1
+i=2
+i=3
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`while cond; do ...; done` lặp **khi `cond` còn đúng**. `until cond; do ...; done`
+lặp **khi `cond` còn SAI**, dừng ngay khi `cond` đúng — ngược hoàn toàn. `until [ i
+-gt 3 ]` đọc là "lặp tới khi i > 3", đúng ý nghĩa tên gọi của nó.
+
+</details>
+
+## Câu 12 — heredoc thường CÓ giãn biến
+
+```bash
+name="An"
+cat << EOF
+Xin chao $name
+EOF
+```
+
+**Đáp số:**
+
+```text
+Xin chao An
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Heredoc với delimiter **không quote** (`<< EOF`) hoạt động như một chuỗi trong nháy
+kép — `$var`, `` `cmd` ``, `$(...)` đều được mở rộng trước khi đưa vào stdin của lệnh.
+
+</details>
+
+## Câu 13 — heredoc với delimiter trong quote KHÔNG giãn biến
+
+```bash
+cat << 'EOF'
+Xin chao $name
+EOF
+```
+
+**Đáp số:**
+
+```text
+Xin chao $name
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Bọc delimiter trong nháy đơn (`<< 'EOF'`) tắt mọi expansion bên trong heredoc — hoạt
+động như chuỗi nháy đơn literal. Dùng khi heredoc là một **template** hay **script
+mẫu** mà `$` trong đó phải giữ nguyên (ví dụ in ra một đoạn script bash khác, có biến
+`$1`, `$HOME` muốn giữ nguyên ký tự, không muốn bash hiện tại thay vào).
+
+</details>
+
+## Câu 14 — `getopts`: phân tích flag kiểu `-v -o file.txt`
+
+```bash
+parse() {
+  local verbose=0 outfile=""
+  while getopts "vo:" opt; do
+    case "$opt" in
+      v) verbose=1 ;;
+      o) outfile="$OPTARG" ;;
+      *) echo "flag khong ro" ;;
+    esac
+  done
+  echo "verbose=$verbose outfile=$outfile"
+}
+parse -v -o ket_qua.txt
+```
+
+**Đáp số:**
+
+```text
+verbose=1 outfile=ket_qua.txt
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Chuỗi `"vo:"` khai hai flag: `v` (cờ bật/tắt, không có giá trị theo sau) và `o:`
+(dấu `:` sau `o` nghĩa là **bắt buộc có giá trị theo sau**, nhận vào `OPTARG`).
+`getopts` là cách chuẩn POSIX để parse flag kiểu CLI thật, đáng tin hơn tự viết
+`while`/`case` tay trên `$@` — tự động xử lý đúng cả `-vo file.txt` (gộp) và
+`-v -o file.txt` (tách), cũng như báo lỗi khi thiếu giá trị cho `o:`.
+
+</details>
+
+## Câu 15 — `set -x`: in lệnh ra trước khi chạy (trace debug)
+
+```bash
+bash -x -c '
+a=1
+b=2
+echo $((a+b))
+'
+```
+
+**Đáp số:**
+
+```text
++ a=1
++ b=2
++ echo 3
+3
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`-x` (hay `set -x` trong script) in **mỗi lệnh ra stderr trước khi thực thi nó**,
+tiền tố bằng `+` (đổi được qua biến `PS4`). Lưu ý dòng `+ echo 3` — bash in lệnh
+**sau khi đã expand** (`$((a+b))` đã tính thành `3`), không in nguyên văn code gốc.
+Đây là công cụ debug mạnh nhất cho script dài: chạy `bash -x script.sh` để thấy chính
+xác từng bước đã expand ra sao, không cần đặt `echo` thủ công rải khắp script.
 
 </details>
 

@@ -2,7 +2,7 @@
 title: "Bộ 2 — Quoting và expansion"
 i18n_status: untranslated
 sidebar_position: 6
-description: "10 bài tự chấm: word splitting, glob không khớp, nullglob, parameter expansion, @ vs * trong array, [ vs [[ với chuỗi có khoảng trắng."
+description: "15 bài tự chấm: word splitting, glob không khớp, nullglob, parameter expansion, @ vs * trong array, [ vs [[ với chuỗi có khoảng trắng."
 tags: [tutorial, bash, quoting, expansion]
 domain: devops
 category: concept
@@ -257,6 +257,126 @@ parts0=a parts2=c count=3
 `VAR=value command` là gán biến môi trường tạm thời cho một lệnh), không ảnh hưởng gì
 tới `IFS` của phần script còn lại — cách an toàn hơn nhiều so với `IFS=:` rồi quên đổi
 lại.
+
+</details>
+
+## Câu 11 — brace expansion: sinh nhiều từ, KHÔNG phải glob
+
+```bash
+echo file{1,2,3}.txt
+echo "---so sanh voi glob tren file khong ton tai---"
+echo file[1-3].txt
+```
+
+**Đáp số:**
+
+```text
+file1.txt file2.txt file3.txt
+---so sanh voi glob tren file khong ton tai---
+file[1-3].txt
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`{1,2,3}` là **brace expansion** — thuần cú pháp sinh chuỗi, xảy ra **trước** khi shell
+nhìn vào filesystem, luôn ra kết quả dù file có tồn tại hay không. `[1-3]` là **glob**
+— chỉ khớp file **thật sự tồn tại**; không có file khớp thì giữ nguyên dạng literal
+(đã học ở [Câu 3](#câu-3--glob-không-khớp-file-nào-thì-giữ-nguyên-literal)). Hai cú
+pháp trông giống nhau nhưng cơ chế hoàn toàn khác.
+
+</details>
+
+## Câu 12 — arithmetic expansion `$(( ))` vs nối chuỗi nhầm
+
+```bash
+a=5; b=3
+echo "$a+$b"
+echo "$((a+b))"
+```
+
+**Đáp số:**
+
+```text
+5+3
+8
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`"$a+$b"` chỉ là **nối chuỗi** — `$a`, dấu `+` literal, `$b` — ra `"5+3"`.
+`$((a+b))` mới thực sự **tính toán số học**, ra `8`. Quên cặp `$(( ))` là lý do một
+script "tính tổng" chỉ in ra chuỗi ghép số, không tính gì cả.
+
+</details>
+
+## Câu 13 — quote lồng nhau, đơn trong kép
+
+```bash
+echo "gia tri la 'khong doi' va $((1+1))"
+```
+
+**Đáp số:**
+
+```text
+gia tri la 'khong doi' va 2
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Trong cặp nháy kép, nháy đơn **mất tác dụng đặc biệt** — nó chỉ còn là ký tự literal,
+in ra nguyên văn. Nhưng `$(( ))` (và `$var`, `` `cmd` ``) vẫn được **mở rộng** bình
+thường bên trong nháy kép. Nháy kép tắt word-splitting/glob, không tắt expansion.
+
+</details>
+
+## Câu 14 — `printf '%q'`: escape chuỗi để dùng lại an toàn
+
+```bash
+v="co khoang trang va \$dollar"
+printf '%q\n' "$v"
+```
+
+**Đáp số:**
+
+```text
+co\ khoang\ trang\ va\ \$dollar
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`%q` sinh ra một chuỗi **đã escape đúng cách** để dán lại vào dòng lệnh bash mà chạy
+ra đúng giá trị gốc — hữu ích khi script tự sinh lệnh để log lại hoặc ghi vào một
+script khác, tránh phải tự đoán ký tự nào cần `\`.
+
+</details>
+
+## Câu 15 — `${var//pattern/replacement}`: thay toàn bộ vs chỉ lần đầu
+
+```bash
+s="one two one two one"
+echo "${s//one/ONE}"
+echo "---chi thay LAN DAU voi mot dau /---"
+echo "${s/one/ONE}"
+```
+
+**Đáp số:**
+
+```text
+ONE two ONE two ONE
+---chi thay LAN DAU voi mot dau /---
+ONE two one two one
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Một dấu `/` chỉ thay **lần khớp đầu tiên**; hai dấu `//` thay **mọi lần khớp** — y
+hệt sự khác biệt `s///` vs `s///g` trong `sed`, nhưng viết hoàn toàn bằng parameter
+expansion, không cần gọi process `sed` riêng cho một thay thế đơn giản.
 
 </details>
 

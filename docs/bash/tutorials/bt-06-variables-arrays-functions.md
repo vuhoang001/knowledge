@@ -1,7 +1,7 @@
 ---
 title: "Bộ 6 — Variables, arrays và functions"
 sidebar_position: 10
-description: "10 bài tự chấm: local vs global trong function, return chỉ trả exit code, associative array, unset một phần tử array giữa danh sách, export vào subshell."
+description: "15 bài tự chấm: local vs global trong function, return chỉ trả exit code, associative array, unset một phần tử array giữa danh sách, export vào subshell."
 tags: [tutorial, bash, variable, array, function]
 domain: devops
 category: concept
@@ -262,6 +262,141 @@ Biến thường (không `export`) chỉ tồn tại trong **shell hiện tại*
 từ process con (`bash -c` tạo một process bash mới). `export` đưa biến vào **danh sách
 biến môi trường**, được kế thừa sang mọi process con sinh ra sau đó. `unset` xoá biến
 khỏi cả shell hiện tại và môi trường — process con sau đó không còn thấy gì.
+
+</details>
+
+## Câu 11 — function đệ quy
+
+```bash
+fact() {
+  local n=$1
+  if (( n <= 1 )); then echo 1; return; fi
+  local sub=$(fact $((n-1)))
+  echo $((n * sub))
+}
+fact 5
+```
+
+**Đáp số:**
+
+```text
+120
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Bash function gọi được chính nó như mọi ngôn ngữ khác, miễn có **điều kiện dừng**
+(`n <= 1`). Mỗi lớp gọi đệ quy dùng command substitution `$(fact $((n-1)))` để lấy
+"giá trị trả về" — đúng mẫu đã học ở
+[Câu 4](#câu-4--muốn-trả-giá-trị-thật-thì-dùng-echo--command-substitution), vì
+`return` không trả được số lớn/biểu thức.
+
+</details>
+
+## Câu 12 — truyền array vào function bằng `declare -n` (nameref)
+
+```bash
+double_all() {
+  local -n arr_ref=$1
+  for i in "${!arr_ref[@]}"; do arr_ref[$i]=$(( arr_ref[i] * 2 )); done
+}
+nums=(1 2 3)
+double_all nums
+echo "${nums[@]}"
+```
+
+**Đáp số:**
+
+```text
+2 4 6
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Bash không truyền array trực tiếp qua tham số function (`$1` chỉ nhận được tên biến
+dạng chuỗi `"nums"`, không phải nội dung array). `local -n arr_ref=$1` tạo một
+**nameref** — `arr_ref` trở thành một "bí danh" trỏ tới biến có tên đúng bằng giá trị
+`$1`, nên sửa `arr_ref` là sửa thẳng `nums` ở ngoài, không cần `echo`/command
+substitution.
+
+</details>
+
+## Câu 13 — `shift`: xử lý tham số vị trí kiểu hàng đợi
+
+```bash
+process() {
+  while (( $# > 0 )); do
+    echo "dang xu ly: $1"
+    shift
+  done
+}
+process a b c
+```
+
+**Đáp số:**
+
+```text
+dang xu ly: a
+dang xu ly: b
+dang xu ly: c
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`shift` đẩy toàn bộ tham số vị trí lùi một bậc: `$2` trở thành `$1`, `$3` thành `$2`,
+và `$#` giảm đi 1. Mẫu `while (( $# > 0 )); do ...; shift; done` là cách chuẩn để
+"ăn" từng tham số một mà không cần biết trước tổng số bao nhiêu — nền tảng của cách
+`getopts` xử lý flag (xem [Bộ 7 câu 14](bt-07-control-flow-an-toan.md)).
+
+</details>
+
+## Câu 14 — `readonly`: biến không thể gán lại
+
+```bash
+readonly RO_VAR="khong doi"
+RO_VAR="thu doi"
+```
+
+**Đáp số:**
+
+```text
+bash: line N: RO_VAR: readonly variable
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`readonly` khoá biến **vĩnh viễn** cho tới khi shell/subshell đó kết thúc — không có
+lệnh "unreadonly". Dùng cho hằng số trong script (ví dụ đường dẫn config cố định) để
+tự bắt lỗi nếu có dòng code nào sau đó vô tình gán đè.
+
+</details>
+
+## Câu 15 — liệt kê tên biến theo tiền tố (`${!prefix*}`)
+
+```bash
+FOO_A=1
+FOO_B=2
+BAR_C=3
+echo "${!FOO_*}"
+```
+
+**Đáp số:**
+
+```text
+FOO_A FOO_B
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`${!prefix*}` (hoặc `${!prefix@}`) trả về **danh sách tên biến** (không phải giá trị)
+bắt đầu bằng `prefix` đang tồn tại trong scope hiện tại — `BAR_C` không khớp tiền tố
+`FOO_` nên không xuất hiện. Hữu ích để kiểm tra nhanh "có bao nhiêu biến cấu hình bắt
+đầu bằng `APP_`" mà không cần `env | grep`.
 
 </details>
 

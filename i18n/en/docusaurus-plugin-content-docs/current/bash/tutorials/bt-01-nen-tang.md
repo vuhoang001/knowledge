@@ -2,7 +2,7 @@
 title: "Bộ 1 — Nền tảng: exit code, streams, short-circuit"
 i18n_status: untranslated
 sidebar_position: 5
-description: "10 bài tự chấm: exit code của && và ||, pipefail, redirect stdout/stderr riêng rẽ, command substitution — mỗi bài có đáp số thật, lời giải giấu trong <details>."
+description: "15 bài tự chấm: exit code của && và ||, pipefail, redirect stdout/stderr riêng rẽ, command substitution — mỗi bài có đáp số thật, lời giải giấu trong <details>."
 tags: [tutorial, bash, exit-code, streams]
 domain: devops
 category: concept
@@ -251,6 +251,126 @@ exit=127
 `127` cho lỗi "unbound variable" dưới `set -u` — cùng mã dùng cho "command not found".
 Đừng dựa vào số exit code cụ thể để phân loại loại lỗi; đọc **thông báo lỗi** mới là
 cách chắc.
+
+</details>
+
+## Câu 11 — `$?` bị reset bởi MỌI lệnh, kể cả `echo`
+
+```bash
+false
+echo "lenh chen giua"
+echo "exit sau do=$?"
+```
+
+**Đáp số:**
+
+```text
+lenh chen giua
+exit sau do=0
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Bẫy hay gặp: viết `false` rồi vài dòng sau mới kiểm `$?`, quên rằng **bất kỳ lệnh nào**
+chạy giữa đó — kể cả `echo` vô hại — đã ghi đè `$?`. Muốn kiểm tra exit code của một
+lệnh cụ thể, phải đọc `$?` **ngay sau** lệnh đó, hoặc lưu lại vào một biến riêng.
+
+</details>
+
+## Câu 12 — subshell `()` không đổi biến của shell cha, group `{}` thì có
+
+```bash
+x=1
+(x=2); echo "sau subshell (): x=$x"
+{ x=3; }; echo "sau group {}: x=$x"
+```
+
+**Đáp số:**
+
+```text
+sau subshell (): x=1
+sau group {}: x=3
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`(...)` chạy trong một **process con riêng** — mọi thay đổi biến bên trong biến mất
+khi subshell kết thúc. `{...}` (group command, cần khoảng trắng sau `{` và `;` trước
+`}`) chạy **trong chính shell hiện tại** — thay đổi biến có hiệu lực thật. Nhầm hai
+cú pháp này là lý do phổ biến của "sao tôi gán biến trong `(...)` mà ra ngoài không
+thấy gì".
+
+</details>
+
+## Câu 13 — chuỗi `&&`/`||` ba lệnh, đánh giá trái sang phải
+
+```bash
+true && echo "A" && false && echo "B"
+echo "exit cuoi cung=$?"
+```
+
+**Đáp số:**
+
+```text
+A
+exit cuoi cung=1
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Chuỗi được đánh giá **tuần tự từ trái sang phải**: `true` → chạy `echo "A"` (in `A`)
+→ `false` → dừng lại, **không chạy** `echo "B"` nữa. Exit code cuối cùng của toàn
+chuỗi là exit code của lệnh **cuối cùng thực sự chạy** (`false` → `1`), không phải
+lệnh viết cuối cùng trên dòng.
+
+</details>
+
+## Câu 14 — `PIPESTATUS`: lấy exit code của từng lệnh trong pipe
+
+```bash
+false | true | false
+echo "PIPESTATUS=${PIPESTATUS[@]}"
+```
+
+**Đáp số:**
+
+```text
+PIPESTATUS=1 0 1
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`PIPESTATUS` là array built-in, giữ **exit code của từng lệnh** trong pipeline cuối
+cùng vừa chạy, theo đúng thứ tự — không cần `pipefail` mới xem được. Hữu ích khi cần
+biết **cụ thể lệnh nào** trong một pipe dài đã thất bại, thay vì chỉ biết "có lệnh nào
+đó thất bại" như `pipefail` cho biết.
+
+</details>
+
+## Câu 15 — `tee` trong pipe không tự "sửa" vấn đề của `pipefail`
+
+```bash
+false | tee /tmp/q15.log > /dev/null
+echo "exit=$?"
+```
+
+**Đáp số:**
+
+```text
+exit=0
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Không có `pipefail`, exit code của pipeline vẫn là exit code của lệnh **cuối cùng**
+(`tee`, luôn thành công nếu ghi file được) — `false` ở đầu vẫn bị "nuốt" dù `tee` nằm
+giữa chừng không phải cuối thật sự theo nghĩa thông thường. `tee` không đổi luật, chỉ
+là một lệnh nữa trong chuỗi.
 
 </details>
 

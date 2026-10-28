@@ -1,7 +1,7 @@
 ---
 title: "Bộ 4 — Text processing: grep, awk, sed, cut, sort"
 sidebar_position: 8
-description: "12 bài tự chấm trên một access.log mẫu — đếm, lọc, thay thế, dễ dính bẫy chọn sai cột — mỗi bài có đáp số thật."
+description: "17 bài tự chấm trên một access.log mẫu — đếm, lọc, thay thế, dễ dính bẫy chọn sai cột — mỗi bài có đáp số thật."
 tags: [tutorial, bash, awk, sed, grep]
 domain: devops
 category: concept
@@ -309,6 +309,145 @@ awk '{print NR, NF}' access.log | head -2
 `NR` là số thứ tự dòng đang xử lý (toàn file, không reset giữa các khối). `NF` là số
 cột của **dòng hiện tại** — có thể khác nhau giữa các dòng nếu định dạng không đều,
 không phải một hằng số cố định cho cả file.
+
+</details>
+
+Chuẩn bị thêm một file CSV cho các câu 13-17:
+
+```bash
+cat > data.csv << 'EOF'
+name,age,city
+An,25,HCM
+Binh,30,HN
+Chi,22,DN
+EOF
+```
+
+## Câu 13 — `awk -F` đổi delimiter, đọc CSV
+
+```bash
+awk -F',' 'NR>1 {print $1, $2}' data.csv
+```
+
+**Đáp số:**
+
+```text
+An 25
+Binh 30
+Chi 22
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`-F','` đổi field separator mặc định (khoảng trắng) thành dấu phẩy — cần thiết cho
+CSV, nơi cột ngăn bởi `,` không phải khoảng trắng. `NR>1` bỏ qua dòng header.
+
+</details>
+
+## Câu 14 — `sed -i` sửa trực tiếp file, giữ bản backup
+
+```bash
+cp data.csv data.csv.orig
+sed -i.bak 's/HCM/Ho Chi Minh/' data.csv
+cat data.csv
+echo "--- file backup ---"
+cat data.csv.bak
+```
+
+**Đáp số:**
+
+```text
+name,age,city
+An,25,Ho Chi Minh
+Binh,30,HN
+Chi,22,DN
+--- file backup ---
+name,age,city
+An,25,HCM
+Binh,30,HN
+Chi,22,DN
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`-i` sửa file **tại chỗ** (in-place) — không giống các lệnh trước chỉ in ra stdout.
+`-i.bak` còn giữ lại **bản gốc** với đuôi `.bak` trước khi sửa — luôn dùng `-i.bak`
+(có đuôi) thay vì `-i` trần khi còn chưa chắc regex đúng, vì `-i` trần sửa xong là
+mất bản gốc vĩnh viễn nếu regex sai.
+
+</details>
+
+## Câu 15 — `grep -v`: loại bỏ dòng khớp
+
+```bash
+grep -v "^name" data.csv
+```
+
+**Đáp số:**
+
+```text
+An,25,Ho Chi Minh
+Binh,30,HN
+Chi,22,DN
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`-v` đảo ngược logic: in **những dòng KHÔNG khớp** pattern — ở đây dùng để bỏ dòng
+header mà không cần biết số dòng cụ thể, miễn header luôn bắt đầu bằng `name`.
+
+</details>
+
+## Câu 16 — `sort -t` kết hợp `-k`: sort theo cột của một file có delimiter riêng
+
+```bash
+sort -t',' -k2 -n data.csv
+```
+
+**Đáp số:**
+
+```text
+name,age,city
+Chi,22,DN
+An,25,Ho Chi Minh
+Binh,30,HN
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`-t','` nói cho `sort` biết cột ngăn bởi dấu phẩy (giống `-F` của `awk`). `-k2 -n`
+sort theo cột 2, kiểu số. Dòng header `name,age,city` vẫn lẫn vào vì `sort` không tự
+biết "dòng đầu là header" — muốn loại nó phải `tail -n +2` trước khi `sort`.
+
+</details>
+
+## Câu 17 — `comm`: so sánh hai file đã sort theo dòng chung/riêng
+
+```bash
+printf 'a\nb\nc\n' | sort > left2.txt
+printf 'b\nc\nd\n' | sort > right2.txt
+comm left2.txt right2.txt
+```
+
+**Đáp số:**
+
+```text
+a
+		b
+		c
+	d
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`comm` in **3 cột** (ngăn bởi tab): cột 1 = dòng chỉ có ở file đầu (`a`), cột 2 = dòng
+chỉ có ở file thứ hai (`d`), cột 3 = dòng có ở **cả hai** (`b`, `c`). Yêu cầu bắt buộc:
+cả hai file phải **đã sort** trước, `comm` không tự sort giúp.
 
 </details>
 

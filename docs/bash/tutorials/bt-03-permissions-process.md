@@ -1,7 +1,7 @@
 ---
 title: "Bộ 3 — File permissions và process control"
 sidebar_position: 7
-description: "10 bài tự chấm: chmod octal, umask, background job, wait, kill -TERM, trap bắt signal, PPID — mỗi bài có đáp số thật từ máy chạy."
+description: "15 bài tự chấm: chmod octal, umask, background job, wait, kill -TERM, trap bắt signal, PPID — mỗi bài có đáp số thật từ máy chạy."
 tags: [tutorial, bash, permissions, process]
 domain: devops
 category: concept
@@ -261,6 +261,171 @@ PID=631009 PPID=628702
 **process cha** — ở đây là shell/terminal đã gọi `bash -c`. Mọi tiến trình trên Linux
 (trừ `init`/PID 1) đều có đúng một cha, tạo thành cây tiến trình mà `ps --forest` vẽ ra
 được.
+
+</details>
+
+## Câu 11 — bẫy: `chmod -R 644` trên cả cây làm mất quyền truy cập vĩnh viễn
+
+```bash
+mkdir -p tree/sub && touch tree/a.txt tree/sub/b.txt
+chmod -R 644 tree
+ls -ld tree
+ls tree
+```
+
+**Đáp số:**
+
+```text
+chmod: cannot access 'tree/a.txt': Permission denied
+chmod: cannot access 'tree/sub': Permission denied
+drw-r--r-- ... tree
+ls: cannot access 'tree/a.txt': Permission denied
+ls: cannot access 'tree/sub': Permission denied
+```
+
+<details>
+<summary>Lời giải</summary>
+
+**Bẫy nguy hiểm nhất của bộ này.** `644` không có bit execute. Với **thư mục**,
+execute nghĩa là "được phép đi vào/liệt kê nội dung" — thư mục mất execute thì
+**không ai, kể cả owner, truy cập được những gì bên trong**, dù vẫn có quyền "read"
+trên chính thư mục đó. `chmod -R 644 tree` tự làm chính nó mất khả năng đi tiếp vào
+`tree/` để đổi quyền các file con — lệnh dừng giữa đường với hàng loạt lỗi "Permission
+denied", và cây thư mục kẹt luôn ở trạng thái không truy cập được.
+
+</details>
+
+## Câu 12 — sửa lại: thư mục cần `+x` mới đi qua được
+
+```bash
+chmod 755 tree
+ls -ld tree | awk '{print $1}'
+ls tree/sub/b.txt
+```
+
+**Đáp số:**
+
+```text
+drwxr-xr-x
+tree/sub/b.txt
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Trả lại execute cho **chính `tree`** (không cần `-R`, vì ta chỉ cần sửa tầng ngoài
+cùng để đi qua được) là đủ để truy cập lại mọi thứ bên trong — các file con bên dưới
+chưa hề bị động tới permission của chúng, chúng vẫn nguyên `644` từ trước, chỉ là
+không ai "đi vào" được để xác nhận.
+
+</details>
+
+## Câu 13 — cách đúng: phân quyền file và thư mục khác nhau trong cùng một cây
+
+```bash
+find tree -type d -exec chmod 755 {} \;
+find tree -type f -exec chmod 644 {} \;
+find tree -printf '%m %p\n' | sort -k2
+```
+
+**Đáp số:**
+
+```text
+755 tree
+644 tree/a.txt
+755 tree/sub
+644 tree/sub/b.txt
+```
+
+<details>
+<summary>Lời giải</summary>
+
+Quy tắc chuẩn khi set permission cho cả cây: **thư mục luôn cần `+x`** (để truy cập
+được nội dung), **file thường thì không** (trừ khi nó là script). Chạy hai lệnh
+`find -type d` và `find -type f` riêng — không bao giờ `chmod -R` cùng một số cho cả
+hai loại, vì số đó đúng cho loại này sẽ sai cho loại kia (file thường không cần `x`,
+thư mục thì bắt buộc).
+
+</details>
+
+## Câu 14 — `kill -TERM` có thể bị `trap` bắt, `kill -KILL` (`-9`) thì không
+
+```bash
+bash -c '
+trap "echo BAT_DUOC_TERM" TERM
+sleep 5 &
+CPID=$!
+kill -TERM $$
+echo "van song sau TERM vi co trap, PID cua con=$CPID"
+kill -KILL $CPID
+sleep 0.2
+kill -0 $CPID 2>/dev/null && echo "con van song" || echo "con da chet, KILL khong trap duoc"
+'
+```
+
+**Đáp số:**
+
+```text
+BAT_DUOC_TERM
+van song sau TERM vi co trap, PID cua con=...
+con da chet, KILL khong trap duoc
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`SIGTERM` (và hầu hết signal khác) **có thể** bị chương trình chặn bằng `trap`, chạy
+logic dọn dẹp riêng thay vì chết ngay — đã thấy ở [Bộ 3 câu 8 gốc](bt-03-permissions-process.md#câu-8--trap-bắt-sigterm-để-dọn-dẹp-trước-khi-thoát).
+`SIGKILL` (`-9`/`-KILL`) là **ngoại lệ** — nhân Linux xử lý nó ở tầng dưới chương
+trình, không process nào trap được, nó luôn chết ngay. Đây là lý do `kill -9` được
+coi là "giải pháp cuối cùng" khi `kill` thường không có tác dụng.
+
+</details>
+
+## Câu 15 — bẫy: `$?` sau `if ! lệnh` không phải exit code gốc của `lệnh`
+
+```bash
+pids=()
+(sleep 0.2; exit 0) &
+pids+=($!)
+(sleep 0.1; exit 5) &
+pids+=($!)
+for p in "${pids[@]}"; do
+  if ! wait "$p"; then
+    echo "job $p that bai, exit=$?"
+  fi
+done
+```
+
+**Đáp số (SAI — bẫy):**
+
+```text
+job ... that bai, exit=0
+```
+
+**Sửa đúng:**
+
+```bash
+for p in "${pids[@]}"; do
+  wait "$p"; rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "job $p that bai, exit=$rc"
+  fi
+done
+```
+
+```text
+job ... that bai, exit=5
+```
+
+<details>
+<summary>Lời giải</summary>
+
+`!` **phủ định** kết quả đúng/sai của lệnh, và `$?` ngay sau `if ! lệnh` phản ánh kết
+quả **đã bị phủ định** đó (0 hoặc 1), không phải exit code **gốc** của `lệnh`
+(`wait` ở đây trả `5`). Muốn giữ exit code gốc để báo cáo chi tiết, phải **tách riêng**
+bước gọi lệnh và bước lưu `$?` ra một biến, rồi mới `if` trên biến đó — không bao giờ
+trộn `!`/`&&`/`||` với việc đọc `$?` của lệnh gốc trên cùng một dòng.
 
 </details>
 

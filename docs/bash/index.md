@@ -53,7 +53,7 @@ Năm nhóm chuẩn — **mọi chủ đề trong kho đều dùng đúng bộ n�
 
 | Nhóm | Nội dung |
 |---|---|
-| [Bài tập](tutorials/index.md) | **4 lab chạy thật** (pipeline, viết script, regex/sed, forensics 8 bước) + **73 bài tự chấm** chia 7 bộ, từ exit code tới `set -e` không bắt lỗi trong `if` |
+| [Bài tập](tutorials/index.md) | **4 lab chạy thật** (pipeline, viết script, regex/sed, forensics 8 bước) + **108 bài tự chấm** chia 7 bộ, từ exit code tới `set -e` không bắt lỗi trong `if` |
 | [Cheatsheet](cheatsheets/index.md) | [Lệnh theo nhóm](cheatsheets/commands.md) · [Toán tử test và expansion](cheatsheets/test-operators-va-expansion.md) |
 | [Case study](case-studies/index.md) | **4 ca** — word splitting, pipe nuốt exit code, glob không khớp, `set -e` không bắt |
 
