@@ -298,13 +298,13 @@ nhưng mỗi mục trả lời *vì sao* và *cạm bẫy ở đâu*. Bắt đ�
 | [bash-lab-first-script](bash/tutorials/bash-lab-first-script.md) | Lab: từ `hello.sh` tới script có `trap`, debug `bash -x` | 📝 |
 | [bash-lab-regex-va-sed](bash/tutorials/bash-lab-regex-va-sed.md) | Lab: `grep -E`/`-F` lọc dòng, `sed` chuẩn hoá CSV, bẫy thay ký tự lan ra cả dòng | 📝 |
 | [bash-lab-forensics-mock](bash/tutorials/bash-lab-forensics-mock.md) | Lab: chuỗi 8 bước phụ thuộc nhau — `ps`/`chmod` → `grep` → `sed` → `awk` → seal SHA-256 | 📝 |
-| [bt-01-nen-tang](bash/tutorials/bt-01-nen-tang.md) | 15 bài: exit code, `&&`/`\|\|`, redirect stdout/stderr riêng, `pipefail`, `PIPESTATUS` | 📝 |
-| [bt-02-quoting-expansion](bash/tutorials/bt-02-quoting-expansion.md) | 15 bài: word splitting, `nullglob`, parameter expansion, brace expansion, `%q` | 📝 |
-| [bt-03-permissions-process](bash/tutorials/bt-03-permissions-process.md) | 15 bài: `chmod` octal, `umask`, `wait`, `kill`, `trap`, PPID, bẫy `chmod -R` | 📝 |
-| [bt-04-text-processing](bash/tutorials/bt-04-text-processing.md) | 17 bài: `grep`/`awk`/`sed`/`cut`/`sort`/`comm`, bẫy chọn nhầm cột theo regex | 📝 |
-| [bt-05-regex](bash/tutorials/bt-05-regex.md) | 16 bài: BRE vs ERE, bẫy `.` không escape, lookahead PCRE, `\b` là GNU extension | 📝 |
-| [bt-06-variables-arrays-functions](bash/tutorials/bt-06-variables-arrays-functions.md) | 15 bài: `local`, `return` vs `echo`, associative array, đệ quy, nameref | 📝 |
-| [bt-07-control-flow-an-toan](bash/tutorials/bt-07-control-flow-an-toan.md) | 15 bài: `set -e` không bắt lỗi trong `if`, `set -u` exit 127, `getopts`, `set -x` | 📝 |
+| [bt-01-nen-tang](bash/tutorials/bt-01-nen-tang.md) | 15 bài: exit code, `&&`/`\|\|`, redirect stdout/stderr riêng, `pipefail` | 📝 |
+| [bt-02-quoting-expansion](bash/tutorials/bt-02-quoting-expansion.md) | 15 bài: word splitting, `nullglob`, parameter expansion, `[` vs `[[` | 📝 |
+| [bt-03-permissions-process](bash/tutorials/bt-03-permissions-process.md) | 15 bài: `chmod` octal, `umask`, `wait`, `kill`, `trap`, PPID | 📝 |
+| [bt-04-text-processing](bash/tutorials/bt-04-text-processing.md) | 17 bài: `grep`/`awk`/`sed`/`cut`/`sort`, bẫy chọn nhầm cột theo regex | 📝 |
+| [bt-05-regex](bash/tutorials/bt-05-regex.md) | 16 bài: BRE vs ERE, bẫy `.` không escape, `{3}` không kiểm tra giá trị | 📝 |
+| [bt-06-variables-arrays-functions](bash/tutorials/bt-06-variables-arrays-functions.md) | 15 bài: `local`, `return` vs `echo`, associative array, `export` | 📝 |
+| [bt-07-control-flow-an-toan](bash/tutorials/bt-07-control-flow-an-toan.md) | 15 bài: `set -e` không bắt lỗi trong `if`, `set -u` exit 127, `while read` mất dòng cuối | 📝 |
 | [cheatsheets/commands](bash/cheatsheets/commands.md) | Bảng tra lệnh theo nhóm | 🗂️ |
 | [cheatsheets/test-operators](bash/cheatsheets/test-operators-va-expansion.md) | Toán tử test, parameter expansion, biến đặc biệt | 🗂️ |
 | [cs: word-splitting](bash/case-studies/bien-khong-nhay-word-splitting.md) | Tên file có dấu cách xoá nhầm cả thư mục | 📝 |
@@ -328,6 +328,17 @@ là trí nhớ chứ không phải thực tại thì mọi `plan`/`apply` sau đ
 | [lab-02-state-locking](terraform/tutorials/lab-02-state-locking.md) | Lab: tự tạo race condition, thấy lock chặn lệnh thứ hai thay vì ghi đè state | 📝 |
 | [lab-03-state-surgery](terraform/tutorials/lab-03-state-surgery.md) | Lab: `state mv` khi refactor vào module mà không destroy/recreate; hậu quả thật của `state rm` | 📝 |
 | [lab-04-import](terraform/tutorials/lab-04-import.md) | Lab: import container Docker tạo bằng tay; vì sao plan sau import vẫn đòi destroy/recreate | 📝 |
+| [variables-outputs-locals](terraform/reference/variables-outputs-locals.md) | Thứ tự ưu tiên CLI/`.tfvars`/env var; `sensitive` chỉ ẩn ở CLI, không mã hoá state | 📝 |
+| [modules](terraform/reference/modules.md) | Gọi cùng module hai lần ra hai bộ resource độc lập — địa chỉ state có tiền tố `module.<tên>` | 📝 |
+| [terraform/skills/index](terraform/skills/index.md) | Mục lục kỹ năng — Import, `count` vs `for_each`, Backend/locking trên AWS thật | 🗂️ |
+| [skills/import](terraform/skills/import.md) | `terraform import` chỉ ghi state, không sinh HCL — HCL sai lệch hiện ra ở `plan` kế tiếp | 📝 |
+| [skills/count-vs-for-each](terraform/skills/count-vs-for-each.md) | Xoá phần tử giữa list bằng `count` đổi tên/xoá nhầm resource; `for_each` thì không | 📝 |
+| [skills/backend-va-locking](terraform/skills/backend-va-locking.md) | Backend không đọc `var.*`; lock DynamoDB chặn đúng, lock `use_lockfile` không chặn được trên LocalStack | 📝 |
+| [lab-05-s3-versioning](terraform/tutorials/lab-05-s3-versioning.md) | Lab AWS: S3 bucket + versioning, `variable` theo môi trường, verify bằng AWS CLI | 📝 |
+| [lab-06-iam-role-policy](terraform/tutorials/lab-06-iam-role-policy.md) | Lab AWS: IAM role + policy bằng `jsonencode`, gắn qua `aws_iam_role_policy_attachment` | 📝 |
+| [lab-07-vpc-subnet-sg](terraform/tutorials/lab-07-vpc-subnet-sg.md) | Lab AWS: VPC + subnet bằng `for_each` trên map CIDR, security group nhiều `ingress` | 📝 |
+| [lab-08-ec2-instance](terraform/tutorials/lab-08-ec2-instance.md) | Lab AWS: EC2 + `user_data`; verify đúng API `describe-instance-attribute`, không phải `describe-instances` | 📝 |
+| [lab-09-import-existing-bucket](terraform/tutorials/lab-09-import-existing-bucket.md) | Lab AWS: tự phát hiện attribute thật trước khi viết HCL, import tới khi `plan` báo "No changes" | 📝 |
 
 ## Machine Learning
 

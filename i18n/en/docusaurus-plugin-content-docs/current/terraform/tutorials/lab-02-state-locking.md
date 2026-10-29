@@ -64,7 +64,7 @@ Lock Info:
   ID:        1b2bc345-6eaf-5e97-f5cc-02b58f0e3eeb
   Path:      terraform.tfstate
   Operation: OperationTypeApply
-  Who:       hoanggggf@hoanggggf
+  Who:       user@host
   Version:   1.16.5
   Created:   2026-10-28 07:33:16.777192825 +0000 UTC
   Info:      

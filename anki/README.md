@@ -1,16 +1,23 @@
 # Bộ thẻ Anki sinh từ kho
 
-313 thẻ (390 card), sinh từ nội dung `docs/`. Thư mục này nằm **ngoài** `docs/` nên không
+445 thẻ, sinh từ nội dung `docs/`. Thư mục này nằm **ngoài** `docs/` nên không
 lên site Docusaurus — nó là học liệu dẫn xuất, không phải nguồn sự thật.
 
 | File | Note type | Deck | Số thẻ |
 |---|---|---|---|
-| `data-modeling-basic.tsv` | Basic | `KB::Data Modeling` | 143 |
+| `data-modeling-basic.tsv` | Basic | `KB::Data Modeling` | 195 |
 | `data-modeling-cloze.tsv` | Cloze | `KB::Data Modeling` | 19 |
 | `dbt-basic.tsv` | Basic | `KB::dbt` | 125 |
 | `dbt-cloze.tsv` | Cloze | `KB::dbt` | 26 |
+| `kafka-trung-binh.tsv` | Basic | `KB::Kafka::Trung bình` | 40 |
+| `kafka-kho.tsv` | Basic | `KB::Kafka::Khó` | 40 |
 
-Cloze sinh nhiều card mỗi thẻ nên tổng card (390) lớn hơn tổng thẻ (313).
+Cloze sinh nhiều card mỗi thẻ nên tổng card lớn hơn tổng thẻ.
+
+Bộ Kafka tách hai deck theo **độ khó**, không theo chủ đề: `Trung bình` là cơ chế nền
+(log/segment/partition/ISR/retention, bẫy vận hành thường gặp); `Khó` là mức protocol
+(PID + epoch + sequence, transaction marker + LSO, leader epoch, ma trận compatibility,
+và bốn case study). Tag `trung-binh` / `kho` cũng có trên từng thẻ để lọc chéo deck.
 
 ## Chuẩn viết thẻ
 
@@ -64,8 +71,9 @@ Sửa nội dung trong `docs/` thì thẻ ở đây **không tự đổi theo**.
 lại — Anki khớp theo trường đầu tiên, nên sửa **mặt sau** thì thẻ được cập nhật, còn sửa
 **mặt trước** sẽ tạo thẻ mới và để lại thẻ cũ.
 
-Chưa phủ: `data-quality`, Kafka, Flink, Iceberg, Trino, Airflow, SQL, Python — các file
-đó mới ở mức khung.
+Chưa phủ: `data-quality`, Flink, Iceberg, Trino, Airflow, SQL, Python — các file
+đó mới ở mức khung. Kafka đã phủ đủ 14 file `reference/`, `skills/`, `case-studies/`
+(`cheatsheets/` và `tutorials/` cố tình không sinh thẻ).
 
 ## Kiểm tra trước khi import
 
