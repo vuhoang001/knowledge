@@ -33,6 +33,8 @@ EOF
 
 ## Câu 1 — đếm dòng có "404"
 
+**Dự đoán:** `grep -c "404" access.log` in ra số mấy?
+
 ```bash
 grep -c "404" access.log
 ```
@@ -52,6 +54,8 @@ vẫn chỉ tính một.
 </details>
 
 ## Câu 2 — lấy danh sách IP, bỏ trùng
+
+**Dự đoán:** danh sách IP in ra gồm mấy dòng, theo thứ tự nào?
 
 ```bash
 cut -d' ' -f1 access.log | sort -u
@@ -75,6 +79,8 @@ trùng trong một lệnh — tương đương `sort | uniq` nhưng ngắn hơn.
 
 ## Câu 3 — đếm request theo IP, nhiều nhất lên trước
 
+**Dự đoán:** IP nào xếp đầu tiên, với số đếm là bao nhiêu, và thứ tự ba dòng còn lại ra sao?
+
 ```bash
 awk '{print $1}' access.log | sort | uniq -c | sort -rn
 ```
@@ -97,6 +103,8 @@ luôn phải `sort` trước `uniq -c`. `sort -rn` sort số giảm dần (`-n` 
 
 ## Câu 4 — tổng số byte (cột cuối)
 
+**Dự đoán:** tổng `sum` in ra ở cuối là số mấy?
+
 ```bash
 awk '{sum += $NF} END {print sum}' access.log
 ```
@@ -116,6 +124,8 @@ awk '{sum += $NF} END {print sum}' access.log
 </details>
 
 ## Câu 5 — `sed` thay chuỗi, chỉ xem dòng đầu
+
+**Dự đoán:** dòng đầu in ra, cụm ` 200 ` đổi thành gì?
 
 ```bash
 sed 's/ 200 / OK /' access.log | head -1
@@ -137,6 +147,8 @@ khoảng trắng quanh `200` để tránh thay nhầm một số khác chứa `"
 </details>
 
 ## Câu 6 — bẫy: lọc theo regex 3 chữ số dễ dính nhầm cột byte
+
+**Dự đoán:** đoạn "SAI" khớp nhầm regex vào những cột nào ngoài cột status (`$8`), và đoạn "ĐÚNG" (`$8+0 >= 400`) lọc ra đúng mấy dòng?
 
 ```bash
 echo "--- SAI: regex /^[0-9]{3}$/ khop ca cot status va cot byte ---"
@@ -176,6 +188,8 @@ trước cấu trúc log (status luôn ở cột cố định `$8`) và dùng th
 
 ## Câu 7 — sort theo một cột cụ thể
 
+**Dự đoán:** sau khi sort theo cột status (`$8`) kiểu số, thứ tự 6 dòng `IP status` in ra là gì?
+
 ```bash
 awk '{print $1, $8}' access.log | sort -k2 -n
 ```
@@ -202,6 +216,8 @@ awk '{print $1, $8}' access.log | sort -k2 -n
 
 ## Câu 8 — `tr` đổi hoa thành thường
 
+**Dự đoán:** `tr 'A-Z' 'a-z'` biến "XIN CHAO" thành chuỗi gì?
+
 ```bash
 echo "XIN CHAO" | tr 'A-Z' 'a-z'
 ```
@@ -222,6 +238,8 @@ nguồn đổi thành ký tự thứ N của tập đích. Không hiểu regex, 
 
 ## Câu 9 — IP xuất hiện nhiều request nhất
 
+**Dự đoán:** dòng duy nhất in ra sau `head -1` là gì (đếm và IP nào)?
+
 ```bash
 cut -d' ' -f1 access.log | sort | uniq -c | sort -rn | head -1
 ```
@@ -241,6 +259,8 @@ mẫu pipeline rất phổ biến: "top-N theo số lần xuất hiện".
 </details>
 
 ## Câu 10 — `paste` ghép hai danh sách theo cột
+
+**Dự đoán:** `paste left.txt right.txt` in ra mấy dòng, mỗi dòng ghép hai giá trị bằng ký tự gì?
 
 ```bash
 printf 'a\nb\nc\n' > left.txt
@@ -265,6 +285,8 @@ c	3
 </details>
 
 ## Câu 11 — `wc -l` khi file không có newline cuối
+
+**Dự đoán:** `wc -l` và `grep -c ''` in ra số dòng khác nhau thế nào, số nào mới đúng là 2 dòng thật của file?
 
 ```bash
 printf 'line1\nline2' > nonewline.txt
@@ -291,6 +313,8 @@ newline cuối) đếm đúng `2`. Khi cần đếm dòng chính xác bất kể
 </details>
 
 ## Câu 12 — `NR` và `NF` trong awk
+
+**Dự đoán:** hai dòng đầu in ra giá trị `NR, NF` là gì?
 
 ```bash
 awk '{print NR, NF}' access.log | head -2
@@ -325,6 +349,8 @@ EOF
 
 ## Câu 13 — `awk -F` đổi delimiter, đọc CSV
 
+**Dự đoán:** `awk -F',' 'NR>1 {print $1, $2}'` in ra gì, có dòng header không?
+
 ```bash
 awk -F',' 'NR>1 {print $1, $2}' data.csv
 ```
@@ -346,6 +372,8 @@ CSV, nơi cột ngăn bởi `,` không phải khoảng trắng. `NR>1` bỏ qua 
 </details>
 
 ## Câu 14 — `sed -i` sửa trực tiếp file, giữ bản backup
+
+**Dự đoán:** sau `sed -i.bak`, nội dung `data.csv` (đã sửa) và `data.csv.bak` (backup) khác nhau ở đâu?
 
 ```bash
 cp data.csv data.csv.orig
@@ -381,6 +409,8 @@ mất bản gốc vĩnh viễn nếu regex sai.
 
 ## Câu 15 — `grep -v`: loại bỏ dòng khớp
 
+**Dự đoán:** `grep -v "^name" data.csv` loại mất dòng nào, giữ lại những dòng nào?
+
 ```bash
 grep -v "^name" data.csv
 ```
@@ -402,6 +432,8 @@ header mà không cần biết số dòng cụ thể, miễn header luôn bắt 
 </details>
 
 ## Câu 16 — `sort -t` kết hợp `-k`: sort theo cột của một file có delimiter riêng
+
+**Dự đoán:** `sort -t',' -k2 -n data.csv` cho ra thứ tự dòng nào, dòng header `name,age,city` rơi vào vị trí nào?
 
 ```bash
 sort -t',' -k2 -n data.csv
@@ -426,6 +458,8 @@ biết "dòng đầu là header" — muốn loại nó phải `tail -n +2` trư�
 </details>
 
 ## Câu 17 — `comm`: so sánh hai file đã sort theo dòng chung/riêng
+
+**Dự đoán:** `comm` in ra 3 cột — dòng nào rơi vào cột 1 (chỉ ở file đầu), cột 2 (chỉ ở file hai), cột 3 (chung cả hai)?
 
 ```bash
 printf 'a\nb\nc\n' | sort > left2.txt

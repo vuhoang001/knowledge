@@ -21,6 +21,8 @@ Yêu cầu: đã làm [Bộ 1](bt-01-nen-tang.md), đã đọc
 
 ## Câu 1 — word splitting khi quên quote
 
+**Dự đoán:** lệnh `cp` sẽ chạy thành công hay báo lỗi? Nếu lỗi, lỗi gì?
+
 ```bash
 touch "file one.txt"
 f="file one.txt"
@@ -45,6 +47,8 @@ lỗi "No such file or directory" thay vì copy nhầm.
 
 ## Câu 2 — sửa đúng bằng quote
 
+**Dự đoán:** dòng `echo` in ra gì?
+
 ```bash
 cp "$f" /tmp/copied_ok
 echo "OK: $(ls /tmp/copied_ok)"
@@ -67,6 +71,8 @@ muốn word-split).
 
 ## Câu 3 — glob không khớp file nào thì giữ nguyên literal
 
+**Dự đoán:** dòng `echo` in ra `*.bak` nguyên văn, hay bash thay nó bằng gì khác?
+
 ```bash
 rm -f *.bak
 echo "danh sach: *.bak -> "*.bak
@@ -88,6 +94,8 @@ sẽ nhận một chuỗi vô nghĩa thay vì danh sách rỗng.
 </details>
 
 ## Câu 4 — `nullglob` đổi hành vi đó
+
+**Dự đoán:** `${#arr[@]}` (số phần tử của `arr`) là bao nhiêu?
 
 ```bash
 shopt -s nullglob
@@ -113,6 +121,8 @@ không lặp một lần "giả" khi không có file nào khớp.
 
 ## Câu 5 — parameter expansion: giá trị mặc định
 
+**Dự đoán:** hai dòng `echo` in ra gì — sau dòng đầu, `myvar` có bị gán giá trị `default_value` không?
+
 ```bash
 unset myvar
 echo "${myvar:-default_value}"
@@ -135,6 +145,8 @@ gán** gì vào `var` — lần in thứ hai vẫn thấy `myvar` trống.
 </details>
 
 ## Câu 6 — parameter expansion: gán luôn giá trị mặc định
+
+**Dự đoán:** sau lệnh `echo` đầu tiên, biến `myvar2` giữ giá trị gì?
 
 ```bash
 unset myvar2
@@ -159,6 +171,8 @@ myvar2=gan_roi
 
 ## Câu 7 — cắt chuỗi: `#` (từ đầu) và `%` (từ cuối)
 
+**Dự đoán:** hai dòng `echo` (`${s#Xin }` và `${s%% *}`) in ra gì?
+
 ```bash
 s="Xin chao the gioi"
 echo "${s#Xin }"
@@ -182,6 +196,8 @@ phần khớp **dài nhất** tính từ **cuối**. `#` và `%` (một dấu) l
 </details>
 
 ## Câu 8 — `"$@"` vs `"$*"` khi array có phần tử chứa khoảng trắng
+
+**Dự đoán:** `$#` (số tham số nhận được) trong `f1` (dùng `"${arr[@]}"`) và trong `f2` (dùng `"${arr[*]}"`) là bao nhiêu mỗi hàm?
 
 ```bash
 arr=("a b" "c d")
@@ -210,6 +226,8 @@ mỗi phần tử) → 2 tham số đúng như mảng gốc. `"${arr[*]}"` nối
 
 ## Câu 9 — `[` vs `[[` khi so sánh chuỗi có khoảng trắng, không quote
 
+**Dự đoán:** lệnh `if [ ... ]` in ra `PASS` hay `FAIL` (và có lỗi nào bị in ra stderr không)? Lệnh `if [[ ... ]]` in ra `PASS` hay `FAIL`?
+
 ```bash
 v="a b"
 if [ $v = "a b" ]; then echo "single bracket: PASS"; else echo "single bracket: FAIL"; fi
@@ -237,6 +255,8 @@ vẫn an toàn. Dù vậy, quy tắc chung vẫn nên **luôn quote** biến dù
 
 ## Câu 10 — `IFS` tuỳ chỉnh khi tách chuỗi theo dấu phân cách khác
 
+**Dự đoán:** `parts0`, `parts2` và `count` (`${#parts[@]}`) trong dòng `echo` cuối là gì?
+
 ```bash
 line="a:b:c"
 IFS=: read -ra parts <<< "$line"
@@ -260,6 +280,8 @@ lại.
 </details>
 
 ## Câu 11 — brace expansion: sinh nhiều từ, KHÔNG phải glob
+
+**Dự đoán:** dòng `echo file{1,2,3}.txt` in ra gì, và dòng `echo file[1-3].txt` (không có file nào khớp) in ra gì?
 
 ```bash
 echo file{1,2,3}.txt
@@ -288,6 +310,8 @@ pháp trông giống nhau nhưng cơ chế hoàn toàn khác.
 
 ## Câu 12 — arithmetic expansion `$(( ))` vs nối chuỗi nhầm
 
+**Dự đoán:** `echo "$a+$b"` in ra gì, và `echo "$((a+b))"` in ra gì?
+
 ```bash
 a=5; b=3
 echo "$a+$b"
@@ -312,6 +336,8 @@ script "tính tổng" chỉ in ra chuỗi ghép số, không tính gì cả.
 
 ## Câu 13 — quote lồng nhau, đơn trong kép
 
+**Dự đoán:** dòng `echo` in ra gì — nháy đơn `'khong doi'` giữ nguyên dấu nháy, và `$((1+1))` có được tính ra số không?
+
 ```bash
 echo "gia tri la 'khong doi' va $((1+1))"
 ```
@@ -332,6 +358,8 @@ thường bên trong nháy kép. Nháy kép tắt word-splitting/glob, không t�
 </details>
 
 ## Câu 14 — `printf '%q'`: escape chuỗi để dùng lại an toàn
+
+**Dự đoán:** `printf '%q\n' "$v"` in ra chuỗi đã escape như thế nào?
 
 ```bash
 v="co khoang trang va \$dollar"
@@ -354,6 +382,8 @@ script khác, tránh phải tự đoán ký tự nào cần `\`.
 </details>
 
 ## Câu 15 — `${var//pattern/replacement}`: thay toàn bộ vs chỉ lần đầu
+
+**Dự đoán:** `${s//one/ONE}` (hai dấu `/`) thay bao nhiêu chỗ, và `${s/one/ONE}` (một dấu `/`) thay bao nhiêu chỗ?
 
 ```bash
 s="one two one two one"

@@ -24,6 +24,8 @@ Yêu cầu: đã làm [Bộ 1](bt-01-nen-tang.md). Lý thuyết:
 
 ## Câu 1 — permission mặc định của file mới
 
+**Dự đoán:** chuỗi permission (kiểu `-rw-...`) mà `ls -l` in ra cho file mới `touch` là gì?
+
 ```bash
 touch demo.txt
 ls -l demo.txt | awk '{print $1}'
@@ -45,6 +47,8 @@ File mới **không bao giờ** có bit execute mặc định (khác thư mục)
 </details>
 
 ## Câu 2 — `chmod` bằng số octal
+
+**Dự đoán:** sau `chmod 644` rồi `chmod 755`, hai chuỗi permission in ra lần lượt là gì?
 
 ```bash
 chmod 644 demo.txt; ls -l demo.txt | awk '{print $1}'
@@ -69,6 +73,8 @@ group/other `r-x` (5) — thêm execute cho tất cả, vẫn giữ read, bỏ w
 
 ## Câu 3 — `chmod` ký hiệu, chỉ đổi owner
 
+**Dự đoán:** `chmod u+x` chỉ thêm execute cho owner — permission cuối cùng in ra là gì, group/other có bị đổi theo không?
+
 ```bash
 chmod u+x demo.txt
 ls -l demo.txt | awk '{print $1}'
@@ -89,6 +95,8 @@ không ký hiệu nhóm) sẽ thêm execute cho **cả ba** nhóm cùng lúc the
 </details>
 
 ## Câu 4 — `umask` quyết định permission của file mới tạo ra sao
+
+**Dự đoán:** với `umask 022` và `umask 077`, file mới tạo có permission nào (mode cụ thể)?
 
 ```bash
 (umask 022; touch newfile_022.txt; ls -l newfile_022.txt | awk '{print $1}')
@@ -114,6 +122,8 @@ group/other → `644`. `umask 077` trừ sạch group/other → `600`. Dùng sub
 
 ## Câu 5 — chạy nền và `jobs`
 
+**Dự đoán:** `jobs` in ra dòng trạng thái gì cho tiến trình `sleep 3 &` vừa tạo (job number, trạng thái, lệnh)?
+
 ```bash
 sleep 3 &
 echo "PID vua tao: $!"
@@ -138,6 +148,8 @@ hiện tại** — số `[1]` là job number, khác PID.
 
 ## Câu 6 — `wait` một PID cụ thể
 
+**Dự đoán:** sau `wait $PID`, giá trị `$?` in ra trong dòng `echo` là bao nhiêu?
+
 ```bash
 sleep 3 &
 PID=$!
@@ -161,6 +173,8 @@ job xong, exit=0
 </details>
 
 ## Câu 7 — `kill -TERM` và kiểm tra tiến trình còn sống
+
+**Dự đoán:** sau khi `kill -TERM` tiến trình `sleep 10`, lệnh kiểm tra bằng `kill -0` sẽ in ra "van con song" hay "da chet"?
 
 ```bash
 sleep 10 &
@@ -188,6 +202,8 @@ bạn có quyền gửi signal tới nó hay không.
 </details>
 
 ## Câu 8 — `trap` bắt `SIGTERM` để dọn dẹp trước khi thoát
+
+**Dự đoán:** script in ra dòng gì trước khi thoát, và exit code cuối cùng của subshell là bao nhiêu?
 
 ```bash
 bash -c '
@@ -219,6 +235,8 @@ shell hiện tại — `kill -TERM $$` tự gửi signal cho bản thân để d
 
 ## Câu 9 — chạy nền rồi `disown`, tiến trình sống độc lập khỏi shell
 
+**Dự đoán:** sau `disown` rồi chờ, nội dung file `/tmp/q9.out` là gì — tiến trình con có chạy xong dù bị `disown` không?
+
 ```bash
 ( sleep 1; echo "con chay xong" > /tmp/q9.out ) &
 disown
@@ -244,6 +262,8 @@ nhiệm" quản lý nó (không tự động `SIGHUP` nó khi shell thoát). Đ�
 
 ## Câu 10 — PID và PPID
 
+**Dự đoán:** `$$` và `$PPID` có bằng nhau không, và `$PPID` là PID của process nào?
+
 ```bash
 bash -c 'echo "PID=$$ PPID=$PPID"'
 ```
@@ -265,6 +285,8 @@ PID=631009 PPID=628702
 </details>
 
 ## Câu 11 — bẫy: `chmod -R 644` trên cả cây làm mất quyền truy cập vĩnh viễn
+
+**Dự đoán:** `chmod -R 644 tree` có chạy hết trót lọt không, và `ls tree` sau đó in ra kết quả hay lỗi gì?
 
 ```bash
 mkdir -p tree/sub && touch tree/a.txt tree/sub/b.txt
@@ -297,6 +319,8 @@ denied", và cây thư mục kẹt luôn ở trạng thái không truy cập đ�
 
 ## Câu 12 — sửa lại: thư mục cần `+x` mới đi qua được
 
+**Dự đoán:** chỉ cần `chmod 755 tree` (không `-R`) có đủ để truy cập lại `tree/sub/b.txt` không?
+
 ```bash
 chmod 755 tree
 ls -ld tree | awk '{print $1}'
@@ -321,6 +345,8 @@ không ai "đi vào" được để xác nhận.
 </details>
 
 ## Câu 13 — cách đúng: phân quyền file và thư mục khác nhau trong cùng một cây
+
+**Dự đoán:** sau khi chạy hai lệnh `find` riêng cho thư mục và file, mode octal của từng entry (`tree`, `tree/a.txt`, `tree/sub`, `tree/sub/b.txt`) là bao nhiêu?
 
 ```bash
 find tree -type d -exec chmod 755 {} \;
@@ -349,6 +375,8 @@ thư mục thì bắt buộc).
 </details>
 
 ## Câu 14 — `kill -TERM` có thể bị `trap` bắt, `kill -KILL` (`-9`) thì không
+
+**Dự đoán:** sau `kill -TERM $$` (có trap) tiến trình con `CPID` còn sống không, và sau `kill -KILL $CPID` thì dòng kiểm tra cuối in ra gì?
 
 ```bash
 bash -c '
@@ -383,6 +411,8 @@ coi là "giải pháp cuối cùng" khi `kill` thường không có tác dụng.
 </details>
 
 ## Câu 15 — bẫy: `$?` sau `if ! lệnh` không phải exit code gốc của `lệnh`
+
+**Dự đoán:** dòng `echo "job $p that bai, exit=$?"` in ra `exit=` mấy — có đúng là exit code gốc (5) của tiến trình bị `wait` không?
 
 ```bash
 pids=()

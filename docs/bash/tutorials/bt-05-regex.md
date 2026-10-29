@@ -35,6 +35,8 @@ EOF
 
 ## Câu 1 — BRE: `+` là ký tự literal, không phải quantifier
 
+**Dự đoán:** hai lệnh `grep -c` lần lượt in ra số mấy?
+
 ```bash
 echo "a+b" | grep -c '+'
 echo "aab" | grep -c 'a+b'
@@ -59,6 +61,8 @@ trực giác của người quen regex hiện đại.
 
 ## Câu 2 — ERE (`grep -E`): `+` trở thành quantifier thật
 
+**Dự đoán:** lệnh `grep -cE 'a+b'` in ra số mấy?
+
 ```bash
 echo "aab" | grep -cE 'a+b'
 ```
@@ -80,6 +84,8 @@ gây bug nhất giữa BRE và ERE.
 
 ## Câu 3 — BRE muốn `+` là quantifier thì phải escape
 
+**Dự đoán:** lệnh `grep -c 'a\+b'` in ra số mấy?
+
 ```bash
 echo "aab" | grep -c 'a\+b'
 ```
@@ -100,6 +106,8 @@ ký tự đặc biệt mặc định là special, thêm `\` để biến thành 
 </details>
 
 ## Câu 4 — anchor `^` và `$`
+
+**Dự đoán:** hai lệnh `grep -n` (`^file` rồi `txt$`) lần lượt khớp dòng số mấy trong `data.txt`?
 
 ```bash
 grep -n '^file' data.txt
@@ -128,6 +136,8 @@ hai lệnh.
 
 ## Câu 5 — character class số, có escape dấu chấm chưa
 
+**Dự đoán:** lệnh `grep -nE` này khớp (in ra) những dòng số mấy trong `data.txt`?
+
 ```bash
 grep -nE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' data.txt
 ```
@@ -150,6 +160,8 @@ Pattern này khớp "4 nhóm 1-3 chữ số, ngăn bởi dấu chấm literal" �
 
 ## Câu 6 — bẫy: `.` không escape khớp bất kỳ ký tự
 
+**Dự đoán:** lệnh `grep -n '192.168.1.1' data.txt` in ra dòng nào?
+
 ```bash
 grep -n '192.168.1.1' data.txt
 ```
@@ -171,6 +183,8 @@ liệu. Test với đúng một dòng dữ liệu "sạch" dễ che mất bug n�
 
 ## Câu 7 — escape dấu chấm cho đúng nghĩa IP literal
 
+**Dự đoán:** lệnh `grep -nE '192\.168\.1\.1' data.txt` in ra dòng nào?
+
 ```bash
 grep -nE '192\.168\.1\.1' data.txt
 ```
@@ -191,6 +205,8 @@ là một trong các lỗi regex phổ biến nhất.
 </details>
 
 ## Câu 8 — `{3}` không kiểm tra khoảng giá trị
+
+**Dự đoán:** lệnh `grep -cE` này in ra số mấy cho chuỗi `"10.0.0.256"`?
 
 ```bash
 echo "10.0.0.256" | grep -cE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
@@ -214,6 +230,8 @@ mà dùng hàm có sẵn của ngôn ngữ/thư viện.
 
 ## Câu 9 — alternation trong ERE
 
+**Dự đoán:** lệnh `grep -nE 'colour|color' data.txt` khớp dòng số mấy?
+
 ```bash
 grep -nE 'colour|color' data.txt
 ```
@@ -233,6 +251,8 @@ grep -nE 'colour|color' data.txt
 </details>
 
 ## Câu 10 — alternation trong BRE phải escape
+
+**Dự đoán:** lệnh `grep -n 'colour\|color' data.txt` khớp dòng số mấy — giống hay khác kết quả câu 9?
 
 ```bash
 grep -n 'colour\|color' data.txt
@@ -255,6 +275,8 @@ biệt phải escape, ERE: ký tự đặc biệt mặc định sẵn" ở câu 
 
 ## Câu 11 — capture group và số lần lặp trong ERE
 
+**Dự đoán:** lệnh này khớp dòng nào trong `data.txt` — chỉ `file_01.txt` (2 chữ số), chỉ `file_002.txt` (3 chữ số), hay cả hai?
+
 ```bash
 grep -nE '(file)_[0-9]{2,3}\.txt' data.txt
 ```
@@ -276,6 +298,8 @@ mục đích gom nhóm). `[0-9]{2,3}` khớp 2 **hoặc** 3 chữ số — khớ
 </details>
 
 ## Câu 12 — `grep -P` (PCRE) hỗ trợ lookahead, `-E` thuần thì không
+
+**Dự đoán:** lệnh `grep -oP '\d+(?=bar)'` in ra gì, và lệnh `grep -oE` tương đương (không có `-P`) in ra gì?
 
 ```bash
 echo "foo123bar" | grep -oP '\d+(?=bar)'
@@ -304,6 +328,8 @@ báo lỗi "cú pháp lạ" rõ ràng — `grep -E` cố hiểu nó theo luật 
 
 ## Câu 13 — `grep -o`: chỉ in phần khớp, không in cả dòng
 
+**Dự đoán:** lệnh `grep -oE '[a-z]+@[a-z.]+'` in ra gì — toàn bộ dòng hay chỉ phần khớp?
+
 ```bash
 echo "user@example.com" | grep -oE '[a-z]+@[a-z.]+'
 ```
@@ -324,6 +350,8 @@ Mặc định `grep` in **toàn bộ dòng** chứa phần khớp. `-o` chỉ in
 </details>
 
 ## Câu 14 — bẫy đã sửa: `\b` (word boundary) hoạt động cả khi KHÔNG có `-P`
+
+**Dự đoán:** hai lệnh `\bcat\b` — một với `-P`, một với `-E` không `-P` — lần lượt in ra gì, có giống nhau không?
 
 ```bash
 echo "cat catalog category" | grep -oP '\bcat\b'
@@ -353,6 +381,8 @@ bản `grep` (BSD/macOS `grep` không có `-P`).
 
 ## Câu 15 — `grep -i`: không phân biệt hoa thường
 
+**Dự đoán:** lệnh `grep -ci 'error'` đếm được mấy dòng khớp trong 4 dòng `Error/error/ERROR/Info`?
+
 ```bash
 printf 'Error\nerror\nERROR\nInfo\n' | grep -ci 'error'
 ```
@@ -372,6 +402,8 @@ khớp. Hữu ích khi lọc log mà quy ước viết hoa không nhất quán g
 </details>
 
 ## Câu 16 — `?` trong ERE: 0 hoặc 1 lần
+
+**Dự đoán:** lệnh `grep -nE 'colou?r'` khớp dòng nào trong ba dòng `color`, `colour`, `colouur`?
 
 ```bash
 printf 'color\ncolour\ncolouur\n' | grep -nE 'colou?r'

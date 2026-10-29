@@ -24,6 +24,8 @@ Yêu cầu: đã làm [Bộ 1, 6](bt-01-nen-tang.md). Lý thuyết:
 
 ## Câu 1 — không có `set -e`, lỗi giữa script không dừng gì cả
 
+**Dự đoán:** dòng `van toi day` có được in ra không, và `echo "exit=$?"` cuối cùng in ra `exit=` mấy?
+
 ```bash
 bash -c '
 false
@@ -50,6 +52,8 @@ luôn thành công), che mất việc `false` đã thất bại ở giữa.
 
 ## Câu 2 — `set -e`: lỗi giữa script dừng ngay
 
+**Dự đoán:** dòng `echo "khong bao gio toi day"` có chạy không, và `echo "exit=$?"` sau đó in ra `exit=` mấy?
+
 ```bash
 bash -c '
 set -e
@@ -74,6 +78,8 @@ không trong điều kiện `if`/`while`/`&&`). Dòng `echo` sau đó không bao
 </details>
 
 ## Câu 3 — bẫy: `set -e` KHÔNG bắt lỗi trong điều kiện `if`
+
+**Dự đoán:** `false` làm điều kiện của `if` có khiến `set -e` dừng script không? Dòng sau `fi` có chạy, và `exit=$?` cuối in ra mấy?
 
 ```bash
 bash -c '
@@ -103,6 +109,8 @@ bại — vì thất bại ở đó là *có chủ đích* (để rẽ nhánh), 
 
 ## Câu 4 — `set -u` và exit code thật của biến chưa khai báo
 
+**Dự đoán:** thông báo lỗi in ra stderr là gì, và exit code thật sự là bao nhiêu (gợi ý: không phải 1)?
+
 ```bash
 bash -c '
 set -u
@@ -130,6 +138,8 @@ rơi vào đúng nhánh mong đợi.
 
 ## Câu 5 — `pipefail` cần thiết khi lỗi nằm giữa đường ống
 
+**Dự đoán:** `wc -l` có in dấu hiệu lỗi nào ra output không? Nhờ `pipefail`, `echo "exit=$?"` sau đó in ra `exit=` mấy?
+
 ```bash
 bash -c '
 set -o pipefail
@@ -156,6 +166,8 @@ pipeline phản ánh đúng việc `false` đã thất bại. Không có `pipefa
 </details>
 
 ## Câu 6 — `case` pattern matching
+
+**Dự đoán:** ba lệnh `check "a.txt"`, `check "b.sh"`, `check "c.bin"` mỗi lệnh in ra chữ gì?
 
 ```bash
 check() {
@@ -187,6 +199,8 @@ nhánh "mặc định", nên luôn đặt **cuối cùng**.
 
 ## Câu 7 — `while read` đọc đúng cách, không mất dòng cuối thiếu newline
 
+**Dự đoán:** vòng lặp có in được đủ cả `line3` (dòng cuối không có newline) không, hay dừng sớm ở `line2`?
+
 ```bash
 printf 'line1\nline2\nline3' > nolast.txt
 while IFS= read -r line || [[ -n "$line" ]]; do echo "doc: $line"; done < nolast.txt
@@ -212,6 +226,8 @@ cuối để không bỏ sót dòng đó.
 
 ## Câu 8 — bẫy: `while read` không có mẹo trên, mất dòng cuối
 
+**Dự đoán:** so với câu 7, vòng lặp này có in được `line3` không, hay chỉ in tới `line2`?
+
 ```bash
 while IFS= read -r line; do echo "doc: $line"; done < nolast.txt
 ```
@@ -235,6 +251,8 @@ cuối.
 </details>
 
 ## Câu 9 — `trap EXIT` đảm bảo dọn dẹp chạy dù thoát bằng cách nào
+
+**Dự đoán:** `trap ... EXIT` có chạy trước khi script thoát bằng `exit 3` không? Thứ tự các dòng in ra là gì, và `exit=$?` cuối là mấy?
 
 ```bash
 bash -c '
@@ -264,6 +282,8 @@ dọn dẹp ở cuối script (chỗ đó sẽ **không chạy** nếu `set -e` 
 </details>
 
 ## Câu 10 — bẫy: `for` loop trên output lệnh không quote, mất an toàn với khoảng trắng
+
+**Dự đoán:** `for f in $(ls)` tách tên file `file one.txt` thành mấy phần tử giả, và chúng là gì? So với `for f in *` dùng glob, kết quả có khác không?
 
 ```bash
 touch "file one.txt" "file two.txt"
@@ -297,6 +317,8 @@ tắc chung: **không bao giờ** `for x in $(ls ...)`.
 
 ## Câu 11 — `until`: ngược với `while`
 
+**Dự đoán:** vòng `until [ "$i" -gt 3 ]` in ra `i=` tới giá trị nào thì dừng?
+
 ```bash
 i=1
 until [ "$i" -gt 3 ]; do echo "i=$i"; i=$((i+1)); done
@@ -321,6 +343,8 @@ lặp **khi `cond` còn SAI**, dừng ngay khi `cond` đúng — ngược hoàn 
 
 ## Câu 12 — heredoc thường CÓ giãn biến
 
+**Dự đoán:** heredoc `<< EOF` không quote delimiter có giãn biến `$name` thành `An` không, hay in nguyên văn `$name`?
+
 ```bash
 name="An"
 cat << EOF
@@ -343,6 +367,8 @@ kép — `$var`, `` `cmd` ``, `$(...)` đều được mở rộng trước khi 
 </details>
 
 ## Câu 13 — heredoc với delimiter trong quote KHÔNG giãn biến
+
+**Dự đoán:** heredoc `<< 'EOF'` với delimiter trong nháy đơn có giãn `$name` không, hay in nguyên văn `$name`?
 
 ```bash
 cat << 'EOF'
@@ -367,6 +393,8 @@ mẫu** mà `$` trong đó phải giữ nguyên (ví dụ in ra một đoạn sc
 </details>
 
 ## Câu 14 — `getopts`: phân tích flag kiểu `-v -o file.txt`
+
+**Dự đoán:** sau khi `getopts` parse `-v -o ket_qua.txt`, giá trị cuối của `verbose` và `outfile` là gì?
 
 ```bash
 parse() {
@@ -401,6 +429,8 @@ Chuỗi `"vo:"` khai hai flag: `v` (cờ bật/tắt, không có giá trị theo
 </details>
 
 ## Câu 15 — `set -x`: in lệnh ra trước khi chạy (trace debug)
+
+**Dự đoán:** dòng trace cho lệnh `echo $((a+b))` in ra `+ echo` kèm theo gì — nguyên văn `$((a+b))` hay giá trị đã expand?
 
 ```bash
 bash -x -c '

@@ -22,6 +22,8 @@ Yêu cầu: đã làm [Bộ 1-2](bt-01-nen-tang.md). Lý thuyết:
 
 ## Câu 1 — `local` giữ biến trong phạm vi function
 
+**Dự đoán:** hai dòng `echo` in ra `x=` mấy — bên trong `f` và sau khi `f` chạy xong?
+
 ```bash
 x=10
 f() { local x=20; echo "trong f: x=$x"; }
@@ -45,6 +47,8 @@ tên. Ra khỏi function, biến toàn cục `x=10` không hề bị đổi.
 </details>
 
 ## Câu 2 — bẫy: quên `local`, function đổi biến ngoài
+
+**Dự đoán:** sau khi gọi `g` (không có `local`), biến `y` ở ngoài còn là `100` hay đã bị đổi thành `999`?
 
 ```bash
 y=100
@@ -72,6 +76,8 @@ script dài nhiều function.
 
 ## Câu 3 — `return` chỉ trả exit code (0-255), không trả "giá trị"
 
+**Dự đoán:** `$?` sau khi gọi `h` là mấy?
+
 ```bash
 h() { return 7; }
 h
@@ -94,6 +100,8 @@ exit cua h=7
 </details>
 
 ## Câu 4 — muốn "trả giá trị" thật thì dùng `echo` + command substitution
+
+**Dự đoán:** biến `result` cuối cùng mang giá trị gì?
 
 ```bash
 sum() { echo $(( $1 + $2 )); }
@@ -119,6 +127,8 @@ về".
 
 ## Câu 5 — khai báo và truy cập array
 
+**Dự đoán:** dòng `echo` in ra ba giá trị gì — phần tử đầu, phần tử cuối, và số phần tử?
+
 ```bash
 arr=(mot hai ba)
 echo "${arr[0]} ${arr[-1]} ${#arr[@]}"
@@ -140,6 +150,8 @@ chuỗi của phần tử đầu nếu không có `[@]`).
 </details>
 
 ## Câu 6 — associative array (`declare -A`)
+
+**Dự đoán:** `${map[a]} ${map[b]}` in ra gì, và sau khi `sort`, hai dòng `key=` xuất hiện theo thứ tự nào?
 
 ```bash
 declare -A map
@@ -169,6 +181,8 @@ khác `"${map[@]}"` lấy danh sách **value**.
 
 ## Câu 7 — `unset` một phần tử giữa array, chỉ số có dồn lại không
 
+**Dự đoán:** sau `unset 'arr2[1]'`, danh sách index (`${!arr2[@]}`) và danh sách value (`${arr2[@]}`) còn lại là gì — chỉ số có dồn lại hay để lỗ?
+
 ```bash
 arr2=(a b c d)
 unset 'arr2[1]'
@@ -195,6 +209,8 @@ index) an toàn hơn `for i in $(seq 0 ${#arr2[@]})` (giả định chỉ số l
 
 ## Câu 8 — giá trị mặc định cho tham số function
 
+**Dự đoán:** hai lần gọi `greet` (không tham số, rồi với `"An"`) in ra gì?
+
 ```bash
 greet() { local name="${1:-Khach}"; echo "Xin chao, $name"; }
 greet
@@ -219,6 +235,8 @@ Xin chao, An
 
 ## Câu 9 — `$#` đếm đúng số tham số của function, không phải của script
 
+**Dự đoán:** `so arg=` bên trong `count_args a b c` là mấy?
+
 ```bash
 count_args() { echo "so arg=$#"; }
 count_args a b c
@@ -240,6 +258,8 @@ luôn là bộ tham số riêng của lần gọi hiện tại.
 </details>
 
 ## Câu 10 — `export` để biến môi trường "thấy được" trong subshell
+
+**Dự đoán:** process con (`bash -c`) đọc được `MYVAR` là gì trước khi `unset`, và là gì sau khi `unset`?
 
 ```bash
 export MYVAR="hello"
@@ -266,6 +286,8 @@ khỏi cả shell hiện tại và môi trường — process con sau đó khôn
 </details>
 
 ## Câu 11 — function đệ quy
+
+**Dự đoán:** `fact 5` in ra số gì?
 
 ```bash
 fact() {
@@ -296,6 +318,8 @@ Bash function gọi được chính nó như mọi ngôn ngữ khác, miễn có
 
 ## Câu 12 — truyền array vào function bằng `declare -n` (nameref)
 
+**Dự đoán:** sau khi gọi `double_all nums`, `echo "${nums[@]}"` in ra gì — mảng gốc có bị sửa thật không?
+
 ```bash
 double_all() {
   local -n arr_ref=$1
@@ -324,6 +348,8 @@ substitution.
 </details>
 
 ## Câu 13 — `shift`: xử lý tham số vị trí kiểu hàng đợi
+
+**Dự đoán:** `process a b c` in ra các dòng "dang xu ly" theo thứ tự nào?
 
 ```bash
 process() {
@@ -355,6 +381,8 @@ và `$#` giảm đi 1. Mẫu `while (( $# > 0 )); do ...; shift; done` là cách
 
 ## Câu 14 — `readonly`: biến không thể gán lại
 
+**Dự đoán:** dòng gán lại `RO_VAR="thu doi"` gây ra kết quả gì?
+
 ```bash
 readonly RO_VAR="khong doi"
 RO_VAR="thu doi"
@@ -376,6 +404,8 @@ tự bắt lỗi nếu có dòng code nào sau đó vô tình gán đè.
 </details>
 
 ## Câu 15 — liệt kê tên biến theo tiền tố (`${!prefix*}`)
+
+**Dự đoán:** `${!FOO_*}` in ra danh sách tên biến nào — `BAR_C` có xuất hiện không?
 
 ```bash
 FOO_A=1

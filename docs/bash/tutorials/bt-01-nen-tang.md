@@ -23,6 +23,8 @@ Yêu cầu: đã đọc [Shell là gì](../reference/shell-la-gi.md),
 
 ## Câu 1 — exit code của lệnh có sẵn
 
+**Dự đoán:** dòng `echo` in ra `exit=` mấy?
+
 ```bash
 false; echo "exit=$?"
 ```
@@ -42,6 +44,8 @@ của lệnh **ngay trước nó** — đọc muộn một lệnh là đọc nh�
 </details>
 
 ## Câu 2 — short-circuit `&&`: lệnh sau có chạy không
+
+**Dự đoán:** `touch ok.txt` có chạy không? Lệnh `ls ok.txt` cuối cùng báo gì?
 
 ```bash
 rm -f ok.txt
@@ -66,6 +70,8 @@ dùng được như một "if ngắn", không phải cú pháp nối lệnh thô
 
 ## Câu 3 — short-circuit `||`: lệnh sau có chạy không
 
+**Dự đoán:** dòng nào trong hai dòng `echo` được in ra?
+
 ```bash
 true || echo "khong bao gio in"
 echo "sau day van chay"
@@ -86,6 +92,8 @@ sau day van chay
 </details>
 
 ## Câu 4 — pipe không `pipefail`: exit code của ai thắng
+
+**Dự đoán:** `echo "exit=$?"` in ra số mấy — của `false` hay của `true`?
 
 ```bash
 set +o pipefail
@@ -109,6 +117,8 @@ Theo mặc định, exit code của một pipeline là exit code của **lệnh 
 </details>
 
 ## Câu 5 — cùng pipe đó, bật `pipefail`
+
+**Dự đoán:** bật `pipefail` rồi, exit code có đổi so với Câu 4 không — thành số mấy?
 
 ```bash
 set -o pipefail
@@ -135,6 +145,8 @@ cùng** xuất hiện trong chuỗi, nếu có. `false` thất bại → cả pi
 
 ## Câu 6 — redirect stdout và stderr vào hai file khác nhau
 
+**Dự đoán:** `out.txt` chứa gì, `err.txt` chứa gì?
+
 ```bash
 ls /khong-ton-tai 1>out.txt 2>err.txt
 echo "---stdout---"; cat out.txt
@@ -160,6 +172,8 @@ vào một file (`> file 2>&1`) sẽ trộn lẫn, mất khả năng tách riên
 
 ## Câu 7 — thứ tự `>` và `2>&1` quyết định kết quả
 
+**Dự đoán:** `log.txt` chứa dòng nào, theo thứ tự nào?
+
 ```bash
 { echo "stdout"; echo "stderr" >&2; } > log.txt 2>&1
 cat log.txt
@@ -184,6 +198,8 @@ ngược lại (`2>&1 > log.txt`) sẽ cho kết quả khác: `2>&1` trỏ stder
 
 ## Câu 8 — here-string và `read`
 
+**Dự đoán:** sau khi `read`, `$a` và `$b` mỗi biến giữ giá trị gì?
+
 ```bash
 read -r a b <<< "mot hai"
 echo "a=$a b=$b"
@@ -206,6 +222,8 @@ tạm. `read -r a b` tách theo `IFS` (mặc định là khoảng trắng) và g
 
 ## Câu 9 — command substitution và dòng trống cuối
 
+**Dự đoán:** `wc -l` đếm ra bao nhiêu dòng — 2 hay 3?
+
 ```bash
 x=$(printf 'line1\nline2\n')
 echo "$x" | wc -l
@@ -227,6 +245,8 @@ newline khi in, rồi `wc -l` đếm đúng 2 dòng.
 </details>
 
 ## Câu 10 — `set -u` và biến chưa khai báo: exit code là bao nhiêu
+
+**Dự đoán:** truy cập biến chưa khai báo dưới `set -u` làm exit code là số mấy? (gợi ý: không phải `1`)
 
 ```bash
 bash -c '
@@ -255,6 +275,8 @@ cách chắc.
 
 ## Câu 11 — `$?` bị reset bởi MỌI lệnh, kể cả `echo`
 
+**Dự đoán:** dòng `echo "exit sau do=$?"` in ra số mấy — còn giữ exit code của `false` không?
+
 ```bash
 false
 echo "lenh chen giua"
@@ -278,6 +300,8 @@ lệnh cụ thể, phải đọc `$?` **ngay sau** lệnh đó, hoặc lưu lạ
 </details>
 
 ## Câu 12 — subshell `()` không đổi biến của shell cha, group `{}` thì có
+
+**Dự đoán:** `$x` in ra giá trị gì sau subshell `()`, và giá trị gì sau group `{}`?
 
 ```bash
 x=1
@@ -305,6 +329,8 @@ thấy gì".
 
 ## Câu 13 — chuỗi `&&`/`||` ba lệnh, đánh giá trái sang phải
 
+**Dự đoán:** "B" có được in ra không? Exit code cuối cùng là số mấy?
+
 ```bash
 true && echo "A" && false && echo "B"
 echo "exit cuoi cung=$?"
@@ -329,6 +355,8 @@ lệnh viết cuối cùng trên dòng.
 
 ## Câu 14 — `PIPESTATUS`: lấy exit code của từng lệnh trong pipe
 
+**Dự đoán:** `PIPESTATUS` in ra ba số nào, theo thứ tự nào?
+
 ```bash
 false | true | false
 echo "PIPESTATUS=${PIPESTATUS[@]}"
@@ -351,6 +379,8 @@ biết **cụ thể lệnh nào** trong một pipe dài đã thất bại, thay 
 </details>
 
 ## Câu 15 — `tee` trong pipe không tự "sửa" vấn đề của `pipefail`
+
+**Dự đoán:** `echo "exit=$?"` in ra số mấy — `tee` có "cứu" được exit code của `false` không?
 
 ```bash
 false | tee /tmp/q15.log > /dev/null
