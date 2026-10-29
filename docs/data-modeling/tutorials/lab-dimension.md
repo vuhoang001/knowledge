@@ -40,6 +40,10 @@ Hai dòng `NULL` này là nguồn của ba bài đầu.
 
 ## Bài 1 — Join theo ngày giao: mất 17,3% doanh thu
 
+**Đề bài:** Tính doanh thu theo tháng giao hàng bằng cách join `don_hang` với chi tiết
+đơn qua `ngay_giao`, rồi so với mốc doanh thu thật (10.215.000) để tìm và giải thích vì
+sao kết quả bị hụt.
+
 Câu hỏi nghiệp vụ hoàn toàn bình thường: *"doanh thu theo tháng giao hàng"*.
 
 ```sql
@@ -72,6 +76,10 @@ nhãn *"Chưa xảy ra"*, và fact **không bao giờ** để `NULL` ở cột k
 
 ## Bài 2 — Dựng `dim_ngay` có dòng `-1`
 
+**Đề bài:** Dựng lại `dim_ngay` có thêm dòng khoá `-1` đại diện nhãn *"Chưa xảy ra"*,
+nạp `ngay_giao_key` bằng `coalesce` để khoá không bao giờ là `NULL`, rồi chạy lại báo
+cáo ở bài 1 và kiểm tra tổng doanh thu đã quay về đúng mốc 10.215.000 chưa.
+
 ```sql
 create or replace table dim_ngay as
 with lich as (select (date '2026-07-01' + interval (i) day)::date ngay from range(0,62) t(i))
@@ -99,6 +107,10 @@ hai đơn chưa giao hiện thành nhóm *"Chưa xảy ra"* thay vì biến mấ
 
 ## Bài 3 — Ba vai của cùng một `dim_ngay`
 
+**Đề bài:** Thay vì copy `dim_ngay` thành nhiều bảng riêng cho từng vai, dựng các view
+role-playing đặt tên rõ nghĩa (`dim_ngay_dat`, `dim_ngay_giao`...) với cột đổi tên theo
+vai, rồi dùng chúng viết query *"đơn đặt thứ mấy thì hay giao vào cuối tuần nhất"*.
+
 `don_hang` có `ngay_dat`, `ngay_giao`, `ngay_nhan` — cùng trỏ về một bảng lịch.
 
 **Đừng** copy `dim_ngay` thành ba bảng. Dựng ba **view có tên rõ nghĩa**:
@@ -125,6 +137,10 @@ phải lần ngược lên xem `d1` là bảng nào thì bạn đang thiếu vie
 | |
 
 ## Bài 4 — Bộ lọc phủ định nuốt dòng NULL
+
+**Đề bài:** Tạo một dòng `NULL` trong `trang_thai`, rồi so sánh hai cách lọc "đơn chưa
+hoàn thành" (`<>` và `IS DISTINCT FROM`) — dự đoán hai số có bằng nhau không, chạy thử,
+rồi giải thích vì sao khác (hoặc giống).
 
 `trang_thai` trong `don_hang` không có `NULL`, nên trước hết **tự tạo ra một cái**:
 
@@ -163,6 +179,10 @@ Nhớ khôi phục: `update don_hang set trang_thai='moi' where don_hang_id='DH0
 
 ## Bài 5 — Một cột trạng thái: để thẳng hay tách dimension?
 
+**Đề bài:** Thêm trạng thái thứ tư `huy` cho một đơn, rồi tính "doanh thu từ đơn hợp
+lệ" một lần bằng `where trang_thai in (...)` hardcode và một lần bằng cờ `la_don_hop_le`
+từ `dim_trang_thai` — xem cách nào còn đúng khi xuất hiện trạng thái thứ năm.
+
 ```text
 ┌────────────┬────────┐        ┌───────────┬──────────┐
 │ trang_thai │ so_don │        │   hang    │ so_khach │
@@ -200,6 +220,11 @@ select * from (values
 | |
 
 ## Bài 6 — Cờ dạng mã và cây phân cấp
+
+**Đề bài:** Mã hoá `khach_hang.hang` thành cột `hang_ma` (`B`/`V`/`K`) rồi xét xem báo
+cáo theo mã có còn dễ hiểu không; sau đó dựng cây phân cấp hai tầng cho `danh_muc`, gắn
+sản phẩm vào các cấp khác nhau, dẹt thành `cap_1`/`cap_2` và tính bao nhiêu phần trăm
+doanh thu rơi vào ô `NULL` ở `cap_2`.
 
 `khach_hang.hang` đang là chữ đọc được (`Bac`, `Vang`, `Kim cuong`) — đúng chuẩn
 [thiết kế thuộc tính dimension](../skills/dimension-attribute-design.md). Thử làm hỏng:

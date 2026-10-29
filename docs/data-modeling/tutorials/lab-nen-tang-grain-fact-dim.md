@@ -42,6 +42,9 @@ Mở DuckDB trên chính file lab:
 
 ## Bài 1 — Đo grain, đừng đoán
 
+**Đề bài:** Xác định grain thật của `don_hang_chi_tiet` bằng cách đếm số dòng, số đơn
+hàng phân biệt và số tổ hợp khoá phân biệt — đừng suy từ tên bảng.
+
 Đừng nhìn tên bảng rồi suy. Đếm:
 
 ```sql
@@ -75,6 +78,9 @@ Viết grain thành một câu tiếng Việt rồi mới đi tiếp:
 
 ## Bài 2 — Trộn hai grain: phí ship phồng 77,5%
 
+**Đề bài:** Join `don_hang` với `don_hang_chi_tiet` rồi tính tổng `phi_ship` — giải
+thích vì sao con số này phồng lên so với số thật, và đơn nào bị nhân nhiều nhất.
+
 `don_hang` có `phi_ship` ở **cấp đơn**. `don_hang_chi_tiet` ở **cấp dòng**. Join rồi cộng:
 
 ```sql
@@ -104,6 +110,10 @@ và [case study phí ship phồng 133%](../case-studies/phi-ship-phong-133-phan-
 | |
 
 ## Bài 3 — Join thẳng hai fact: vừa phồng vừa mất
+
+**Đề bài:** Join trực tiếp hai fact `don_hang_chi_tiet` và `tra_hang` theo
+`don_hang_id`, giải thích vì sao kết quả vừa phồng vừa mất dòng cùng lúc, rồi sửa bằng
+cách gộp riêng từng bên về cùng một mức trước khi ghép.
 
 ```sql
 select count(*) dong_sau_join, sum(ct.so_luong*ct.don_gia) doanh_thu
@@ -154,6 +164,10 @@ và [case study join hai fact](../case-studies/join-hai-fact-lam-phong-tong.md).
 | |
 
 ## Bài 4 — Dựng dimension cho số đơn hàng: phồng 44,1%
+
+**Đề bài:** Dựng `dim_don_hang` theo phản xạ "mọi khoá trong fact phải trỏ tới một
+dimension", thêm Type 2 để theo dõi `trang_thai`, rồi kiểm tra xem dimension đó có đang
+phồng lên so với số đơn hàng thật không.
 
 Phản xạ "mọi khoá trong fact phải trỏ tới một dimension" dẫn tới `dim_don_hang`. Đo trước:
 
@@ -206,6 +220,10 @@ dimension. Xem [case study dim đơn hàng phồng 40%](../case-studies/dim-don-
 | |
 
 ## Bài 5 — Join dimension Type 2 bằng natural key: phồng 26,9%
+
+**Đề bài:** Join fact với dimension Type 2 `scd_khach_hang` bằng khoá tự nhiên
+`khach_id` (không có điều kiện thời gian), xác định khách hàng nào bị nhân dòng và vì
+sao chỉ đúng khách đó bị ảnh hưởng.
 
 Cần làm [lab SCD](scd-bang-dbt-snapshot.md) trước để có `scd_khach_hang` với `C1` hai
 phiên bản.

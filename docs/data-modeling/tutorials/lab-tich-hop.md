@@ -24,6 +24,11 @@ Cần `scd_khach_hang` từ [lab SCD](scd-bang-dbt-snapshot.md). Mốc: **10.215
 
 ## Bài 1 — Hai định nghĩa "doanh thu", lệch 3,9%
 
+**Đề bài:** Đội bán hàng và đội tài chính tính ra hai số "doanh thu" lệch nhau 3,9%
+(do đội tài chính gộp cả phí ship). Tách `phi_ship` thành cột riêng, đặt tên khác nhau
+cho hai định nghĩa, rồi viết một query đối soát khép kín chứng minh phần chênh lệch là
+giải thích được (bằng 0), không chỉ là hai số khác nhau cho qua.
+
 Đội bán hàng tính tiền hàng. Đội tài chính tính tổng tiền khách trả (gồm phí ship).
 
 ```sql
@@ -62,6 +67,11 @@ Cột cuối bằng 0 là test đáng đặt: nó **không thể bằng 0 tình 
 | |
 
 ## Bài 2 — Drill-across: tỷ lệ trả hàng theo khu vực
+
+**Đề bài:** Tính tỷ lệ trả hàng theo khu vực — một câu hỏi cắt ngang hai fact
+(`don_hang_chi_tiet` và `tra_hang`) qua một dimension chung (`scd_khach_hang`). Viết
+query theo kỹ thuật multipass SQL ba lượt (tính riêng từng fact, rồi ghép bằng
+`FULL JOIN`), và tránh ba lỗi thường gặp ở lượt ghép cuối.
 
 Câu hỏi cắt ngang hai fact (`don_hang_chi_tiet` và `tra_hang`) qua một dimension chung
 (`scd_khach_hang`). Ba lượt, đúng thứ tự:
@@ -112,6 +122,11 @@ Nam có tỷ lệ trả hàng **gấp gần đôi** Miền Bắc.
 
 ## Bài 3 — Bus matrix thành một bảng, không phải slide
 
+**Đề bài:** Dựng bus matrix (quy trình × dimension) thành một bảng dữ liệu thật, truy
+vấn được — không phải một slide tĩnh — rồi dùng nó trả lời ba câu hỏi: dimension nào
+phải conform trước, kho đạt bao nhiêu phần trăm mật độ conform, và câu hỏi nghiệp vụ
+nào bất khả thi vì thiếu liên kết quy trình–dimension.
+
 ```sql
 create or replace table bus_matrix as
 select * from (values
@@ -150,6 +165,11 @@ tăng hay giảm? Nghĩa là gì? Xem [bus architecture](../reference/bus-archit
 | |
 
 ## Bài 4 — Phá conformed dimension rồi tự sửa
+
+**Đề bài:** Dựng hai dimension khách hàng "của hai đội" với cách chia vùng khác nhau,
+rồi thử trả lời câu hỏi "khu vực nào tỷ lệ trả hàng cao nhất" khi mỗi fact dùng một
+dimension riêng. Sau đó kiểm ba điều kiện để gọi một dimension là conformed, và tự sửa
+lại cho đúng.
 
 Dựng hai dimension khách hàng "của hai đội", khác cách chia vùng:
 

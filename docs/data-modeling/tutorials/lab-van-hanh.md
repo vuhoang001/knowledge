@@ -19,6 +19,9 @@ updated: 2026-08-04
 
 ## Bài 1 — Nạp trùng: phồng 25%
 
+**Đề bài:** Mô phỏng sự cố nạp trùng (chạy lại tay nhưng nhầm lô đơn hàng), rồi đo xem
+số dòng và doanh thu trong kho bị phồng lên bao nhiêu so với số liệu thật.
+
 Mô phỏng đúng ca thật: job đêm lỗi giữa chừng, người trực chạy lại tay nhưng nhầm lô.
 
 ```sql
@@ -38,6 +41,10 @@ Chẩn đoán thường nhanh — có người nhớ mình đã chạy lại tay
 theo: xoá cái gì?**
 
 ## Bài 2 — Không có `audit_sk`: xoá 10 dòng để diệt 5
+
+**Đề bài:** Giả sử `fct_audit` không mang `audit_sk`, chỉ còn cách xoá theo đơn hàng
+nghi trùng — đếm xem cách xoá đó diệt đúng bao nhiêu dòng rác và xoá nhầm bao nhiêu
+dòng tốt.
 
 Nếu fact không mang dấu vết lần chạy, thông tin duy nhất còn lại là **đơn hàng nào**.
 Nên cách xoá duy nhất là theo khoảng:
@@ -70,6 +77,9 @@ metadata**.
 | |
 
 ## Bài 3 — Có `audit_sk`: một câu lệnh, đúng 5 dòng
+
+**Đề bài:** Dùng `audit_sk` để xoá đúng 5 dòng của lần nạp lỗi, không đụng dòng nào
+khác; sau đó dựng `dim_audit` và viết query tự động phát hiện một lô bị nạp hai lần.
 
 ```sql
 select audit_sk, count(*) dong, sum(so_luong*don_gia) doanh_thu
@@ -106,6 +116,10 @@ Câu này chạy được **ngay sau khi nạp**, trước khi ai kịp nhìn da
 
 ## Bài 4 — Đẳng thức khép kín: nạp + loại = nguồn
 
+**Đề bài:** Dựng `fct_loi` ghi lại các dòng bị loại kèm lý do và chiều chất lượng, rồi
+kiểm bất biến "số dòng đã nạp + số dòng bị loại = số dòng nguồn" để chắc không dòng nào
+biến mất không dấu vết.
+
 Dựng `fct_loi` cho dòng bị loại, với `chieu_chat_luong` theo
 [sáu chiều chất lượng](../../data-quality/six-dimensions.md):
 
@@ -134,6 +148,10 @@ bị loại **bốc hơi không dấu vết** — không ai biết mất bao nhi
 
 ## Bài 5 — Phân vùng nóng: chỉ số nhảy suốt ngày
 
+**Đề bài:** Thêm dữ liệu "hôm nay chưa chốt" vào fact, tính doanh thu trung bình mỗi
+ngày gộp cả hôm nay, rồi nạp thêm một dòng nữa cho hôm nay và chạy lại — quan sát chỉ
+số đổi thế nào dù không ngày lịch sử nào thay đổi, và giải thích vì sao.
+
 Thêm dữ liệu "hôm nay chưa chốt":
 
 ```sql
@@ -158,6 +176,10 @@ Xem [real-time fact table](../skills/real-time-fact.md) và
 | |
 
 ## Bài 6 — Bảng gộp nhiều loại thực thể
+
+**Đề bài:** Đo tỷ lệ ô trống trên bảng gộp nhiều loại thực thể (hàng hoá + dịch vụ), rồi
+tách thành supertype/subtype — sau khi tách, ràng buộc `NOT NULL` nào đặt được mà trước
+đó không đặt được?
 
 `hang_hoa` hiện chỉ có hàng vật lý. Thêm một **dịch vụ** — nó không có trọng lượng, còn
 hàng vật lý thì không có thời hạn:

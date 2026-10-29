@@ -33,6 +33,10 @@ Cần có sẵn `stg_don_hang`, `stg_don_hang_chi_tiet`, `mart_doanh_thu_ngay` t
 
 ## Bài T1 — Incremental đánh rơi dòng sửa muộn
 
+**Đề bài:** Viết model `fct_dong_hang` dạng `incremental`, chứng minh chạy lại hai lần
+không nhân đôi dữ liệu, rồi phát hiện và sửa lỗi bộ lọc theo ngày khiến dòng dữ liệu sửa
+muộn bị bỏ sót.
+
 **Đề:** bốn bước, làm đúng thứ tự.
 
 1. Viết `fct_dong_hang` materialized `incremental`, `unique_key` là
@@ -144,6 +148,10 @@ chèn trùng.
 
 ## Bài T2 — Hai loại test mà YAML không viết được
 
+**Đề bài:** Viết một generic test tự chế (`khong_am`) và một singular test đối chiếu
+tổng số đo giữa hai bảng, rồi dùng chúng để bắt một lỗi cố ý cộng nhầm phí ship vào
+doanh thu.
+
 **Đề:**
 
 1. Viết **generic test tự viết** tên `khong_am(column_name, cho_phep_null=false)` —
@@ -230,6 +238,10 @@ dòng hàng. Đây là bẫy grain, không phải bẫy dbt.
 ---
 
 ## Bài T3 — Jinja sinh cột động, và khoảng trắng
+
+**Đề bài:** Viết model pivot doanh thu theo nhóm hàng với danh sách cột sinh động bằng
+Jinja/`dbt_utils` (không viết cứng tên nhóm), rồi so sánh SQL compiled trước và sau khi
+kiểm soát khoảng trắng bằng `{%-`/`-%}`.
 
 **Đề:** viết `mart_pivot_nhom` pivot doanh thu theo **nhóm hàng**, nhưng danh sách nhóm
 **không được viết cứng** — phải đọc từ bảng `hang_hoa` lúc biên dịch. Đơn vị: triệu
@@ -319,6 +331,10 @@ select
 
 ## Bài T4 — `dbt_utils`: khoá thay thế và test grain
 
+**Đề bài:** Viết `dim_khach_hang` dùng `generate_surrogate_key` và `star()` của
+`dbt_utils`, giải thích vì sao SQL compiled bọc `coalesce` quanh cột khoá, rồi thêm test
+`fewer_rows_than` để bắt loại lỗi đánh rơi dòng mà test `unique` không phát hiện được.
+
 **Đề:**
 
 1. Viết `dim_khach_hang` với cột `khach_sk` sinh bằng `generate_surrogate_key`, các cột
@@ -394,6 +410,10 @@ nên phải có bảng thật — cùng ràng buộc CI như bài T3.
 ---
 
 ## Bài T5 — Snapshot ghi mốc thời gian của ai?
+
+**Đề bài:** Khai báo snapshot `check`-strategy theo dõi thay đổi của khách hàng, chạy hai
+lần sau khi sửa seed, rồi giải thích ý nghĩa thật của mốc thời gian `dbt_valid_from` /
+`dbt_valid_to` — chúng là thời điểm chạy job hay thời điểm nghiệp vụ.
 
 **Đề:**
 

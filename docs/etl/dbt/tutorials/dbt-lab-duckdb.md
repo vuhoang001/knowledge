@@ -32,6 +32,9 @@ Hai bài đầu chỉ dùng `don_hang_chi_tiet.csv` (15 dòng, đơn hàng nhi�
 
 ## Bài 1 — Nối được
 
+**Đề bài:** Kiểm tra dbt kết nối được tới DuckDB, rồi load hai seed CSV
+(`don_hang_chi_tiet.csv`, `hang_hoa.csv`) vào database `lab.duckdb`.
+
 **Làm gì:**
 
 ```bash
@@ -48,6 +51,9 @@ cd ~/learn-lab/dbt
 ---
 
 ## Bài 2 — Model đầu tiên, và xem dbt SINH RA gì
+
+**Đề bài:** Viết model `stg_don_hang.sql` chọn cột từ seed, đổi tên cột và thêm cột
+tính `thanh_tien`, rồi so sánh file mình viết với file SQL dbt thực sự sinh ra khi chạy.
 
 **Làm gì:** tạo `models/stg_don_hang.sql`, chỉ `SELECT` từ seed, đổi tên cột, thêm
 cột tính `thanh_tien = so_luong * don_gia`. Chạy `dbt run`, rồi **mở
@@ -66,6 +72,9 @@ Chi tiết ở [01-dbt-la-gi.md](../reference/what-is-dbt.md) §2.
 
 ## Bài 3 — Test bắt lỗi grain
 
+**Đề bài:** Thêm test `unique` lên cột `don_hang_id` của `stg_don_hang`, chạy `dbt
+test`, giải thích vì sao nó fail, rồi sửa lại cho đúng grain thật của bảng.
+
 **Làm gì:** thêm `models/schema.yml`, đặt test `unique` lên `don_hang_id` của
 `stg_don_hang`. Chạy `dbt test`.
 
@@ -82,6 +91,10 @@ Output đầy đủ ở [06-test-va-data-quality.md](../reference/testing.md) §
 
 ## Bài 4 — `ref()` dựng nên DAG
 
+**Đề bài:** Thêm model `stg_hang_hoa` và `mart_doanh_thu_theo_nhom` join qua `ref()`,
+sinh DAG bằng `dbt docs`, rồi thử đổi tên model và thay `ref()` bằng tên bảng thẳng để
+xem `ref()` thực ra bảo vệ mình khỏi cái gì.
+
 **Làm gì:** thêm `stg_hang_hoa.sql`, rồi `mart_doanh_thu_theo_nhom.sql` join hai
 model qua `ref()`. Chạy `dbt run`, sau đó `dbt docs generate && dbt docs serve`.
 
@@ -93,6 +106,10 @@ chạy bừa. Rồi thử thay `ref()` bằng tên bảng thẳng — xem DAG m�
 ---
 
 ## Bài 5 — Materialization
+
+**Đề bài:** Đổi mart sang materialization `table` rồi sang `incremental` (dùng
+`is_incremental()`), chạy hai lần để so số dòng và thời gian, và giải thích incremental
+xử lý sai thế nào khi một đơn hàng cũ bị sửa.
 
 **Làm gì:** đổi mart sang `table`, rồi `incremental` với `is_incremental()`. Chạy
 hai lần, so số dòng và thời gian.
@@ -106,6 +123,10 @@ hai lần, so số dòng và thời gian.
 
 ## Bài 6 — Ba tầng data quality
 
+**Đề bài:** Thêm một singular test, bật `contract: enforced` cho mart, và viết một
+unit test cho công thức `thanh_tien` — sau đó cố ý làm sai từng tầng một để xem đúng
+tầng nào bắt được lỗi đó.
+
 **Làm gì:** thêm một singular test trong `tests/`, bật `contract: enforced` cho mart,
 rồi viết một unit test cho công thức `thanh_tien`.
 
@@ -118,6 +139,10 @@ sai dữ liệu → test bắt; sai kiểu cột → contract chặn trước kh
 ---
 
 ## Bài 7 — Chuyển sang Trino
+
+**Đề bài:** Chuyển lab từ DuckDB sang một cụm Trino thật (đổi `profiles.yml`, chạy lại
+đúng các model đã có), và xác định rõ cái gì phải đổi, cái gì giữ nguyên khi đổi
+warehouse.
 
 **Bài này cần một cụm Trino** — của công ty bạn, hoặc tự dựng bằng Docker:
 

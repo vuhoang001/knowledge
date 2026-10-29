@@ -55,7 +55,7 @@ khác có thể đổi định dạng dòng log; con số thì không.
 
 ## Bài B1 — Dựng project từ số 0 tới `dbt debug` xanh
 
-**Đề:** tạo một dbt project mới tên `bt_co_ban` trong thư mục tạm, dùng DuckDB, file
+**Đề bài:** tạo một dbt project mới tên `bt_co_ban` trong thư mục tạm, dùng DuckDB, file
 `profiles.yml` để ngay trong project. Mục tiêu: `dbt debug` báo `All checks passed!`.
 
 Không được dùng `dbt init` — tự viết hai file cấu hình.
@@ -142,7 +142,7 @@ phải `main`.
 
 ## Bài B2 — Model đầu tiên, và đọc SQL dbt thật sự gửi đi
 
-**Đề:** viết `models/staging/stg_don_hang.sql` đọc từ seed `don_hang`, ép `ngay_dat`,
+**Đề bài:** viết `models/staging/stg_don_hang.sql` đọc từ seed `don_hang`, ép `ngay_dat`,
 `ngay_giao`, `ngay_nhan` về `date` và `phi_ship` về `bigint`. Sau đó **mở file SQL đã
 biên dịch** và chỉ ra `{{ ref('don_hang') }}` đã biến thành chuỗi gì.
 
@@ -194,7 +194,7 @@ warehouse chạy được ngay); `target/run/` là SQL đã bọc `create view a
 
 ## Bài B3 — Model thứ hai và cột dẫn xuất
 
-**Đề:** viết `stg_don_hang_chi_tiet` với một cột dẫn xuất `thanh_tien = so_luong *
+**Đề bài:** viết `stg_don_hang_chi_tiet` với một cột dẫn xuất `thanh_tien = so_luong *
 don_gia`. Ép `so_luong`, `don_gia` về `bigint` trước khi nhân.
 
 Sau đó trả lời bằng SQL: bảng có bao nhiêu dòng, tổng `thanh_tien` là bao nhiêu.
@@ -245,7 +245,7 @@ nhiên* từ hai cột cùng dòng, không phải luật nghiệp vụ. Ranh gi�
 
 ## Bài B4 — Mart đầu tiên, và đọc thứ tự chạy
 
-**Đề:** viết `models/marts/mart_doanh_thu_ngay.sql` materialized thành `table`, gộp
+**Đề bài:** viết `models/marts/mart_doanh_thu_ngay.sql` materialized thành `table`, gộp
 doanh thu và số đơn theo `ngay_dat`. Chạy `dbt run` **toàn bộ** và chỉ ra trong output
 chỗ nào chứng minh dbt tự biết thứ tự.
 
@@ -312,7 +312,7 @@ select sum(so_don), sum(doanh_thu) from main_marts.mart_doanh_thu_ngay;
 
 ## Bài B5 — Source và generic test
 
-**Đề:** hai phần.
+**Đề bài:** hai phần.
 
 1. Khai một source tên `lab_raw` trỏ vào schema `main`, bảng `su_kien_web`, có
    `freshness` cảnh báo sau 12 giờ và lỗi sau 24 giờ. Viết `stg_su_kien` dùng

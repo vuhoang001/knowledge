@@ -27,6 +27,10 @@ Mốc: **10 đơn · 15 dòng · doanh thu 10.215.000 · phí ship 400.000**.
 
 ## Bài 1 — Phân bổ phí ship, và một đồng biến mất
 
+**Đề bài:** Phân bổ `phi_ship` của mỗi đơn hàng xuống các dòng chi tiết theo tỷ trọng
+tiền hàng, rồi sửa cách tính để tổng phân bổ khớp tuyệt đối với phí ship gốc (không còn
+lệch do làm tròn).
+
 Ở [lab nền tảng](lab-nen-tang-grain-fact-dim.md) bài 2, nhân bản `phi_ship` xuống mọi
 dòng làm nó phồng **77,5%**. Cách đúng là phân bổ theo tỷ trọng tiền hàng:
 
@@ -82,6 +86,10 @@ Xem [header/line và phân bổ fact](../skills/allocated-facts.md) và
 
 ## Bài 2 — Chọn tiêu chí phân bổ: quyết định nghiệp vụ, không phải kỹ thuật
 
+**Đề bài:** Thêm cột `trong_luong_kg` vào `hang_hoa`, phân bổ lại `phi_ship` theo trọng
+lượng thay vì tiền hàng, so sánh kết quả hai cách phân bổ và chỉ ra sản phẩm nào đổi hạng
+nhiều nhất.
+
 Bài 1 chia theo **tiền hàng**. Nhưng hãng vận chuyển tính theo **cân**, không theo tiền.
 
 **Việc cần làm:** thêm cột `trong_luong_kg` vào `hang_hoa`, phân bổ lại theo trọng lượng,
@@ -100,6 +108,10 @@ Ghi lý do chọn **ngay cạnh code** — sáu tháng sau không ai nhớ vì s
 | |
 
 ## Bài 3 — Cột luỹ kế: phồng 3,38 lần
+
+**Đề bài:** Dựng bảng có sẵn cột doanh thu luỹ kế (YTD), phát hiện vì sao cộng cột đó qua
+nhiều dòng (kéo vào ô tổng) cho kết quả sai, rồi sửa bằng cách bỏ cột lưu sẵn và tính
+luỹ kế bằng window function lúc đọc.
 
 Dựng bảng có sẵn cột YTD, đúng như nhiều nơi vẫn làm:
 
@@ -134,6 +146,11 @@ không cộng được, còn `doanh_thu_ytd` **trông y hệt** `doanh_thu`.
 
 ## Bài 4 — Bảng tổng hợp lưu `avg`: lệch 5,7%
 
+**Đề bài:** Dựng bảng tổng hợp theo ngày lưu trực tiếp `avg`, đo độ lệch giữa avg-của-avg
+đó với avg tính trên dữ liệu atomic, rồi sửa bằng cách chỉ lưu số cộng được (`sum`,
+`count`) trong bảng tổng hợp và viết query đối soát phát hiện khi bảng tổng hợp lệch so
+với nguồn.
+
 ```sql
 with theo_ngay as (select ngay, avg(so_luong*don_gia) tb from don_hang_chi_tiet group by 1)
 select (select avg(so_luong*don_gia) from don_hang_chi_tiet) tu_atomic, avg(tb) avg_cua_avg
@@ -162,6 +179,11 @@ ngày bị lệch. Xem [aggregate fact table](../skills/aggregate-fact-table.md)
 | |
 
 ## Bài 5 — Con rết: đếm khoá ngoại
+
+**Đề bài:** Dựng một fact có bảy khoá ngoại cho thời gian (ngày/tuần/tháng/quý/năm) thay
+vì một `dim_ngay` duy nhất, chứng minh bốn khoá thời gian ngoài `ngay_key` đều suy ra
+được hoàn toàn từ `ngay_key`, rồi gộp lại thành một `dim_ngay` đầy đủ và so sánh số khoá
+ngoại, số bảng phải join, số cách join sai có thể xảy ra giữa hai cách dựng.
 
 Dựng fact theo kiểu chuẩn hoá quá tay — mỗi cấp thời gian một dimension:
 
@@ -192,6 +214,12 @@ join **sai** có thể xảy ra. Xem [centipede fact table](../skills/centipede-
 | |
 
 ## Bài 6 — Nhiều đơn vị đo và nhiều tiền tệ
+
+**Đề bài:** Thêm một dòng đơn hàng tính bằng USD vào bảng chi tiết đang chỉ toàn VND,
+phát hiện `sum(so_luong*don_gia)` cộng lẫn hai tiền tệ ra một số hợp lệ nhưng vô nghĩa,
+rồi sửa bằng cách thêm cột `tien_te` và `ty_gia_ap_dung` để fact chốt cả giá trị bản địa
+và giá trị quy đổi, và kiểm doanh thu tháng 7 đổi bao nhiêu khi quy đổi lúc đọc bằng tỷ
+giá khác.
 
 `don_gia` đang là VND. Thêm một đơn hàng bằng USD:
 

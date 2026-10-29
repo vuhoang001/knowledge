@@ -81,6 +81,8 @@ Mỗi dòng có các cột (tách theo khoảng trắng): `$1` = IP, `$7` = `"GE
 
 ## Bài 1 — Tổng số request là bao nhiêu?
 
+**Đề bài:** access.log có 18 dòng mẫu. Viết một lệnh đếm tổng số request (số dòng) trong file, không in kèm tên file.
+
 Mỗi request là một dòng, nên đếm dòng là xong. `< access.log` để `wc` không in kèm tên file:
 
 ```bash
@@ -94,6 +96,8 @@ wc -l < access.log
 Đúng bằng số dòng ta vừa tạo. Nếu gõ `wc -l access.log` (không redirect) thì output sẽ là `18 access.log` — thừa tên file.
 
 ## Bài 2 — IP nào gọi nhiều nhất?
+
+**Đề bài:** Liệt kê các IP kèm số lần gọi, xếp giảm dần, để biết IP nào gọi nhiều nhất.
 
 Đây là idiom "đếm rồi xếp hạng". Tách cột IP (`$1`), `sort` để gom các dòng giống nhau kề nhau, `uniq -c` đếm mỗi nhóm, rồi `sort -rn` xếp giảm dần theo số:
 
@@ -113,6 +117,8 @@ awk '{print $1}' access.log | sort | uniq -c | sort -rn | head
 
 ## Bài 3 — Mỗi status code xuất hiện mấy lần?
 
+**Đề bài:** Đếm số lần xuất hiện của mỗi status code (200, 404, 500...) trong log.
+
 Cùng idiom, chỉ đổi cột. Status là cột áp chót, lấy bằng `$(NF-1)`:
 
 ```bash
@@ -131,6 +137,8 @@ awk '{print $(NF-1)}' access.log | sort | uniq -c | sort -rn
 `NF` là số cột của dòng hiện tại, `$(NF-1)` là cột kế cuối — cách này miễn nhiễm với path dài ngắn khác nhau. 10 request thành công, 6 lỗi, 1 redirect, 1 xác thực (401).
 
 ## Bài 4 — Chỉ các request lỗi (4xx và 5xx)
+
+**Đề bài:** Lọc ra chỉ những dòng có status 4xx hoặc 5xx (request lỗi), bỏ qua các dòng 2xx/3xx.
 
 Hai cách, chọn theo nhu cầu.
 
@@ -169,6 +177,8 @@ awk '$(NF-1) >= 400 {gsub(/"/, "", $7); print $1, $7, $(NF-1)}' access.log
 `grep` khớp text nên nhanh và ngắn khi điều kiện là "chứa mẫu này"; `awk` hiểu số nên tự nhiên hơn với "cột này ≥ 400" và còn chọn được cột để in ra.
 
 ## Bài 5 — Tổng số bytes đã phục vụ
+
+**Đề bài:** Cộng dồn cột bytes của toàn bộ 18 dòng để biết tổng dung lượng đã phục vụ.
 
 Cột bytes là `$NF` (cột cuối). Cộng dồn vào biến `sum`, in ở khối `END` sau khi đọc hết file:
 

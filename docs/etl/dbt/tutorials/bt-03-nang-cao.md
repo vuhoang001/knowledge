@@ -27,6 +27,10 @@ hàng · 10.215.000**.
 
 ## Bài N1 — Unit test: chứng minh logic đúng mà không cần dữ liệu thật
 
+**Đề bài:** Viết unit test cho model `mart_doanh_thu_ngay` chứng minh logic gộp đúng
+bằng dữ liệu giả khai thẳng trong YAML, và giải thích vì sao unit test chạy trước khi
+model được build còn data test chạy sau.
+
 **Đề:** `mart_doanh_thu_ngay` có một chỗ dễ sai: `count(distinct don_hang_id)` sau khi
 join làm phồng grain. Viết **unit test** (dbt 1.8+) chứng minh model gộp đúng, với dữ
 liệu giả nhét thẳng vào YAML:
@@ -92,6 +96,10 @@ Chỉ liệt kê cột **thật sự cần** trong `given` — dbt tự điền 
 ---
 
 ## Bài N2 — SCD2 theo giờ nghiệp vụ, và as-was khác as-is bao nhiêu
+
+**Đề bài:** Dựng SCD2 tay từ bảng ảnh chụp hằng ngày `khach_hang_lich_su`, rồi tính
+doanh thu theo khu vực theo hai cách — as-was (khu vực tại ngày đặt đơn) và as-is (khu
+vực hiện tại) — và so sánh chênh lệch giữa hai cách.
 
 **Đề:** bài T5 cho thấy `dbt snapshot` ghi mốc theo **giờ chạy**, nên không dùng được
 cho lịch sử trong quá khứ. Giờ dựng SCD2 **tay** từ bảng `khach_hang_lich_su` (ảnh chụp
@@ -206,6 +214,11 @@ giữ gì cả.
 
 ## Bài N3 — `on_schema_change` nuốt cột mới
 
+**Đề bài:** Thêm cột mới vào một model incremental, chạy `dbt run` thường (không
+`--full-refresh`) rồi xem cột của bảng đích, sau đó bật
+`on_schema_change='append_new_columns'` và chạy lại để so sánh; giải thích vì sao lần
+chạy đầu không báo lỗi dù cột mới bị bỏ qua.
+
 **Đề:**
 
 1. Build `fct_dong_hang` (incremental) như bài T1.
@@ -287,6 +300,11 @@ models:
 ---
 
 ## Bài N4 — CI chỉ chạy phần đã đổi
+
+**Đề bài:** Giả lập manifest production, sửa một model staging, dùng
+`dbt ls --select state:modified+ --state` để xem CI sẽ chạy phần nào, giải thích vì sao
+các model/test phía sau cũng xuất hiện trong danh sách, rồi viết bước GitHub Actions
+dùng kết quả đó kèm schema riêng theo PR và bước dọn luôn chạy dù CI fail.
 
 **Đề:**
 
@@ -376,6 +394,10 @@ dbt ls --select state:modified+ --state ./prod_manifest | wc -l
 ---
 
 ## Bài N5 — Project đang tốn thời gian ở đâu
+
+**Đề bài:** Viết script đọc `target/run_results.json` in ra 5 node chạy chậm nhất và
+tổng thời gian build, rồi dựa vào hình dạng phân bố đó để quyết định tối ưu ở đâu là có
+lãi, chỗ nào là lãng phí công.
 
 **Đề:** chạy `dbt build`, rồi viết script đọc `target/run_results.json` in ra 5 node
 chậm nhất và tổng thời gian. Sau đó trả lời: với kết quả thu được, tối ưu chỗ nào là có

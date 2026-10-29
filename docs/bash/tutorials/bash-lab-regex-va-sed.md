@@ -36,6 +36,10 @@ mkdir -p /tmp/bashlab-tut-regex && cd /tmp/bashlab-tut-regex
 
 ## Bài 1 — Lọc dòng hợp lệ bằng anchor
 
+**Đề bài:** File `messy_data.txt` trộn lẫn dòng header, dòng dữ liệu hợp lệ và một dòng
+lỗi (`ERROR: Missing User Data`). Lọc ra chỉ các dòng dữ liệu hợp lệ, loại bỏ header và
+dòng lỗi mà không cần biết trước nội dung chính xác của chúng.
+
 ```bash
 cat > messy_data.txt <<'EOF'
 ID, Name, Salary, Code
@@ -64,6 +68,10 @@ grep -E '^[0-9]' messy_data.txt
 cần biết nội dung chính xác của chúng.
 
 ## Bài 2 — Tránh bẫy `.` khi tìm chuỗi cụ thể
+
+**Đề bài:** File `staff.dat` có một dòng chứa IP giả `192X168X9X9` dễ bị khớp nhầm với
+IP thật `192.168.9.9` nếu dùng regex thô. Tìm đúng các dòng có IP thật là `192.168.9.9`,
+rồi trong số đó chỉ giữ lại nhân viên đang `ACTIVE` (loại `TERMINATED`).
 
 ```bash
 cat > staff.dat <<'EOF'
@@ -108,6 +116,10 @@ EMP_01 :: Alice | 192.168.9.9 :: ACTIVE
 
 ## Bài 3 — Chuẩn hoá delimiter hỗn loạn bằng `sed`
 
+**Đề bài:** File `dirty.csv` có 3 dòng dữ liệu, mỗi dòng hỏng theo một kiểu khác nhau
+(dùng `;` thay `,`, có cột rỗng sinh ra `,,`, có khoảng trắng dư quanh dấu phẩy). Dùng
+`sed` để đưa cả 3 dòng về cùng một dạng CSV 4 cột, ngăn cách bằng đúng một dấu `,`.
+
 CSV thật thường không sạch: vài dòng dùng `;` thay `,`, vài dòng có `,,` do cột rỗng,
 vài dòng có khoảng trắng dư quanh dấu phẩy.
 
@@ -137,6 +149,10 @@ Ba kiểu lỗi khác nhau, cùng về một dạng 4 cột. Chú ý `$1OOUSD`/`
 vẫn còn nguyên — đó là chuyện của Bài 4.
 
 ## Bài 4 — Bẫy "thay lan ra cả dòng"
+
+**Đề bài:** Cột `AMOUNT` ở Bài 3 còn số tiền bị mã hoá (`O` thay cho `0`, `S` thay cho
+`5`, ví dụ `$1OOUSD` = 100). Giải mã đúng các số tiền này mà **không** làm hỏng cột
+`STATUS` (`CLEARED_OK` không được biến thành `CLEARED_0K`).
 
 Số tiền trên bị mã hoá: chữ `O` thay cho số `0`, chữ `S` thay cho số `5`
 (`$1OOUSD` = 100, `$2SOUSD` = 250, `$3OOUSD` = 300). Phản xạ đầu tiên là:

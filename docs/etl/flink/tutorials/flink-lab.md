@@ -52,6 +52,8 @@ services:
 
 ## Bài 1 — Dựng cluster, mở UI, vào SQL Client
 
+**Đề bài:** Dựng cluster Flink tối thiểu (jobmanager + taskmanager) bằng Docker Compose, mở được Flink UI, và vào được SQL Client trong container jobmanager.
+
 ```bash
 cd ~/learn-lab/flink
 docker compose up -d
@@ -64,6 +66,8 @@ docker compose exec jobmanager ./bin/sql-client.sh
 **Kết quả:** ⬜ chưa chạy
 
 ## Bài 2 — CREATE TABLE với datagen source + WATERMARK
+
+**Đề bài:** Tạo bảng `orders` dùng connector `datagen` (không cần Kafka) với cột `event_ts` và khai báo `WATERMARK`, rồi query thử vài dòng để xem dữ liệu sinh ra.
 
 `datagen` tự sinh dữ liệu, có thể cấu hình để timestamp lệch nhau — đủ để thấy watermark và late data.
 
@@ -90,6 +94,8 @@ SELECT * FROM orders LIMIT 10;
 
 ## Bài 3 — TUMBLE window count
 
+**Đề bài:** Dùng TUMBLE window TVF để đếm số đơn hàng theo cửa sổ event-time 10 giây trên bảng `orders`, và quan sát xem kết quả mỗi cửa sổ ra lúc nào so với thời gian thực.
+
 Đếm số đơn theo cửa sổ event-time 10 giây.
 
 ```sql
@@ -107,6 +113,8 @@ Quan sát: mỗi cửa sổ chỉ ra kết quả **sau khi watermark vượt qua
 **Kết quả:** ⬜ chưa chạy
 
 ## Bài 4 — Tạo late data và quan sát bị bỏ
+
+**Đề bài:** Tạo bảng `orders_late` với `datagen` sinh event-time lùi ngẫu nhiên tới 30s nhưng watermark lateness chỉ cho phép 2s, rồi so tổng đếm theo TUMBLE window với tổng số dòng sinh ra để thấy phần event bị bỏ vì tới muộn.
 
 Cho `datagen` sinh timestamp lệch quá watermark (event "cũ" hơn allowed lateness) để thấy event bị coi là late.
 
@@ -132,6 +140,8 @@ Với lateness chỉ 2s nhưng event lùi tới 30s: nhiều event tới **sau k
 **Kết quả:** ⬜ chưa chạy
 
 ## Bài 5 — Bật checkpoint, kill taskmanager, xem khôi phục
+
+**Đề bài:** Bật checkpointing cho session SQL Client, cho một query có state (vd TUMBLE count) chạy nền, giết một taskmanager rồi dựng lại, và quan sát trên Flink UI xem job restart/restore từ checkpoint cuối thế nào.
 
 ```sql
 -- trong SQL Client, bật checkpointing cho session

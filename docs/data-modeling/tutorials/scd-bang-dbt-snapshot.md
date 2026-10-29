@@ -49,6 +49,10 @@ dưới đây đối chiếu với nó.
 
 ## Bài 1 — Khai snapshot, và ba quyết định của *người*
 
+**Đề bài:** Khai báo snapshot `scd_khach_hang` cho bảng `khach_hang` — chọn `unique_key`,
+`check_cols`, `strategy` phù hợp — rồi chạy `dbt snapshot` và quan sát cột `dbt_valid_from`
+sinh ra là giá trị gì.
+
 dbt sinh cột hộ bạn. Ba thứ nó **không** quyết được:
 
 | Khai gì | Nghĩa là gì | Sai thì sao |
@@ -97,6 +101,9 @@ Ghi nhớ điều này — bài 4 sẽ quay lại.
 
 ## Bài 2 — Đổi một giá trị, chạy lại, xem phiên bản sinh ra
 
+**Đề bài:** Đổi `khu_vuc` của `C1` trong seed, chạy lại `dbt seed` rồi `dbt snapshot`, và
+xem bảng `scd_khach_hang` sinh thêm phiên bản mới như thế nào.
+
 Sửa `seeds/khach_hang.csv`, đổi `C1` từ `Mien Bac` thành `Mien Nam`:
 
 ```bash
@@ -126,6 +133,10 @@ từ giờ sẽ FAIL, đúng như nó phải thế.
 
 ## Bài 3 — Join sai: `dbt_valid_to is null`
 
+**Đề bài:** Join fact đơn hàng với `scd_khach_hang` bằng điều kiện
+`d.dbt_valid_to is null`, tính doanh thu theo `khu_vuc`, rồi chỉ ra vì sao kết quả khớp
+tổng nguồn mà vẫn gán sai vùng cho `C1`.
+
 Đây là câu ai cũng viết theo bản năng, vì nó ngắn và chạy được:
 
 ```sql
@@ -152,6 +163,10 @@ tái hiện bằng tay.
 bỏ công dựng ở bài 1–2?
 
 ## Bài 4 — Join "đúng", và nó trả về **0 dòng**
+
+**Đề bài:** Sửa lại điều kiện join để khớp phiên bản có hiệu lực đúng tại `ngay_dat`
+(dùng `dbt_valid_from`/`dbt_valid_to` làm khoảng thời gian), chạy lại, và giải thích vì
+sao kết quả trả về 0 dòng.
 
 Sửa lại cho đúng lý thuyết — khớp phiên bản có hiệu lực **tại ngày đặt hàng**:
 
@@ -195,6 +210,10 @@ lấy lại.
 | |
 
 ## Bài 5 — Sửa: phiên bản đầu tiên có hiệu lực từ vô cực quá khứ
+
+**Đề bài:** Sửa điều kiện join ở bài 4 để coi bản ghi sớm nhất của mỗi khách có hiệu lực
+từ vô cực quá khứ (ví dụ `1900-01-01`), chạy lại truy vấn doanh thu theo `khu_vuc`, và
+kiểm tổng/số dòng có khớp nguồn hay không.
 
 Cách xử lý chuẩn khi bật snapshot muộn — coi bản ghi **sớm nhất** của mỗi thực thể là đã
 đúng từ trước khi kho tồn tại:
@@ -248,6 +267,10 @@ chiều*, không bị mất — nên mọi test đối soát tổng đều xanh.
 
 ## Bài 6 — `check_cols` và cái bẫy `'all'`
 
+**Đề bài:** Đổi `check_cols` thành `'all'`, sửa `ho_ten` của một khách (chỉ sửa lỗi
+chính tả), chạy lại `dbt snapshot`, và dự đoán trước khi chạy xem có sinh phiên bản mới
+không — việc đó có nên xảy ra không?
+
 Đổi `check_cols=['khu_vuc', 'hang']` thành `check_cols='all'`, rồi sửa `ho_ten` của một
 khách (thêm dấu, sửa chính tả) và chạy lại snapshot.
 
@@ -263,6 +286,10 @@ dimension phình theo nhịp của cột đổi nhiều nhất. Xem
 | |
 
 ## Bài 7 — Xoá ở nguồn thì sao?
+
+**Đề bài:** Xoá dòng `C4` khỏi seed, chạy lại `dbt seed` + `dbt snapshot`, rồi kiểm
+`dbt_valid_to` của `C4` trong `scd_khach_hang` để xác định dòng đó bị xoá hẳn hay chỉ
+bị đóng lại.
 
 `invalidate_hard_deletes=True` đã bật ở bài 1. Xoá dòng `C4` khỏi seed, chạy lại
 snapshot, rồi kiểm:
