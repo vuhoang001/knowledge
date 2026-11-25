@@ -21,6 +21,8 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*. Đọc nhóm này tr
 | 3 | [Quy trình Plan / Apply](plan-apply-workflow.md) | Ba ký hiệu `+ ~ -` là toàn bộ ngữ pháp của diff; vì sao apply hai lần liên tiếp không làm gì | 📝 output chạy thật |
 | 4 | [Variables, Outputs và Locals](variables-outputs-locals.md) | Thứ tự ưu tiên CLI/`.tfvars`/env var; vì sao `sensitive` không mã hoá gì cả | 📝 output chạy thật |
 | 5 | [Modules](modules.md) | Gọi cùng module hai lần ra hai bộ resource độc lập — địa chỉ state có tiền tố `module.<tên>` | 📝 output chạy thật |
+| 6 | [Data Sources](data-sources.md) | `data` chỉ đọc, không quản lý — vì sao thiếu đối tượng làm `plan` chết, không phải `apply` | 📝 output chạy thật |
+| 7 | [Expressions và Functions](expressions-and-functions.md) | Conditional, for-expression, splat, dynamic block — bốn cách biến đổi dữ liệu trong HCL | 📝 output chạy thật |
 
 ## Related Topics
 

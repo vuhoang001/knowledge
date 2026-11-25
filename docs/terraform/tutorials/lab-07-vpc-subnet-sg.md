@@ -1,6 +1,6 @@
 ---
 title: "Lab 7 — VPC, subnet và security group"
-sidebar_position: 8
+sidebar_position: 10
 description: "Một VPC, nhiều subnet dựng bằng for_each trên map CIDR, và một security group với ingress rule — nối trực tiếp kỹ năng count vs for_each vào hạ tầng mạng thật."
 tags: [tutorial, terraform, aws, vpc, networking]
 domain: devops

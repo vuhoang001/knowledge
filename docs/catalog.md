@@ -17,9 +17,9 @@ updated: 2026-07-31
 Cùng một tập file, hai đường vào. Cần cắt theo chủ đề *và* dạng cùng lúc thì dùng
 trang tag, ví dụ [`/tags/data-modeling`](/tags/data-modeling).
 
-**275 file mang tri thức · 3 đã kiểm chứng bằng tay.**
+**292 file mang tri thức · 3 đã kiểm chứng bằng tay.**
 
-## Tài liệu tham chiếu (73)
+## Tài liệu tham chiếu (77)
 
 Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 
@@ -95,11 +95,15 @@ Giải thích *nó là gì, vì sao, đánh đổi ra sao*.
 | [Coupling và cohesion — thước đo pattern thật sự phục vụ](patterns/reference/coupling-cohesion.md) | `patterns/reference` | backend | 🟡 draft |
 | [SOLID — năm nguyên lý, năm ca hỏng chạy được](patterns/reference/solid.md) | `patterns/reference` | backend | 🟡 draft |
 | [Design pattern là gì — và khi nào đừng dùng](patterns/reference/what-is-a-pattern.md) | `patterns/reference` | backend | 🟡 draft |
+| [Data Sources](terraform/reference/data-sources.md) | `terraform/reference` | devops | 📝 lý thuyết |
+| [Expressions và Functions](terraform/reference/expressions-and-functions.md) | `terraform/reference` | devops | 📝 lý thuyết |
+| [Modules](terraform/reference/modules.md) | `terraform/reference` | devops | 📝 lý thuyết |
 | ["Quy trình Plan / Apply"](terraform/reference/plan-apply-workflow.md) | `terraform/reference` | devops | 📝 lý thuyết |
 | [Providers và Resources](terraform/reference/providers-and-resources.md) | `terraform/reference` | devops | 📝 lý thuyết |
 | [State](terraform/reference/state.md) | `terraform/reference` | devops | 📝 lý thuyết |
+| [Variables, Outputs và Locals](terraform/reference/variables-outputs-locals.md) | `terraform/reference` | devops | 📝 lý thuyết |
 
-## Kỹ năng (71)
+## Kỹ năng (76)
 
 Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên phần tài liệu.
 
@@ -176,8 +180,13 @@ Kỹ thuật áp dụng vào một tình huống cụ thể — đứng trên ph
 | [Strategy](patterns/skills/strategy.md) | `patterns/skills` | backend | 🟡 draft |
 | [Template Method](patterns/skills/template-method.md) | `patterns/skills` | backend | 🟡 draft |
 | [Visitor](patterns/skills/visitor.md) | `patterns/skills` | backend | 🟡 draft |
+| [Backend và state locking](terraform/skills/backend-va-locking.md) | `terraform/skills` | devops | 📝 lý thuyết |
+| ["`count` vs `for_each`"](terraform/skills/count-vs-for-each.md) | `terraform/skills` | devops | 📝 lý thuyết |
+| [Import tài nguyên đã tồn tại](terraform/skills/import.md) | `terraform/skills` | devops | 📝 lý thuyết |
+| [Lifecycle Meta-arguments](terraform/skills/lifecycle-meta-arguments.md) | `terraform/skills` | devops | 📝 lý thuyết |
+| [Provisioners](terraform/skills/provisioners.md) | `terraform/skills` | devops | 📝 lý thuyết |
 
-## Bài tập (55)
+## Bài tập (62)
 
 Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 
@@ -238,6 +247,13 @@ Chạy thật, có ô dán output. Chưa chạy thì chưa gọi là học.
 | ["Lab 2 — State locking"](terraform/tutorials/lab-02-state-locking.md) | `terraform/tutorials` | devops | 🟡 draft |
 | ["Lab 3 — State surgery (mv/rm)"](terraform/tutorials/lab-03-state-surgery.md) | `terraform/tutorials` | devops | 🟡 draft |
 | ["Lab 4 — Import"](terraform/tutorials/lab-04-import.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 5 — S3 bucket với versioning"](terraform/tutorials/lab-05-s3-versioning.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 6 — IAM role và policy"](terraform/tutorials/lab-06-iam-role-policy.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 7 — VPC, subnet và security group"](terraform/tutorials/lab-07-vpc-subnet-sg.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 8 — EC2 instance với user_data"](terraform/tutorials/lab-08-ec2-instance.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 9 — import một bucket đã tồn tại"](terraform/tutorials/lab-09-import-existing-bucket.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 10 — Data sources và expressions"](terraform/tutorials/lab-10-data-sources-expressions.md) | `terraform/tutorials` | devops | 🟡 draft |
+| ["Lab 11 — Lifecycle meta-arguments và provisioners"](terraform/tutorials/lab-11-lifecycle-provisioners.md) | `terraform/tutorials` | devops | 🟡 draft |
 
 ## Case study (67)
 
@@ -313,7 +329,7 @@ Sự cố thật đã debug xong, kèm giả thuyết sai lúc đầu.
 | [Thêm một toán tử, sáu nơi phải sửa](patterns/case-studies/them-node-moi-sua-moi-visitor.md) | `patterns/case-studies` | backend | 🟡 draft |
 | [Hoàn tác hai lệnh, tồn kho từ 10 thành 24](patterns/case-studies/undo-khong-tra-lai-trang-thai-cu.md) | `patterns/case-studies` | backend | 🟡 draft |
 
-## Cheatsheet (9)
+## Cheatsheet (10)
 
 Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 
@@ -328,6 +344,7 @@ Tra nhanh khi **đang làm** — không dùng để học lần đầu.
 | [Flink config và SQL](etl/flink/cheatsheets/config-and-sql.md) | `etl/flink/cheatsheets` | data-engineering | 🟡 draft |
 | [Kafka CLI và config](etl/kafka/cheatsheets/cli-and-config.md) | `etl/kafka/cheatsheets` | data-engineering | 🟡 draft |
 | [23 pattern GoF — tra nhanh](patterns/cheatsheets/gof-23.md) | `patterns/cheatsheets` | backend | 🟡 draft |
+| [Cheatsheet lệnh Terraform](terraform/cheatsheets/commands.md) | `terraform/cheatsheets` | devops | 🟡 draft |
 
 ## FAQ (0)
 

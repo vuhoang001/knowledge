@@ -1,6 +1,6 @@
 ---
 title: "Lab 5 — S3 bucket với versioning"
-sidebar_position: 6
+sidebar_position: 8
 description: "variable cho tên bucket theo môi trường, output ARN, verify bằng AWS CLI — bài lab AWS đầu tiên, chạy qua LocalStack."
 tags: [tutorial, terraform, aws, s3]
 domain: devops

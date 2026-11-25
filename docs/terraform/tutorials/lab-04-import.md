@@ -1,6 +1,6 @@
 ---
 title: "Lab 4 — Import"
-sidebar_position: 5
+sidebar_position: 7
 description: "Đưa một container Docker đã chạy TRƯỚC khi có Terraform vào state — và tại sao plan ngay sau import vẫn báo destroy/recreate, chứ không phải No changes."
 tags: [tutorial, terraform, import, docker]
 domain: devops

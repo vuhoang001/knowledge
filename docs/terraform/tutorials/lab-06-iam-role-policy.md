@@ -1,6 +1,6 @@
 ---
 title: "Lab 6 — IAM role và policy"
-sidebar_position: 7
+sidebar_position: 9
 description: "aws_iam_role với trust policy viết bằng jsonencode, aws_iam_policy giới hạn quyền tới đúng một bucket, gắn bằng aws_iam_role_policy_attachment — verify bằng AWS CLI."
 tags: [tutorial, terraform, aws, iam]
 domain: devops

@@ -37,6 +37,8 @@ Năm nhóm chuẩn, giống mọi chủ đề khác trong kho — xem [`ROUTING.
 | 3 | [Quy trình Plan / Apply](reference/plan-apply-workflow.md) | Ba ký hiệu `+ ~ -` là toàn bộ ngữ pháp của diff; vì sao apply hai lần liên tiếp không làm gì | beginner | 📝 output chạy thật |
 | 4 | [Variables, Outputs và Locals](reference/variables-outputs-locals.md) | Thứ tự ưu tiên khi CLI/`.tfvars`/env var cùng truyền giá trị; vì sao `sensitive` không mã hoá gì | beginner | 📝 output chạy thật |
 | 5 | [Modules](reference/modules.md) | Gọi cùng module hai lần ra hai bộ resource độc lập — địa chỉ state có tiền tố `module.<tên>` thế nào | intermediate | 📝 output chạy thật |
+| 6 | [Data Sources](reference/data-sources.md) | `data` chỉ đọc, không quản lý — vì sao thiếu đối tượng làm `plan` chết, không phải `apply` | beginner | 📝 output chạy thật |
+| 7 | [Expressions và Functions](reference/expressions-and-functions.md) | Conditional, for-expression, splat, dynamic block — bốn cách biến đổi dữ liệu trong HCL | intermediate | 📝 output chạy thật |
 
 ### [Kỹ năng](skills/index.md) — kỹ thuật áp dụng lên phần trên
 
@@ -45,18 +47,18 @@ Năm nhóm chuẩn, giống mọi chủ đề khác trong kho — xem [`ROUTING.
 | 1 | Import | Đưa resource đã tạo sẵn ngoài Terraform vào state mà không recreate | [skill](skills/import.md) | [Lab 4](tutorials/lab-04-import.md) (Docker) · [Lab 9](tutorials/lab-09-import-existing-bucket.md) (AWS) |
 | 2 | `count` vs `for_each` | Xoá phần tử giữa danh sách — `count` đổi tên/xoá nhầm resource, `for_each` thì không | [skill](skills/count-vs-for-each.md) | [Lab 7](tutorials/lab-07-vpc-subnet-sg.md) (subnet theo CIDR) |
 | 3 | Backend và state locking | Ai được ghi state lúc nào; backend không đọc được `var.*`; lock DynamoDB vs lock S3-native | [skill](skills/backend-va-locking.md) | [Lab 2](tutorials/lab-02-state-locking.md) (local lock) |
-| 4 | State surgery (`mv`/`rm`) | Đổi tên resource, tách module mà không destroy/recreate tài nguyên thật | ⬜ dự kiến | [Lab 3](tutorials/lab-03-state-surgery.md) |
-| 5 | Lifecycle meta-argument | `create_before_destroy`, `prevent_destroy`, `ignore_changes` — mỗi cái vá một lớp lỗi khác nhau | ⬜ dự kiến | — |
-| 6 | Remote state làm data source | Đọc output của một state khác, ghép hai layer hạ tầng không cùng thư mục | ⬜ dự kiến | — |
-| 7 | Secrets trong state | State lưu plaintext mọi attribute — `sensitive = true` chỉ ẩn ở output CLI, không mã hoá state | ⬜ dự kiến (demo thật đã có ở [Variables/Outputs/Locals](reference/variables-outputs-locals.md)) | — |
-| 8 | Provisioners | `local-exec`/`remote-exec` là đường cùng khi provider không có resource tương ứng, không phải lựa chọn đầu tiên | ⬜ dự kiến | [Lab 2](tutorials/lab-02-state-locking.md), [Lab 8](tutorials/lab-08-ec2-instance.md) có dùng/bàn tới |
+| 4 | Lifecycle meta-argument | `create_before_destroy`, `prevent_destroy`, `ignore_changes` — mỗi cái vá một lớp lỗi khác nhau | [skill](skills/lifecycle-meta-arguments.md) | [Lab 11](tutorials/lab-11-lifecycle-provisioners.md) |
+| 5 | Provisioners | `local-exec`/`remote-exec` là đường cùng khi provider không có resource tương ứng, không phải lựa chọn đầu tiên | [skill](skills/provisioners.md) | [Lab 11](tutorials/lab-11-lifecycle-provisioners.md) · [Lab 8](tutorials/lab-08-ec2-instance.md) bàn tới |
+| 6 | State surgery (`mv`/`rm`) | Đổi tên resource, tách module mà không destroy/recreate tài nguyên thật | ⬜ dự kiến | [Lab 3](tutorials/lab-03-state-surgery.md) |
+| 7 | Remote state làm data source | Đọc output của một state khác, ghép hai layer hạ tầng không cùng thư mục | ⬜ dự kiến (nền tảng `data` đã có ở [Data Sources](reference/data-sources.md), [Lab 10](tutorials/lab-10-data-sources-expressions.md)) | — |
+| 8 | Secrets trong state | State lưu plaintext mọi attribute — `sensitive = true` chỉ ẩn ở output CLI, không mã hoá state | ⬜ dự kiến (demo thật đã có ở [Variables/Outputs/Locals](reference/variables-outputs-locals.md)) | — |
 
 ### Ba nhóm còn lại
 
 | Nhóm | Nội dung |
 |---|---|
-| [Bài tập](tutorials/index.md) | **10 lab đã viết** — Lab 0-4 (drift, modules, state locking, state surgery, import Docker) dùng provider local/Docker; Lab 5-9 (S3, IAM, VPC/SG, EC2, import) chạy thật trên AWS qua LocalStack |
-| Cheatsheet | Chưa có — mở khi có bài lab CLI đủ dùng để tra nhanh |
+| [Bài tập](tutorials/index.md) | **12 lab đã viết** — Lab 0-4, 10-11 (drift, modules, state locking, state surgery, import Docker, data sources, lifecycle/provisioners) dùng provider local/Docker; Lab 5-9 (S3, IAM, VPC/SG, EC2, import) chạy thật trên AWS qua LocalStack |
+| [Cheatsheet](cheatsheets/index.md) | **1 bảng tra** — lệnh CLI theo vòng đời (init/fmt/validate, plan/apply/destroy, state, debug) |
 | Case study | Chưa có — mỗi kỹ thuật ở Kỹ năng cần ít nhất một ca hỏng cụ thể, viết sau khi phần Kỹ năng có nội dung |
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 output chạy thật khi viết, `verified_at` chờ
@@ -80,9 +82,10 @@ Cả ba đều **không phải lỗi cú pháp**. HCL viết đúng, `terraform 
 chỗ không phân biệt được "cái Terraform nhớ" với "cái đang thật sự tồn tại".
 
 Nhưng hiểu state/plan/graph là **chưa đủ để viết được** — phải biết cả lớp "biết viết"
-(`variable`/`output`/`locals`/`module`, mục 4-5 ở bảng Tài liệu) trước khi tới các kỹ
-thuật tình huống ở nhóm Kỹ năng. Mục 4-5 không giải thích "vì sao Terraform hành xử
-vậy" như 3 mục đầu — chúng là nền cú pháp tối thiểu mọi kỹ năng sau đó giả định đã biết.
+(`variable`/`output`/`locals`/`module`, mục 4-5 ở bảng Tài liệu; cộng `data`/expression,
+mục 6-7) trước khi tới các kỹ thuật tình huống ở nhóm Kỹ năng. Mục 4-7 không giải thích
+"vì sao Terraform hành xử vậy" như 3 mục đầu — chúng là nền cú pháp tối thiểu mọi kỹ
+năng sau đó giả định đã biết.
 
 ## Learning Path
 
@@ -97,17 +100,26 @@ Lab 0: vòng đời đầy đủ + tự tay gây drift
       ↓
 Variables, Outputs, Locals · Modules        ← lớp "biết viết" trước khi vào kỹ thuật tình huống
       ↓
-Lab 1: Modules · Lab 2: State locking · Lab 3: State surgery · Lab 4: Import (Docker)
+Lab 1: Modules · Lab 2: State locking · Lab 3: State surgery
       ↓
-Import · count vs for_each · Backend và locking   ← 3 skill đã viết, chạy thật trên AWS (LocalStack)
+Data Sources · Expressions và Functions     ← data đọc gì, for/conditional/splat/dynamic biến đổi ra sao
+      ↓
+Lab 10: Data sources + expressions
+      ↓
+Lifecycle meta-argument · Provisioners      ← 2 skill mới, chạy thật bằng provider local
+      ↓
+Lab 11: Lifecycle + provisioners · Lab 4: Import (Docker)
+      ↓
+Import · count vs for_each · Backend và locking   ← 3 skill cũ, chạy thật trên AWS (LocalStack)
       ↓
 Lab 5-9: S3 · IAM · VPC/SG · EC2 · Import (AWS)     ← chạy thật trên AWS ở đây
       ↓
-Lifecycle · Remote state · Secrets · Provisioners   (kỹ thuật theo tình huống, chưa viết thành bài riêng)
+State surgery (skill) · Remote state · Secrets   (kỹ thuật theo tình huống, chưa viết thành bài riêng)
 ```
 
 **Đường ngắn nhất tới chỗ dùng được:** Providers/Resources → State → Plan/Apply → Lab
-0 → Variables/Outputs/Locals → Lab 1-4 (cơ chế) → Lab 5 (AWS thật).
+0 → Variables/Outputs/Locals → Lab 1-3 (cơ chế) → Data Sources/Expressions → Lab 10 →
+Lab 5 — S3 bucket (AWS thật).
 
 ## Related Topics
 

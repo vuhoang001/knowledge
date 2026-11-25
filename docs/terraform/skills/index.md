@@ -24,11 +24,13 @@ tạo/xoá — xem cấu hình provider ở
 | 1 | [Import tài nguyên đã tồn tại](import.md) | Đưa resource tạo sẵn ngoài Terraform vào state mà không recreate — và vì sao HCL sai lệch sau đó mới hiện ra | intermediate | 📝 output chạy thật |
 | 2 | [`count` vs `for_each`](count-vs-for-each.md) | Xoá phần tử giữa danh sách — `count` đổi tên nhầm một resource và xoá nhầm một resource khác; `for_each` chỉ động đúng resource bị xoá | intermediate | 📝 output chạy thật |
 | 3 | [Backend và state locking](backend-va-locking.md) | Backend không đọc được `var.*`; lock bằng DynamoDB table chặn đúng, lock `use_lockfile` không chặn được trên LocalStack | advanced | 📝 output chạy thật |
+| 4 | [Lifecycle meta-arguments](lifecycle-meta-arguments.md) | `create_before_destroy` đổi thứ tự replace; `prevent_destroy` chặn destroy bằng lỗi; `ignore_changes` giấu một config diff | intermediate | 📝 output chạy thật |
+| 5 | [Provisioners](provisioners.md) | Vì sao provisioner là đường cùng, không phải lựa chọn đầu — và provisioner thất bại làm resource bị *tainted* dù đã tạo xong | intermediate | 📝 output chạy thật |
 
-Một số kỹ thuật khác (Lifecycle meta-argument, Remote state làm data source, Secrets
-trong state, Provisioners, State surgery nâng cao) vẫn ở dạng mục lục dự kiến trong
-[bản đồ chủ đề](../index.md) — chưa có file riêng ở đây (một phần đã có **lab minh hoạ**
-trong [Bài tập](../tutorials/index.md): Modules, State locking, State surgery, Import).
+Một số kỹ thuật khác (Remote state làm data source, Secrets trong state, State surgery
+nâng cao) vẫn ở dạng mục lục dự kiến trong [bản đồ chủ đề](../index.md) — chưa có file
+riêng ở đây (một phần đã có **lab minh hoạ** trong [Bài tập](../tutorials/index.md):
+Modules, State locking, State surgery, Import).
 
 Ký hiệu: ✅ đã chạy tay và xác nhận · 📝 output chạy thật khi viết, `verified_at` chờ
 chủ repo chạy lại tay.

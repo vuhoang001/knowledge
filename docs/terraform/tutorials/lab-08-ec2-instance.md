@@ -1,6 +1,6 @@
 ---
 title: "Lab 8 — EC2 instance với user_data"
-sidebar_position: 9
+sidebar_position: 11
 description: "aws_instance với user_data thay cho provisioner remote-exec — và cách thật để verify user_data đã lưu đúng: describe-instance-attribute, không phải describe-instances."
 tags: [tutorial, terraform, aws, ec2]
 domain: devops

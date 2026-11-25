@@ -1,6 +1,6 @@
 ---
 title: "Lab 9 — import một bucket đã tồn tại"
-sidebar_position: 10
+sidebar_position: 12
 description: "Một bucket có sẵn tag thật, tạo ngoài Terraform — tự phát hiện tag đó bằng AWS CLI trước khi viết HCL, rồi import bằng khối import tới khi plan báo No changes."
 tags: [tutorial, terraform, import, aws, s3]
 domain: devops

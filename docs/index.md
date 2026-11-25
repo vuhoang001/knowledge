@@ -339,6 +339,14 @@ là trí nhớ chứ không phải thực tại thì mọi `plan`/`apply` sau đ
 | [lab-07-vpc-subnet-sg](terraform/tutorials/lab-07-vpc-subnet-sg.md) | Lab AWS: VPC + subnet bằng `for_each` trên map CIDR, security group nhiều `ingress` | 📝 |
 | [lab-08-ec2-instance](terraform/tutorials/lab-08-ec2-instance.md) | Lab AWS: EC2 + `user_data`; verify đúng API `describe-instance-attribute`, không phải `describe-instances` | 📝 |
 | [lab-09-import-existing-bucket](terraform/tutorials/lab-09-import-existing-bucket.md) | Lab AWS: tự phát hiện attribute thật trước khi viết HCL, import tới khi `plan` báo "No changes" | 📝 |
+| [data-sources](terraform/reference/data-sources.md) | `data` chỉ đọc, không quản lý lifecycle — thiếu đối tượng làm `plan` chết, không phải `apply` | 📝 |
+| [expressions-and-functions](terraform/reference/expressions-and-functions.md) | Conditional, for-expression, splat, dynamic block — bốn cách biến đổi dữ liệu trong HCL | 📝 |
+| [skills/lifecycle-meta-arguments](terraform/skills/lifecycle-meta-arguments.md) | `create_before_destroy` đổi thứ tự replace; `prevent_destroy` chặn destroy; `ignore_changes` giấu diff | 📝 |
+| [skills/provisioners](terraform/skills/provisioners.md) | Provisioner là đường cùng khi provider không có resource tương ứng; thất bại làm resource bị *tainted* | 📝 |
+| [lab-10-data-sources-expressions](terraform/tutorials/lab-10-data-sources-expressions.md) | Lab: `data` đọc file do state khác quản lý; lọc/biến đổi bằng `for`-expression; sinh resource bằng `for_each` + splat | 📝 |
+| [lab-11-lifecycle-provisioners](terraform/tutorials/lab-11-lifecycle-provisioners.md) | Lab: tự tay đổi thứ tự replace, chặn destroy, giấu diff, rồi làm hỏng provisioner để thấy resource bị tainted | 📝 |
+| [terraform/cheatsheets/index](terraform/cheatsheets/index.md) | Mục lục cheatsheet — bảng tra lệnh CLI | 🗂️ |
+| [cheatsheets/commands](terraform/cheatsheets/commands.md) | Bảng tra lệnh CLI theo vòng đời: init/fmt/validate, plan/apply/destroy, state, debug | 🗂️ |
 
 ## Machine Learning
 
